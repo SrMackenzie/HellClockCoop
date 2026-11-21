@@ -36,8 +36,10 @@ namespace HellClockCoop.Balanceamento
         internal static void Configurar(ConfigFile config)
         {
             _aceite = config.Bind("Metricas", "EnviarResumoAnonimo", false,
-                "Envia o resumo de cada run (só números: tempo por andar, inimigos mortos, dano, mortes, dificuldade) para " +
-                "calibrar o balanceamento do coop. Anônimo: sem nome da Steam, SteamID ou arquivos do computador. " +
+                "Envia o resumo de cada run (dados do jogo: tempo por andar, inimigos mortos, dano, mortes, dificuldade, " +
+                "dungeon, resultado, versões, data e hora) para calibrar o balanceamento do coop. Sem nome da Steam, SteamID " +
+                "ou arquivos do computador; vai junto um id aleatório desta instalação (BepInEx/HellClockCoop/instalacao.txt), " +
+                "que não identifica você e serve para pedir a exclusão dos seus resumos por issue no GitHub do projeto. " +
                 "Nada é enviado enquanto estiver false. Os resumos sempre ficam também em BepInEx/HellClockCoop/metricas.");
         }
 
@@ -51,7 +53,7 @@ namespace HellClockCoop.Balanceamento
                 if (!_avisou && _aceite != null && !_aceite.Value)
                 {
                     _avisou = true;
-                    RunCompartilhada.Sessao?.Avisar("Resumo da run salvo. Para ajudar no balanceamento, ative EnviarResumoAnonimo no .cfg do mod (anônimo, só números).");
+                    RunCompartilhada.Sessao?.Avisar("Resumo da run salvo. Para ajudar no balanceamento, ative EnviarResumoAnonimo no .cfg do mod (só dados do jogo, sem nome nem SteamID).");
                 }
                 return;
             }
