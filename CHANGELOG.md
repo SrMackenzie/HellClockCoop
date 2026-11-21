@@ -4,6 +4,17 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.8.0 — Atualização automática 🧪
+_21/11/2026_
+
+- Ao abrir o jogo, o mod procura a versão nova no GitHub e instala sozinho; o painel do coop avisa
+- Só aceita o manifesto assinado pelo autor e arquivos com o SHA-256 conferido; troca só a pasta do mod e o próprio atualizador
+- Os arquivos substituídos ficam guardados e voltam sozinhos se a conferência da instalação falhar; a pasta do mod também volta se o jogo fechar no meio da troca
+- Sem internet ou cerca de 5 s sem resposta: o jogo abre com a versão instalada
+- Opção [Atualizacao] VerificarAoIniciar para desligar
+- Privacidade das métricas: resumos pseudonimizados, guardados até o fim da calibragem; exclusão pelo id da instalação
+- Sem efeito no balanceamento
+
 ## 0.7.2 — Identificador novo do mod 🧪
 _21/11/2026_
 

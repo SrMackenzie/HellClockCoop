@@ -1,0 +1,4 @@
+# Arquivos fora do git que a worktree precisa para compilar e empacotar (copiados da pasta principal).
+src/HellClockCoop/Balanceamento/EnvioConfig.local.cs
+.deps/
+CLAUDE.local.md

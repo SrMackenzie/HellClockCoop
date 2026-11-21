@@ -16,3 +16,6 @@ scripts/b.sh
 
 # Destino do envio de métricas (fica só na máquina de quem publica)
 *.local.cs
+
+# Chave privada do atualizador (fica fora do repositório; isto é só uma rede de proteção)
+*.pem

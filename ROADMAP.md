@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 21/11/2026 · versão 0.7.2. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 21/11/2026 · versão 0.8.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -8,7 +8,7 @@
 
 Regra do projeto: uma fase só é dada como concluída depois de confirmada **rodando no jogo**.
 
-## Trilha permanente — Balanceamento · 43%
+## Trilha permanente — Balanceamento · 38%
 
 _Prioridade 1, trilha permanente: o coop deve ser um pouco mais difícil que o solo, com ajustes guiados por dados. Toda versão passa por revisão de balanceamento._
 
@@ -21,6 +21,7 @@ _Prioridade 1, trilha permanente: o coop deve ser um pouco mais difícil que o s
 | ⬜ | Painel de balanceamento: solo × 2, 3 e 4 jogadores, por andar e dificuldade |
 | ⬜ | Ajuste individual quando o convidado está muito abaixo ou acima do host |
 | ⬜ | Jogador caído e reanimação, em vez de a morte do host encerrar a run |
+| ⬜ | Apagar os resumos enviados ao fechar a calibragem |
 
 ## Fase 0 — Ambiente e mapeamento · 100%
 
@@ -89,12 +90,13 @@ _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio s
 | ⬜ | Revisar drops de invocações, ondas de sobrevivência e temporadas |
 | ⬜ | Auditoria: o mod nunca escreve no save de outro jogador |
 
-## Fase 5 — Polimento · 0%
+## Fase 5 — Polimento · 11%
 
 _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 
 | | Item |
 |:-:|---|
+| 🧪 | Atualização automática ao abrir o jogo: assinada, conferida e com volta se falhar |
 | ⬜ | Menu de coop dentro do jogo (no lugar das teclas F6/F7) |
 | ⬜ | Reconexão e troca de host sem perder a run |
 | ⬜ | Sons das skills e dos golpes dos aliados |

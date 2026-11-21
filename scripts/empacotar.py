@@ -4,12 +4,18 @@ Monta o zip para os jogadores: o conteúdo vai direto na pasta do jogo (ao lado 
 
 Uso:
   python3 scripts/empacotar.py --bepinex BepInEx_win_x64_5.4.23.6.zip \
-      --corlib <pasta com as 8 DLLs + LICENSE-Mono> --plugin build/HellClockCoop.dll
+      --corlib <pasta com as 8 DLLs + LICENSE-Mono> --plugin build/HellClockCoop.dll \
+      [--atualizador build/HellClockCoop.Atualizador.dll] [--chave <chave privada do atualizador>]
 
-Saída: dist/HellClockCoop-v<versão>.zip
-Nada do jogo entra no pacote (só BepInEx, corlib do Mono e o nosso plugin).
+Saída:
+  dist/HellClockCoop-v<versão>.zip       — o jogador extrai dentro da pasta do jogo
+  dist/release-v<versão>/                — tudo o que sobe na release do GitHub (tag v<versão>): o zip, o
+                                           manifesto.txt assinado (manifesto.txt.sig) e os arquivos avulsos que o
+                                           atualizador baixa
+Nada do jogo entra no pacote (só BepInEx, corlib do Mono, o nosso plugin e o atualizador).
+A assinatura usa tools/assinar e a chave privada local (padrão: %USERPROFILE%\\.hellclockcoop\\atualizador-privada.pem).
 """
-import argparse, hashlib, io, os, re, sys, zipfile
+import argparse, hashlib, io, os, re, shutil, subprocess, sys, zipfile
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VERSAO_JOGO = "2.1.1.1"
@@ -23,9 +29,46 @@ CFG_BEPINEX = (
 )
 
 
+# Arquivos que o atualizador troca (caminho relativo à pasta BepInEx; tem de bater com Manifesto.DestinoPermitido).
+DESTINOS_ATUALIZADOR = ["plugins/HellClockCoop/HellClockCoop.dll", "plugins/HellClockCoop/LICENCAS.txt",
+                        "patchers/HellClockCoop.Atualizador.dll"]
+
+
 def versao_plugin():
     fonte = open(os.path.join(RAIZ, "src", "HellClockCoop", "Plugin.cs"), encoding="utf-8").read()
-    return re.search(r'PluginVersion = "([^"]+)"', fonte).group(1)
+    versao = re.search(r'PluginVersion = "([^"]+)"', fonte).group(1)
+    fonte = open(os.path.join(RAIZ, "src", "HellClockCoop.Atualizador", "Atualizador.cs"), encoding="utf-8").read()
+    do_atualizador = re.search(r'const string Versao = "([^"]+)"', fonte).group(1)
+    if do_atualizador != versao:
+        sys.exit(f"Versão do atualizador ({do_atualizador}) diferente da do plugin ({versao}): ajuste Atualizador.Versao.")
+    if not re.fullmatch(r"\d{1,4}\.\d{1,4}\.\d{1,4}", versao):
+        sys.exit(f"Versão {versao} fora do formato x.y.z que o atualizador aceita.")
+    return versao
+
+
+def gerar_release(arquivos, zip_saida, versao, chave):
+    """Pasta da release: zip, manifesto assinado e os arquivos avulsos (o GitHub não aceita pastas nos anexos)."""
+    pasta = os.path.join(RAIZ, "dist", f"release-v{versao}")
+    if os.path.isdir(pasta):
+        shutil.rmtree(pasta)
+    os.makedirs(pasta)
+    linhas = ["hellclockcoop-manifesto 1", f"versao {versao}"]
+    for destino in DESTINOS_ATUALIZADOR:
+        dados = arquivos["BepInEx/" + destino]
+        nome = destino.rsplit("/", 1)[1]
+        open(os.path.join(pasta, nome), "wb").write(dados)
+        linhas.append(f"arquivo {destino} {len(dados)} {hashlib.sha256(dados).hexdigest()}")
+    manifesto = os.path.join(pasta, "manifesto.txt")
+    open(manifesto, "w", encoding="utf-8", newline="\n").write("\n".join(linhas) + "\n")
+    cmd = ["dotnet", "run", "--project", os.path.join(RAIZ, "tools", "assinar"), "-c", "Release", "--", "assinar", manifesto]
+    if chave:
+        cmd.append(chave)
+    if subprocess.run(cmd).returncode != 0:
+        sys.exit("Falha ao assinar o manifesto (a chave privada está no lugar?).")
+    shutil.copy2(zip_saida, pasta)
+    print(f"Release: {pasta}")
+    for nome in sorted(os.listdir(pasta)):
+        print(f"  {os.path.getsize(os.path.join(pasta, nome)):>9}  {nome}")
 
 
 def texto_windows(caminho, versao):
@@ -38,6 +81,8 @@ def main():
     ap.add_argument("--bepinex", required=True)
     ap.add_argument("--corlib", required=True)
     ap.add_argument("--plugin", default=os.path.join(RAIZ, "build", "HellClockCoop.dll"))
+    ap.add_argument("--atualizador", default=os.path.join(RAIZ, "build", "HellClockCoop.Atualizador.dll"))
+    ap.add_argument("--chave", help="chave privada do atualizador (padrão do tools/assinar se omitida)")
     a = ap.parse_args()
 
     versao = versao_plugin()
@@ -64,6 +109,7 @@ def main():
     for nome in sorted(os.listdir(a.corlib)):
         arquivos[f"BepInEx/unstripped_corlib/{nome}"] = open(os.path.join(a.corlib, nome), "rb").read()
     arquivos["BepInEx/plugins/HellClockCoop/HellClockCoop.dll"] = open(a.plugin, "rb").read()
+    arquivos["BepInEx/patchers/HellClockCoop.Atualizador.dll"] = open(a.atualizador, "rb").read()
     arquivos["BepInEx/plugins/HellClockCoop/LICENCAS.txt"] = texto_windows(os.path.join(RAIZ, "dist-template", "LICENCAS.txt"), versao)
     arquivos["BepInEx/config/BepInEx.cfg"] = CFG_BEPINEX.encode("utf-8")
     arquivos["LEIA-ME - Hell Clock Coop.txt"] = texto_windows(os.path.join(RAIZ, "dist-template", "LEIA-ME - Hell Clock Coop.txt"), versao)
@@ -81,6 +127,7 @@ def main():
     print("sha256:", hashlib.sha256(open(saida, "rb").read()).hexdigest())
     for nome in sorted(arquivos):
         print(f"  {len(arquivos[nome]):>9}  {nome}")
+    gerar_release(arquivos, saida, versao, a.chave)
 
 
 if __name__ == "__main__":

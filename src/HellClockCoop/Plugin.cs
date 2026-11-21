@@ -18,7 +18,7 @@ namespace HellClockCoop
     {
         public const string PluginGuid = "br.srmackenzie.hellclockcoop";
         public const string PluginName = "Hell Clock Coop";
-        public const string PluginVersion = "0.7.2";
+        public const string PluginVersion = "0.8.0";
 
         /// <summary>Versão do jogo contra a qual os patches foram mapeados (Application.version).</summary>
         public const string VersaoMapeada = "2.1.1.1";
@@ -40,6 +40,10 @@ namespace HellClockCoop
                 "Copia a pasta de save inteira antes de o jogo carregar qualquer coisa.");
             _backupsMantidos = Config.Bind("Seguranca", "BackupsMantidos", 15,
                 "Quantos backups antigos manter; os mais velhos são apagados.");
+            // Quem lê esta opção é o atualizador (BepInEx\patchers\HellClockCoop.Atualizador.dll), antes do plugin.
+            Config.Bind("Atualizacao", "VerificarAoIniciar", true,
+                "Ao abrir o jogo, procura a versão nova do coop no GitHub (até 5 s) e instala sozinha, conferindo a assinatura. " +
+                "Com false, o mod fica na versão instalada.");
 
             if (_fazerBackupDoSave.Value)
             {

@@ -117,11 +117,37 @@ que aparecerem perto do horário do problema.
 
 ---
 
+## 0.8.0 — Atualização automática
+
+Já confirmado no preloader real (PC do autor, 21/11/2026, protótipo): WinHTTP pelo proxy do doorstop (404 sem release,
+200 com redirecionamento, 0,4–0,6 s), RSA-SHA256 conferindo no Mono (e recusando o adulterado), Mono.Cecil lendo a versão
+do plugin, e o arquivo do patcher carregado podendo ser renomeado e aberto para escrita.
+
+- [ ] **Versão nova instalada sozinha** (instalar o zip de uma versão anterior com o atualizador, ou trocar só o plugin
+  por um mais antigo)
+  - Esperado: no log, `[Atualizador] Atualizado da <antiga> para a <nova> (N arquivo(s))`; no painel do coop,
+    `» Coop atualizado da versão <antiga> para a <nova>.`; o console mostra `Hell Clock Coop <nova> carregado`.
+  - Se falhar, mandar: todas as linhas `Atualizador` do `LogOutput.log`.
+- [ ] **Já em dia** (abrir de novo)
+  - Esperado: `[Atualizador] Em dia: versão <x> (última publicada: <x>).` e nada no painel.
+- [ ] **Sem internet** (desligar a rede antes de abrir)
+  - Esperado: o jogo abre normal em até ~6 s a mais, com `[Atualizador] Não deu para verificar: ...` ou
+    `Sem resposta em 5 s`; nada no painel.
+- [ ] **Desligado** (`[Atualizacao] VerificarAoIniciar = false`)
+  - Esperado: `[Atualizador] Verificação desligada` e nenhum acesso à rede.
+- [ ] **Troca do próprio atualizador** (de uma versão com atualizador para a seguinte, ex.: 0.8.0 → 0.8.1)
+  - Esperado: `BepInEx\patchers\HellClockCoop.Atualizador.dll` novo e o antigo em
+    `BepInEx\HellClockCoop\atualizador\anterior\patchers\`; na abertura seguinte, `Em dia: versão <nova>`.
+  - Se falhar, mandar: as linhas `Atualizador` (procure `falhou e foi desfeita`).
+
+---
+
 ## Mensagem para o testador
 
-> E aí! Saiu versão nova do coop. Pra atualizar: baixa o zip da release mais recente (`HellClockCoop-v<versão>.zip`), abre a pasta do jogo (Steam →
-> Hell Clock → Gerenciar → Procurar arquivos locais) e extrai o zip lá dentro, substituindo tudo. Abre o jogo uma vez
-> pra ele criar a config e fecha.
+> E aí! Saiu versão nova do coop. Da 0.8.0 em diante ele se atualiza sozinho ao abrir o jogo (o painel do coop avisa).
+> Se você ainda está numa versão antes da 0.8.0, é a última vez à mão: baixa o zip da release mais recente
+> (`HellClockCoop-v<versão>.zip`), abre a pasta do jogo (Steam → Hell Clock → Gerenciar → Procurar arquivos locais) e
+> extrai o zip lá dentro, substituindo tudo. Abre o jogo uma vez pra ele criar a config e fecha.
 >
 > Pra me ajudar no balanceamento: abre `BepInEx\config\br.srmackenzie.hellclockcoop.cfg`, procura `[Metricas]` e
 > muda `EnviarResumoAnonimo = false` pra `true`. Vai só número da run (tempo, dano, mortes), nada de nome, Steam ou

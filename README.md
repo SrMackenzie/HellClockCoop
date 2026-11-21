@@ -107,11 +107,17 @@ entra mais gente, então o balanceamento é uma **trilha permanente**: toda vers
 - **Como:** o mod usa as mesmas alavancas que o jogo usa na dificuldade e na Ascensão: vida e dano dos inimigos,
   quantidade de inimigos por andar e tempo ganho no Hell Clock, com valores por número de jogadores
   (configuráveis, seção `[Balanceamento]` do `.cfg`).
-- **Com dados:** cada run gera um resumo anônimo (tempo por andar, inimigos mortos, dano causado e recebido, mortes)
+- **Com dados:** cada run gera um resumo sem identificação direta (tempo por andar, inimigos mortos, dano causado e recebido, mortes)
   em `BepInEx/HellClockCoop/metricas`.
 - **Envio opcional:** com `EnviarResumoAnonimo = true` (seção `[Metricas]`, desligado por padrão), o resumo vai para um
   Firestore exclusivo do mod. As [regras do banco](docs/firebase/firestore.rules) só permitem criar resumos no formato
   certo; ninguém lê pela internet. O painel solo × grupo está no roadmap.
+- **Privacidade (LGPD):** os resumos são pseudonimizados — só dados do jogo (números, dungeon, resultado, versões e data e hora da run),
+  sem nome, SteamID, log ou caminhos, com um id aleatório da instalação (`BepInEx/HellClockCoop/instalacao.txt`) que vai
+  junto e só separa as runs de cada instalação. O autor não tem como saber de quem é cada id. O IP chega ao Google no
+  envio, como em qualquer conexão, mas não é gravado no resumo. Os resumos ficam guardados até o fim da calibragem do
+  balanceamento e depois são apagados. Para apagar os seus antes disso, abra uma
+  [issue](https://github.com/SrMackenzie/HellClockCoop/issues) com o conteúdo do seu `instalacao.txt`.
 
 | | 2 jogadores | 3 jogadores | 4 jogadores |
 |---|:-:|:-:|:-:|
@@ -133,6 +139,13 @@ entra mais gente, então o balanceamento é uma **trilha permanente**: toda vers
 3. Abra o jogo pela Steam. Uma janela preta (console do BepInEx) abre junto: é o registro do mod.
 4. No canto superior esquerdo aparece **"Hell Clock Coop … F7 para jogar com amigos"**.
 
+**Atualizações (a partir da 0.8.0):** ao abrir o jogo, o mod procura a versão nova na
+[página de releases](https://github.com/SrMackenzie/HellClockCoop/releases) e instala sozinho, sem perguntar; o painel do
+coop avisa quando isso acontece. Só aceita arquivos assinados pelo autor e conferidos um a um, e troca só a pasta do
+mod e o próprio atualizador. Sem internet, ou se o GitHub demorar cerca de 5 s, o jogo abre com a versão que você já
+tem (falhas de rede ficam só no log). O GitHub vê o seu IP e a versão do mod, como em qualquer download; o mod não
+envia mais nada. Para desligar: `VerificarAoIniciar = false` na seção `[Atualizacao]` do `.cfg` do mod.
+
 <details>
 <summary><b>O que o zip instala</b></summary>
 
@@ -142,6 +155,7 @@ entra mais gente, então o balanceamento é uma **trilha permanente**: toda vers
 | `BepInEx/core` | BepInEx 5.4.23.6 + HarmonyX |
 | `BepInEx/unstripped_corlib` | Bibliotecas base completas do Mono para Windows (o jogo vem com versões reduzidas) |
 | `BepInEx/plugins/HellClockCoop/HellClockCoop.dll` | O mod |
+| `BepInEx/patchers/HellClockCoop.Atualizador.dll` | Atualizador automático (roda antes do jogo carregar o mod) |
 
 Licenças de terceiros: `BepInEx/plugins/HellClockCoop/LICENCAS.txt`.
 </details>
@@ -227,6 +241,10 @@ flowchart LR
   dois jogos. Quem recebe instancia uma cópia só visual (sem scripts, colisores ou som) presa ao avatar, ao inimigo
   ou solta no mundo, com posição e partes internas transmitidas.
 - **Segurança:** todo alvo de patch é validado ao iniciar; se algum sumir numa atualização do jogo, nada é patcheado.
+- **Atualizador:** preloader patcher do BepInEx que, antes de o plugin carregar, baixa pela WinHTTP do Windows o
+  manifesto da última release, confere a assinatura RSA do autor e o SHA-256 de cada arquivo e troca só
+  `BepInEx\plugins\HellClockCoop\` e o próprio atualizador (guardando os arquivos substituídos e voltando atrás se a
+  conferência da instalação falhar).
 
 A documentação completa, com cada patch, mensagem e decisão, está em
 **[`docs/ARQUITETURA.md`](docs/ARQUITETURA.md)**.
@@ -235,14 +253,16 @@ A documentação completa, com cada patch, mensagem e decisão, está em
 ## 🛠️ Para desenvolvedores
 
 ```bash
-# compilar (só .NET SDK 8+, sem NuGet)
+# compilar o plugin e o atualizador (.NET SDK 10, sem NuGet)
 scripts/build.sh "<jogo>/Hell Clock_Data/Managed" "<BepInEx>/BepInEx/core"
 
 # testes
-dotnet run --project tools/codectest -p:HellClockManaged="<jogo>/Hell Clock_Data/Managed"   # ida e volta das mensagens
-dotnet run --project tools/refcheck -- "<jogo>/Hell Clock_Data/Managed" build/HellClockCoop.dll  # APIs removidas pelo stripping
+dotnet run --project tools/codectest -c Release -p:HellClockManaged="<jogo>/Hell Clock_Data/Managed" -- build/HellClockCoop.dll  # mensagens
+dotnet run --project tools/refcheck -c Release -- "<jogo>/Hell Clock_Data/Managed" build/HellClockCoop.dll  # APIs removidas pelo stripping
+dotnet run --project tools/refcheck -c Release -- "<jogo>/BepInEx/unstripped_corlib" build/HellClockCoop.Atualizador.dll
+dotnet run --project tools/atualizadortest -c Release   # assinatura, manifesto e troca de arquivos do atualizador
 
-# zip para os jogadores
+# zip para os jogadores + pasta da release (manifesto assinado com a chave privada local, fora do repositório)
 python3 scripts/empacotar.py --bepinex BepInEx_win_x64_5.4.23.6.zip --corlib <swyf-modding/Setup>/vendor/corlib
 
 # progresso (README + ROADMAP) a partir de docs/roadmap.json
@@ -263,7 +283,10 @@ src/HellClockCoop/
 ├── Avatar/                         clone do jogador, animação, aparência
 ├── Fase2/                          run compartilhada
 └── Fase3/                          inimigos, alvos, efeitos, dano, baús e quebráveis
-tools/codectest, tools/refcheck     testes
+src/HellClockCoop.Atualizador/      atualizador automático (preloader patcher, WinHTTP, manifesto assinado)
+tools/codectest, tools/refcheck,
+tools/atualizadortest               testes
+tools/assinar                       chave e assinatura do manifesto da release
 scripts/                            build, empacotamento, progresso
 dist-template/                      LEIA-ME e licenças que vão no zip
 docs/                               arquitetura, desenvolvimento, roadmap.json

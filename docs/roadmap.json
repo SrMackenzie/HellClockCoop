@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "21/11/2026",
-  "versao": "0.7.2",
+  "versao": "0.8.0",
   "fases": [
     {
       "id": "B",
@@ -35,6 +35,10 @@
         [
           "planejado",
           "Jogador caído e reanimação, em vez de a morte do host encerrar a run"
+        ],
+        [
+          "planejado",
+          "Apagar os resumos enviados ao fechar a calibragem"
         ]
       ]
     },
@@ -206,6 +210,10 @@
       "nome": "Polimento",
       "resumo": "Deixar o coop confortável para qualquer pessoa instalar e jogar.",
       "itens": [
+        [
+          "testar",
+          "Atualização automática ao abrir o jogo: assinada, conferida e com volta se falhar"
+        ],
         [
           "planejado",
           "Menu de coop dentro do jogo (no lugar das teclas F6/F7)"

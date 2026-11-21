@@ -50,14 +50,37 @@ ESTADO ATUAL (versão de teste, Fase 3)
     um por número de jogadores (2, 3, 4). Quem manda é o host.
   * No fim de cada run, o mod salva um resumo só com números (tempo por andar, inimigos mortos,
     dano causado e recebido, mortes) em BepInEx\HellClockCoop\metricas. Não tem nome da Steam
-    nem nada pessoal. Mandar esses arquivos ajuda a calibrar o balanceamento.
+    nem nada que identifique você diretamente. Mandar esses arquivos ajuda a calibrar o balanceamento.
 - NOVO (0.7.1): ENVIO OPCIONAL DOS RESUMOS.
   * Desligado por padrão. Para ajudar, abra o .cfg do mod e, na seção [Metricas], troque
     EnviarResumoAnonimo = false por true.
-  * Vai só o resumo numérico de cada run (o mesmo arquivo da pasta metricas), sem nome da Steam,
+  * Vai só o resumo de cada run (o mesmo arquivo da pasta metricas), sem nome da Steam,
     SteamID, log ou qualquer arquivo do computador. Quem recebe é um banco só deste mod, que
     aceita apenas guardar resumos; ninguém consegue ler os dados pela internet.
   * Sem internet, o resumo fica em metricas\pendentes e é enviado depois. Para parar, volte para false.
+  * Privacidade (LGPD): cada resumo leva só dados do jogo (com a data e a hora da run) e um id
+    aleatório da instalação
+    (o conteúdo de BepInEx\HellClockCoop\instalacao.txt), que separa as runs de cada instalação.
+    O autor não tem como saber de quem é cada id. O IP chega ao Google no envio, como em
+    qualquer conexão, mas não é gravado no resumo. Os resumos ficam guardados até o fim da
+    calibragem do balanceamento e depois são apagados. Para apagar os seus antes disso, abra
+    uma issue no GitHub do projeto com o conteúdo do seu instalacao.txt.
+- NOVO (0.8.0): ATUALIZAÇÃO AUTOMÁTICA.
+  * Ao abrir o jogo, o mod procura a versão nova no GitHub do projeto e instala sozinho, sem
+    perguntar. Quando isso acontece, o painel do coop (canto superior esquerdo) avisa por uns
+    20 segundos depois de você entrar no save.
+  * Só aceita arquivos assinados pelo autor e conferidos um a um, e troca só a pasta do mod e o
+    próprio atualizador (BepInEx\patchers). Os arquivos substituídos ficam guardados em
+    BepInEx\HellClockCoop\atualizador\anterior (só a última atualização); se a instalação não
+    passar na conferência, a versão anterior volta sozinha.
+  * Sem internet, ou se o GitHub demorar cerca de 5 segundos, o jogo abre com a versão que você
+    já tem (isso fica só no log, não no painel). O GitHub vê o seu IP e a versão do mod, como
+    em qualquer download; o mod não envia mais nada.
+  * Normalmente o grupo fica na mesma versão sem baixar zip. Se aparecer "versão do mod
+    diferente", todos fecham e abrem o jogo.
+  * Para desligar: no .cfg do mod, seção [Atualizacao], troque VerificarAoIniciar = true por false.
+  * Para voltar à versão anterior à mão: desligue a opção acima e copie os arquivos de
+    atualizador\anterior para os mesmos lugares dentro da pasta BepInEx.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, aperte F6 (sai do coop) e depois use o menu normalmente.
@@ -124,9 +147,12 @@ PROBLEMAS COMUNS
   Hell Clock.exe (extraiu numa subpasta?) ou o antivírus bloqueou o winhttp.dll.
 - O jogo fica no "Carregando..." para sempre: falta a pasta BepInEx\unstripped_corlib
   ou o doorstop_config.ini não veio deste zip. Extraia o zip de novo, substituindo tudo.
-- "Versão do mod diferente": alguém do grupo está com outra versão. Todos usem o mesmo zip.
+- "Versão do mod diferente": alguém do grupo está com outra versão. Todos fechem e abram o
+  jogo (o mod se atualiza ao abrir); se continuar, usem o zip mais recente da página de releases.
 - O amigo aparece como "conectando..." por muito tempo: confiram se os dois estão com o
   mesmo zip e se a Steam está online. Saiam (F6) e entrem de novo.
+- "Atualização do coop recusada" ou "falhou" no painel: o jogo seguiu com a versão que já
+  estava instalada. Mande o BepInEx\LogOutput.log (as linhas começam com "Atualizador").
 - Para relatar um problema, mande o arquivo BepInEx\LogOutput.log de quem teve o problema.
 
 
@@ -137,4 +163,6 @@ O QUE ESTE ZIP INSTALA
 - BepInEx\unstripped_corlib — bibliotecas base completas do Mono para Windows. O Hell Clock
   vem com versões reduzidas, e o BepInEx não funciona sem as completas.
 - BepInEx\plugins\HellClockCoop\HellClockCoop.dll — o mod.
+- BepInEx\patchers\HellClockCoop.Atualizador.dll — o atualizador automático (roda antes de o
+  jogo carregar o mod).
 Licenças e créditos: BepInEx\plugins\HellClockCoop\LICENCAS.txt

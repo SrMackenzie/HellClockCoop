@@ -23,13 +23,18 @@ Autor: SrMackenzie. Guia do ambiente: `docs/DESENVOLVIMENTO.md`. Arquitetura e d
 - Nunca chamar `SteamManager.Instance` nem `PlayerController.Instance` (é Guaranteed e cria um). Usar `CoopRuntime.JogadorLocal()`.
 - Rede: `Protocolo.Versao` sobe sempre que uma mensagem muda; toda mensagem nova ganha teste em `tools/codectest`.
 - Host é a autoridade; convidado manda pedidos (golpes, tempo, interações) e recebe estado.
+- Atualizador (`src/HellClockCoop.Atualizador`, preloader): compila contra `BepInEx\unstripped_corlib`, não contra a
+  `Managed`; não usa Unity. A chave privada que assina as releases fica fora do git e nunca é regerada nem commitada.
 
 ## Rotina de entrega
-1. Compilar (`scripts/build.ps1` no Windows ou `scripts/build.sh`), rodar `refcheck` e `codectest`.
+1. Compilar (`scripts/build.ps1` no Windows ou `scripts/build.sh`), rodar `refcheck` (plugin e atualizador),
+   `codectest` e `atualizadortest`.
 2. Atualizar `docs/roadmap.json` e `docs/changelog.json`, depois `python scripts/gerar-progresso.py`.
-3. Atualizar `PluginVersion` em `Plugin.cs`, o LEIA-ME em `dist-template/` e, se for o caso, README/ARQUITETURA.
-4. Empacotar com `scripts/empacotar.py`, instalar a DLL em `<jogo>\BepInEx\plugins\HellClockCoop\`.
-5. Commit como SrMackenzie e push para `SrMackenzie/HellClockCoop` (público, MIT).
+3. Atualizar `PluginVersion` em `Plugin.cs` e `Atualizador.Versao` (iguais), o LEIA-ME em `dist-template/` e, se for o
+   caso, README/ARQUITETURA.
+4. Empacotar com `scripts/empacotar.py` (assina o manifesto), instalar as DLLs com `scripts\build.ps1 -Instalar`.
+5. Commit como SrMackenzie (e-mail noreply) e push para `SrMackenzie/HellClockCoop` (público, MIT).
+6. Release `v<versão>` com os anexos de `dist/release-v<versão>/` (o atualizador dos jogadores lê a última release).
 
 ## Testes no jogo
 - Log: `<jogo>\BepInEx\LogOutput.log` (sobrescrito ao abrir o jogo).

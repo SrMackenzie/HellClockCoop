@@ -4,7 +4,7 @@ Guia do ambiente. A arquitetura (patches, mensagens, decisões) está em [`ARQUI
 
 ## Requisitos
 - Hell Clock 2.1.1.1 (Steam), Unity 6000.0.60f1, scripting backend Mono.
-- .NET SDK 8 ou superior (só o compilador; sem NuGet).
+- .NET SDK 10 (o compilador e as ferramentas de `tools/`, que são net10.0; sem NuGet).
 - Python 3 (empacotamento e geração do progresso).
 
 ## BepInEx no Hell Clock (passo obrigatório)
@@ -27,8 +27,12 @@ O `scripts/empacotar.py` já monta o zip com tudo isso.
 No Windows (PowerShell), com o jogo no caminho padrão da Steam:
 ```powershell
 scripts\build.ps1            # só compila
-scripts\build.ps1 -Instalar  # compila e copia para <jogo>\BepInEx\plugins\HellClockCoop
+scripts\build.ps1 -Instalar  # compila e copia para <jogo>\BepInEx\plugins\HellClockCoop e <jogo>\BepInEx\patchers
 ```
+Saem dois arquivos: `build/HellClockCoop.dll` (o plugin, contra as DLLs do jogo) e `build/HellClockCoop.Atualizador.dll`
+(o atualizador, preloader patcher, contra `BepInEx\unstripped_corlib`, `BepInEx.dll` e `Mono.Cecil.dll`; ver
+ARQUITETURA, seção 13). Com builds locais instaladas, use `[Atualizacao] VerificarAoIniciar = false`: com a mesma versão
+da última release e o atualizador diferente dela, ele troca a build local pela publicada.
 Em bash (Linux, Git Bash):
 ```bash
 scripts/build.sh "<jogo>/Hell Clock_Data/Managed" "<BepInEx>/BepInEx/core"
@@ -45,17 +49,34 @@ e o envio fica desligado. Formato: um `partial` de `EnvioConfig` que preenche `p
 ## Testes
 ```bash
 # ida e volta de todas as mensagens de rede
-dotnet run --project tools/codectest -c Release -p:HellClockManaged="<jogo>/Hell Clock_Data/Managed"
+dotnet run --project tools/codectest -c Release -p:HellClockManaged="<jogo>/Hell Clock_Data/Managed" -- build/HellClockCoop.dll
 # MemberRefs do plugin que não existem no mscorlib/System/System.Core do jogo (precisa dar 0)
 dotnet run --project tools/refcheck -c Release -- "<jogo>/Hell Clock_Data/Managed" build/HellClockCoop.dll
+# o mesmo para o atualizador, contra o corlib completo que ele usa no preloader (precisa dar 0)
+dotnet run --project tools/refcheck -c Release -- "<jogo>/BepInEx/unstripped_corlib" build/HellClockCoop.Atualizador.dll
+# atualizador: assinatura, validação do manifesto e troca/volta dos arquivos
+dotnet run --project tools/atualizadortest -c Release
 ```
 
 ## Empacotar
 ```bash
 python3 scripts/empacotar.py --bepinex BepInEx_win_x64_5.4.23.6.zip --corlib <swyf-modding/Setup>/vendor/corlib --plugin build/HellClockCoop.dll
 # saída: dist/HellClockCoop-v<versão>.zip — o jogador extrai dentro da pasta do jogo
+#        dist/release-v<versão>/ — anexos da release: zip, manifesto.txt + .sig e os arquivos avulsos do atualizador
 ```
 O LEIA-ME e as licenças que vão no zip estão em `dist-template/`.
+
+## Publicar uma versão (atualizador)
+1. Uma vez por máquina: `dotnet run --project tools/assinar -c Release -- gerar-chave` cria a chave privada em
+   `%USERPROFILE%\.hellclockcoop\atualizador-privada.pem` (fora do repositório) e mostra a pública, que vai em
+   `src/HellClockCoop.Atualizador/ChavePublica.cs`. A chave atual já existe: **não gere outra**; guarde uma cópia da
+   privada fora do computador. Sem ela, nenhuma versão nova chega pelo atualizador. Se ela estiver sem senha,
+   `... -- proteger` a cifra (a pública não muda); daí em diante a senha é pedida ao assinar (ou vem de
+   `HELLCLOCKCOOP_SENHA_CHAVE`).
+2. `Atualizador.Versao` igual ao `PluginVersion`, no formato `x.y.z` (o empacotar confere).
+3. `scripts/empacotar.py ...` (assina o manifesto) e depois
+   `gh release create v<versão> dist/release-v<versão>/* --title "Hell Clock Coop <versão>" --notes-file <notas>`.
+   O atualizador lê `releases/latest`: rascunho e pré-release não contam.
 
 ## Progresso, roadmap, novidades e site
 `docs/roadmap.json` e `docs/changelog.json` são a fonte única. Depois de editar:

@@ -283,6 +283,7 @@ No fantasma, a troca de estado usa `CrossFade` curto, e o mesmo estado com mais 
 - o `doorstop_config.ini` com `dll_search_path_override = BepInEx\unstripped_corlib`;
 - as 8 DLLs do corlib com `LICENSE-Mono`;
 - o plugin;
+- o atualizador em `BepInEx/patchers` (a partir da 0.8.0, seção 13);
 - `BepInEx.cfg` com console;
 - `LEIA-ME` e `LICENCAS` em pt-BR (UTF-8 com BOM, CRLF).
 
@@ -585,9 +586,69 @@ gratuito; a chave da Web identifica o projeto (não dá acesso) e fica fora do r
 (sem ele o envio fica desligado). Regras em `docs/firebase/firestore.rules`: só criação em `/runs`, com id e campos
 validados; leitura, alteração e exclusão negadas (a análise é feita pelo console).
 
+**Privacidade (LGPD).** Os resumos são pseudonimizados: só dados do jogo (números, dungeon, resultado, versões), sem
+nome, SteamID, log ou caminhos, mas com o id aleatório da instalação, que vai no campo `instalacao` e no id do documento
+(`<instalação>-<data>`) e liga as runs da mesma instalação. O autor não tem como ligar um id a uma pessoa; o jogador
+tem o próprio id em `instalacao.txt`. O IP chega ao Google no transporte (o envio sai da máquina do jogador pela
+`ISteamHTTP`) e não é gravado no documento. Guarda: até o fim da calibragem do balanceamento; depois o autor apaga a
+coleção `runs` pelo console. Exclusão antes disso: o jogador abre uma issue com o conteúdo de `instalacao.txt` e o
+autor apaga `runs/<id>-*` pelo console. Para parar, desliga o envio; apagar `instalacao.txt` gera um id novo.
+
 **Próximos passos.** Painel solo × grupo, ajuste individual por diferença de progressão e jogador caído/reanimação.
 
-## 13. Como reproduzir a análise
+## 13. Atualizador automático (versão 0.8.0)
+
+**Onde roda.** `BepInEx\patchers\HellClockCoop.Atualizador.dll`, um preloader patcher do BepInEx 5 sem DLL alvo: só o
+`Initialize()` é usado, antes do chainloader, quando o plugin ainda não foi carregado. Compila contra o corlib completo
+(`BepInEx\unstripped_corlib`), o `BepInEx.dll` e o `Mono.Cecil.dll` (`scripts/build.ps1`).
+
+**Fluxo.**
+1. `[Atualizacao] VerificarAoIniciar` (lido direto do `.cfg`, sem criá-lo: quem cria e migra o arquivo é o plugin).
+2. Troca interrompida (jogo fechado entre guardar o arquivo atual e pôr o novo): o que falta no destino volta de
+   `\anterior` (`Instalacao.RecuperarTrocaInterrompida`; nunca sobrescreve um arquivo que existe). Limite: se o que
+   faltar for o próprio atualizador, não há quem rode a recuperação; o plugin segue funcionando, mas as atualizações
+   param até o zip ser instalado à mão (a janela é a de dois `File.Move` seguidos).
+3. Versão instalada: o `[BepInPlugin]` de `plugins\HellClockCoop\HellClockCoop.dll`, lido pelo Mono.Cecil sem carregar.
+4. Numa thread, sem escrever em disco: `releases/latest/download/manifesto.txt`, a assinatura `manifesto.txt.sig` da
+   mesma tag (`releases/download/v<versão>/`) e os arquivos cujo SHA-256 mudou. Versão publicada maior que a instalada:
+   tudo o que mudou; igual: se o atualizador estiver diferente (troca anterior incompleta), tudo o que não confere;
+   menor: nada. Com o
+   plugin ilegível, o piso é a versão do próprio atualizador. Cada download tem o tempo que sobra do prazo, também
+   dentro do laço de leitura. A thread do preloader espera até 5 s (+1 de folga); passou disso, abandona o resultado e
+   o jogo segue.
+5. `Instalacao.Aplicar`: grava em `HellClockCoop\atualizador\novo`, confere, move os arquivos substituídos para
+   `\anterior` (só os da última atualização), põe os novos no lugar e valida (SHA-256 no lugar definitivo e versão do
+   `[BepInPlugin]` = versão do manifesto). Qualquer falha desfaz na ordem inversa. Não há volta se a versão nova
+   instalar bem e falhar depois, já no jogo: aí vale a release seguinte ou a cópia à mão de `\anterior`.
+6. Recado de uma linha em `HellClockCoop\atualizador\aviso.txt` (versão nova instalada, falha na instalação ou recusa
+   por assinatura/hash; falha de rede fica só no log), que o plugin mostra no painel do coop e apaga.
+
+**Rede.** WinHTTP por P/Invoke (`WinHttp.cs`), proxy automático do Windows, redirecionamento HTTPS → HTTPS do GitHub.
+No preloader o Mono não tem TLS 1.2 utilizável (o UnityTls ainda não subiu). Testado no preloader real em 21/11/2026, com
+o `winhttp.dll` do doorstop na pasta do jogo (o proxy repassa as chamadas): 404 sem release, 200 com redirecionamento,
+0,4–0,6 s por pedido. O único dado enviado é o pedido de download em si: o GitHub vê o IP e o User-Agent
+`HellClockCoop-Atualizador/<versão>` (e os contadores públicos de download dos anexos passam a contar aberturas).
+
+**Assinatura.** RSA 3072, PKCS#1 v1.5 com SHA-256 (`RSACryptoServiceProvider` do Mono, conferido no preloader). A chave
+pública está em `ChavePublica.cs`; a privada fica só na máquina de quem publica (`tools/assinar`, padrão
+`%USERPROFILE%\.hellclockcoop\atualizador-privada.pem`, cifrável com senha por `assinar proteger`; `*.pem` está no
+`.gitignore`). Quem tiver a privada publica código que todos instalam sozinhos: senha e cópia fora do computador. Perder
+ou vazar a privada obriga a trocar a pública e todos a instalar o zip novo à mão (não há revogação). O manifesto só
+aceita destinos `plugins/HellClockCoop/<nome>` e `patchers/HellClockCoop.Atualizador.dll`, nomes sem pastas, SHA-256 e
+tamanho de cada arquivo, e precisa conter o plugin; a versão lida antes da verificação tem de ser a mesma do manifesto
+verificado. Versão menor que a instalada é ignorada (sem rebaixar com um manifesto antigo).
+
+**Antivírus.** Sem PowerShell, curl ou programa baixado; nada executado a partir de bytes (as DLLs são carregadas pelo
+BepInEx, do disco, como sempre); sem ofuscação; nenhum arquivo em uso é escrito por cima. O plugin ainda não foi
+carregado; o arquivo do atualizador, já carregado, não fica travado pelo Mono (testado no preloader real em 21/11/2026:
+renomear e abrir para escrita funcionaram), então ele é movido para `\anterior` e a versão nova vale a partir da próxima
+abertura. Tudo vai para o log.
+
+**Publicar.** `scripts/empacotar.py` monta `dist/release-v<versão>/` (zip, `manifesto.txt` + `.sig`, `HellClockCoop.dll`,
+`LICENCAS.txt`, `HellClockCoop.Atualizador.dll`); a release do GitHub tem a tag `v<versão>` e esses anexos. A
+`Atualizador.Versao` tem de ser igual ao `PluginVersion` (o empacotar confere). Testes: `tools/atualizadortest`.
+
+## 14. Como reproduzir a análise
 
 1. Compilar o decompilador (ICSharpCode.Decompiler 9.1, a partir do código-fonte do ILSpy) ou usar o ILSpy no Windows.
 2. Decompilar `Hell Clock_Data/Managed/HellClock.dll`, `K10.dll` e `Assembly-CSharp.dll` para uma pasta **fora** do repositório (ver `.gitignore`).

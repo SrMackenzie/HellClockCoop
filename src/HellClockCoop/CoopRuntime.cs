@@ -41,6 +41,7 @@ namespace HellClockCoop
         private RemotePlayerAvatar _avatarEco;
         private bool _hierarquiaRegistrada;
         private float _dicaAte = -1f;
+        private string _avisoAtualizacao;
         private int _bytesUltimo;
         private GUIStyle _estiloCaixa, _estiloNome;
 
@@ -61,6 +62,7 @@ namespace HellClockCoop
             go.hideFlags = HideFlags.HideAndDontSave;
             Instancia = go.AddComponent<CoopRuntime>();
             Instancia._sessao.Aviso += Instancia.Avisar;
+            Instancia._avisoAtualizacao = LerAvisoDoAtualizador();
             Fase2.RunCompartilhada.Sessao = Instancia._sessao;
         }
 
@@ -232,6 +234,28 @@ namespace HellClockCoop
 
         // ---------- Interface ----------
 
+        /// <summary>
+        /// Recado que o atualizador (preloader) deixou nesta abertura: versão nova instalada ou atualização recusada.
+        /// Lido uma vez e apagado; fica no painel até 20 s depois de entrar no save.
+        /// </summary>
+        private static string LerAvisoDoAtualizador()
+        {
+            string arquivo = Path.Combine(Path.Combine(Path.Combine(Paths.BepInExRootPath, "HellClockCoop"), "atualizador"), "aviso.txt");
+            try
+            {
+                if (!File.Exists(arquivo)) return null;
+                string texto = File.ReadAllText(arquivo).Trim();
+                File.Delete(arquivo);
+                if (texto.Length > 300) texto = texto.Substring(0, 300);
+                return texto.Length > 0 ? texto : null;
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Atualizador] Não deu para ler o aviso da atualização: {e.Message}");
+                return null;
+            }
+        }
+
         private void Avisar(string texto)
         {
             _avisos.Add(new KeyValuePair<float, string>(Time.unscaledTime + 6f, texto));
@@ -276,6 +300,7 @@ namespace HellClockCoop
             {
                 linhas.Add($"Hell Clock Coop {Plugin.PluginVersion}: {TeclaConvidar.Value} para jogar com amigos");
             }
+            if (_avisoAtualizacao != null && (_dicaAte < 0f || Time.unscaledTime < _dicaAte)) linhas.Add("» " + _avisoAtualizacao);
             if (_ecoAtivo) linhas.Add($"Modo eco ({TeclaEco.Value}): {_bytesUltimo} bytes por snapshot, 20/s");
             for (int i = _avisos.Count - 1; i >= 0; i--)
             {
