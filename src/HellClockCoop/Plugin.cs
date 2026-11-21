@@ -18,7 +18,7 @@ namespace HellClockCoop
     {
         public const string PluginGuid = "br.srmackenzie.hellclockcoop";
         public const string PluginName = "Hell Clock Coop";
-        public const string PluginVersion = "0.7.0";
+        public const string PluginVersion = "0.7.1";
 
         /// <summary>Versão do jogo contra a qual os patches foram mapeados (Application.version).</summary>
         public const string VersaoMapeada = "2.1.1.1";

@@ -1,0 +1,44 @@
+rules_version = '2';
+
+// Regras do Firestore do projeto de métricas do Hell Clock Coop (projeto exclusivo deste mod).
+// - O mod só pode CRIAR documentos em /runs, no formato do resumo (Balanceamento/Metricas.cs, formato 1).
+// - Ninguém lê, altera ou apaga pela internet. A leitura é feita pelo console do Firebase, que não passa por estas regras.
+// - Qualquer outra coleção fica fechada.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function campos() {
+      return ['formato', 'mod', 'jogo', 'instalacao', 'papel', 'jogadores', 'dungeon', 'dungeonNome',
+              'tier', 'ascensao', 'nivel', 'resultado', 'duracao', 'balanceamento', 'andares'];
+    }
+
+    function resumoValido(d, id) {
+      return d.keys().hasOnly(campos()) && d.keys().hasAll(campos())
+        && d.formato is int && d.formato == 1
+        && d.mod is string && d.mod.size() <= 20
+        && d.jogo is string && d.jogo.size() <= 30
+        && d.instalacao is string && d.instalacao == id.split('-')[0]
+        && d.papel in ['solo', 'host', 'convidado']
+        && d.jogadores is int && d.jogadores >= 1 && d.jogadores <= 4
+        && d.dungeon is int
+        && d.dungeonNome is string && d.dungeonNome.size() <= 80
+        && d.tier is int && d.tier >= 0 && d.tier <= 100
+        && d.ascensao is bool
+        && d.nivel is int && d.nivel >= 0 && d.nivel <= 1000
+        && d.resultado is string && d.resultado.size() <= 40
+        && d.duracao is number && d.duracao >= 0 && d.duracao <= 86400
+        && d.balanceamento is string && d.balanceamento.size() <= 200
+        && d.andares is list && d.andares.size() <= 100;
+    }
+
+    match /runs/{id} {
+      allow create: if id.matches('^[0-9a-f]{32}-[0-9]{8}-[0-9]{6}$')
+                    && resumoValido(request.resource.data, id);
+      allow read, update, delete: if false;
+    }
+
+    match /{caminho=**} {
+      allow read, write: if false;
+    }
+  }
+}

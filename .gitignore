@@ -13,3 +13,6 @@ dist/
 
 # Atalhos locais (caminhos de máquina)
 scripts/b.sh
+
+# Destino do envio de métricas (fica só na máquina de quem publica)
+*.local.cs

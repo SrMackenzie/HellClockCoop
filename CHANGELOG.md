@@ -4,6 +4,14 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.7.1 — Envio opcional das métricas 🧪
+_21/11/2026_
+
+- Opção EnviarResumoAnonimo (desligada por padrão): envia o resumo de cada run para calibrar o balanceamento
+- Só números, sem nome da Steam, SteamID, log ou arquivos do computador; o envio passa pelo cliente da Steam
+- Banco exclusivo do mod que só aceita criar resumos no formato certo; ninguém lê pela internet
+- Fila local: sem internet, o resumo espera e é enviado depois
+
 ## 0.7.0 — Balanceamento por número de jogadores 🧪
 _21/11/2026_
 

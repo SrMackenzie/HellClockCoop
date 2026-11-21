@@ -220,5 +220,21 @@ IdaVolta("InimigoSkill", new (string, object)[] { ("Id", (ushort)300), ("SkillHa
 IdaVolta("ObjetoSpawn", new (string, object)[] { ("Id", (ushort)12), ("Andar", 3u), ("Tipo", (byte)1), ("DefinicaoHash", 777), ("Posicao", new UnityEngine.Vector3(5f, 0f, 9f)), ("Raio", 2.5f), ("Estado", (byte)2) }, 43);
 IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", (byte)1) }, 44);
 
+
+// Métricas: JSON local e corpo do Firestore
+{
+    var td = T("HellClockCoop.Balanceamento.Doc"); var ts = T("HellClockCoop.Balanceamento.Serializar");
+    var add = td.GetMethod("Add");
+    var andar = Activator.CreateInstance(td); add.Invoke(andar, new object[] { "indice", 3L }); add.Invoke(andar, new object[] { "segundos", 41.5 }); add.Invoke(andar, new object[] { "chefe", false });
+    var d = Activator.CreateInstance(td); add.Invoke(d, new object[] { "formato", 1 }); add.Invoke(d, new object[] { "mod", "0.7.1 \"x\"" }); add.Invoke(d, new object[] { "duracao", 120.0 });
+    add.Invoke(d, new object[] { "andares", new System.Collections.Generic.List<object> { andar } });
+    string json = (string)ts.GetMethod("Json").Invoke(null, new[] { d });
+    string fs = (string)ts.GetMethod("Firestore").Invoke(null, new[] { d });
+    var j = System.Text.Json.JsonDocument.Parse(json).RootElement; var f = System.Text.Json.JsonDocument.Parse(fs).RootElement.GetProperty("fields");
+    Checar(j.GetProperty("andares")[0].GetProperty("segundos").GetDouble() == 41.5 && j.GetProperty("mod").GetString() == "0.7.1 \"x\"", "Métricas: JSON local");
+    Checar(f.GetProperty("formato").GetProperty("integerValue").GetString() == "1" && f.GetProperty("duracao").GetProperty("doubleValue").GetDouble() == 120.0
+        && f.GetProperty("andares").GetProperty("arrayValue").GetProperty("values")[0].GetProperty("mapValue").GetProperty("fields").GetProperty("indice").GetProperty("integerValue").GetString() == "3", "Métricas: corpo do Firestore");
+}
+
 Console.WriteLine(falhas == 0 ? "\nTODOS OS TESTES PASSARAM" : $"\n{falhas} FALHA(S)");
 return falhas;

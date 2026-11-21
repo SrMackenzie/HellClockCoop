@@ -155,9 +155,12 @@ namespace HellClockCoop.Balanceamento
             try
             {
                 Directory.CreateDirectory(Pasta);
-                string arquivo = Path.Combine(Pasta, $"run-{_inicioData:yyyyMMdd-HHmmss}.json");
-                File.WriteAllText(arquivo, Json(), new UTF8Encoding(false));
+                string carimbo = _inicioData.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+                string arquivo = Path.Combine(Pasta, $"run-{carimbo}.json");
+                Doc doc = Documento();
+                File.WriteAllText(arquivo, Serializar.Json(doc), new UTF8Encoding(false));
                 Plugin.Log.LogInfo($"[Métricas] Resumo da run salvo em metricas/{Path.GetFileName(arquivo)} ({Andares.Count} andares, {_jogadoresMax} jogador(es), {_resultado}).");
+                Envio.RunSalva(IdInstalacao() + "-" + carimbo, doc);
             }
             catch (Exception e)
             {
@@ -181,60 +184,46 @@ namespace HellClockCoop.Balanceamento
             catch (Exception) { return "desconhecida"; }
         }
 
-        private static string Json()
+        /// <summary>O resumo da run como árvore simples (Doc = campos em ordem; listas; string, int, long, double, bool).</summary>
+        private static Doc Documento()
         {
-            CultureInfo c = CultureInfo.InvariantCulture;
-            var sb = new StringBuilder();
-            sb.Append('{');
-            Campo(sb, "formato", VersaoFormato.ToString(c)); sb.Append(',');
-            Texto(sb, "mod", Plugin.PluginVersion); sb.Append(',');
-            Texto(sb, "jogo", Application.version); sb.Append(',');
-            Texto(sb, "instalacao", IdInstalacao()); sb.Append(',');
-            Texto(sb, "papel", _papel); sb.Append(',');
-            Campo(sb, "jogadores", _jogadoresMax.ToString(c)); sb.Append(',');
-            Campo(sb, "dungeon", _dungeon.ToString(c)); sb.Append(',');
-            Texto(sb, "dungeonNome", _dungeonNome); sb.Append(',');
-            Campo(sb, "tier", _tier.ToString(c)); sb.Append(',');
-            Campo(sb, "ascensao", _ascensao ? "true" : "false"); sb.Append(',');
-            Campo(sb, "nivel", _nivel.ToString(c)); sb.Append(',');
-            Texto(sb, "resultado", _resultado); sb.Append(',');
-            Campo(sb, "duracao", (Time.unscaledTime - _inicio).ToString("0.0", c)); sb.Append(',');
-            Texto(sb, "balanceamento", Escalonamento.Resumo() ?? "solo"); sb.Append(',');
-            sb.Append("\"andares\":[");
-            for (int i = 0; i < Andares.Count; i++)
+            var d = new Doc
             {
-                Andar a = Andares[i];
-                if (i > 0) sb.Append(',');
-                sb.Append('{');
-                Campo(sb, "indice", a.Indice.ToString(c)); sb.Append(',');
-                Campo(sb, "definicao", a.Definicao.ToString(c)); sb.Append(',');
-                Campo(sb, "chefe", a.Chefe ? "true" : "false"); sb.Append(',');
-                Campo(sb, "jogadores", a.Jogadores.ToString(c)); sb.Append(',');
-                Campo(sb, "segundos", Math.Max(0f, (a.Fim > 0f ? a.Fim : Time.unscaledTime) - a.Inicio).ToString("0.0", c)); sb.Append(',');
-                Campo(sb, "mortos", a.Mortos.ToString(c)); sb.Append(',');
-                Campo(sb, "danoCausado", a.DanoCausado.ToString("0", c)); sb.Append(',');
-                Campo(sb, "danoRecebido", a.DanoRecebido.ToString("0", c)); sb.Append(',');
-                Campo(sb, "mortes", a.Mortes.ToString(c)); sb.Append(',');
-                Campo(sb, "relogioEntrada", a.RelogioEntrada.ToString("0.0", c)); sb.Append(',');
-                Campo(sb, "relogioSaida", a.RelogioSaida.ToString("0.0", c));
-                sb.Append('}');
-            }
-            sb.Append("]}");
-            return sb.ToString();
-        }
-
-        private static void Campo(StringBuilder sb, string nome, string valor) => sb.Append('"').Append(nome).Append("\":").Append(valor);
-
-        private static void Texto(StringBuilder sb, string nome, string valor)
-        {
-            sb.Append('"').Append(nome).Append("\":\"");
-            foreach (char ch in valor ?? "")
+                { "formato", VersaoFormato },
+                { "mod", Plugin.PluginVersion },
+                { "jogo", Application.version },
+                { "instalacao", IdInstalacao() },
+                { "papel", _papel },
+                { "jogadores", _jogadoresMax },
+                { "dungeon", _dungeon },
+                { "dungeonNome", _dungeonNome ?? "" },
+                { "tier", _tier },
+                { "ascensao", _ascensao },
+                { "nivel", _nivel },
+                { "resultado", _resultado },
+                { "duracao", Math.Round(Time.unscaledTime - _inicio, 1) },
+                { "balanceamento", Escalonamento.Resumo() ?? "solo" },
+            };
+            var andares = new List<object>();
+            foreach (Andar a in Andares)
             {
-                if (ch == '"' || ch == '\\') sb.Append('\\').Append(ch);
-                else if (ch < ' ') sb.Append(' ');
-                else sb.Append(ch);
+                andares.Add(new Doc
+                {
+                    { "indice", (long)a.Indice },
+                    { "definicao", a.Definicao },
+                    { "chefe", a.Chefe },
+                    { "jogadores", a.Jogadores },
+                    { "segundos", Math.Round(Math.Max(0f, (a.Fim > 0f ? a.Fim : Time.unscaledTime) - a.Inicio), 1) },
+                    { "mortos", a.Mortos },
+                    { "danoCausado", Math.Round(a.DanoCausado) },
+                    { "danoRecebido", Math.Round(a.DanoRecebido) },
+                    { "mortes", a.Mortes },
+                    { "relogioEntrada", Math.Round(a.RelogioEntrada, 1) },
+                    { "relogioSaida", Math.Round(a.RelogioSaida, 1) },
+                });
             }
-            sb.Append('"');
+            d.Add("andares", andares);
+            return d;
         }
     }
 }

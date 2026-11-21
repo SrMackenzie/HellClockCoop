@@ -577,8 +577,15 @@ resultado (`FinishDungeon`), duração e, por andar: definição, chefe, jogador
 (`OnEnemyKilled`), dano causado (`OnDealDamage`), dano recebido (`LifeController.OnHurt`, `LifeDamageValue`), mortes e
 Hell Clock na entrada e na saída. Sem nome, SteamID ou caminhos.
 
-**Próximos passos.** Envio opcional com aceite para um Firestore só de criação (regras validando o formato; leitura só
-do dono), painel solo × grupo, ajuste individual por diferença de progressão e jogador caído/reanimação.
+**Envio (0.7.1).** Só com `[Metricas] EnviarResumoAnonimo = true`. O resumo salvo com o aceite ligado vai para
+`metricas/pendentes/<instalação>-<data>.json` já no formato tipado da API REST do Firestore e sai por `ISteamHTTP`
+(POST `.../documents/runs?documentId=...&key=...`), sem depender do TLS do Mono. 2xx ou 409 (já existia) apaga o
+pendente; 400/403 move para `recusadas`; sem rede ou 5xx espera 10 min. Projeto Firebase exclusivo do mod, plano
+gratuito; a chave da Web identifica o projeto (não dá acesso) e fica fora do repositório, em `EnvioConfig.local.cs`
+(sem ele o envio fica desligado). Regras em `docs/firebase/firestore.rules`: só criação em `/runs`, com id e campos
+validados; leitura, alteração e exclusão negadas (a análise é feita pelo console).
+
+**Próximos passos.** Painel solo × grupo, ajuste individual por diferença de progressão e jogador caído/reanimação.
 
 ## 13. Como reproduzir a análise
 

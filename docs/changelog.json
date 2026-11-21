@@ -2,6 +2,18 @@
   "_leia": "Fonte única das novidades. testado: true = confirmado rodando no jogo. Depois de editar: python3 scripts/gerar-progresso.py",
   "versoes": [
     {
+      "v": "0.7.1",
+      "data": "21/11/2026",
+      "testado": false,
+      "titulo": "Envio opcional das métricas",
+      "itens": [
+        "Opção EnviarResumoAnonimo (desligada por padrão): envia o resumo de cada run para calibrar o balanceamento",
+        "Só números, sem nome da Steam, SteamID, log ou arquivos do computador; o envio passa pelo cliente da Steam",
+        "Banco exclusivo do mod que só aceita criar resumos no formato certo; ninguém lê pela internet",
+        "Fila local: sem internet, o resumo espera e é enviado depois"
+      ]
+    },
+    {
       "v": "0.7.0",
       "data": "21/11/2026",
       "testado": false,

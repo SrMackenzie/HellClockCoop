@@ -54,6 +54,7 @@ namespace HellClockCoop
             MostrarNomes = config.Bind("Interface", "MostrarNomesDosAliados", true, "Mostra o nome da Steam sobre a cabeça dos aliados.");
             Fase3.DanosVisiveis.Configurar(config);
             Balanceamento.Escalonamento.Configurar(config);
+            Balanceamento.Envio.Configurar(config);
 
             var go = new GameObject("HellClockCoop_Runtime");
             DontDestroyOnLoad(go);
@@ -91,6 +92,7 @@ namespace HellClockCoop
                 Fase3.DanosVisiveis.Atualizar();
                 Balanceamento.Escalonamento.Atualizar();
                 Balanceamento.Metricas.Atualizar(jogador);
+                Balanceamento.Envio.Atualizar();
             }
             catch (Exception e)
             {
