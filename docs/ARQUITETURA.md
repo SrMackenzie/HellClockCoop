@@ -178,7 +178,7 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
 ## 6. Riscos e decisões em aberto
 
 1. **Atualizações do jogo.** Toda a lista acima está em `PatchTargets.cs`. O plugin valida no boot e não aplica nada se faltar um alvo da fase ativa.
-2. **Conquistas (regra do projeto: "não mexer").** Decisão pendente do autor: em sessão coop, **bloquear** desbloqueios (`SteamAchievementsController`) para não haver conquista "fácil", ou deixar o jogo seguir normal? O plugin atual não toca nisso.
+2. **Conquistas (regra do projeto: "não mexer").** Decidido pelo autor em 21/11/2026: as conquistas seguem **globais**, como o jogo faz. O mod não bloqueia nem desbloqueia nada; o que o jogo de cada um desbloqueia em coop fica valendo (seção 14).
 3. **Progressão no save local.** Cada jogador grava só o próprio save, como manda a regra. Ainda assim, flags de narrativa e de bosses derrotados entram no save de quem estava como cliente. Auditado na 0.8.4 e aceito pelo projeto (seção 14).
 4. **Determinismo de VFX e projéteis.** Projéteis dos inimigos (`HellClock.Skill.Projectile`) colidem localmente. Nas réplicas, desligar dano de projétil e confiar no host.
 5. **Pooling** (`HellClock.Pool`, `ObjectPoolService`): réplicas e avatares precisam vir dos mesmos pools ou ser excluídos deles, para não serem reciclados por engano.
@@ -680,9 +680,17 @@ save, como o convidado teria se jogasse a mesma run.
 
 - **Morte e volta:** o convidado que morre termina a run dele como no solo (`ConvidadoMorreu`); ao voltar pela entrada no
   meio da run, o jogo dele conta uma run nova.
-- **Conquistas por conclusão:** quando o host conclui a dungeon, o jogo do convidado também passa pelo fim de run
-  `Completed` e pode desbloquear as conquistas de conclusão. O mod não toca em conquistas (regra do projeto); manter ou
-  bloquear isso é decisão do autor (item 2 da seção 6).
+- **Conquistas: globais (decisão do autor, 21/11/2026).** O mod não toca em conquistas (regra do projeto). O jogo
+  desbloqueia pelo funil `AchievementManager.TryToUnlockAchievement` (e ressincroniza pelas flags do save em
+  `SyncAllAchievements`, ao escolher o save), então em coop uma ação de um jogador pode valer para os outros:
+  - chefes ("Defeated [X]", "matar X em até N runs", chefes da Cursed War): quem estava na run ganha, não só quem deu o
+    golpe final, nos dois sentidos (a morte replicada no convidado e o golpe do convidado no host passam pelo abate normal);
+  - dano total da run (7.777.777 e seguintes): o dano de um entra na conta do outro;
+  - concluir campanha, Hell Level e entrar no trem: o convidado ganha quando o host conclui ou avança;
+  - continuam individuais: dano de um golpe só, telas, loja, bênçãos e relíquias;
+  - "Finish Subway Survival" não sai para o convidado em coop (a sobrevivência é do host).
+  Ficar individual exigiria saber quem deu o golpe final (protocolo novo), filtrar o desbloqueio e a ressincronização e
+  guardar as conquistas negadas fora do save, porque a flag do chefe é a mesma da campanha.
 
 **Validação na recepção (0.8.4).** Como cada ordem do host vira gravação no save do convidado, o que chega pela rede é
 filtrado antes de chamar o jogo. O protocolo não mudou (`Protocolo.Versao` igual): só a recepção ficou mais estrita. Os
