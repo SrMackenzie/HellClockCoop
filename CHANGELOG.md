@@ -4,7 +4,7 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
-## 0.8.0 — Atualização automática 🧪
+## 0.8.0 — Atualização automática ✅
 _21/11/2026_
 
 - Ao abrir o jogo, o mod procura a versão nova no GitHub e instala sozinho; o painel do coop avisa

@@ -90,13 +90,13 @@ _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio s
 | ⬜ | Revisar drops de invocações, ondas de sobrevivência e temporadas |
 | ⬜ | Auditoria: o mod nunca escreve no save de outro jogador |
 
-## Fase 5 — Polimento · 11%
+## Fase 5 — Polimento · 14%
 
 _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 
 | | Item |
 |:-:|---|
-| 🧪 | Atualização automática ao abrir o jogo: assinada, conferida e com volta se falhar |
+| ✅ | Atualização automática ao abrir o jogo: assinada, conferida e com volta se falhar |
 | ⬜ | Menu de coop dentro do jogo (no lugar das teclas F6/F7) |
 | ⬜ | Reconexão e troca de host sem perder a run |
 | ⬜ | Sons das skills e dos golpes dos aliados |

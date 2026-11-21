@@ -123,12 +123,16 @@ Já confirmado no preloader real (PC do autor, 21/11/2026, protótipo): WinHTTP 
 200 com redirecionamento, 0,4–0,6 s), RSA-SHA256 conferindo no Mono (e recusando o adulterado), Mono.Cecil lendo a versão
 do plugin, e o arquivo do patcher carregado podendo ser renomeado e aberto para escrita.
 
-- [ ] **Versão nova instalada sozinha** (instalar o zip de uma versão anterior com o atualizador, ou trocar só o plugin
+Ponta a ponta com a release v0.8.0 publicada (PC do autor, 21/11/2026): plugin 0.7.1 + atualizador 0.8.0 → `Atualizado
+da 0.7.1 para a 0.8.0 (2 arquivo(s))`, a 0.8.0 carregou na mesma abertura (com a migração do `.cfg` antigo), o painel
+mostrou o aviso e a abertura seguinte deu `Em dia: versão 0.8.0`. Falta no PC do testador.
+
+- [x] **Versão nova instalada sozinha** (instalar o zip de uma versão anterior com o atualizador, ou trocar só o plugin
   por um mais antigo)
   - Esperado: no log, `[Atualizador] Atualizado da <antiga> para a <nova> (N arquivo(s))`; no painel do coop,
     `» Coop atualizado da versão <antiga> para a <nova>.`; o console mostra `Hell Clock Coop <nova> carregado`.
   - Se falhar, mandar: todas as linhas `Atualizador` do `LogOutput.log`.
-- [ ] **Já em dia** (abrir de novo)
+- [x] **Já em dia** (abrir de novo)
   - Esperado: `[Atualizador] Em dia: versão <x> (última publicada: <x>).` e nada no painel.
 - [ ] **Sem internet** (desligar a rede antes de abrir)
   - Esperado: o jogo abre normal em até ~6 s a mais, com `[Atualizador] Não deu para verificar: ...` ou

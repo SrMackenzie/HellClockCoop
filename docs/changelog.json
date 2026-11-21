@@ -4,7 +4,7 @@
     {
       "v": "0.8.0",
       "data": "21/11/2026",
-      "testado": false,
+      "testado": true,
       "titulo": "Atualização automática",
       "itens": [
         "Ao abrir o jogo, o mod procura a versão nova no GitHub e instala sozinho; o painel do coop avisa",
