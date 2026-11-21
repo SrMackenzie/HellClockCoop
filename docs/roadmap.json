@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "21/11/2026",
-  "versao": "0.8.4",
+  "versao": "0.8.5",
   "fases": [
     {
       "id": "B",
@@ -27,6 +27,10 @@
         [
           "testar",
           "Pergunta do aceite no primeiro início, numa janela no menu (runs solo e coop)"
+        ],
+        [
+          "testar",
+          "Teto do tempo ganho por convidado (120 s a cada 60 s) e golpe com dano inválido ignorado"
         ],
         [
           "planejado",

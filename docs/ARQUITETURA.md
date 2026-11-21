@@ -692,12 +692,13 @@ filtros puros ficam em `Net/Validacao.cs` e têm casos no `tools/codectest`.
 |---|---|---|
 | `PlanoAndar` | convidado, só do host | `IndiceAndar < DungeonConfig.GetByID(DungeonHash).MaxLevelIndex` (`MaxLevelIndex` é a quantidade de andares: o jogo usa `IsLastLevel = índice + 1 >= MaxLevelIndex`); dungeon desconhecida é descartada; andar especial (sem dungeon): até 200. Aviso no log |
 | `FimRun` | convidado, só do host | `Motivo` dentro de `EGameOverSource` (0..4). Aviso no log |
-| `TimerBonus` | host | finito, `> 0` e `<= 120 s`. Aviso no log |
+| `TimerBonus` | host | finito, `> 0` e `<= 120 s`; desde a 0.8.5, também no máximo 120 s e 120 bônus somados por convidado (chave: SteamID, para sair e voltar ao lobby não zerar) numa janela fixa de 60 s (`Validacao.AceitarBonusNaJanela`; o recusado não conta; na virada da janela até o dobro passa em sequência, a média fica no teto). Um aviso de recusa por janela |
 | `TimerSync` | convidado, só do host | os dois campos finitos e `>= 0` (4 Hz: descarte sem log) |
 | `InimigoSpawn`, `InimigosEstado`, `InimigoMorte`, `InimigoSumiu`, `AndarLimpo`, `InimigoAjuste` | convidado, só do host | — |
 | `BauSpawn`, `ObjetoSpawn` | convidado, só do host | — |
 | `ObjetoUsado` | qualquer par | `Estado = Concluido` (purificação) só do host. Aviso no log |
 | `BauAberto`, `Quebrou`, `ObjetoUsado` (`Usado`) | qualquer par | — (o host repassa) |
+| `Golpes` (0.8.5) | host, de qualquer convidado | dano finito e `> 0` (`Validacao.DanoValido`); NaN ou infinito mataria qualquer inimigo. Valor finito grande segue aceito: o dano do convidado é confiável (seção 2). Descarte sem log (20 Hz) |
 
 **Backup.** `SaveBackup.LimparAntigos` mantém no mínimo 1 cópia, mesmo com `BackupsMantidos` 0 ou negativo no `.cfg`.
 

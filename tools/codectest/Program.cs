@@ -249,6 +249,38 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Checar(!V("BonusTempoValido", bonus(float.NaN)) && !V("BonusTempoValido", bonus(float.PositiveInfinity)) && !V("BonusTempoValido", bonus(0f))
         && !V("BonusTempoValido", bonus(-5f)) && !V("BonusTempoValido", bonus(120.5f)) && !V("BonusTempoValido", bonus(3.4e38f)), "Validação: TimerBonus NaN, ∞, 0, negativo, 120,5 s e 3.4e38 recusados");
 
+    // TimerBonus acumulado (0.8.5): até 120 s por convidado numa janela de 60 s
+    {
+        var tj = T("HellClockCoop.Net.JanelaBonus"); var j = Activator.CreateInstance(tj); tj.GetField("Inicio").SetValue(j, 10f);
+        bool Aceita(float agora, float s) => V("AceitarBonusNaJanela", j, agora, bonus(s));
+        Checar(Aceita(10f, 60f) && Aceita(30f, 60f) && !Aceita(40f, 1f), "Validação: bônus 60 s + 60 s aceitos; o seguinte na mesma janela de 60 s recusado");
+        Checar((float)tj.GetField("Soma").GetValue(j) == 120f, "Validação: bônus recusado não entra na soma da janela");
+        Checar(Aceita(70f, 120f) && !Aceita(71f, 0.5f), "Validação: janela recomeça após 60 s (120 s aceitos, o resto recusado)");
+        Checar(Aceita(5f, 10f), "Validação: relógio que volta recomeça a janela");
+        int aceitos = 0; for (int k = 0; k < 1000; k++) if (Aceita(200f + k * 0.01f, 120f)) aceitos++;
+        Checar(aceitos == 1, $"Validação: 1000 bônus de 120 s em 10 s → só 1 aceito ({aceitos})");
+        int miudos = 0; for (int k = 0; k < 500; k++) if (Aceita(300f + k * 0.01f, 0.001f)) miudos++;
+        Checar(miudos == 120, $"Validação: 500 bônus de 0,001 s na janela → só 120 aceitos, o log não enche ({miudos})");
+        Checar(!Aceita(400f, float.NaN) && !Aceita(400.1f, 0f) && Aceita(400.2f, 5f), "Validação: bônus inválido passa pela janela, é recusado e não conta");
+        Checar(Aceita(500f, 120f) && !Aceita(559.99f, 1f) && Aceita(560f, 120f), "Validação: borda da janela — em 59,99 s ainda recusa; em 60 s exatos recomeça");
+    }
+
+    // Golpes: dano finito e > 0 (NaN/∞ corromperia a vida do inimigo no host; sem teto de valor)
+    {
+        var tG2 = T("HellClockCoop.Net.Golpes"); var tGi2 = T("HellClockCoop.Net.Golpes+Item");
+        float lidoGolpe(float v)
+        {
+            var g = Activator.CreateInstance(tG2); var it = Activator.CreateInstance(tGi2);
+            tGi2.GetField("Id").SetValue(it, (ushort)1); tGi2.GetField("Valor").SetValue(it, v);
+            ((System.Collections.IList)tG2.GetField("Itens").GetValue(g)).Add(it);
+            var g2 = tG2.GetMethod("Desserializar").Invoke(null, new object[] { (byte[])tG2.GetMethod("Serializar").Invoke(g, null) });
+            return (float)tGi2.GetField("Valor").GetValue(((System.Collections.IList)tG2.GetField("Itens").GetValue(g2))[0]);
+        }
+        Checar(V("DanoValido", lidoGolpe(1234.5f)) && V("DanoValido", lidoGolpe(3.4e38f)), "Validação: golpe 1234,5 e valor finito grande aceitos (dano do convidado é confiável)");
+        Checar(!V("DanoValido", lidoGolpe(float.NaN)) && !V("DanoValido", lidoGolpe(float.PositiveInfinity)) && !V("DanoValido", lidoGolpe(0f)) && !V("DanoValido", lidoGolpe(-3f)),
+            "Validação: golpe NaN, ∞, 0 e negativo recusados");
+    }
+
     // TimerSync: os dois campos finitos e >= 0
     object timer(float a, float b) => Lido("TimerSync", new (string, object)[] { ("Timer", a), ("TimerRelaxado", b) });
     Checar(V("TimerValido", timer(0f, 0f)) && V("TimerValido", timer(417.25f, 999.5f)), "Validação: TimerSync 0 e valores normais aceitos");

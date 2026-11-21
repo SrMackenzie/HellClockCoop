@@ -206,6 +206,14 @@ Para repetir o primeiro início: no `.cfg`, `[Metricas] AceitePerguntado = false
   santuários aparecem para o convidado e a purificação de santuário amaldiçoado dá o ponto de constelação aos dois.
 - Se falhar, mandar: o `LogOutput.log` dos dois PCs.
 
+## 0.8.5 — Teto do tempo ganho e golpes inválidos
+
+- [ ] **Coop real, tempo ganho:** o convidado pega relíquias e drops de tempo normalmente durante 2 ou 3 andares.
+  Esperado: o host registra `[Run] <nome> ganhou Ns de Hell Clock` a cada bônus e o tempo soma no Hell Clock; nenhum
+  `acima do teto` no `LogOutput.log` do host em jogo normal.
+- [ ] **Coop real, dano:** o convidado mata inimigos e chefes como antes (o dano dele continua valendo no host).
+- Se falhar, mandar: o `LogOutput.log` dos dois PCs.
+
 ---
 
 ## Mensagem para o testador

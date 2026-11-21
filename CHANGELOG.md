@@ -4,6 +4,14 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.8.5 — Teto do tempo ganho e golpes inválidos 🧪
+_21/11/2026_
+
+- O host soma no máximo 120 s de Hell Clock ganhos por um mesmo convidado a cada 60 s (e até 120 bônus); o que passar disso é ignorado, com um aviso no log por minuto
+- Sair e voltar ao lobby não zera esse teto (ele é contado pela conta Steam do convidado)
+- Golpe de convidado com dano não numérico ou infinito é ignorado pelo host (antes podia matar qualquer inimigo de uma vez)
+- Balanceamento: o tempo ganho normal não muda; o teto só barra rajadas de tempo acima de 120 s por minuto vindas do mesmo convidado
+
 ## 0.8.4 — Save protegido de mensagens inválidas 🧪
 _21/11/2026_
 

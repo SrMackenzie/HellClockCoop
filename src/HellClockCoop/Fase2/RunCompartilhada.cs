@@ -41,6 +41,7 @@ namespace HellClockCoop.Fase2
         // Estado do host
         private static PlanoAndar _ultimoPlano;
         private static SpawnAndar _ultimoSpawn;
+        private static readonly Dictionary<ulong, JanelaBonus> JanelasBonus = new Dictionary<ulong, JanelaBonus>(); // por SteamID
         private static float _proximoTimer;
 
         // Acesso a membros privados do jogo
@@ -164,9 +165,19 @@ namespace HellClockCoop.Fase2
                 case Protocolo.TipoTimerBonus:
                     if (!Host) return;
                     TimerBonus b = TimerBonus.Desserializar(dados);
-                    if (!Validacao.BonusTempoValido(b.Segundos))
+                    // Chave pelo SteamID: sair e voltar ao lobby cria outro Par, mas não zera o teto.
+                    ulong steam = de.Id.m_SteamID;
+                    if (!JanelasBonus.TryGetValue(steam, out JanelaBonus jb))
+                        JanelasBonus[steam] = jb = new JanelaBonus { Inicio = Time.unscaledTime };
+                    if (!Validacao.AceitarBonusNaJanela(jb, Time.unscaledTime, b.Segundos))
                     {
-                        Plugin.Log.LogWarning($"[Run] Bônus de tempo inválido de {de.Nome} ({b.Segundos}s); ignorado.");
+                        if (!jb.Avisou) // um aviso por janela, para o log não encher
+                        {
+                            jb.Avisou = true;
+                            Plugin.Log.LogWarning($"[Run] Bônus de tempo de {de.Nome} recusado ({b.Segundos}s): inválido ou acima do teto " +
+                                $"({Validacao.BonusPorJanelaMaximo:0}s e {Validacao.MensagensBonusPorJanela} bônus a cada {Validacao.JanelaBonusSegundos:0}s); " +
+                                "os próximos recusados nesta janela não aparecem no log.");
+                        }
                         return;
                     }
                     Plugin.Log.LogInfo($"[Run] {de.Nome} ganhou {b.Segundos:0.#}s de Hell Clock.");
@@ -259,6 +270,7 @@ namespace HellClockCoop.Fase2
         {
             _ultimoPlano = null;
             _ultimoSpawn = null;
+            JanelasBonus.Clear(); // não guarda pares de runs passadas
             if (!Host) return;
             Plugin.Log.LogInfo($"[Run] Fim da run ({motivo}); avisando os convidados.");
             Sessao.EnviarParaConvidados(new FimRun { Motivo = (int)motivo }.Serializar(), confiavel: true);

@@ -377,7 +377,7 @@ namespace HellClockCoop.Fase3
         {
             foreach (Golpes.Item i in g.Itens)
             {
-                if (!HostPorId.TryGetValue(i.Id, out InimigoHost h) || h.C == null || h.C.LifeController.IsDead || i.Valor <= 0f) continue;
+                if (!HostPorId.TryGetValue(i.Id, out InimigoHost h) || h.C == null || h.C.LifeController.IsDead || !Validacao.DanoValido(i.Valor)) continue;
                 DamageInstance dano = DamageInstance.RentDummy(i.Valor, EDamageTypeDefinition.PHYSICAL, hideFromUI: true);
                 try
                 {
