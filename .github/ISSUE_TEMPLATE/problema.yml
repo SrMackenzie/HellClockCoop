@@ -1,0 +1,25 @@
+name: 🐞 Problema
+description: Algo não funcionou como deveria
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Obrigado por relatar! Anexe o `BepInEx/LogOutput.log` de quem teve o problema, copiado logo depois do erro (o jogo sobrescreve o log ao abrir)."
+  - type: input
+    id: versao
+    attributes: { label: Versão do mod (de todos os jogadores), placeholder: "0.5.4 / 0.5.4" }
+    validations: { required: true }
+  - type: dropdown
+    id: papel
+    attributes: { label: Quem teve o problema, options: ["Host", "Convidado", "Os dois", "Modo eco (sozinho)"] }
+    validations: { required: true }
+  - type: dropdown
+    id: dlc
+    attributes: { label: DLC Cursed War, options: ["Todos têm", "Ninguém tem", "Só alguns têm"] }
+  - type: textarea
+    id: oque
+    attributes: { label: O que aconteceu, description: "O que você fez, o que esperava e o que aconteceu." }
+    validations: { required: true }
+  - type: textarea
+    id: log
+    attributes: { label: Log, description: "Arraste o LogOutput.log aqui ou cole as linhas com [Error], [Fx], [Inimigos], [Run]...", render: text }

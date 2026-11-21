@@ -1,0 +1,118 @@
+﻿HELL CLOCK COOP {VERSAO} — mod de fã para jogar Hell Clock em cooperativo pela Steam
+====================================================================================
+
+Mod de fã, gratuito e sem fins lucrativos. Não é feito nem apoiado pela Rogue Snail.
+Feito para Hell Clock {VERSAO_JOGO} (Steam). Todos do grupo precisam da MESMA versão do mod.
+
+ESTADO ATUAL (versão de teste, Fase 3)
+--------------------------------------
+- Vocês se veem andando e atacando (posição, animações, roupas com física) e se veem no
+  minimapa (seta verde).
+- A RUN É DO HOST (quem apertou F7 e convidou):
+  * Quando o host entra numa run, os convidados que estão no hub vão junto, automaticamente.
+    Quem estiver no menu entra na run assim que carregar o save.
+  * Todos ficam no MESMO andar e no mesmo mapa; quando o host passa pelo portal, todos passam.
+  * O Hell Clock (timer) é o do host. Tempo ganho por um convidado vai para o timer do host.
+  * Quando a run do host termina, a dos convidados termina junto.
+- NOVO: OS INIMIGOS SÃO OS MESMOS PARA TODOS.
+  * O convidado vê os inimigos do host (mesmo tipo, elites com os mesmos afixos, mesma vida) e
+    bate neles. O dano do convidado vai para o host; quando o inimigo morre, morre para todos.
+  * Cada um ganha o próprio loot e a própria XP do inimigo que morreu (progressão individual).
+- NOVO (0.4.1): BAÚS E QUEBRÁVEIS IGUAIS PARA TODOS.
+  * Os baús são os do host, no mesmo lugar. Quem abrir abre para todos, e cada um ganha o
+    próprio loot.
+  * Vaso ou caixa quebrado por um quebra para todos (cada um com o próprio loot).
+- NOVO (0.5.0): COMBATE DE VERDADE PARA TODOS.
+  * Um vê as skills do outro (tiros, projéteis, áreas, auras, orbes) e os números de dano do
+    outro nos inimigos. É só o visual: o dano de cada um já vai para o host.
+  * Os números de dano dos aliados têm cor própria e são um pouco menores: o 1º aliado é verde
+    (crítico verde-limão), o 2º ciano (crítico azul), o 3º lilás (crítico magenta). Os seus
+    continuam com as cores normais do jogo. Dá para desligar ou mudar o tamanho no arquivo
+    BepInEx\config\br.srmackenzie.hellclockcoop.cfg (MostrarDanoDosAliados, TamanhoDanoDosAliados).
+  * Os inimigos perseguem e atacam quem estiver mais perto, host ou convidado. O convidado leva
+    o dano no próprio jogo, com as próprias defesas.
+  * Se o CONVIDADO morre, a run dele acaba (resultados normais) e ele volta para a run do host
+    quando o host passar de andar. Se o HOST morre, a run acaba para todos.
+  * Teste sozinho: o modo eco (F8) também repete as suas skills e os seus números de dano,
+    com o mesmo atraso do fantasma.
+- Ainda NÃO: santuários e totens só existem para o host.
+- Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
+- Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
+  sozinho, aperte F6 (sai do coop) e depois use o menu normalmente.
+- Todos precisam ter (ou não ter) a DLC Cursed War. Com DLC diferente vocês se veem, mas não
+  dividem a run. A Deluxe Edition (cosmética) não importa.
+
+
+INSTALAÇÃO (uma vez, cada jogador)
+----------------------------------
+1. Na Steam, clique com o botão direito em Hell Clock > Gerenciar > Procurar arquivos locais.
+   Abre a pasta do jogo (onde está o "Hell Clock.exe").
+2. Extraia TODO o conteúdo deste zip DENTRO dessa pasta. Se perguntar, substitua os arquivos.
+   No fim, a pasta do jogo deve ter: winhttp.dll, doorstop_config.ini e a pasta BepInEx,
+   ao lado do Hell Clock.exe.
+3. Abra o jogo pela Steam normalmente. Uma janela preta (console do BepInEx) abre junto:
+   é normal, é o registro do mod. Não feche: ela fecha junto com o jogo.
+4. No canto superior esquerdo do jogo aparece "Hell Clock Coop {VERSAO}: F7 para jogar com amigos".
+
+
+COMO JOGAR JUNTO
+----------------
+Requisito: o overlay da Steam precisa estar ativado
+(Steam > Configurações > No jogo > "Ativar o Steam Overlay durante o jogo").
+
+Quem convida (host):
+1. Entre num save (hub ou run) e aperte F7.
+2. Abre a janela de convite da Steam: escolha o amigo e clique em "Convidar".
+   F7 de novo reabre essa janela.
+
+Quem é convidado:
+- Com o jogo aberto: aceite o convite que aparece na Steam (notificação ou chat).
+- Com o jogo fechado: aceitar o convite abre o jogo e entra no coop sozinho.
+- Também dá para clicar no nome do amigo na lista de amigos da Steam > "Entrar no jogo".
+Depois, entre num save. Quando os dois estiverem no mesmo lugar, um aparece para o outro,
+com o nome da Steam em cima da cabeça.
+
+Teclas (dá para trocar em BepInEx\config\br.srmackenzie.hellclockcoop.cfg):
+  F7  criar o coop / abrir o convite
+  F6  sair do coop
+  F8  modo eco: um "fantasma" seu repete o que você faz (teste sem amigos)
+  F9  diagnóstico: salva a estrutura do personagem
+
+
+SEGURANÇA DO SAVE
+-----------------
+Toda vez que o jogo abre, o mod copia a pasta de save inteira ANTES de o jogo carregar:
+  <pasta do jogo>\BepInEx\HellClockCoop\save-backups\<data e hora>\
+Guarda as 15 cópias mais recentes. O mod nunca escreve no save de ninguém.
+Para restaurar: feche o jogo e copie os arquivos de uma dessas pastas para
+  %USERPROFILE%\AppData\LocalLow\Rogue Snail\Hell Clock\
+
+
+DESATIVAR OU REMOVER
+--------------------
+- Desativar sem apagar: renomeie "winhttp.dll" para "winhttp.dll.off" na pasta do jogo.
+- Remover: apague winhttp.dll, doorstop_config.ini, .doorstop_version e a pasta BepInEx
+  (copie antes os backups de save, se quiser guardá-los).
+- "Verificar integridade dos arquivos" na Steam NÃO remove o mod (ele só adiciona arquivos).
+
+
+PROBLEMAS COMUNS
+----------------
+- A janela preta não abre / o texto do mod não aparece: o winhttp.dll não está ao lado do
+  Hell Clock.exe (extraiu numa subpasta?) ou o antivírus bloqueou o winhttp.dll.
+- O jogo fica no "Carregando..." para sempre: falta a pasta BepInEx\unstripped_corlib
+  ou o doorstop_config.ini não veio deste zip. Extraia o zip de novo, substituindo tudo.
+- "Versão do mod diferente": alguém do grupo está com outra versão. Todos usem o mesmo zip.
+- O amigo aparece como "conectando..." por muito tempo: confiram se os dois estão com o
+  mesmo zip e se a Steam está online. Saiam (F6) e entrem de novo.
+- Para relatar um problema, mande o arquivo BepInEx\LogOutput.log de quem teve o problema.
+
+
+O QUE ESTE ZIP INSTALA
+----------------------
+- BepInEx 5.4.23.6 (carregador de mods para jogos Unity) — winhttp.dll, doorstop_config.ini,
+  BepInEx\core
+- BepInEx\unstripped_corlib — bibliotecas base completas do Mono para Windows. O Hell Clock
+  vem com versões reduzidas, e o BepInEx não funciona sem as completas.
+- BepInEx\plugins\HellClockCoop\HellClockCoop.dll — o mod.
+Licenças e créditos: BepInEx\plugins\HellClockCoop\LICENCAS.txt

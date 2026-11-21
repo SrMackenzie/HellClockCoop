@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <linearGradient id="ceu" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#120a08"/>
+      <stop offset="0.55" stop-color="#2a110b"/>
+      <stop offset="1" stop-color="#0c0706"/>
+    </linearGradient>
+    <radialGradient id="brasa" cx="0.78" cy="0.55" r="0.55">
+      <stop offset="0" stop-color="#e0763a" stop-opacity="0.55"/>
+      <stop offset="0.45" stop-color="#8a2418" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="titulo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe2b8"/>
+      <stop offset="0.6" stop-color="#f2b04a"/>
+      <stop offset="1" stop-color="#e0763a"/>
+    </linearGradient>
+    <linearGradient id="aro" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f2b04a"/>
+      <stop offset="1" stop-color="#8a2418"/>
+    </linearGradient>
+    <filter id="brilho" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="360" fill="url(#ceu)"/>
+  <rect width="1280" height="360" fill="url(#brasa)"/>
+
+  <!-- brasas -->
+  <g fill="#e0763a" opacity="0.7">
+    <circle cx="640" cy="300" r="2"/><circle cx="702" cy="64" r="1.6"/><circle cx="1180" cy="290" r="2.2"/>
+    <circle cx="840" cy="40" r="1.4"/><circle cx="1220" cy="90" r="1.8"/><circle cx="560" cy="80" r="1.2"/>
+    <circle cx="760" cy="330" r="1.6"/><circle cx="1110" cy="30" r="1.3"/><circle cx="600" cy="200" r="1.1"/>
+  </g>
+
+  <!-- relógio -->
+  <g transform="translate(1000 190)">
+    <circle r="148" fill="#1d1210" opacity="0.85"/>
+    <circle r="148" fill="none" stroke="url(#aro)" stroke-width="6"/>
+    <circle r="126" fill="none" stroke="#4a2f25" stroke-width="2" stroke-dasharray="2 9"/>
+    <g stroke="#f2b04a" stroke-width="4" stroke-linecap="round">
+      <line x1="0" y1="-138" x2="0" y2="-114"/><line x1="0" y1="138" x2="0" y2="114"/>
+      <line x1="-138" y1="0" x2="-114" y2="0"/><line x1="138" y1="0" x2="114" y2="0"/>
+    </g>
+    <g stroke="#a8927c" stroke-width="2.5" stroke-linecap="round">
+      <line x1="69" y1="-119.5" x2="60" y2="-104"/><line x1="119.5" y1="-69" x2="104" y2="-60"/>
+      <line x1="119.5" y1="69" x2="104" y2="60"/><line x1="69" y1="119.5" x2="60" y2="104"/>
+      <line x1="-69" y1="119.5" x2="-60" y2="104"/><line x1="-119.5" y1="69" x2="-104" y2="60"/>
+      <line x1="-119.5" y1="-69" x2="-104" y2="-60"/><line x1="-69" y1="-119.5" x2="-60" y2="-104"/>
+    </g>
+    <!-- ponteiros: dois jogadores (setas de minimapa) -->
+    <g filter="url(#brilho)">
+      <g transform="rotate(-38)">
+        <line x1="0" y1="0" x2="0" y2="-92" stroke="#eadbc8" stroke-width="5" stroke-linecap="round"/>
+        <path d="M0 -118 L13 -88 L0 -95 L-13 -88 Z" fill="#eadbc8"/>
+      </g>
+      <g transform="rotate(64)">
+        <line x1="0" y1="0" x2="0" y2="-70" stroke="#5fe08a" stroke-width="5" stroke-linecap="round"/>
+        <path d="M0 -96 L13 -66 L0 -73 L-13 -66 Z" fill="#5fe08a"/>
+      </g>
+    </g>
+    <circle r="11" fill="#e0763a"/>
+    <circle r="4" fill="#1d1210"/>
+  </g>
+
+  <!-- texto -->
+  <text x="72" y="150" font-size="76" font-weight="700" letter-spacing="4" fill="url(#titulo)">HELL CLOCK</text>
+  <text x="76" y="222" font-size="58" font-weight="700" letter-spacing="18" fill="#eadbc8">CO-OP</text>
+  <rect x="76" y="246" width="420" height="3" fill="#e0763a" opacity="0.8"/>
+  <text x="76" y="284" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="21" fill="#eadbc8">Mod de fã cooperativo · 2 a 4 jogadores pela Steam</text>
+  <text x="76" y="314" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="16" fill="#a8927c">por SrMackenzie · BepInEx 5 + HarmonyX · sem fins lucrativos</text>
+</svg>

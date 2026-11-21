@@ -1,0 +1,15 @@
+# Saída de build
+build/
+bin/
+obj/
+
+# Nada do jogo entra no repositório
+decompilado/
+decompiled/
+*.dll
+Managed/
+BepInEx/
+dist/
+
+# Atalhos locais (caminhos de máquina)
+scripts/b.sh

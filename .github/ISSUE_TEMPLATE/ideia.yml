@@ -1,0 +1,11 @@
+name: 💡 Ideia
+description: Sugira algo para o coop
+labels: ["ideia"]
+body:
+  - type: textarea
+    id: ideia
+    attributes: { label: Ideia, description: "O que você gostaria que o coop fizesse?" }
+    validations: { required: true }
+  - type: dropdown
+    id: fase
+    attributes: { label: Fase do roadmap mais próxima, options: ["2 — Mesma run", "3 — Combate", "4 — Loot", "5 — Polimento", "Não sei"] }

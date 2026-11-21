@@ -1,0 +1,20 @@
+LICENÇAS E CRÉDITOS — Hell Clock Coop {VERSAO}
+
+Hell Clock é um jogo da Rogue Snail. Este mod de fã não é afiliado à Rogue Snail e não
+inclui nenhum arquivo, arte ou texto do jogo.
+
+Componentes de terceiros redistribuídos neste pacote, sem modificação:
+
+- BepInEx 5.4.23.6 — LGPL-2.1
+  https://github.com/BepInEx/BepInEx  (código-fonte e licença completa)
+  Inclui UnityDoorstop (winhttp.dll) — LGPL-2.1 — https://github.com/NeighTools/UnityDoorstop
+  Inclui HarmonyX — MIT — https://github.com/BepInEx/HarmonyX
+  Inclui MonoMod — MIT — https://github.com/MonoMod/MonoMod
+  Inclui Mono.Cecil — MIT — https://github.com/jbevain/cecil
+
+- Bibliotecas de classe do Mono (BepInEx\unstripped_corlib) — MIT
+  Licença completa em BepInEx\unstripped_corlib\LICENSE-Mono.
+  Origem: https://github.com/swyf-modding/Setup (vendor/corlib), extraídas do editor
+  Unity 6000.3.10f1 para Windows x64.
+
+Hell Clock Coop (HellClockCoop.dll): mod de fã gratuito, sem fins lucrativos.

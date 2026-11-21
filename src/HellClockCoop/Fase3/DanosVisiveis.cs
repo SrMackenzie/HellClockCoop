@@ -1,0 +1,172 @@
+using System;
+using System.Collections.Generic;
+using BepInEx.Configuration;
+using HarmonyLib;
+using HellClock.Character.Enemy;
+using HellClock.Damage;
+using HellClock.Player;
+using HellClock.Skill;
+using HellClockCoop.Fase2;
+using HellClockCoop.Net;
+using UnityEngine;
+
+namespace HellClockCoop.Fase3
+{
+    /// <summary>
+    /// Números de dano dos aliados. Postfix em DamageViewManager.SpawnDamageView: número de dano do jogador
+    /// local num inimigo compartilhado vai para os outros (netId, valor, críticos), que mostram o mesmo número
+    /// no inimigo deles. No modo eco, o número se repete no mesmo inimigo, com o atraso do fantasma.
+    /// O dano de verdade não passa por aqui (vai pelos Golpes); no host os golpes do convidado são aplicados
+    /// sem número, para não aparecer duas vezes.
+    /// </summary>
+    internal static class DanosVisiveis
+    {
+        private const float Intervalo = 0.05f;
+
+        private static readonly List<DanosVistos.Item> Pendentes = new List<DanosVistos.Item>();
+        private static readonly Queue<KeyValuePair<float, Action>> FilaEco = new Queue<KeyValuePair<float, Action>>();
+        private static float _proximoEnvio;
+        private static bool _reproduzindo;
+
+        private static SessaoCoop Sessao => RunCompartilhada.Sessao;
+
+        // ---- Visual dos números dos aliados: cor própria por aliado e um pouco menores ----
+
+        private static ConfigEntry<bool> _mostrar;
+        private static ConfigEntry<float> _tamanho;
+
+        /// <summary>(normal, crítico) por aliado, na ordem em que aparecem. O 1º é verde, como a seta no minimapa.</summary>
+        private static readonly Color[,] Paleta =
+        {
+            { new Color(0.45f, 1f, 0.45f), new Color(0.80f, 1f, 0.15f) },   // verde / verde-limão
+            { new Color(0.40f, 0.85f, 1f), new Color(0.15f, 0.55f, 1f) },   // ciano / azul
+            { new Color(0.85f, 0.55f, 1f), new Color(1f, 0.30f, 0.85f) },   // lilás / magenta
+        };
+
+        private static readonly Dictionary<ulong, int> Cores = new Dictionary<ulong, int>();
+
+        private static readonly AccessTools.FieldRef<DamageViewManager, Color> CorNormalRef = AccessTools.FieldRefAccess<DamageViewManager, Color>("_normalDamageColor");
+        private static readonly AccessTools.FieldRef<DamageViewManager, Color> CorCriticoRef = AccessTools.FieldRefAccess<DamageViewManager, Color>("_criticalDamageColor");
+        private static readonly AccessTools.FieldRef<DamageViewManager, Vector2> EscalaInicialRef = AccessTools.FieldRefAccess<DamageViewManager, Vector2>("_randomStartScale");
+        private static readonly AccessTools.FieldRef<DamageViewManager, Vector2> EscalaFinalRef = AccessTools.FieldRefAccess<DamageViewManager, Vector2>("_randomFinalScale");
+
+        internal static void Configurar(ConfigFile config)
+        {
+            _mostrar = config.Bind("Interface", "MostrarDanoDosAliados", true, "Mostra os números de dano dos aliados (com a cor de cada aliado).");
+            _tamanho = config.Bind("Interface", "TamanhoDanoDosAliados", 0.8f, "Tamanho dos números de dano dos aliados em relação aos seus (1 = igual).");
+        }
+
+        /// <summary>Índice de cor do aliado (o eco usa a chave 0). Estável durante a sessão.</summary>
+        private static int CorDe(ulong chave)
+        {
+            if (!Cores.TryGetValue(chave, out int i))
+            {
+                int aliados = 0;
+                foreach (ulong k in Cores.Keys) if (k != 0) aliados++;
+                i = chave == 0 ? 0 : aliados % Paleta.GetLength(0); // eco = verde; aliados: verde, ciano, lilás
+                Cores[chave] = i;
+            }
+            return i;
+        }
+
+        internal static void NumeroCriado(Collider colisor, Transform alvo, DamageInstance dano)
+        {
+            if (_reproduzindo || dano == null || dano.HideFromUI || dano.Ignored || alvo == null) return;
+            PlayerController local = CoopRuntime.JogadorLocal();
+            if (local == null || !DoJogador(dano.Attacker, local)) return;
+            float valor = (float)dano.Value;
+            byte criticos = (byte)Mathf.Clamp(dano.TotalCrits, 0, 255);
+
+            if (FxCompartilhados.AvatarEco != null)
+            {
+                FilaEco.Enqueue(new KeyValuePair<float, Action>(Time.unscaledTime + CoopRuntime.AtrasoEco + 0.1f, () =>
+                {
+                    if (alvo != null) Mostrar(colisor, alvo, valor, criticos, 0);
+                }));
+            }
+            if (Sessao == null || !Sessao.AlguemNoMesmoAndar) return;
+            EnemyController c = alvo.GetComponent<EnemyController>();
+            if (c != null && InimigosCompartilhados.IdDe(c, out ushort id) && Pendentes.Count < 255)
+            {
+                Pendentes.Add(new DanosVistos.Item { Id = id, Valor = valor, Criticos = criticos });
+            }
+        }
+
+        private static bool DoJogador(IAttacker atacante, PlayerController local)
+        {
+            if (atacante == null) return false;
+            if (ReferenceEquals(atacante, local)) return true;
+            try { return atacante is ISkillCaster sc && ReferenceEquals(sc.SourceOrSelf, local); }
+            catch (Exception) { return false; }
+        }
+
+        private static void Mostrar(Collider colisor, Transform alvo, float valor, byte criticos, ulong chave)
+        {
+            if (_mostrar != null && !_mostrar.Value) return;
+            DamageViewManager dv = DamageViewManager.Instance;
+            int cor = CorDe(chave);
+            float tam = _tamanho != null ? Mathf.Clamp(_tamanho.Value, 0.3f, 2f) : 0.8f;
+            // O jogo escolhe cor e escala dentro do SpawnDamageView: troca os campos só durante esta chamada.
+            Color normal = CorNormalRef(dv), critico = CorCriticoRef(dv);
+            Vector2 escIni = EscalaInicialRef(dv), escFim = EscalaFinalRef(dv);
+            DamageInstance d = DamageInstance.RentDummy(valor, EDamageTypeDefinition.PHYSICAL, hideFromUI: false);
+            _reproduzindo = true;
+            try
+            {
+                d.TotalCrits = criticos;
+                CorNormalRef(dv) = Paleta[cor, 0];
+                CorCriticoRef(dv) = Paleta[cor, 1];
+                EscalaInicialRef(dv) = escIni * tam;
+                EscalaFinalRef(dv) = escFim * tam;
+                dv.SpawnDamageView(colisor, alvo, alvo.position, d);
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Dano] Número do aliado falhou: {(e.InnerException ?? e).Message}");
+            }
+            finally
+            {
+                CorNormalRef(dv) = normal;
+                CorCriticoRef(dv) = critico;
+                EscalaInicialRef(dv) = escIni;
+                EscalaFinalRef(dv) = escFim;
+                _reproduzindo = false;
+                d.Dispose();
+            }
+        }
+
+        public static void Atualizar()
+        {
+            float agora = Time.unscaledTime;
+            if (FxCompartilhados.AvatarEco == null) FilaEco.Clear();
+            while (FilaEco.Count > 0 && FilaEco.Peek().Key <= agora)
+            {
+                try { FilaEco.Dequeue().Value(); }
+                catch (Exception e) { Plugin.Log.LogWarning($"[Dano] {(e.InnerException ?? e).Message}"); }
+            }
+            if (Pendentes.Count == 0 || agora < _proximoEnvio) return;
+            _proximoEnvio = agora + Intervalo;
+            var m = new DanosVistos();
+            m.Itens.AddRange(Pendentes);
+            Pendentes.Clear();
+            Sessao?.EnviarParaMesmoAndar(m.Serializar(), confiavel: false);
+        }
+
+        public static void Receber(SessaoCoop sessao, Par de, byte[] dados)
+        {
+            try
+            {
+                foreach (DanosVistos.Item i in DanosVistos.Desserializar(dados).Itens)
+                {
+                    EnemyController c = InimigosCompartilhados.PorId(i.Id);
+                    if (c == null || !c.gameObject.activeInHierarchy) continue;
+                    Mostrar(c.CharacterCollider, c.Transform, i.Valor, i.Criticos, de.Id.m_SteamID);
+                }
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Dano] Mensagem de {de.Nome} ignorada: {(e.InnerException ?? e).Message}");
+            }
+        }
+    }
+}
