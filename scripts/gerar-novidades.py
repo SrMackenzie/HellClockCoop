@@ -68,9 +68,17 @@ def main():
         raise ValueError("docs/changelog.json sem versões")
     os.makedirs(os.path.dirname(DESTINO), exist_ok=True)
     conteudo = gerar(versoes)
-    # newline="\n": o mesmo arquivo no Windows e no Linux (build determinística)
-    with open(DESTINO, "w", encoding="utf-8", newline="\n") as f:
-        f.write(conteudo)
+    # Só regrava se o texto mudou: o checkout do git no Windows (autocrlf) tem CRLF e regravar com LF marcaria o
+    # arquivo como modificado a cada build, sem mudança real.
+    try:
+        with open(DESTINO, encoding="utf-8", newline="") as f:
+            atual = f.read().replace("\r\n", "\n")
+    except FileNotFoundError:
+        atual = None
+    if atual != conteudo:
+        # newline="\n": o mesmo arquivo no Windows e no Linux (build determinística)
+        with open(DESTINO, "w", encoding="utf-8", newline="\n") as f:
+            f.write(conteudo)
     print(f"OK: {os.path.relpath(DESTINO, RAIZ)} ({min(len(versoes), QUANTAS)} versões, a mais recente {versoes[0]['v']})")
 
 
