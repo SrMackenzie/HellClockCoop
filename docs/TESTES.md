@@ -200,7 +200,7 @@ Para repetir o primeiro início: no `.cfg`, `[Metricas] AceitePerguntado = false
   (`Application.persistentDataPath`). Com `BackupsMantidos = 0` no `.cfg`, sobra 1 pasta (a nova).
 - [ ] **Run no modo eco (F8):** anotar a data de modificação dos arquivos de save, jogar 2 ou 3 andares e encerrar a run.
   Esperado: os arquivos mudam ao trocar de andar e no fim da run (como no solo); nenhum `[Run] Plano do host ignorado`,
-  `Bônus de tempo inválido` ou `Fim de run com motivo desconhecido` no `LogOutput.log`.
+  `Bônus de tempo de ... recusado` ou `Fim de run com motivo desconhecido` no `LogOutput.log`.
 - [ ] **Coop real (autor + testador):** subir andares até o último da dungeon e concluir. Esperado: o convidado acompanha
   todos os andares (nenhum plano ignorado), o tempo ganho pelo convidado soma no Hell Clock do host, inimigos, baús e
   santuários aparecem para o convidado e a purificação de santuário amaldiçoado dá o ponto de constelação aos dois.
@@ -311,14 +311,162 @@ Solo basta para os três primeiros itens; o último precisa de dois PCs. Corrige
 
 ---
 
+## Sessão em dupla na 0.9.4 — roteiro único
+
+Decisão do autor (21/11/2026): antes de código novo, uma sessão que cubra tudo que está `testar` no roadmap e o que
+falta das versões acima. Aqui vai só a **ordem** e o **que observar**; o esperado completo está na seção da versão
+indicada entre parênteses. Sem itens de controle (o autor não tem controle: View/Select, B, LB/RB ficam para depois).
+
+Passou: marque `[x]` no item da seção de origem (é a fonte; o `[x]` daqui só acompanha a sessão). Falhou: anote o que viu, copie o `LogOutput.log` **antes**
+de reabrir o jogo e siga para o próximo item. Durante toda a sessão, olhe também se cada `[Unity Exception]` sai com a
+pilha e se as repetidas se agrupam em `(repetido Nx)` (0.8.3). As linhas do atualizador saem no log como
+`[Info   :Atualizador] ...` (aqui abreviadas para `[Atualizador] ...`).
+
+### Parte A — autor sozinho (modo eco), antes da sessão
+
+**Abrir o jogo**
+
+- [ ] **Backup** (0.8.4): pasta nova em `BepInEx\HellClockCoop\save-backups`. Log: `Backup do save: N arquivo(s) copiados`.
+- [ ] **Atualizador sem internet e desligado** (0.8.0): duas aberturas. Log: `[Atualizador] Não deu para verificar` (ou
+  `Sem resposta em 5 s`) e `[Atualizador] Verificação desligada`. Volte `VerificarAoIniciar = true` no fim.
+- [ ] **Console de volta** (0.8.2): `MostrarConsole = true`, duas aberturas (na 2ª a janela preta abre). Log:
+  `Console do BepInEx ligado`. Volte para `false` no fim.
+
+**Menu** (para repetir o primeiro início: `AceitePerguntado = false`, `EnviarResumoAnonimo = false` e `NovidadesVistas =`
+vazio no `.cfg`)
+
+- [ ] **Aceite, casos que faltam** (0.8.1), uma abertura cada: clique no primeiro 1,5 s não responde; Enter apertado sem
+  parar não aceita; **Esc** adia (log `Aceite adiado`, `.cfg` igual); **Não enviar** (log `Envio dos resumos recusado`);
+  por último **Enviar resumos** com resumos já salvos (a janela diz "Vão junto os N resumos"; log `Resumos já salvos postos
+  na fila: N` e `Resumo ... enviado`).
+- [ ] **Novidades** (0.9.2): na primeira abertura em que a janela do aceite fecha (Esc ou resposta), a janela abre sozinha na aba `v0.9.4 NOVA`; Esc e "Fechar" no
+  primeiro 1,5 s não fecham, F10 fecha; não volta na abertura seguinte (`NovidadesVistas = 0.9.4`); setas e clique na aba
+  trocam de versão; cabe inteira em 1080p e em 1366x768 (janela). Log: linhas `[Novidades]`. Os itens "Botão do menu"
+  e "Durante a run" da 0.9.2 mudaram na 0.9.3 e já passaram lá (item Novidades da 0.9.3).
+- [ ] **Eco no menu** (0.9.4): eco ligado, voltar ao menu e carregar o save: o fantasma volta; no menu do jogo, um aperto
+  em "Modo eco" desliga. Log: `[Eco] Desligado (...)`.
+
+**Hub, run e andares**
+
+- [ ] **Eco na troca de cena** (0.9.4): eco ligado no hub, entrar na run, passar 2 ou 3 andares: o fantasma reaparece a
+  cada andar. Log: `[Eco] Fantasma recriado depois da troca de cena`.
+- [ ] **Adagas e orbes no eco** (0.9.4): com o Reflexos (ou o orbe) ativo, trocar de andar: só as adagas girando, sem cópia
+  parada. Log: `[Avatar] 'HellClockCoop_Avatar_Eco' criado: N efeito(s) de skill do jogador fora do clone` (N > 0).
+- [ ] **Save no eco** (0.8.4): os arquivos de save mudam ao trocar de andar e no fim. Log: nenhum `Plano do host ignorado`,
+  `Bônus de tempo de ... recusado` ou `Fim de run com motivo desconhecido`.
+
+**Fim da run**
+
+- [ ] **Run solo enviada** (0.8.1): log `[Métricas] Resumo da run salvo ... 1 jogador(es)` e depois `Resumo ... enviado`;
+  no console do Firebase, `papel` = `solo`.
+
+### Parte B — dois PCs (autor = host, testador = convidado)
+
+**Instalar (testador)**
+
+- [ ] **Atualização sozinha no PC do testador** (0.8.0): log `[Atualizador] Atualizado da <antiga> para a 0.9.4`; vindo
+  de uma versão com atualizador, o antigo fica em `BepInEx\HellClockCoop\atualizador\anterior\patchers\` e a abertura
+  seguinte diz `Em dia: versão 0.9.4`. Instalação nova pelo zip: nenhuma janela preta (0.8.2). Vindo de antes da 0.7.2:
+  o `.cfg` antigo é copiado (0.7.2, log `Configuração de <arquivo antigo> copiada`). Falhou: linhas `Atualizador`.
+- [ ] **Antes de começar** (topo deste arquivo): mesma versão nos dois e `[Validação] N/N alvos de patch encontrados`. O
+  testador responde **Enviar resumos** no aceite.
+
+**Menu e hub**
+
+- [ ] **Valores ajustáveis no `.cfg`** (roadmap B): com o jogo fechado, o host troca `[Balanceamento] VidaInimigos` para
+  `2.0, 2.4, 3.1`; com o coop criado, o painel mostra `Balanceamento 2J: vida ×2...`. Log do host:
+  `[Balanceamento] 2 jogador(es): ...`. Volte ao padrão (`1.7, 2.4, 3.1`) antes da run 1.
+
+**Run 1 — entrada no meio** (o host começa sozinho)
+
+- [ ] **Entrada no meio da run** (roadmap fase 2): o host entra na run, passa 1 andar e só então cria o coop e convida; o
+  testador cai no andar do host. Log do convidado: `[Run] Acompanhando a run do host: ... (entrando no meio)` e
+  `[Run] Entrando direto no andar N do host`.
+- [ ] **Balanceamento no painel** (0.7.0): linha `Balanceamento 2J: ...` e o aviso `inimigos com N% mais vida`.
+
+**Andares** (os dois em cada item; o testador faz a parte de convidado)
+
+- [ ] **Baús e quebráveis** (0.4.1): mesmo lugar, abrem e quebram nos dois, loot de cada um. Log: `[Objetos] ...`.
+- [ ] **Inimigos atacam o convidado** (0.5.x). Log do host: `[Alvos] <testador> agora pode ser atacado pelos inimigos`.
+- [ ] **Estacas e facas** (0.5.x) e **adagas sem cópia parada** (0.9.4, item Coop). Log: linhas `[Fx]` e `[Avatar]`.
+- [ ] **Santuário comum, amaldiçoado e totem** (0.6.0): o amaldiçoado dá o ponto de constelação aos dois. Log: `[Objetos]`.
+- [ ] **Tempo ganho pelo convidado** (0.8.5): soma no Hell Clock do host. Log do host: `[Run] <testador> ganhou Ns de Hell
+  Clock` e nenhum `acima do teto`.
+- [ ] **Status de controle do convidado** (0.9.0 e 0.9.1): lentidão e congelamento (atordoamento/enraizamento, se houver
+  skill) valem no host; enfraquecimento/óleo/marca **não** dão dano a mais no host; dano contínuo no mesmo ritmo;
+  campeões sem nada estranho. Log do host: nenhum `[Inimigos] De <testador>: status ... recusado` repetido. Anote a skill.
+- [ ] **Morte do convidado** (0.5.x), num andar do meio: ele volta no próximo andar do host. Log do convidado:
+  `[Run] Você morreu: ...`; do host: `[Run] Enviando plano aos convidados` do andar seguinte.
+- [ ] **Inimigos mais fortes e dificuldade** (0.7.0, prioridade 1): comparando com a run solo da Parte A (mesmo andar e
+  dificuldade), mais vida, um pouco mais de dano e mais inimigos a partir do andar seguinte (falhou: aviso `[Balanceamento]
+  Quantidade de inimigos: ...`). Anotar se o grupo achou um pouco mais difícil que o solo, fácil ou difícil demais.
+
+**Chefe**
+
+- [ ] **Chefe no convidado** (0.6.0): barra de vida aparece quando ele fica agressivo e o dano do convidado conta (0.8.5);
+  congelar/deixar lento o chefe faz o mesmo que no solo (0.9.0). Log do convidado: nenhum `[Inimigos] Réplica N agressiva falhou`.
+
+**Fim**
+
+- [ ] **Concluir a dungeon** (0.8.4): o convidado acompanha todos os andares. Log do host: `[Run] Fim da run (Completed);
+  avisando os convidados.`; do convidado: `[Run] Host encerrou a run (Completed).`
+- [ ] **Resumo salvo e enviado nos dois** (0.7.0 e 0.7.1): log `Resumo da run salvo ... 2 jogador(es)` e `Resumo ... enviado`.
+- [ ] **Run 2 — portal vermelho** (roadmap fase 2): o host sai pelo portal vermelho no meio da run. Log do convidado:
+  `[Run] Host encerrou a run (ManualFinishWithPortal).`
+- [ ] **Run 3 — fim por tempo** (roadmap fase 2, se der tempo): deixar o Hell Clock zerar. Log do convidado:
+  `[Run] Host encerrou a run (Timer).`
+
+### Achados da sessão de 21/11/2026 (parcial)
+
+Relato do autor no meio da sessão. Nada foi marcado `[x]` ainda.
+
+- Passou: baú aberto pelo convidado abriu também no host (0.4.1, falta o caso do host abrindo).
+- Falhou: vaso e caixa quebrados num PC não quebram no outro, nos dois sentidos (0.4.1). Suspeita: cada PC sorteia os
+  seus; a busca por posição (0,75 m) falha sem log.
+- Falhou: barreira de sangue da área do chefe não aparece no convidado, que passa livre (0.6.0).
+- Falhou: inimigos sem som no convidado.
+- Falhou (menor): dano do convidado no boneco de treino do hub não aparece no host; nos inimigos aparece.
+- A investigar: travadinhas esporádicas.
+
+### Depois da sessão
+
+Só o que o autor confirmar: `[x]` na seção de origem; `testado = true` no `docs/changelog.json` da versão cujos
+itens passaram todos (fora os de controle); `feito` no `docs/roadmap.json` só quando todos os itens que cobrem aquele item do roadmap
+passaram (fora os de controle); depois
+`python scripts/gerar-progresso.py`. Itens do roadmap cobertos:
+
+| Item `testar` do roadmap | Onde neste roteiro |
+| --- | --- |
+| B: escalonamento por número de jogadores | B: balanceamento no painel, dificuldade |
+| B: valores ajustáveis no `.cfg` | B: valores ajustáveis |
+| B: resumo de cada run salvo | A: run solo; B: resumo nos dois |
+| B: envio anônimo com aceite | A: run solo; B: resumo nos dois |
+| B: pergunta do aceite no primeiro início | A: aceite |
+| B: teto do tempo ganho e golpe inválido | B: tempo ganho, chefe |
+| 2: entrada no meio, portal vermelho, fim por tempo | B: run 1, run 2, run 3 |
+| 3: baús e quebráveis; 4: loot próprio | B: baús e quebráveis |
+| 3b: facas e estacas | B: estacas e facas |
+| 3c: inimigos atacam o convidado; convidado volta no próximo andar | B: inimigos, morte do convidado |
+| 3: santuários e totens | B: santuários |
+| 3: chefe no convidado | B: chefe |
+| 3: status de controle do convidado | B: status de controle |
+| 5: janela de novidades | A: novidades |
+| 5: modo silencioso | A: console de volta; B: instalação nova |
+
+---
+
 ## Mensagem para o testador
 
-> E aí! Saiu versão nova do coop. Da 0.8.0 em diante ele se atualiza sozinho ao abrir o jogo (o painel do coop avisa).
-> Se você ainda está numa versão antes da 0.8.0, é a última vez à mão: baixa o zip da release mais recente
-> (`HellClockCoop-v<versão>.zip`), abre a pasta do jogo (Steam → Hell Clock → Gerenciar → Procurar arquivos locais) e
-> extrai o zip lá dentro, substituindo tudo. Abre o jogo uma vez pra ele criar a config e fecha.
+> E aí! Saiu a 0.9.4 do coop e queria marcar uma sessão em dupla pra testar tudo de uma vez (uma run inteira, mais duas
+> curtas). Se você já está na 0.8.0 ou mais nova, é só abrir o jogo que ele se atualiza sozinho (o painel do coop avisa);
+> abre, espera chegar no menu, fecha e abre de novo. Se está numa versão antes da 0.8.0, baixa o zip da release mais
+> recente (`HellClockCoop-v0.9.4.zip`), abre a pasta do jogo (Steam → Hell Clock → Gerenciar → Procurar arquivos locais)
+> e extrai lá dentro, substituindo tudo.
 >
-> Na primeira abertura da 0.8.1 aparece uma janela no menu perguntando se pode enviar os resumos das runs (solo e
-> coop). Se puder, clica em "Enviar resumos": vai só número da run (tempo, dano, mortes) e o id aleatório da
-> instalação, nada de nome, Steam ou arquivo teu. Joga umas runs solo também, que elas são a base de comparação. Se der algo estranho, me manda o `BepInEx\LogOutput.log` antes de abrir o jogo de novo (ele apaga ao
-> abrir). Valeu!
+> No menu pode aparecer a janela perguntando se pode enviar os resumos das runs: se puder, clica em "Enviar resumos" (vai
+> só número da run e o id aleatório da instalação, nada de nome, Steam ou arquivo teu). Depois abre a janela Novidades,
+> com o que mudou. O menu do coop agora fica na F7.
+>
+> Na sessão eu vou te pedir umas coisas de convidado: ir na frente pros inimigos te atacarem, usar skill de lentidão ou
+> congelamento, as adagas do Reflexos, pegar tempo, bater no chefe e morrer de propósito num andar. Se der algo estranho,
+> me fala na hora e, antes de abrir o jogo de novo, me manda o `BepInEx\LogOutput.log` (ele apaga ao abrir). Valeu!
