@@ -341,6 +341,13 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
         Checar(P(lido(2f, 1f, 255).pilhas, 5) == 5 && P(3, 5) == 3 && P(5, 5) == 5, "Validação: pilhas do status limitadas ao MaxStacks");
         Checar(P(255, 0) == 10 && P(255, -1) == 10 && P(4, 0) == 4, "Validação: status sem MaxStacks no jogo → até 10 pilhas");
         Checar(P(7, 5, false) == 1 && P(255, 0, false) == 1 && P(1, 0, false) == 1, "Validação: status que não acumula pilhas (CanStack falso) → 1 pilha no host");
+        bool L(int stat, int tipo, float v) => V("ModificadorReduzVelocidade", stat, tipo, v);
+        Checar(L(6, 0, -0.3f) && L(7, 0, -5f) && L(6, 1, 0.7f) && L(7, 2, 0.5f) && L(6, 1, 0f),
+            "Validação: lentidão (movimento ou ataque; aditivo < 0, multiplicativo de 0 até < 1) aceita");
+        Checar(!L(6, 0, 0f) && !L(6, 0, 0.2f) && !L(6, 1, 1f) && !L(6, 2, 1.3f) && !L(6, 1, -0.5f),
+            "Validação: modificador de velocidade que não reduz (0, positivo, fator ≥ 1 ou negativo) recusado");
+        Checar(!L(8, 0, -0.3f) && !L(131, 1, 0.5f) && !L(0, 0, -1f) && !L(6, 3, 0.5f) && !L(6, 4, 0f) && !L(6, 0, float.NaN) && !L(6, 1, float.NegativeInfinity),
+            "Validação: outro atributo (dano, resistência, recarga, mínimo), override, NaN ou -∞ não é lentidão");
         Checar((int)tv.GetField("ItensStatusPorMensagemMaximo").GetValue(null) == 512 && (int)tv.GetField("AvisosStatusPorConvidado").GetValue(null) == 20,
             "Validação: tetos de 512 status por mensagem e 20 avisos por convidado");
     }

@@ -4,6 +4,14 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.9.1 — Só o controle do convidado vale para todos 🧪
+_21/11/2026_
+
+- Continuam valendo no jogo do host o congelamento, o atordoamento, o enraizamento e a lentidão que o convidado aplica: o que mexe no corpo do inimigo é de todos
+- Deixam de valer no host os efeitos do convidado que mexem no dano (vulnerabilidade, menos resistência, óleo, reações elementais): ficam pessoais, como no solo
+- Balanceamento: na 0.9.0 o host também ganhava os enfraquecimentos do convidado, o que deixava o coop mais fácil. Agora cada um só aproveita os próprios; combos entre jogadores ficam para depois, guiados pelos resumos das runs
+- Protocolo não muda (10): 0.9.0 e 0.9.1 jogam juntos e vale o filtro mais restrito; com convidado na 0.9.0, o log do host mostra avisos de status recusado (o atualizador baixa a 0.9.1 sozinho ao abrir o jogo)
+
 ## 0.9.0 — Lentidão e congelamento do convidado valem para todos 🧪
 _21/11/2026_
 

@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.9.0-ff7a1a?style=for-the-badge">
+  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.9.1-ff7a1a?style=for-the-badge">
   <img alt="Status" src="https://img.shields.io/badge/status-alpha%20jog%C3%A1vel-b3121f?style=for-the-badge">
   <img alt="Hell Clock" src="https://img.shields.io/badge/Hell%20Clock-2.1.1.1-4a1a1f?style=for-the-badge">
   <img alt="Jogadores" src="https://img.shields.io/badge/jogadores-2%20a%204-5fe08a?style=for-the-badge">

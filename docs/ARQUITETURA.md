@@ -572,10 +572,18 @@ recebe clona a primeira irmã. Era o caso das facas da skill Reflexos girando em
   porque o host aplica a dele (também quando ela é negativa: o jogo multiplica por `1 − resistência` sempre que ela é
   diferente de 0 e menor que 1). A cópia que a skill faz da definição (`StatusDefinition.Instantiate`, um
   `Object.Instantiate`) mantém o `HashID` (`_hashId` é `[SerializeField]`).
-- **Quais status:** só controle e debuff de atributo, pelo tipo da definição e `IsBuff = false`: `FreezeStatusDefinition`,
-  `StunStatusDefinition`, `RootedStatusDefinition` e `StatModifierStatusDefinition` (lentidão; inclui
-  `ElementalReactionStatusDefinition`, que reforça os ailments de um tipo de dano), menos `ClosedBodyAuraStatusDefinition`.
-  Ficam de fora: dano contínuo (sangramento, queimadura etc.; o dano dele já passa pelo `TryHurt` do convidado e chega
+- **Quais status** (estreitado na 0.9.1, decisão do autor): só o que mexe no **corpo** do inimigo é compartilhado; o que
+  mexe no **dano** fica pessoal, como no solo (vulnerabilidade, resistência, óleo, reações elementais e os bônus contra
+  alvo com status de quem aplicou). Combo entre jogadores fica para depois, guiado pelas métricas. Pelo tipo da definição
+  e `IsBuff = false`: `FreezeStatusDefinition`, `StunStatusDefinition`, `RootedStatusDefinition` e, das
+  `StatModifierStatusDefinition`, só a lentidão: todos os modificadores da lista que o efeito aplica
+  (`GetStatModifierDefinitionsOverriden`, lida em `StatModifierStatusEffect.OnStart`) reduzem `MovementSpeed` (6) ou
+  `AttackSpeed` (7) (`Validacao.ModificadorReduzVelocidade`: `Additive` abaixo de 0; `Multiplicative` e
+  `MultiplicativeAdditive`, que são fatores — o jogo empilha com `(v − 1) · pilhas + 1` —, de 0 até abaixo de 1;
+  `BaseOverride`/`AbsoluteOverride` recusados). O jogo considera "lento" o personagem com `MoveSpeed` abaixo da base
+  (`HellClockCharacterController.IsSlowed`). `ElementalReactionStatusDefinition` e `ClosedBodyAuraStatusDefinition`
+  (subclasses de `StatModifierStatusDefinition`) ficam de fora sempre. A mesma função (`StatusDeControle`) filtra no
+  envio (convidado, sobre a cópia da skill) e na recepção (host, sobre a definição da coleção). Ficam de fora: dano contínuo (sangramento, queimadura etc.; o dano dele já passa pelo `TryHurt` do convidado e chega
   pelos Golpes), provocação (`TauntedStatusEffect` usa quem aplicou como alvo), auras, barreiras, curas, buffs e o acúmulo
   (`BuildupStatusDefinition`): quando o acúmulo enche no convidado, o congelamento que ele dispara é o que vai.
 - **Host:** acha a definição em `Constants.Collections.STATUS_DEFINITION_COLLECTION` e chama `AddStatus` no inimigo com o
@@ -750,7 +758,7 @@ filtros puros ficam em `Net/Validacao.cs` e têm casos no `tools/codectest`.
 | `BauSpawn`, `ObjetoSpawn` | convidado, só do host | — |
 | `ObjetoUsado` | qualquer par | `Estado = Concluido` (purificação) só do host. Aviso no log |
 | `BauAberto`, `Quebrou`, `ObjetoUsado` (`Usado`) | qualquer par | — (o host repassa) |
-| `StatusInimigos` (0.9.0) | host, de convidado compatível e com a mesma DLC | duração e intensidade finitas e `> 0`, pelo menos 1 pilha (`Validacao.StatusValido`); duração limitada a 30 s, intensidade a 1–10 e pilhas ao `MaxStacks` (sem ele, 10; status que não acumula pilhas, `CanStack` falso, 1); mais de 512 itens recusa a mensagem; status desconhecido ou que não é de controle recusado (seção 11.4). No máximo 20 avisos por convidado na sessão |
+| `StatusInimigos` (0.9.0) | host, de convidado compatível e com a mesma DLC | duração e intensidade finitas e `> 0`, pelo menos 1 pilha (`Validacao.StatusValido`); duração limitada a 30 s, intensidade a 1–10 e pilhas ao `MaxStacks` (sem ele, 10; status que não acumula pilhas, `CanStack` falso, 1); mais de 512 itens recusa a mensagem; status desconhecido ou que não é de controle recusado (desde a 0.9.1, modificador de atributo só se for lentidão; seção 11.4). No máximo 20 avisos por convidado na sessão |
 | `Golpes` (0.8.5) | host, de qualquer convidado | dano finito e `> 0` (`Validacao.DanoValido`); NaN ou infinito mataria qualquer inimigo. Valor finito grande segue aceito: o dano do convidado é confiável (seção 2). Descarte sem log (20 Hz) |
 
 **Backup.** `SaveBackup.LimparAntigos` mantém no mínimo 1 cópia, mesmo com `BackupsMantidos` 0 ou negativo no `.cfg`.

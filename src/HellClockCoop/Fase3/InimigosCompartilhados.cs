@@ -446,13 +446,31 @@ namespace HellClockCoop.Fase3
         }
 
         /// <summary>
-        /// Status que vão do convidado ao host: congelamento, atordoamento, enraizamento e debuff de atributo
-        /// (lentidão, reação elemental). Ficam de fora dano contínuo (o dano já chega pelos Golpes), provocação
-        /// (usa quem aplicou como alvo), auras, barreiras, curas e buffs.
+        /// Status que vão do convidado ao host (0.9.1): só os que mexem no corpo do inimigo — congelamento,
+        /// atordoamento, enraizamento e lentidão. O que mexe no dano fica pessoal, como no solo: vulnerabilidade,
+        /// resistência, reação elemental e outros modificadores de atributo. Ficam de fora também dano contínuo
+        /// (o dano já chega pelos Golpes), provocação (usa quem aplicou como alvo), auras, barreiras, curas e buffs.
+        /// Mesmo filtro no envio (convidado) e na recepção (host).
         /// </summary>
         internal static bool StatusDeControle(StatusDefinition d) =>
-            d != null && !d.IsBuff && (d is FreezeStatusDefinition || d is StunStatusDefinition || d is RootedStatusDefinition
-                || (d is StatModifierStatusDefinition && !(d is ClosedBodyAuraStatusDefinition)));
+            d != null && !d.IsBuff && (d is FreezeStatusDefinition || d is StunStatusDefinition || d is RootedStatusDefinition || SoLentidao(d));
+
+        /// <summary>
+        /// Modificador de atributo em que todos os modificadores reduzem velocidade de movimento ou de ataque
+        /// (Validacao.ModificadorReduzVelocidade). Lê a lista que o efeito aplica de fato
+        /// (GetStatModifierDefinitionsOverriden, chamada em StatModifierStatusEffect.OnStart).
+        /// </summary>
+        private static bool SoLentidao(StatusDefinition d)
+        {
+            if (!(d is StatModifierStatusDefinition s) || d is ClosedBodyAuraStatusDefinition || d is ElementalReactionStatusDefinition) return false;
+            List<StatModifierDefinition> mods;
+            try { mods = s.GetStatModifierDefinitionsOverriden(); }
+            catch { return false; }
+            if (mods == null || mods.Count == 0) return false;
+            foreach (StatModifierDefinition m in mods)
+                if (m == null || !Validacao.ModificadorReduzVelocidade((int)m.EStatDefinition, (int)m.ModifierType, m.Value)) return false;
+            return true;
+        }
 
         // ================= Convidado =================
 

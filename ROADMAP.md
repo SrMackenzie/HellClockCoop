@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 21/11/2026 · versão 0.9.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 21/11/2026 · versão 0.9.1. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -78,7 +78,7 @@ _Mesmos inimigos para todos, cada um vê as skills do outro, inimigos atacam qua
 | 🧪 | 3c: convidado que morre volta no próximo andar do host |
 | 🧪 | Santuários e totens de bênção compartilhados |
 | 🧪 | Chefe no convidado: fase agressiva, barra de vida e dano |
-| 🧪 | Status do convidado (lentidão, congelamento, atordoamento, enraizamento) valendo no host |
+| 🧪 | Status de controle do convidado (lentidão, congelamento, atordoamento, enraizamento) valendo no host; os de dano ficam pessoais |
 | ⬜ | Boneco de DPS do hub visível para o outro |
 
 ## Fase 4 — Loot · 55%

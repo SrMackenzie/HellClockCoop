@@ -102,6 +102,18 @@ namespace HellClockCoop.Net
 
         public static float DuracaoStatusLimitada(float duracao) => duracao > DuracaoStatusMaxima ? DuracaoStatusMaxima : duracao;
 
+        /// <summary>EStatDefinition no jogo 2.1.1.1 (MovementSpeed é o que o jogo usa em IsSlowed).</summary>
+        public const int StatVelocidadeMovimento = 6, StatVelocidadeAtaque = 7;
+
+        /// <summary>
+        /// Modificador de um status que só reduz velocidade (lentidão, 0.9.1). EModifierType no jogo 2.1.1.1: Additive=0
+        /// (reduz abaixo de 0), Multiplicative=1 e MultiplicativeAdditive=2 (fator: reduz de 0 até abaixo de 1, como o
+        /// IsMultiplicativeBelowOne do jogo), BaseOverride=3 e AbsoluteOverride=4 (recusados: trocam o valor inteiro).
+        /// </summary>
+        public static bool ModificadorReduzVelocidade(int stat, int tipo, float valor) =>
+            (stat == StatVelocidadeMovimento || stat == StatVelocidadeAtaque) && Finito(valor)
+            && (tipo == 0 ? valor < 0f : (tipo == 1 || tipo == 2) && valor >= 0f && valor < 1f);
+
         public static float IntensidadeStatusLimitada(float intensidade) =>
             intensidade < IntensidadeStatusMinima ? IntensidadeStatusMinima : intensidade > IntensidadeStatusMaxima ? IntensidadeStatusMaxima : intensidade;
     }

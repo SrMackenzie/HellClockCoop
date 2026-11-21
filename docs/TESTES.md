@@ -221,14 +221,26 @@ Só em coop real (o modo eco não tem convidado). Os dois PCs na 0.9.0 (protocol
 - [ ] **Lentidão e congelamento:** o convidado usa uma skill que deixa lento ou congela num inimigo que está indo
   atrás do host. Esperado: no PC do host o inimigo também fica lento ou parado pelo mesmo tempo que o convidado vê.
 - [ ] **Atordoamento ou enraizamento** (se alguém tiver skill assim): o inimigo para de atacar ou de andar também no host.
-- [ ] **Enfraquecimento ou reação elemental** (se alguém tiver skill que reduz defesa ou marca o inimigo): o host causa
-  mais dano no inimigo marcado pelo convidado, como causaria se ele mesmo tivesse marcado.
+- [ ] ~~**Enfraquecimento ou reação elemental**~~: deixou de valer no host na 0.9.1 (ver abaixo).
 - [ ] **Chefe:** o convidado tenta congelar ou deixar lento um chefe. Esperado: o mesmo que acontece no solo (chefe imune
   segue imune; resistência encurta o efeito).
 - [ ] **Dano contínuo:** sangramento ou queimadura do convidado tiram vida no mesmo ritmo de antes (não dobrou).
 - [ ] **Inimigos com afixos (campeões):** congelar ou deixar lento um campeão do convidado não faz nada estranho no host
   (o inimigo não ganha buff, não cura e não solta efeito sozinho).
 - [ ] **Log do host:** nenhuma linha `[Inimigos] De <nome>: status ...` (recusado ou falhou) em jogo normal.
+- Se falhar, mandar: o `LogOutput.log` dos dois PCs e o nome da skill usada.
+
+## 0.9.1 — Só o controle do convidado vale para todos
+
+Só em coop real. Os dois PCs na 0.9.1 (protocolo 10, o mesmo da 0.9.0). Vale todo o roteiro da 0.9.0, menos o item de
+enfraquecimento, mais:
+
+- [ ] **Lentidão:** a lentidão do convidado continua deixando o inimigo lento também no host.
+- [ ] **Enfraquecimento ou reação elemental** (skill do convidado que reduz defesa, aplica óleo ou marca o inimigo): o
+  host NÃO causa dano a mais nesse inimigo; na tela do convidado o bônus dele segue valendo, como no solo.
+- [ ] **Log do host:** nenhuma linha `[Inimigos] De <nome>: status ... recusado` com os dois na 0.9.1 (o convidado
+  já não manda o que o host recusaria). Um aviso isolado pode vir de skill que muda os valores do status (a cópia do
+  convidado difere da definição do host): não é falha; mandar o log se repetir em toda run.
 - Se falhar, mandar: o `LogOutput.log` dos dois PCs e o nome da skill usada.
 
 ---

@@ -109,6 +109,9 @@ ESTADO ATUAL (versão de teste, Fase 3)
 - NOVO (0.9.0): lentidão, congelamento, atordoamento, enraizamento e enfraquecimentos que o
   convidado aplica valem também no jogo do host (antes só apareciam na tela do convidado). Todos no coop
   precisam estar na 0.9.0; o atualizador baixa sozinho ao abrir o jogo.
+- NOVO (0.9.1): do convidado, só valem no host os efeitos que mexem no corpo do inimigo
+  (congelar, atordoar, enraizar, deixar lento). Os que mexem no dano (vulnerabilidade, menos
+  resistência, óleo, reações elementais) ficam só para quem aplicou, como no solo.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, aperte F6 (sai do coop) e depois use o menu normalmente.
