@@ -284,7 +284,7 @@ No fantasma, a troca de estado usa `CrossFade` curto, e o mesmo estado com mais 
 - as 8 DLLs do corlib com `LICENSE-Mono`;
 - o plugin;
 - o atualizador em `BepInEx/patchers` (a partir da 0.8.0, seção 13);
-- `BepInEx.cfg` com console;
+- `BepInEx.cfg` com o console desligado (desde a 0.8.2; antes vinha ligado). Quem decide é o plugin: `[Diagnostico] MostrarConsole` (padrão `false`) é copiado a cada início para `[Logging.Console] Enabled` pela entrada `ConsoleManager.ConfigConsoleEnabled` do próprio BepInEx (reflexão; o CoreConfig regrava o arquivo com os comentários). O console abre antes do plugin, então a mudança vale na abertura seguinte. Fica no plugin porque o atualizador não troca o `BepInEx.cfg`;
 - `LEIA-ME` e `LICENCAS` em pt-BR (UTF-8 com BOM, CRLF).
 
 O zip é reproduzível (datas fixas). Na 0.2.0, os 24 binários e configs do zip conferem byte a byte com a instalação testada no PC do autor.

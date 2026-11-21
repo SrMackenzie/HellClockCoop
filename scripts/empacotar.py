@@ -24,8 +24,9 @@ CORLIB_ESPERADO = {"mscorlib.dll", "System.dll", "System.Core.dll", "System.Xml.
 
 CFG_BEPINEX = (
     "[Logging.Console]\r\n\r\n"
-    "## Abre a janela de console do BepInEx junto com o jogo (útil enquanto o mod está em teste).\r\n"
-    "Enabled = true\r\n"
+    "## Console do BepInEx desligado (modo silencioso). Quem manda nesta chave é o mod:\r\n"
+    "## [Diagnostico] MostrarConsole em br.srmackenzie.hellclockcoop.cfg (vale na próxima abertura).\r\n"
+    "Enabled = false\r\n"
 )
 
 
@@ -72,7 +73,8 @@ def gerar_release(arquivos, zip_saida, versao, chave):
 
 
 def texto_windows(caminho, versao):
-    t = open(caminho, encoding="utf-8").read().replace("{VERSAO}", versao).replace("{VERSAO_JOGO}", VERSAO_JOGO)
+    # utf-8-sig: o LEIA-ME já tem BOM; ler com utf-8 o manteria no texto e o zip sairia com BOM duplo.
+    t = open(caminho, encoding="utf-8-sig").read().replace("{VERSAO}", versao).replace("{VERSAO_JOGO}", VERSAO_JOGO)
     return t.replace("\r\n", "\n").replace("\n", "\r\n").encode("utf-8-sig")  # BOM: o Bloco de Notas lê acentos certo
 
 

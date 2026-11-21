@@ -85,7 +85,9 @@ python3 scripts/gerar-progresso.py   # assets/progresso.svg, ROADMAP.md, CHANGEL
 ```
 
 ## Testar no jogo
-- **Fase 0:** ao abrir o jogo, o console mostra `Hell Clock Coop <versão> carregado`, `Backup do save: N arquivo(s)`,
+- **Console:** desde a 0.8.2 vem desligado. Para acompanhar ao vivo, `[Diagnostico] MostrarConsole = true` no .cfg do
+  mod e reabra o jogo (o console abre antes do plugin). O `LogOutput.log` é gravado nos dois casos.
+- **Fase 0:** ao abrir o jogo, o log mostra `Hell Clock Coop <versão> carregado`, `Backup do save: N arquivo(s)`,
   `Versão do jogo: 2.1.1.1` e `[Validação] N/N alvos de patch encontrados`.
 - **Modo eco (F8):** um clone aparece 2,5 m ao lado e repete tudo com 1 s de atraso, inclusive os efeitos das skills e
   os números de dano. Serve para testar sem um segundo PC.

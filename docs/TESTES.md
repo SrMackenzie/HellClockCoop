@@ -170,6 +170,19 @@ Para repetir o primeiro início: no `.cfg`, `[Metricas] AceitePerguntado = false
   - Esperado: `Resumo da run salvo ... 1 jogador(es)` e depois `Resumo ... enviado`; no console do Firebase, `papel` = `solo`.
 - Se falhar, mandar: as linhas `[Métricas]` do `LogOutput.log` e a seção `[Metricas]` do `.cfg`.
 
+## 0.8.2 — Modo silencioso (console do BepInEx)
+
+- [x] **Quem vem de versão anterior (console ligado) passa a silencioso** (PC do autor, 21/11/2026: `BepInEx.cfg`
+  regravado com as mesmas 151 linhas; na abertura seguinte, nenhuma janela "BepInEx ..." e o log completo)
+  - Esperado: na 1ª abertura da 0.8.2 o console ainda abre (já abriu antes do plugin); no log, `Console do BepInEx
+    desligado a partir da próxima abertura do jogo.`; no `BepInEx.cfg`, `[Logging.Console] Enabled = false` com os
+    comentários preservados. Na abertura seguinte, nenhuma janela preta, e o `LogOutput.log` continua completo.
+- [ ] **Ligar de volta**
+  - `[Diagnostico] MostrarConsole = true` no `.cfg` do mod. Esperado: na abertura seguinte o console não abre ainda e
+    o log diz `Console do BepInEx ligado ...`; na outra, o console abre.
+- [ ] **Instalação nova pelo zip:** nenhuma janela preta já na 1ª abertura (o zip traz `Enabled = false`).
+- Se falhar, mandar: o `LogOutput.log` e a seção `[Logging.Console]` do `BepInEx.cfg`.
+
 ---
 
 ## Mensagem para o testador

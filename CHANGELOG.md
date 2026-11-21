@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.8.2 — Modo silencioso 🧪
+_21/11/2026_
+
+- A janela preta do console do BepInEx não abre mais junto com o jogo
+- Para ver o log ao vivo: [Diagnostico] MostrarConsole = true no .cfg do mod; vale a partir da próxima abertura do jogo (o console abre antes do mod carregar)
+- Quem atualiza pelo atualizador automático também passa para o modo silencioso: o mod grava a opção no BepInEx.cfg ao iniciar
+- O LogOutput.log continua sendo gravado com ou sem o console
+- Sem efeito no balanceamento
+
 ## 0.8.1 — Pergunta do envio das métricas 🧪
 _21/11/2026_
 

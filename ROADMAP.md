@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 21/11/2026 · versão 0.8.1. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 21/11/2026 · versão 0.8.2. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -91,13 +91,14 @@ _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio s
 | ⬜ | Revisar drops de invocações, ondas de sobrevivência e temporadas |
 | ⬜ | Auditoria: o mod nunca escreve no save de outro jogador |
 
-## Fase 5 — Polimento · 14%
+## Fase 5 — Polimento · 22%
 
 _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 
 | | Item |
 |:-:|---|
 | ✅ | Atualização automática ao abrir o jogo: assinada, conferida e com volta se falhar |
+| 🧪 | Modo silencioso: console do BepInEx desligado por padrão, com opção no .cfg para ligar |
 | ⬜ | Menu de coop dentro do jogo (no lugar das teclas F6/F7) |
 | ⬜ | Reconexão e troca de host sem perder a run |
 | ⬜ | Sons das skills e dos golpes dos aliados |

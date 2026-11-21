@@ -18,7 +18,7 @@ namespace HellClockCoop
     {
         public const string PluginGuid = "br.srmackenzie.hellclockcoop";
         public const string PluginName = "Hell Clock Coop";
-        public const string PluginVersion = "0.8.1";
+        public const string PluginVersion = "0.8.2";
 
         /// <summary>Versão do jogo contra a qual os patches foram mapeados (Application.version).</summary>
         public const string VersaoMapeada = "2.1.1.1";
@@ -44,6 +44,10 @@ namespace HellClockCoop
             Config.Bind("Atualizacao", "VerificarAoIniciar", true,
                 "Ao abrir o jogo, procura a versão nova do coop no GitHub (até 5 s) e instala sozinha, conferindo a assinatura. " +
                 "Com false, o mod fica na versão instalada.");
+            AplicarConsole(Config.Bind("Diagnostico", "MostrarConsole", false,
+                "Abre a janela preta de console do BepInEx junto com o jogo (útil para acompanhar o log ao vivo). " +
+                "O console abre antes do mod carregar, então a mudança só vale a partir da próxima abertura do jogo. " +
+                "O log continua gravado em BepInEx\\LogOutput.log nos dois casos.").Value);
 
             if (_fazerBackupDoSave.Value)
             {
@@ -115,6 +119,34 @@ namespace HellClockCoop
             catch (Exception e)
             {
                 Log.LogWarning($"Não deu para copiar a configuração antiga: {e.Message}. Valem os valores padrão.");
+            }
+        }
+
+        /// <summary>
+        /// Leva a opção [Diagnostico] MostrarConsole para o [Logging.Console] Enabled do BepInEx.cfg. O console abre
+        /// antes do plugin, então vale na próxima abertura. A entrada é a do próprio BepInEx (ConsoleManager é
+        /// interno; o campo é público), e o arquivo é gravado pelo CoreConfig, que preserva os comentários.
+        /// O atualizador não troca o BepInEx.cfg; por isso a opção vive no plugin, e não só no pacote.
+        /// </summary>
+        private static void AplicarConsole(bool mostrar)
+        {
+            try
+            {
+                Type gerente = typeof(Paths).Assembly.GetType("BepInEx.ConsoleManager");
+                var entrada = gerente?.GetField("ConfigConsoleEnabled")?.GetValue(null) as ConfigEntry<bool>;
+                if (entrada == null)
+                {
+                    Log.LogWarning("Console do BepInEx: opção [Logging.Console] Enabled não encontrada; MostrarConsole ignorado.");
+                    return;
+                }
+                if (entrada.Value == mostrar) return;
+                entrada.Value = mostrar;
+                entrada.ConfigFile.Save(); // grava o BepInEx.cfg mesmo se o CoreConfig não salvar sozinho
+                Log.LogInfo($"Console do BepInEx {(mostrar ? "ligado" : "desligado")} a partir da próxima abertura do jogo.");
+            }
+            catch (Exception e)
+            {
+                Log.LogWarning($"Console do BepInEx: não deu para gravar a opção ({e.Message}).");
             }
         }
 

@@ -2,6 +2,19 @@
   "_leia": "Fonte única das novidades. testado: true = confirmado rodando no jogo. Depois de editar: python3 scripts/gerar-progresso.py",
   "versoes": [
     {
+      "v": "0.8.2",
+      "data": "21/11/2026",
+      "testado": false,
+      "titulo": "Modo silencioso",
+      "itens": [
+        "A janela preta do console do BepInEx não abre mais junto com o jogo",
+        "Para ver o log ao vivo: [Diagnostico] MostrarConsole = true no .cfg do mod; vale a partir da próxima abertura do jogo (o console abre antes do mod carregar)",
+        "Quem atualiza pelo atualizador automático também passa para o modo silencioso: o mod grava a opção no BepInEx.cfg ao iniciar",
+        "O LogOutput.log continua sendo gravado com ou sem o console",
+        "Sem efeito no balanceamento"
+      ]
+    },
+    {
       "v": "0.8.1",
       "data": "21/11/2026",
       "testado": false,

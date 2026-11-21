@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "21/11/2026",
-  "versao": "0.8.1",
+  "versao": "0.8.2",
   "fases": [
     {
       "id": "B",
@@ -217,6 +217,10 @@
         [
           "feito",
           "Atualização automática ao abrir o jogo: assinada, conferida e com volta se falhar"
+        ],
+        [
+          "testar",
+          "Modo silencioso: console do BepInEx desligado por padrão, com opção no .cfg para ligar"
         ],
         [
           "planejado",

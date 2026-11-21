@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.8.1-ff7a1a?style=for-the-badge">
+  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.8.2-ff7a1a?style=for-the-badge">
   <img alt="Status" src="https://img.shields.io/badge/status-alpha%20jog%C3%A1vel-b3121f?style=for-the-badge">
   <img alt="Hell Clock" src="https://img.shields.io/badge/Hell%20Clock-2.1.1.1-4a1a1f?style=for-the-badge">
   <img alt="Jogadores" src="https://img.shields.io/badge/jogadores-2%20a%204-5fe08a?style=for-the-badge">
@@ -166,7 +166,8 @@ entra mais gente, então o balanceamento é uma **trilha permanente**: toda vers
    (seção *Assets*).
 2. Na Steam: botão direito em **Hell Clock → Gerenciar → Procurar arquivos locais**.
 3. Extraia **todo** o conteúdo do zip **dentro dessa pasta** (ao lado do `Hell Clock.exe`), substituindo os arquivos.
-4. Abra o jogo pela Steam. Uma janela preta (console do BepInEx) abre junto: é o registro do mod.
+4. Abra o jogo pela Steam. O mod roda em silêncio; para ver o registro ao vivo na janela do console do BepInEx, use
+   `[Diagnostico] MostrarConsole = true` em `BepInEx\config\br.srmackenzie.hellclockcoop.cfg` (vale na próxima abertura).
 5. No canto superior esquerdo aparece **"Hell Clock Coop … F7 para jogar com amigos"**.
 
 **Atualizações (a partir da 0.8.0):** ao abrir o jogo, o mod procura a versão nova na
