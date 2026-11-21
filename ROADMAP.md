@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 21/11/2026 · versão 0.8.2. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 21/11/2026 · versão 0.8.3. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -35,6 +35,7 @@ _BepInEx funcionando num jogo com managed stripping, backup do save e mapa dos p
 | ✅ | Checagem da versão do jogo e validação de todos os alvos de patch |
 | ✅ | Patches de diagnóstico (spawn, run, andares, alvos, Steam) |
 | ✅ | Erros da Unity copiados para o log do BepInEx |
+| ✅ | Erro conhecido do jogo na tela de saves ("same key [-1]") vira uma linha de aviso, sem pilha |
 
 ## Fase 1 — Fantasma · 100%
 

@@ -98,6 +98,8 @@ ESTADO ATUAL (versão de teste, Fase 3)
     uma versão anterior ainda a vê uma última vez, na primeira abertura da 0.8.2.
   * Para ligar de novo: no .cfg do mod, seção [Diagnostico], troque MostrarConsole = false
     por true. Vale a partir da próxima abertura do jogo.
+- NOVO (0.8.3): o erro da tela de saves que é do próprio jogo aparece no LogOutput.log numa
+  única linha de aviso, sem a pilha (ver PROBLEMAS COMUNS).
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, aperte F6 (sai do coop) e depois use o menu normalmente.
@@ -172,6 +174,9 @@ PROBLEMAS COMUNS
   mesmo zip e se a Steam está online. Saiam (F6) e entrem de novo.
 - "Atualização do coop recusada" ou "falhou" no painel: o jogo seguiu com a versão que já
   estava instalada. Mande o BepInEx\LogOutput.log (as linhas começam com "Atualizador").
+- "[Jogo] erro conhecido do Hell Clock 2.1.1.1 na tela de saves" no LogOutput.log: é um erro
+  do próprio jogo ("An item with the same key has already been added. Key: [-1]"), que
+  acontece também sem o mod. Pode ignorar.
 - Para relatar um problema, mande o arquivo BepInEx\LogOutput.log de quem teve o problema.
 
 

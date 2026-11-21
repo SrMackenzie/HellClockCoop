@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "21/11/2026",
-  "versao": "0.8.2",
+  "versao": "0.8.3",
   "fases": [
     {
       "id": "B",
@@ -70,6 +70,10 @@
         [
           "feito",
           "Erros da Unity copiados para o log do BepInEx"
+        ],
+        [
+          "feito",
+          "Erro conhecido do jogo na tela de saves (\"same key [-1]\") vira uma linha de aviso, sem pilha"
         ]
       ]
     },

@@ -183,6 +183,16 @@ Para repetir o primeiro início: no `.cfg`, `[Metricas] AceitePerguntado = false
 - [ ] **Instalação nova pelo zip:** nenhuma janela preta já na 1ª abertura (o zip traz `Enabled = false`).
 - Se falhar, mandar: o `LogOutput.log` e a seção `[Logging.Console]` do `BepInEx.cfg`.
 
+## 0.8.3 — Erro conhecido da tela de saves
+
+- [x] **Tela de saves** (PC do autor, 21/11/2026: 12 ocorrências no `Player.log`, 1 linha de aviso e 0 `Unity Exception`
+  no `LogOutput.log`)
+  - Abrir o jogo até a tela de saves e passar pelos slots. Esperado: no `LogOutput.log`, uma única linha
+    `[Warning:Hell Clock Coop] [Jogo] erro conhecido do Hell Clock 2.1.1.1 na tela de saves (acontece sem o mod; pode ignorar)`
+    e nenhuma `[Unity Exception] ArgumentException: An item with the same key ...` com pilha.
+- [ ] **Outros erros da Unity** seguem com a pilha e o agrupamento (`(repetido Nx)`).
+- Se falhar, mandar: o `LogOutput.log` e o `Player.log`.
+
 ---
 
 ## Mensagem para o testador

@@ -4,6 +4,14 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.8.3 — Erro conhecido da tela de saves ✅
+_21/11/2026_
+
+- O erro "An item with the same key has already been added. Key: [-1]" da tela de saves é do próprio Hell Clock 2.1.1.1: acontece também sem o mod
+- No LogOutput.log ele aparece agora numa única linha de aviso, sem a pilha: "[Jogo] erro conhecido do Hell Clock 2.1.1.1 na tela de saves (acontece sem o mod; pode ignorar)"
+- Os outros erros da Unity continuam no log como antes, com a pilha e o agrupamento das repetições
+- Sem efeito no balanceamento
+
 ## 0.8.2 — Modo silencioso 🧪
 _21/11/2026_
 

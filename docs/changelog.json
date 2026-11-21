@@ -2,6 +2,18 @@
   "_leia": "Fonte única das novidades. testado: true = confirmado rodando no jogo. Depois de editar: python3 scripts/gerar-progresso.py",
   "versoes": [
     {
+      "v": "0.8.3",
+      "data": "21/11/2026",
+      "testado": true,
+      "titulo": "Erro conhecido da tela de saves",
+      "itens": [
+        "O erro \"An item with the same key has already been added. Key: [-1]\" da tela de saves é do próprio Hell Clock 2.1.1.1: acontece também sem o mod",
+        "No LogOutput.log ele aparece agora numa única linha de aviso, sem a pilha: \"[Jogo] erro conhecido do Hell Clock 2.1.1.1 na tela de saves (acontece sem o mod; pode ignorar)\"",
+        "Os outros erros da Unity continuam no log como antes, com a pilha e o agrupamento das repetições",
+        "Sem efeito no balanceamento"
+      ]
+    },
+    {
       "v": "0.8.2",
       "data": "21/11/2026",
       "testado": false,
