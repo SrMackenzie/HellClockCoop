@@ -4,6 +4,16 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.9.0 — Lentidão e congelamento do convidado valem para todos 🧪
+_21/11/2026_
+
+- Lentidão, congelamento, atordoamento e enraizamento que o convidado aplica agora valem no jogo do host: o inimigo fica lento ou parado para todos (antes só na tela do convidado). Enfraquecimentos de atributo (como menos defesa) e reações elementais do convidado também passam a valer
+- Valem as regras do host: inimigo imune segue imune e a resistência a controle encurta o efeito como no solo
+- Dano contínuo (sangramento, queimadura) não muda: o dano dele já chegava ao host
+- Duração ou força fora do normal vindas do convidado são limitadas (até 30 s); valores inválidos são ignorados, com aviso no log
+- Balanceamento: controle e enfraquecimentos do convidado passam a valer para o grupo, o que deixa o coop um pouco mais fácil que antes; o escalonamento por número de jogadores não muda nesta versão. Acompanhar nos resumos das runs e ajustar se o coop ficar mais fácil que o solo
+- Protocolo 10: todos no coop precisam estar na 0.9.0 (o atualizador baixa sozinho ao abrir o jogo)
+
 ## 0.8.5 — Teto do tempo ganho e golpes inválidos 🧪
 _21/11/2026_
 

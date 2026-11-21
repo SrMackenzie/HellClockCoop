@@ -155,6 +155,27 @@ IdaVolta("AndarLimpo", new (string, object)[] { ("Andar", 12u) }, 35);
     Checar(b[0] == 34 && (ushort)tGi.GetField("Id").GetValue(i2) == 7 && (float)tGi.GetField("Valor").GetValue(i2) == 1234.5f
         && (int)tGi.GetField("MascaraTipos").GetValue(i2) == 10 && (byte)tGi.GetField("Criticos").GetValue(i2) == 3, $"Golpes ida e volta ({b.Length} bytes)");
 }
+{
+    // Status de controle do convidado (0.9.0, tipo 38)
+    var tSt = T("HellClockCoop.Net.StatusInimigos"); var tSti = T("HellClockCoop.Net.StatusInimigos+Item");
+    var st = Activator.CreateInstance(tSt); var lista = (System.Collections.IList)tSt.GetField("Itens").GetValue(st);
+    object item(ushort id, int hash, float dur, float inten, int skill, byte pilhas)
+    {
+        var i = Activator.CreateInstance(tSti);
+        tSti.GetField("Id").SetValue(i, id); tSti.GetField("StatusHash").SetValue(i, hash); tSti.GetField("Duracao").SetValue(i, dur);
+        tSti.GetField("Intensidade").SetValue(i, inten); tSti.GetField("SkillHash").SetValue(i, skill); tSti.GetField("Pilhas").SetValue(i, pilhas);
+        return i;
+    }
+    lista.Add(item(7, -123456789, 2.5f, 1.25f, 987654, 3)); lista.Add(item(65535, int.MaxValue, 0.1f, 10f, 0, 255));
+    var b = (byte[])tSt.GetMethod("Serializar").Invoke(st, null);
+    var l2 = (System.Collections.IList)tSt.GetField("Itens").GetValue(tSt.GetMethod("Desserializar").Invoke(null, new object[] { b }));
+    object c(object o, string f) => tSti.GetField(f).GetValue(o);
+    Checar(b[0] == 38 && l2.Count == 2 && (ushort)c(l2[0], "Id") == 7 && (int)c(l2[0], "StatusHash") == -123456789 && (float)c(l2[0], "Duracao") == 2.5f
+        && (float)c(l2[0], "Intensidade") == 1.25f && (int)c(l2[0], "SkillHash") == 987654 && (byte)c(l2[0], "Pilhas") == 3, $"StatusInimigos tipo=38 ida e volta ({b.Length} bytes)");
+    Checar((ushort)c(l2[1], "Id") == 65535 && (int)c(l2[1], "StatusHash") == int.MaxValue && (byte)c(l2[1], "Pilhas") == 255, "StatusInimigos: limites de Id, hash e pilhas");
+    var vazio = (byte[])tSt.GetMethod("Serializar").Invoke(Activator.CreateInstance(tSt), null);
+    Checar(((System.Collections.IList)tSt.GetField("Itens").GetValue(tSt.GetMethod("Desserializar").Invoke(null, new object[] { vazio }))).Count == 0, "StatusInimigos vazio");
+}
 
 // Baús e quebráveis
 IdaVolta("BauSpawn", new (string, object)[] { ("Id", (ushort)3), ("Andar", 2u), ("DefinicaoHash", 4455), ("Posicao", new UnityEngine.Vector3(10f, 0.5f, -20f)), ("Rotacao", 135f), ("Aberto", true) }, 40);
@@ -291,6 +312,38 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     byte est(byte e) => (byte)Campo(Lido("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", e) }), "Estado");
     Checar(V("ObjetoUsadoAceito", est(2), true) && !V("ObjetoUsadoAceito", est(2), false), "Validação: ObjetoUsado Concluido só do host");
     Checar(V("ObjetoUsadoAceito", est(1), true) && V("ObjetoUsadoAceito", est(1), false), "Validação: ObjetoUsado Usado de qualquer par");
+
+    // Status de controle do convidado (0.9.0): valores lidos de volta do codec passam pelo filtro e pelos tetos
+    {
+        var tSt = T("HellClockCoop.Net.StatusInimigos"); var tSti = T("HellClockCoop.Net.StatusInimigos+Item");
+        (float dur, float inten, byte pilhas) lido(float d, float i, byte p)
+        {
+            var st = Activator.CreateInstance(tSt); var it = Activator.CreateInstance(tSti);
+            tSti.GetField("Duracao").SetValue(it, d); tSti.GetField("Intensidade").SetValue(it, i); tSti.GetField("Pilhas").SetValue(it, p);
+            ((System.Collections.IList)tSt.GetField("Itens").GetValue(st)).Add(it);
+            var s2 = tSt.GetMethod("Desserializar").Invoke(null, new object[] { (byte[])tSt.GetMethod("Serializar").Invoke(st, null) });
+            var i2 = ((System.Collections.IList)tSt.GetField("Itens").GetValue(s2))[0];
+            return ((float)tSti.GetField("Duracao").GetValue(i2), (float)tSti.GetField("Intensidade").GetValue(i2), (byte)tSti.GetField("Pilhas").GetValue(i2));
+        }
+        bool SV((float d, float i, byte p) x) => V("StatusValido", x.d, x.i, x.p);
+        float F(string m, float v) => (float)tv.GetMethod(m).Invoke(null, new object[] { v });
+        Checar(SV(lido(2.5f, 1f, 1)) && SV(lido(0.01f, 0.5f, 255)) && SV(lido(900f, 50f, 3)), "Validação: status normal e acima do teto aceitos (o teto reduz, não recusa)");
+        Checar(!SV(lido(0f, 1f, 1)) && !SV(lido(-1f, 1f, 1)) && !SV(lido(float.NaN, 1f, 1)) && !SV(lido(float.PositiveInfinity, 1f, 1)),
+            "Validação: status com duração 0, negativa, NaN ou ∞ recusado");
+        Checar(!SV(lido(2f, 0f, 1)) && !SV(lido(2f, -1f, 1)) && !SV(lido(2f, float.NaN, 1)) && !SV(lido(2f, float.NegativeInfinity, 1)) && !SV(lido(2f, 1f, 0)),
+            "Validação: status com intensidade 0 (divisão no jogo), negativa, NaN, -∞ ou 0 pilhas recusado");
+        Checar(F("DuracaoStatusLimitada", 900f) == 30f && F("DuracaoStatusLimitada", 30f) == 30f && F("DuracaoStatusLimitada", 2.5f) == 2.5f,
+            "Validação: duração do status limitada a 30 s");
+        Checar(F("IntensidadeStatusLimitada", 50f) == 10f && F("IntensidadeStatusLimitada", 0.1f) == 1f && F("IntensidadeStatusLimitada", 0.999f) == 1f
+            && F("IntensidadeStatusLimitada", 1f) == 1f && F("IntensidadeStatusLimitada", 1.25f) == 1.25f,
+            "Validação: intensidade do status limitada a 1–10 (abaixo de 1 a lentidão viraria reforço)");
+        int P(byte p, int max, bool acumula = true) => (int)tv.GetMethod("PilhasStatusLimitadas").Invoke(null, new object[] { p, max, acumula });
+        Checar(P(lido(2f, 1f, 255).pilhas, 5) == 5 && P(3, 5) == 3 && P(5, 5) == 5, "Validação: pilhas do status limitadas ao MaxStacks");
+        Checar(P(255, 0) == 10 && P(255, -1) == 10 && P(4, 0) == 4, "Validação: status sem MaxStacks no jogo → até 10 pilhas");
+        Checar(P(7, 5, false) == 1 && P(255, 0, false) == 1 && P(1, 0, false) == 1, "Validação: status que não acumula pilhas (CanStack falso) → 1 pilha no host");
+        Checar((int)tv.GetField("ItensStatusPorMensagemMaximo").GetValue(null) == 512 && (int)tv.GetField("AvisosStatusPorConvidado").GetValue(null) == 20,
+            "Validação: tetos de 512 status por mensagem e 20 avisos por convidado");
+    }
 }
 
 

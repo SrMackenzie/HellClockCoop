@@ -461,7 +461,7 @@ antes de morrer ou ser descartado, porque o inimigo volta ao pool.
   `EnemyManager._ignoreLevelClear`, `EnemyManager._onAllEnemiesCleared`, `StatBasedValueController._currentValue`.
 
 **Limites conhecidos da 0.4.0.** Inimigos só miram o host (3c). Status aplicados pelo convidado (lentidão,
-congelamento) só existem na réplica. Boss: a fase "agressiva" (`EnemyBossController.OnAggressive`, que
+congelamento) só existem na réplica (resolvido na 0.9.0, seção 11.4). Boss: a fase "agressiva" (`EnemyBossController.OnAggressive`, que
 libera o dano) não é replicada; o host libera e aplica o dano normalmente, mas o convidado não vê números
 nem barra do boss. O boneco de DPS do hub não é replicado (só inimigos de run).
 
@@ -556,6 +556,50 @@ recebe clona a primeira irmã. Era o caso das facas da skill Reflexos girando em
   no getter). Quando chega verdadeiro, a réplica recebe `IsAggressive.Setter(true)`: disparam os registros do jogo, entre eles
   `EnemyBossController.OnAggressive` (libera `CanTakeDamage`, `TargetController.ChangeTargetBoss` = barra do chefe, câmera)
   e a liberação de `CanUseSkill`.
+
+### 11.4 Status do convidado valendo no host (versão 0.9.0, protocolo 10)
+
+- **Mensagem** (tipo 38 StatusInimigos, confiável, 20 Hz junto com os Golpes, convidado → host): por inimigo e status,
+  `HashID` da `StatusDefinition`, duração, intensidade, `HashID` da skill de origem e pilhas. O mesmo status no mesmo
+  inimigo, na janela de 50 ms, vira um item (maior duração, maior intensidade; pilhas somadas até 255, ou a maior, se o
+  status não acumula pilhas: `StatusDefinition.CanStack` falso, ou seja, `Refresh` e instâncias múltiplas). Só é aceita de
+  par compatível e com a mesma DLC (`Compativel && DlcOk`).
+- **Convidado:** postfix em `StatusController.AddStatus`. Vai ao host o status que entrou numa réplica viva (`__result`
+  não nulo, ou seja, a réplica não era imune), aplicado pelo jogador local ou por uma invocação dele
+  (`PlayerController`/`PlayerCompanionController`; status de inimigo em inimigo fica de fora). O `AddStatus` reescreve
+  o argumento `duration` (resistência a controle do alvo e `DurationModifier` de quem aplica, os bônus da build do
+  convidado), e o postfix lê o valor já reescrito; a resistência a controle da réplica é desfeita (`/ (1 − resistência)`),
+  porque o host aplica a dele (também quando ela é negativa: o jogo multiplica por `1 − resistência` sempre que ela é
+  diferente de 0 e menor que 1). A cópia que a skill faz da definição (`StatusDefinition.Instantiate`, um
+  `Object.Instantiate`) mantém o `HashID` (`_hashId` é `[SerializeField]`).
+- **Quais status:** só controle e debuff de atributo, pelo tipo da definição e `IsBuff = false`: `FreezeStatusDefinition`,
+  `StunStatusDefinition`, `RootedStatusDefinition` e `StatModifierStatusDefinition` (lentidão; inclui
+  `ElementalReactionStatusDefinition`, que reforça os ailments de um tipo de dano), menos `ClosedBodyAuraStatusDefinition`.
+  Ficam de fora: dano contínuo (sangramento, queimadura etc.; o dano dele já passa pelo `TryHurt` do convidado e chega
+  pelos Golpes), provocação (`TauntedStatusEffect` usa quem aplicou como alvo), auras, barreiras, curas, buffs e o acúmulo
+  (`BuildupStatusDefinition`): quando o acúmulo enche no convidado, o congelamento que ele dispara é o que vai.
+- **Host:** acha a definição em `Constants.Collections.STATUS_DEFINITION_COLLECTION` e chama `AddStatus` no inimigo com o
+  **próprio inimigo como fonte**. O jogo não aceita fonte nula (lê `source.StatusController` sem checar). Com o inimigo
+  como fonte, não disparam as passivas do jogador host (`ISkillCaster.OnApplyStatus`) nem os modificadores de duração dele
+  (`OnBeforeInflictStatusToTarget`). Congelamento, atordoamento, enraizamento e modificador de atributo não leem a fonte
+  (só o construtor e o efeito visual). Imunidade (`CrowdControlResistance >= 1`), resistência a controle e acúmulo de
+  pilhas são os do host. Os ailments não passam pelo `Hurt` do host (saem do `DamageDealer.PerformDamageWrapper` de quem
+  bate), então o golpe relatado não aplica o status de novo.
+- **Validação na recepção** (seção 14): duração finita e `> 0`, intensidade finita e `> 0`, pelo menos 1 pilha. Duração
+  acima de 30 s vira 30 s; intensidade fora de 1–10 vira o limite (o jogo usa 1 como padrão; no modificador
+  multiplicativo abaixo de 1 o jogo divide pela intensidade, e abaixo de 1 uma lentidão de 0,7 viraria reforço do
+  inimigo); pilhas até o `MaxStacks` do status (o `StatusEffect.AddStack` do jogo só limita quando ele é `> 0`; sem
+  ele, até 10) e 1 se o status não acumula pilhas (`CanStack` falso: num status que já existe o jogo só renova ou cria
+  outra instância, sem somar pilhas, mas as soma ao criar). Mensagem com mais de 512 itens é recusada inteira; status desconhecido ou fora da lista é recusado. Avisos
+  (recusa e falha do `AddStatus`): no máximo 20 por convidado na sessão, contados pela conta Steam.
+- **Limites:** o caminho contrário (status do host valendo na réplica do convidado, por exemplo "dano extra em inimigo
+  congelado" na build do convidado) não existe; a réplica só anda como o host manda, então o convidado vê o inimigo parado
+  ou lento. Status sem duração (0) não vai. Reenviar o mesmo congelamento sem parar mantém o inimigo parado (o teto de
+  30 s vale por aplicação); fica aceito porque o dano do convidado já é confiável (seção 2). Com o inimigo como fonte,
+  disparam os eventos do próprio inimigo (`OnBeforeInflictStatusToTarget` e `OnApplyStatus` dele): conferir no teste se
+  algum afixo reage a isso. O `HashID` da skill vai como está (só as auras, que ficam de fora, leem o `SourceSkillID`).
+  O host usa a definição base da coleção: valores que a skill do convidado sobrescreve na cópia dela
+  (`StatusDefinition.GetOverridableValue`) não vão; duração e intensidade vão, porque são argumentos do `AddStatus`.
 
 ## 12. Balanceamento (trilha permanente, versão 0.7.0)
 
@@ -706,6 +750,7 @@ filtros puros ficam em `Net/Validacao.cs` e têm casos no `tools/codectest`.
 | `BauSpawn`, `ObjetoSpawn` | convidado, só do host | — |
 | `ObjetoUsado` | qualquer par | `Estado = Concluido` (purificação) só do host. Aviso no log |
 | `BauAberto`, `Quebrou`, `ObjetoUsado` (`Usado`) | qualquer par | — (o host repassa) |
+| `StatusInimigos` (0.9.0) | host, de convidado compatível e com a mesma DLC | duração e intensidade finitas e `> 0`, pelo menos 1 pilha (`Validacao.StatusValido`); duração limitada a 30 s, intensidade a 1–10 e pilhas ao `MaxStacks` (sem ele, 10; status que não acumula pilhas, `CanStack` falso, 1); mais de 512 itens recusa a mensagem; status desconhecido ou que não é de controle recusado (seção 11.4). No máximo 20 avisos por convidado na sessão |
 | `Golpes` (0.8.5) | host, de qualquer convidado | dano finito e `> 0` (`Validacao.DanoValido`); NaN ou infinito mataria qualquer inimigo. Valor finito grande segue aceito: o dano do convidado é confiável (seção 2). Descarte sem log (20 Hz) |
 
 **Backup.** `SaveBackup.LimparAntigos` mantém no mínimo 1 cópia, mesmo com `BackupsMantidos` 0 ou negativo no `.cfg`.

@@ -64,6 +64,19 @@ namespace HellClockCoop.Fase3
         private static void Prefix(LifeController __instance, DamageInstance damage) => InimigosCompartilhados.ConvidadoGolpeou(__instance, damage);
     }
 
+    /// <summary>
+    /// Alvo: HellClock.Status.StatusController.AddStatus(StatusDefinition, ISkillCaster, IDamageable, float, float, int, int)
+    /// — postfix. No convidado, status de controle posto numa réplica vira relato ao host. O postfix lê a duração
+    /// depois que o AddStatus a reescreveu (resistência a controle e modificadores de quem aplicou).
+    /// </summary>
+    [HarmonyPatch(typeof(HellClock.Status.StatusController), nameof(HellClock.Status.StatusController.AddStatus))]
+    internal static class Inimigos_AddStatus
+    {
+        private static void Postfix(HellClock.Status.StatusEffect __result, HellClock.Status.StatusDefinition statusDefinition,
+            HellClock.Skill.ISkillCaster source, IDamageable target, float duration, float intensity, int sourceSkillID, int stackAmount) =>
+            InimigosCompartilhados.ConvidadoAplicouStatus(__result, statusDefinition, source, target, duration, intensity, sourceSkillID, stackAmount);
+    }
+
     /// <summary>Alvos: EnemyController.SetupSummon e SetupDisposable — chamados logo após o spawn (invocações, ondas).</summary>
     [HarmonyPatch(typeof(EnemyController), nameof(EnemyController.SetupSummon))]
     internal static class Inimigos_SetupSummon

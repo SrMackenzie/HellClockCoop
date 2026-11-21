@@ -436,6 +436,7 @@ namespace HellClockCoop.Net
                 case Protocolo.TipoInimigoMorte:
                 case Protocolo.TipoInimigoSumiu:
                 case Protocolo.TipoGolpes:
+                case Protocolo.TipoStatusInimigos:
                 case Protocolo.TipoAndarLimpo:
                 case Protocolo.TipoInimigoAjuste:
                     Fase3.InimigosCompartilhados.Receber(this, p, dados);

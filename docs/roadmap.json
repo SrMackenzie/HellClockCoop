@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "21/11/2026",
-  "versao": "0.8.5",
+  "versao": "0.9.0",
   "fases": [
     {
       "id": "B",
@@ -181,8 +181,8 @@
           "Chefe no convidado: fase agressiva, barra de vida e dano"
         ],
         [
-          "planejado",
-          "Status do convidado (lentidão, congelamento) valendo no host"
+          "testar",
+          "Status do convidado (lentidão, congelamento, atordoamento, enraizamento) valendo no host"
         ],
         [
           "planejado",

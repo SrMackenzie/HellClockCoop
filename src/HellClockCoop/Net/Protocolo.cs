@@ -11,7 +11,7 @@ namespace HellClockCoop.Net
     internal static class Protocolo
     {
         /// <summary>Muda sempre que o formato de qualquer mensagem mudar. Pares com versões diferentes não conversam.</summary>
-        public const int Versao = 9;
+        public const int Versao = 10;
 
         public const int CanalConfiavel = 0;
         public const int CanalSnapshots = 1;
@@ -51,6 +51,7 @@ namespace HellClockCoop.Net
         public const byte TipoDanosVistos = 53; // canal não confiável
         public const byte TipoFxNos = 54;       // canal não confiável
         public const byte TipoInimigoSkill = 37;
+        public const byte TipoStatusInimigos = 38; // convidado → host (0.9.0)
 
         /// <summary>Chaves gravadas nos dados do lobby da Steam.</summary>
         public const string ChaveLobbyMod = "hcc_mod";

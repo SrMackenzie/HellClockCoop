@@ -68,6 +68,7 @@ namespace HellClockCoop
             new Alvo("3", "HellClock.Character.Enemy.EnemyController", "SetupSummon", "Invocações sem XP/loot também na réplica"),
             new Alvo("3", "HellClock.Character.Enemy.EnemyController", "SetupDisposable", "Descartáveis sem XP também na réplica"),
             new Alvo("3", "HellClock.Character.LifeController", "TryHurt", "Golpe do convidado na réplica vira relato ao host"),
+            new Alvo("3", "HellClock.Status.StatusController", "AddStatus", "Status de controle do convidado na réplica vai ao host (0.9.0)"),
             new Alvo("3", "HellClock.Chests.ChestInteractable", "ExecuteInteraction", "Baú aberto abre para todos"),
             new Alvo("3", "HellClock.Player.PlayerController", "InteractWith", "Abrir baú por ordem remota sem mexer no jogador local"),
             new Alvo("3", "HellClock.Character.Enemy.BreakableController", "Handle_OnDie", "Vaso/caixa quebrado quebra para todos"),

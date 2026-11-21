@@ -73,6 +73,37 @@ namespace HellClockCoop.Net
 
         /// <summary>ObjetoUsado com Estado=Concluido (santuário amaldiçoado purificado) só vale vindo do host.</summary>
         public static bool ObjetoUsadoAceito(byte estado, bool doHost) => doHost || estado != ObjetoSpawn.Concluido;
+
+        // Status de controle do convidado (0.9.0). A intensidade multiplica (ou divide, no modificador
+        // multiplicativo abaixo de 1) o valor do status; o jogo usa 1 como padrão. Abaixo de 1, a divisão
+        // transformaria uma lentidão (0,7 de velocidade / 0,1 = 7x) em reforço do inimigo: o mínimo é 1.
+        // Valor fora do teto é reduzido ao teto, não recusado.
+        public const float DuracaoStatusMaxima = 30f;
+        public const float IntensidadeStatusMinima = 1f;
+        public const float IntensidadeStatusMaxima = 10f;
+        public const int PilhasStatusSemTeto = 10;            // status cujo MaxStacks é 0 ou menos (o jogo não limita)
+        public const int ItensStatusPorMensagemMaximo = 512;  // acima disso a mensagem inteira é recusada
+        public const int AvisosStatusPorConvidado = 20;       // linhas de aviso por convidado na sessão
+
+        /// <summary>
+        /// Pilhas aplicadas no host: 1 se o status não acumula pilhas (StatusDefinition.CanStack falso: Refresh e instâncias
+        /// múltiplas; o jogo não soma pilhas num status que já existe, mas soma ao criar); senão até o MaxStacks do status;
+        /// sem teto no jogo (0 ou menos), até PilhasStatusSemTeto.
+        /// </summary>
+        public static int PilhasStatusLimitadas(byte pilhas, int maxStacks, bool acumula)
+        {
+            int teto = !acumula ? 1 : maxStacks > 0 ? maxStacks : PilhasStatusSemTeto;
+            return pilhas > teto ? teto : pilhas;
+        }
+
+        /// <summary>Duração finita e positiva (status sem duração não vai), intensidade finita e positiva, ao menos 1 pilha.</summary>
+        public static bool StatusValido(float duracao, float intensidade, byte pilhas) =>
+            Finito(duracao) && duracao > 0f && Finito(intensidade) && intensidade > 0f && pilhas > 0;
+
+        public static float DuracaoStatusLimitada(float duracao) => duracao > DuracaoStatusMaxima ? DuracaoStatusMaxima : duracao;
+
+        public static float IntensidadeStatusLimitada(float intensidade) =>
+            intensidade < IntensidadeStatusMinima ? IntensidadeStatusMinima : intensidade > IntensidadeStatusMaxima ? IntensidadeStatusMaxima : intensidade;
     }
 
     /// <summary>Estado do teto acumulado de bônus de tempo de um convidado (ver Validacao.AceitarBonusNaJanela).</summary>

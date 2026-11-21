@@ -198,6 +198,43 @@ namespace HellClockCoop.Net
         });
     }
 
+    /// <summary>
+    /// Status de controle (lentidão, congelamento, atordoamento, enraizamento) que o convidado aplicou
+    /// nas réplicas, juntados por inimigo e status (convidado → host, 0.9.0). A duração vai antes da
+    /// resistência a controle do inimigo: quem aplica a resistência é o host.
+    /// </summary>
+    internal sealed class StatusInimigos
+    {
+        internal struct Item
+        {
+            public ushort Id;
+            public int StatusHash;    // StatusDefinition.HashID
+            public float Duracao;     // segundos
+            public float Intensidade;
+            public int SkillHash;     // SkillDefinition.HashID da skill de origem (0 se não houver)
+            public byte Pilhas;
+        }
+
+        public readonly List<Item> Itens = new List<Item>();
+
+        public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoStatusInimigos, w =>
+        {
+            w.Write((ushort)Itens.Count);
+            foreach (Item i in Itens) { w.Write(i.Id); w.Write(i.StatusHash); w.Write(i.Duracao); w.Write(i.Intensidade); w.Write(i.SkillHash); w.Write(i.Pilhas); }
+        });
+
+        public static StatusInimigos Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoStatusInimigos, r =>
+        {
+            var s = new StatusInimigos();
+            int n = r.ReadUInt16();
+            for (int k = 0; k < n; k++)
+            {
+                s.Itens.Add(new Item { Id = r.ReadUInt16(), StatusHash = r.ReadInt32(), Duracao = r.ReadSingle(), Intensidade = r.ReadSingle(), SkillHash = r.ReadInt32(), Pilhas = r.ReadByte() });
+            }
+            return s;
+        });
+    }
+
     internal static class Bin
     {
         public static void Escrever(BinaryWriter w, Vector3 v) { w.Write(v.x); w.Write(v.y); w.Write(v.z); }

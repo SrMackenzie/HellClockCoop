@@ -9,6 +9,8 @@ using HellClock.Level;
 using HellClock.Manager;
 using HellClock.Player;
 using HellClock.Skill;
+using HellClock.Stats;
+using HellClock.Status;
 using HellClockCoop.Avatar;
 using HellClockCoop.Fase2;
 using HellClockCoop.Net;
@@ -396,6 +398,62 @@ namespace HellClockCoop.Fase3
             }
         }
 
+        /// <summary>
+        /// Status de controle relatados por um convidado. A fonte é o próprio inimigo, não o jogador host:
+        /// assim não disparam as passivas nem os modificadores de duração do host (OnApplyStatus e
+        /// OnBeforeInflictStatusToTarget de quem aplica). Imunidade e resistência a controle são as do host.
+        /// </summary>
+        private static void HostAplicarStatus(Par de, StatusInimigos m)
+        {
+            if (m.Itens.Count > Validacao.ItensStatusPorMensagemMaximo) { AvisarStatus(de, $"mensagem com {m.Itens.Count} status recusada inteira"); return; }
+            foreach (StatusInimigos.Item i in m.Itens)
+            {
+                if (!HostPorId.TryGetValue(i.Id, out InimigoHost h) || h.C == null || h.C.LifeController.IsDead) continue;
+                if (!Validacao.StatusValido(i.Duracao, i.Intensidade, i.Pilhas)) { AvisarStatus(de, $"status {i.StatusHash} com duração, intensidade ou pilhas inválidas recusado"); continue; }
+                StatusDefinition def = DefinicaoStatus(i.StatusHash);
+                if (def == null) { AvisarStatus(de, $"status desconhecido {i.StatusHash} recusado"); continue; }
+                if (!StatusDeControle(def)) { AvisarStatus(de, $"status {def.name} recusado (não é de controle)"); continue; }
+                try
+                {
+                    IDamageable alvo = h.C;
+                    alvo.StatusController.AddStatus(def, h.C, alvo, Validacao.DuracaoStatusLimitada(i.Duracao),
+                        Validacao.IntensidadeStatusLimitada(i.Intensidade), i.SkillHash, Validacao.PilhasStatusLimitadas(i.Pilhas, def.MaxStacks, def.CanStack));
+                }
+                catch (Exception e)
+                {
+                    AvisarStatus(de, $"status {def.name} no inimigo {i.Id} falhou: {(e.InnerException ?? e).Message}");
+                }
+            }
+        }
+
+        /// <summary>Avisos de status já dados por convidado (SteamID) na sessão. A chave não vem do convidado.</summary>
+        private static readonly Dictionary<ulong, int> AvisosStatus = new Dictionary<ulong, int>();
+
+        /// <summary>No máximo Validacao.AvisosStatusPorConvidado linhas por convidado na sessão, para o log não encher.</summary>
+        private static void AvisarStatus(Par de, string texto)
+        {
+            AvisosStatus.TryGetValue(de.Id.m_SteamID, out int n);
+            if (n >= Validacao.AvisosStatusPorConvidado) return;
+            AvisosStatus[de.Id.m_SteamID] = ++n;
+            string fim = n == Validacao.AvisosStatusPorConvidado ? " (últimos avisos de status deste convidado na sessão)" : "";
+            Plugin.Log.LogWarning($"[Inimigos] De {de.Nome}: {texto}.{fim}");
+        }
+
+        private static StatusDefinition DefinicaoStatus(int hash)
+        {
+            try { return global::HellClock.Constants.Collections.STATUS_DEFINITION_COLLECTION.Reference.GetElement(hash); }
+            catch { return null; }
+        }
+
+        /// <summary>
+        /// Status que vão do convidado ao host: congelamento, atordoamento, enraizamento e debuff de atributo
+        /// (lentidão, reação elemental). Ficam de fora dano contínuo (o dano já chega pelos Golpes), provocação
+        /// (usa quem aplicou como alvo), auras, barreiras, curas e buffs.
+        /// </summary>
+        internal static bool StatusDeControle(StatusDefinition d) =>
+            d != null && !d.IsBuff && (d is FreezeStatusDefinition || d is StunStatusDefinition || d is RootedStatusDefinition
+                || (d is StatModifierStatusDefinition && !(d is ClosedBodyAuraStatusDefinition)));
+
         // ================= Convidado =================
 
         private sealed class Replica
@@ -423,6 +481,7 @@ namespace HellClockCoop.Fase3
         private static readonly Dictionary<ushort, InimigoSpawn> Pendentes = new Dictionary<ushort, InimigoSpawn>();
         private static readonly Dictionary<ushort, float> RecebidoEm = new Dictionary<ushort, float>();
         private static readonly Dictionary<long, Golpes.Item> GolpesAcumulados = new Dictionary<long, Golpes.Item>();
+        private static readonly Dictionary<long, StatusInimigos.Item> StatusAcumulados = new Dictionary<long, StatusInimigos.Item>();
         private static readonly object ChaveSemAfixoExtra = new object();
         private static readonly object ChaveSemDrop = new object();
         private static float _proximosGolpes;
@@ -514,14 +573,24 @@ namespace HellClockCoop.Fase3
                 foreach (ushort id in sumidos) Esquecer(id);
             }
 
-            if (GolpesAcumulados.Count > 0 && Time.unscaledTime >= _proximosGolpes)
+            if ((GolpesAcumulados.Count > 0 || StatusAcumulados.Count > 0) && Time.unscaledTime >= _proximosGolpes)
             {
                 _proximosGolpes = Time.unscaledTime + IntervaloGolpes;
-                var g = new Golpes();
-                g.Itens.AddRange(GolpesAcumulados.Values);
-                GolpesAcumulados.Clear();
                 Par host = Sessao.Host;
-                if (host != null) Sessao.EnviarPara(host, g.Serializar());
+                if (GolpesAcumulados.Count > 0)
+                {
+                    var g = new Golpes();
+                    g.Itens.AddRange(GolpesAcumulados.Values);
+                    GolpesAcumulados.Clear();
+                    if (host != null) Sessao.EnviarPara(host, g.Serializar());
+                }
+                if (StatusAcumulados.Count > 0)
+                {
+                    var st = new StatusInimigos();
+                    st.Itens.AddRange(StatusAcumulados.Values);
+                    StatusAcumulados.Clear();
+                    if (host != null) Sessao.EnviarPara(host, st.Serializar());
+                }
             }
         }
 
@@ -816,11 +885,45 @@ namespace HellClockCoop.Fase3
             }
         }
 
+        /// <summary>
+        /// Postfix de StatusController.AddStatus no convidado: status de controle que ele (ou uma invocação dele)
+        /// pôs numa réplica vai ao host. O AddStatus reescreve o argumento da duração, então aqui ela já tem os
+        /// modificadores de quem aplicou e a resistência a controle da réplica; a resistência é desfeita, porque
+        /// o host aplica a dele.
+        /// </summary>
+        internal static void ConvidadoAplicouStatus(StatusEffect resultado, StatusDefinition def, ISkillCaster fonte, IDamageable alvo,
+            float duracao, float intensidade, int skill, int pilhas)
+        {
+            if (resultado == null || AplicandoOrdem || PorVida.Count == 0 || def == null || alvo == null) return;
+            LifeController vida = alvo.LifeController;
+            if (vida == null || vida.IsDead || !PorVida.TryGetValue(vida, out Replica r)) return;
+            if (!(fonte is PlayerController || fonte is HellClock.Character.Companion.PlayerCompanionController) || !StatusDeControle(def)) return;
+            if (def.IsCrowdControl)
+            {
+                float resistencia = (float)alvo.Sheet.GetStatValue(EStatDefinition.CrowdControlResistance);
+                if (resistencia != 0f && resistencia < 1f) duracao /= 1f - resistencia;  // o jogo multiplica também com resistência negativa
+            }
+            if (!Validacao.StatusValido(duracao, intensidade, 1)) return;
+            long chave = ((long)r.Id << 32) | (uint)def.HashID;
+            StatusAcumulados.TryGetValue(chave, out StatusInimigos.Item s);
+            s.Id = r.Id;
+            s.StatusHash = def.HashID;
+            s.SkillHash = skill;
+            s.Duracao = Mathf.Max(s.Duracao, duracao);
+            s.Intensidade = Mathf.Max(s.Intensidade, intensidade);
+            // Status que não acumula pilhas (CanStack falso: Refresh e instâncias múltiplas) fica com as pilhas de quando
+            // nasceu na réplica, por mais acertos que haja na janela: junta pelo maior em vez de somar.
+            int novas = Mathf.Max(1, pilhas);
+            s.Pilhas = (byte)Mathf.Min(255, def.CanStack ? s.Pilhas + novas : Mathf.Max(s.Pilhas, novas));
+            StatusAcumulados[chave] = s;
+        }
+
         private static void LimparReplicas(string motivo)
         {
             if (Replicas.Count > 0) Plugin.Log.LogInfo($"[Inimigos] {Replicas.Count} réplicas esquecidas ({motivo}).");
             foreach (ushort id in new List<ushort>(Replicas.Keys)) Esquecer(id);
             GolpesAcumulados.Clear();
+            StatusAcumulados.Clear();
             Controles.Clear();
             PorVida.Clear();
         }
@@ -918,6 +1021,9 @@ namespace HellClockCoop.Fase3
                     case Protocolo.TipoGolpes:
                         if (Host && HostEmRun) HostAplicarGolpes(de, Golpes.Desserializar(dados));
                         break;
+                    case Protocolo.TipoStatusInimigos:
+                        if (Host && HostEmRun && de.Compativel && de.DlcOk) HostAplicarStatus(de, StatusInimigos.Desserializar(dados));
+                        break;
                 }
             }
             catch (Exception e)
@@ -932,6 +1038,7 @@ namespace HellClockCoop.Fase3
             LimparConvidado("fim da sessão");
             HostPorId.Clear();
             HostPorControle.Clear();
+            AvisosStatus.Clear();
         }
     }
 }

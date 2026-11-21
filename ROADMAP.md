@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 21/11/2026 · versão 0.8.5. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 21/11/2026 · versão 0.9.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -62,7 +62,7 @@ _O host é dono da run: todos no mesmo andar, mesmo mapa, mesmo Hell Clock._
 | ✅ | Fim da run do host encerra a de todos; sem pausa com aliados |
 | 🧪 | Entrada no meio da run, portal vermelho e fim por tempo |
 
-## Fase 3 — Combate · 71%
+## Fase 3 — Combate · 77%
 
 _Mesmos inimigos para todos, cada um vê as skills do outro, inimigos atacam qualquer jogador._
 
@@ -78,7 +78,7 @@ _Mesmos inimigos para todos, cada um vê as skills do outro, inimigos atacam qua
 | 🧪 | 3c: convidado que morre volta no próximo andar do host |
 | 🧪 | Santuários e totens de bênção compartilhados |
 | 🧪 | Chefe no convidado: fase agressiva, barra de vida e dano |
-| ⬜ | Status do convidado (lentidão, congelamento) valendo no host |
+| 🧪 | Status do convidado (lentidão, congelamento, atordoamento, enraizamento) valendo no host |
 | ⬜ | Boneco de DPS do hub visível para o outro |
 
 ## Fase 4 — Loot · 55%

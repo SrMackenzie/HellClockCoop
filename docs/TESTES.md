@@ -214,6 +214,23 @@ Para repetir o primeiro início: no `.cfg`, `[Metricas] AceitePerguntado = false
 - [ ] **Coop real, dano:** o convidado mata inimigos e chefes como antes (o dano dele continua valendo no host).
 - Se falhar, mandar: o `LogOutput.log` dos dois PCs.
 
+## 0.9.0 — Lentidão e congelamento do convidado valem para todos
+
+Só em coop real (o modo eco não tem convidado). Os dois PCs na 0.9.0 (protocolo 10).
+
+- [ ] **Lentidão e congelamento:** o convidado usa uma skill que deixa lento ou congela num inimigo que está indo
+  atrás do host. Esperado: no PC do host o inimigo também fica lento ou parado pelo mesmo tempo que o convidado vê.
+- [ ] **Atordoamento ou enraizamento** (se alguém tiver skill assim): o inimigo para de atacar ou de andar também no host.
+- [ ] **Enfraquecimento ou reação elemental** (se alguém tiver skill que reduz defesa ou marca o inimigo): o host causa
+  mais dano no inimigo marcado pelo convidado, como causaria se ele mesmo tivesse marcado.
+- [ ] **Chefe:** o convidado tenta congelar ou deixar lento um chefe. Esperado: o mesmo que acontece no solo (chefe imune
+  segue imune; resistência encurta o efeito).
+- [ ] **Dano contínuo:** sangramento ou queimadura do convidado tiram vida no mesmo ritmo de antes (não dobrou).
+- [ ] **Inimigos com afixos (campeões):** congelar ou deixar lento um campeão do convidado não faz nada estranho no host
+  (o inimigo não ganha buff, não cura e não solta efeito sozinho).
+- [ ] **Log do host:** nenhuma linha `[Inimigos] De <nome>: status ...` (recusado ou falhou) em jogo normal.
+- Se falhar, mandar: o `LogOutput.log` dos dois PCs e o nome da skill usada.
+
 ---
 
 ## Mensagem para o testador
