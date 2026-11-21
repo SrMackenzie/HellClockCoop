@@ -272,25 +272,25 @@ Solo basta (é só interface). Atualizar a partir da 0.9.1 (pelo atualizador ou 
 
 Solo basta para quase tudo (modo eco); os itens de convite e saída precisam de dois PCs. Atualizar a partir da 0.9.2.
 
-- [ ] **Abrir e fechar no menu do jogo:** o botão "Menu do coop (F7)" abaixo do painel do canto e a F7 abrem a gaveta
+- [x] **Abrir e fechar no menu do jogo:** o botão "Menu do coop (F7)" abaixo do painel do canto e a F7 abrem a gaveta
   à direita (o resto da tela escurece um pouco); Esc, F7 e o X fecham. Com a gaveta aberta, clicar fora dela não aciona
   nada do menu do jogo.
-- [ ] **Em jogo, entrada segura:** durante uma run, F7 abre a gaveta sem escurecer a tela. Com ela aberta: clicar nos
+- [x] **Em jogo, entrada segura:** durante uma run, F7 abre a gaveta sem escurecer a tela. Com ela aberta: clicar nos
   itens (e fora deles) não move o personagem; WASD e o analógico não andam; skills e poção não disparam; Esc e B fecham
   a gaveta **sem** abrir a pausa. Ao fechar, o personagem volta a responder normalmente. No log:
   `[Entrada] Entrada do jogo bloqueada` e, ao fechar, `[Entrada] Entrada do jogo liberada`.
-- [ ] **Controle:** View/Select abre e fecha a gaveta; anotar se o View faz mais alguma coisa no jogo no mesmo aperto
+- [ ] (sem controle para testar em 21/11/2026) **Controle:** View/Select abre e fecha a gaveta; anotar se o View faz mais alguma coisa no jogo no mesmo aperto
   (minimapa, HUD). Direcional cima/baixo move o foco, A confirma, B fecha; o rodapé passa a mostrar as dicas do controle.
-- [ ] **Clique segurado:** segurar o botão do mouse andando, abrir a gaveta pela F7, soltar o mouse e fechar a gaveta: o
+- [x] **Clique segurado:** segurar o botão do mouse andando, abrir a gaveta pela F7, soltar o mouse e fechar a gaveta: o
   personagem não deve continuar andando sozinho (se continuar, anotar: é o "soltar" engolido pelo bloqueio).
-- [ ] **Ações:** "Modo eco" liga e desliga o fantasma (no menu do jogo aparece "entre num save", indisponível). Com dois
+- [x] **Ações:** (o eco sumia na troca de andar e duplicava as adagas: corrigido na 0.9.4) "Modo eco" liga e desliga o fantasma (no menu do jogo aparece "entre num save", indisponível). Com dois
   PCs: "Criar coop e convidar amigos" cria o coop e abre o overlay; "Convidar amigos (Steam)" reabre o convite; "Sair do
   coop" muda para "Confirmar: sair do coop?" e só sai no segundo aperto em até 3 s. A F6 não faz mais nada.
-- [ ] **Ajustes:** "Nomes dos aliados" e "Números de dano dos aliados" mudam na hora (LIGADO/DESLIGADO) e continuam
+- [x] **Ajustes:** "Nomes dos aliados" e "Números de dano dos aliados" mudam na hora (LIGADO/DESLIGADO) e continuam
   iguais depois de reabrir o jogo (`MostrarNomesDosAliados` e `MostrarDanoDosAliados` no .cfg).
-- [ ] **Novidades:** o item "Novidades da 0.9.3" fecha a gaveta e abre a janela; em jogo a janela responde ao mouse e
+- [x] **Novidades:** o item "Novidades da 0.9.3" fecha a gaveta e abre a janela; em jogo a janela responde ao mouse e
   Esc ou B fecham sem abrir a pausa. A F10 com a gaveta aberta troca a gaveta pela janela.
-- [ ] **Telas:** em 1080p e em 1366x768 (janela) a gaveta cabe inteira, nenhum texto de item corta e os itens têm
+- [x] **Telas:** em 1080p e em 1366x768 (janela) a gaveta cabe inteira, nenhum texto de item corta e os itens têm
   altura confortável para o clique.
 - Se falhar, mandar: o `LogOutput.log` (linhas `[Menu]`, `[Entrada]` e `[Novidades]`) e uma captura da tela.
 

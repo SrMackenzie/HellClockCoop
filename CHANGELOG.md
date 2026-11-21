@@ -12,7 +12,7 @@ _21/11/2026_
 - A mesma correção vale no coop: o boneco de um aliado não aparece mais com as suas adagas ou orbes paradas
 - Balanceamento: sem efeito (só visual e modo de teste). Protocolo não muda (10), mas o coop exige a mesma versão do mod nos dois PCs
 
-## 0.9.3 — Menu do coop dentro do jogo 🧪
+## 0.9.3 — Menu do coop dentro do jogo ✅
 _21/11/2026_
 
 - Novo menu do coop: uma gaveta à direita da tela com os aliados e o estado de cada um, Criar coop e convidar amigos (Steam), Sair do coop (pede confirmação), Modo eco e os ajustes de nomes e números de dano dos aliados, além das Novidades

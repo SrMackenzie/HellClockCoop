@@ -22,7 +22,7 @@
     {
       "v": "0.9.3",
       "data": "21/11/2026",
-      "testado": false,
+      "testado": true,
       "titulo": "Menu do coop dentro do jogo",
       "itens": [
         "Novo menu do coop: uma gaveta à direita da tela com os aliados e o estado de cada um, Criar coop e convidar amigos (Steam), Sair do coop (pede confirmação), Modo eco e os ajustes de nomes e números de dano dos aliados, além das Novidades",
