@@ -18,7 +18,7 @@ namespace HellClockCoop
     {
         public const string PluginGuid = "br.srmackenzie.hellclockcoop";
         public const string PluginName = "Hell Clock Coop";
-        public const string PluginVersion = "0.7.1";
+        public const string PluginVersion = "0.7.2";
 
         /// <summary>Versão do jogo contra a qual os patches foram mapeados (Application.version).</summary>
         public const string VersaoMapeada = "2.1.1.1";
@@ -34,6 +34,7 @@ namespace HellClockCoop
             Log = Logger;
             Log.LogInfo($"{PluginName} {PluginVersion} carregado. Olá, Pajeú!");
             LogDaUnity.Ativar(); // erros da Unity também no LogOutput.log (o listener do BepInEx não funciona aqui)
+            MigrarConfigAntiga(); // antes de qualquer Config.Bind
 
             _fazerBackupDoSave = Config.Bind("Seguranca", "BackupDoSaveAoIniciar", true,
                 "Copia a pasta de save inteira antes de o jogo carregar qualquer coisa.");
@@ -85,6 +86,32 @@ namespace HellClockCoop
             // só lê o PlayerController local e usa o Steam que o próprio jogo inicializa.
             CoopRuntime.Criar(Config);
             Log.LogInfo($"Fase 1 pronta: {CoopRuntime.TeclaConvidar.Value} cria/convida, {CoopRuntime.TeclaSair.Value} sai, {CoopRuntime.TeclaEco.Value} modo eco.");
+        }
+
+        /// <summary>
+        /// O GUID mudou na 0.7.2, e com ele o nome do arquivo de configuração. Se ainda não existe o arquivo do
+        /// GUID atual, copia o de um GUID anterior (outro "*.hellclockcoop.cfg" da pasta) para ninguém perder os
+        /// ajustes. O arquivo antigo fica onde está.
+        /// </summary>
+        private void MigrarConfigAntiga()
+        {
+            try
+            {
+                string atual = Config.ConfigFilePath;
+                if (File.Exists(atual)) return;
+                foreach (string antigo in Directory.GetFiles(Paths.ConfigPath, "*.hellclockcoop.cfg"))
+                {
+                    if (string.Equals(Path.GetFullPath(antigo), Path.GetFullPath(atual), StringComparison.OrdinalIgnoreCase)) continue;
+                    File.Copy(antigo, atual);
+                    Config.Reload();
+                    Log.LogInfo($"Configuração de {Path.GetFileName(antigo)} copiada para {Path.GetFileName(atual)}.");
+                    return;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.LogWarning($"Não deu para copiar a configuração antiga: {e.Message}. Valem os valores padrão.");
+            }
         }
 
         private static void ChecarVersao()

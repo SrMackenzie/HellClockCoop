@@ -2,6 +2,16 @@
   "_leia": "Fonte única das novidades. testado: true = confirmado rodando no jogo. Depois de editar: python3 scripts/gerar-progresso.py",
   "versoes": [
     {
+      "v": "0.7.2",
+      "data": "21/11/2026",
+      "testado": false,
+      "titulo": "Identificador novo do mod",
+      "itens": [
+        "Identificador do mod trocado para br.srmackenzie.hellclockcoop; o arquivo de configuração passa a ter esse nome",
+        "Na primeira abertura, a configuração antiga é copiada para o arquivo novo (nenhum ajuste se perde)"
+      ]
+    },
+    {
       "v": "0.7.1",
       "data": "21/11/2026",
       "testado": false,

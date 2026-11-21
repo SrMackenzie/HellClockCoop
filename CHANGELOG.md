@@ -4,6 +4,12 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.7.2 — Identificador novo do mod 🧪
+_21/11/2026_
+
+- Identificador do mod trocado para br.srmackenzie.hellclockcoop; o arquivo de configuração passa a ter esse nome
+- Na primeira abertura, a configuração antiga é copiada para o arquivo novo (nenhum ajuste se perde)
+
 ## 0.7.1 — Envio opcional das métricas 🧪
 _21/11/2026_
 

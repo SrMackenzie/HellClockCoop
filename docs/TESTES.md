@@ -7,7 +7,7 @@ Regra do projeto: uma versão só vira ✅ no roadmap depois de confirmada aqui,
 
 ## Antes de começar (os dois PCs)
 
-- [ ] Os dois com a **mesma versão** do mod (zip da v0.7.1). No log: `Hell Clock Coop 0.7.1 carregado`.
+- [ ] Os dois com a **mesma versão** do mod (zip da release mais recente). No log: `Hell Clock Coop <versão> carregado`, com a mesma versão nos dois.
 - [ ] Backup do save ativo. No log: `Backup do save: N arquivo(s) copiados para ...`. Sem essa linha, **não teste**:
       confira `BackupDoSaveAoIniciar = true` em `BepInEx\config\br.srmackenzie.hellclockcoop.cfg`.
 - [ ] Validação completa. No log: `[Validação] N/N alvos de patch encontrados` (os dois números iguais).
@@ -105,9 +105,21 @@ que aparecerem perto do horário do problema.
 
 ---
 
+## 0.7.2 — Identificador novo do mod
+
+- [ ] **Configuração antiga copiada para o arquivo novo**
+  - Fazer: antes de instalar, anotar um ajuste feito no `.cfg` antigo (ex.: uma tecla trocada). Instalar a versão nova
+    e abrir o jogo.
+  - Esperado: aparece `BepInEx\config\br.srmackenzie.hellclockcoop.cfg` com o mesmo ajuste e, no log,
+    `Configuração de <arquivo antigo> copiada para br.srmackenzie.hellclockcoop.cfg.` (só na primeira abertura).
+  - Se falhar, mandar: a linha `Não deu para copiar a configuração antiga: ...` e os nomes dos arquivos `.cfg` da pasta
+    `BepInEx\config`.
+
+---
+
 ## Mensagem para o testador
 
-> E aí! Saiu a 0.7.1 do coop. Pra atualizar: baixa o `HellClockCoop-v0.7.1.zip`, abre a pasta do jogo (Steam →
+> E aí! Saiu versão nova do coop. Pra atualizar: baixa o zip da release mais recente (`HellClockCoop-v<versão>.zip`), abre a pasta do jogo (Steam →
 > Hell Clock → Gerenciar → Procurar arquivos locais) e extrai o zip lá dentro, substituindo tudo. Abre o jogo uma vez
 > pra ele criar a config e fecha.
 >
