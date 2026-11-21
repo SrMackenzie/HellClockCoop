@@ -594,6 +594,24 @@ tem o próprio id em `instalacao.txt`. O IP chega ao Google no transporte (o env
 coleção `runs` pelo console. Exclusão antes disso: o jogador abre uma issue com o conteúdo de `instalacao.txt` e o
 autor apaga `runs/<id>-*` pelo console. Para parar, desliga o envio; apagar `instalacao.txt` gera um id novo.
 
+**Aceite (0.8.1).** `Balanceamento/JanelaAceite.cs`: no primeiro início, sem personagem carregado (menu), uma janela
+IMGUI pergunta "Enviar resumos" / "Não enviar". A resposta grava `[Metricas] EnviarResumoAnonimo` e
+`[Metricas] AceitePerguntado = true` (o BepInEx salva o `.cfg` na hora) e a pergunta não volta; quem já tinha ligado o
+envio à mão é marcado como perguntado. Enquanto aberta, o módulo de entrada da UI (`EventSystem.currentInputModule`)
+fica desligado (o clique e o Enter não chegam ao menu por trás) e volta ao fechar; o `EventSystem` em si fica ligado,
+porque `HellClock.GameInput.InputHandler.Update` chama `EventSystem.current.IsPointerOverGameObject()` todo quadro e
+quebra (NullReferenceException em série) se ele for nulo. O jogo lê o teclado pelo Rewired e o `Teclas` do mod cai no
+Input legado (o log diz qual caminho na primeira tecla); lá os nomes do Input System `Enter`/`NumpadEnter` viram
+`Return`/`KeypadEnter`, e o B do controle é `JoystickButton1`. Enter = "Enviar resumos", só depois de 3 s sem apertar Enter (quem aperta Enter para
+pular a abertura não aceita sem ver a janela); os botões só respondem 1,5 s depois de abrir (o clique para pular a
+abertura também não responde); N = "Não enviar" (recusar tem tecla, como aceitar); Esc ou B no controle fecha sem
+responder até o próximo início. A janela diz o destino (Firebase do mod), o IP e a guarda. Ao aceitar, os
+`metricas/run-*.json` já salvos são lidos de volta (`Serializar.ResumoParaEnvio`: o JSON local preserva int × double) e
+entram em `pendentes` com o mesmo id que teriam (`<instalação>-<carimbo do arquivo>`, instalação com 32 hex como
+nas regras; JSON com no máximo 16 níveis); a janela diz quantos são. Runs
+solo e coop entram igual (papel `solo` é a base de comparação). Compilação sem `EnvioConfig.local.cs` não mostra a
+janela. O aviso no fim da run (0.7.1) saiu.
+
 **Próximos passos.** Painel solo × grupo, ajuste individual por diferença de progressão e jogador caído/reanimação.
 
 ## 13. Atualizador automático (versão 0.8.0)

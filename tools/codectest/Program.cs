@@ -234,6 +234,22 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Checar(j.GetProperty("andares")[0].GetProperty("segundos").GetDouble() == 41.5 && j.GetProperty("mod").GetString() == "0.7.1 \"x\"", "Métricas: JSON local");
     Checar(f.GetProperty("formato").GetProperty("integerValue").GetString() == "1" && f.GetProperty("duracao").GetProperty("doubleValue").GetDouble() == 120.0
         && f.GetProperty("andares").GetProperty("arrayValue").GetProperty("values")[0].GetProperty("mapValue").GetProperty("fields").GetProperty("indice").GetProperty("integerValue").GetString() == "3", "Métricas: corpo do Firestore");
+
+    // Resumos salvos antes do aceite: o JSON local lido de volta gera o mesmo corpo de envio (tipos preservados).
+    var lido = ts.GetMethod("LerJson").Invoke(null, new object[] { json });
+    Checar((string)ts.GetMethod("Firestore").Invoke(null, new[] { lido }) == fs, "Métricas: JSON local lido de volta = mesmo corpo do Firestore");
+    var dInst = Activator.CreateInstance(td); add.Invoke(dInst, new object[] { "formato", 1 }); add.Invoke(dInst, new object[] { "instalacao", "0123456789abcdef0123456789abcdef" });
+    add.Invoke(dInst, new object[] { "papel", "solo" }); add.Invoke(dInst, new object[] { "duracao", 0.5 });
+    string jsonInst = (string)ts.GetMethod("Json").Invoke(null, new[] { dInst });
+    var rpe = ts.GetMethod("ResumoParaEnvio");
+    var argsRpe = new object[] { "run-20261121-093015.json", jsonInst, null, null };
+    Checar((bool)rpe.Invoke(null, argsRpe) && (string)argsRpe[2] == "0123456789abcdef0123456789abcdef-20261121-093015"
+        && (string)argsRpe[3] == (string)ts.GetMethod("Firestore").Invoke(null, new[] { dInst }), "Métricas: resumo salvo → id instalação-carimbo e corpo de envio");
+    Checar(!(bool)rpe.Invoke(null, new object[] { "run-2026-11-21.json", jsonInst, null, null }), "Métricas: nome fora do padrão run-yyyyMMdd-HHmmss é ignorado");
+    Checar(!(bool)rpe.Invoke(null, new object[] { "run-20261121-093015.json", "{\"instalacao\":", null, null }), "Métricas: resumo corrompido é ignorado");
+    Checar(!(bool)rpe.Invoke(null, new object[] { "run-20261121-093015.json", json, null, null }), "Métricas: resumo sem id da instalação é ignorado");
+    Checar(!(bool)rpe.Invoke(null, new object[] { "run-20261121-093015.json", jsonInst.Replace("0123456789abcdef0123456789abcdef", "../../x"), null, null }), "Métricas: id da instalação fora do formato (32 hex) é ignorado");
+    Checar(!(bool)rpe.Invoke(null, new object[] { "run-20261121-093015.json", new string('[', 5000) + new string(']', 5000), null, null }), "Métricas: JSON aninhado demais é recusado sem estourar a pilha");
 }
 
 Console.WriteLine(falhas == 0 ? "\nTODOS OS TESTES PASSARAM" : $"\n{falhas} FALHA(S)");

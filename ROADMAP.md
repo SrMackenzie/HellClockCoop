@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 21/11/2026 · versão 0.8.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 21/11/2026 · versão 0.8.1. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -8,7 +8,7 @@
 
 Regra do projeto: uma fase só é dada como concluída depois de confirmada **rodando no jogo**.
 
-## Trilha permanente — Balanceamento · 38%
+## Trilha permanente — Balanceamento · 42%
 
 _Prioridade 1, trilha permanente: o coop deve ser um pouco mais difícil que o solo, com ajustes guiados por dados. Toda versão passa por revisão de balanceamento._
 
@@ -18,6 +18,7 @@ _Prioridade 1, trilha permanente: o coop deve ser um pouco mais difícil que o s
 | 🧪 | Valores ajustáveis no arquivo de configuração, sem recompilar |
 | 🧪 | Resumo de balanceamento de cada run, salvo no computador |
 | 🧪 | Envio anônimo dos resumos, só com aceite (Firebase, só criação) |
+| 🧪 | Pergunta do aceite no primeiro início, numa janela no menu (runs solo e coop) |
 | ⬜ | Painel de balanceamento: solo × 2, 3 e 4 jogadores, por andar e dificuldade |
 | ⬜ | Ajuste individual quando o convidado está muito abaixo ou acima do host |
 | ⬜ | Jogador caído e reanimação, em vez de a morte do host encerrar a run |

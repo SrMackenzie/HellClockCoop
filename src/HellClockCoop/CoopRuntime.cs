@@ -69,6 +69,7 @@ namespace HellClockCoop
         private void Update()
         {
             _sessao.TentarInicializar();
+            Balanceamento.JanelaAceite.Atualizar(JogadorLocal() == null);
 
             if (Teclas.Pressionou(TeclaConvidar.Value)) _sessao.HospedarOuConvidar();
             if (Teclas.Pressionou(TeclaSair.Value) && _sessao.EmSessao) _sessao.Sair("tecla " + TeclaSair.Value);
@@ -328,6 +329,8 @@ namespace HellClockCoop
                     GUI.color = Color.white;
                 }
             }
+
+            Balanceamento.JanelaAceite.Desenhar(); // por último: fica por cima do painel
         }
     }
 
@@ -336,6 +339,25 @@ namespace HellClockCoop
     {
         private static readonly Dictionary<string, Key> Cache = new Dictionary<string, Key>();
         private static bool _legadoIndisponivel;
+        private static int _caminhoInformado; // 1 = Input System, 2 = legado (o jogo lê o teclado pelo Rewired)
+
+        /// <summary>Nomes do Input System que no Input legado (KeyCode) têm outro nome.</summary>
+        private static string NomeLegado(string nome)
+        {
+            switch (nome.ToLowerInvariant())
+            {
+                case "enter": return "Return";
+                case "numpadenter": return "KeypadEnter";
+                default: return nome;
+            }
+        }
+
+        private static void InformarCaminho(int caminho)
+        {
+            if (_caminhoInformado == caminho) return;
+            _caminhoInformado = caminho;
+            Plugin.Log.LogInfo(caminho == 1 ? "[Teclas] Teclado lido pelo Input System." : "[Teclas] Teclado lido pelo Input legado.");
+        }
 
         public static bool Pressionou(string nome)
         {
@@ -351,6 +373,7 @@ namespace HellClockCoop
                         Cache[nome] = k;
                         if (k == Key.None) Plugin.Log.LogWarning($"[Teclas] Tecla '{nome}' desconhecida; ajuste no arquivo de configuração.");
                     }
+                    InformarCaminho(1);
                     return k != Key.None && teclado[k].wasPressedThisFrame;
                 }
             }
@@ -361,7 +384,8 @@ namespace HellClockCoop
             if (_legadoIndisponivel) return false;
             try
             {
-                return Enum.TryParse(nome, true, out KeyCode codigo) && Input.GetKeyDown(codigo);
+                InformarCaminho(2);
+                return Enum.TryParse(NomeLegado(nome), true, out KeyCode codigo) && Input.GetKeyDown(codigo);
             }
             catch (InvalidOperationException)
             {

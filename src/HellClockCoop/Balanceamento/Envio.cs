@@ -17,12 +17,15 @@ namespace HellClockCoop.Balanceamento
     /// - Destino: Firestore de um projeto exclusivo deste mod. As regras do banco só permitem CRIAR documentos
     ///   no formato esperado; ninguém lê, altera ou apaga pela internet (a leitura é pelo console do Firebase).
     /// - Transporte: ISteamHTTP (o cliente da Steam faz o HTTPS), sem depender do TLS do Mono do jogo.
-    /// - Só runs salvas com o aceite ligado entram na fila (metricas/pendentes). Sem internet, tenta de novo depois.
+    /// - Aceite: no primeiro início, a JanelaAceite pergunta no menu; a resposta vai para o .cfg e a pergunta não volta
+    ///   ([Metricas] AceitePerguntado). Ao aceitar, os resumos já salvos (a janela diz quantos) também entram na fila.
+    /// - Runs solo e coop entram igual: o solo é a base de comparação do balanceamento.
+    /// - Fila em metricas/pendentes. Sem internet, tenta de novo depois.
     /// </summary>
     internal static class Envio
     {
         private static ConfigEntry<bool> _aceite;
-        private static bool _avisou;
+        private static ConfigEntry<bool> _perguntado;
         private static float _proximaTentativa;
         private static bool _enviando;
         private static string _arquivoAtual;
@@ -41,22 +44,83 @@ namespace HellClockCoop.Balanceamento
                 "ou arquivos do computador; vai junto um id aleatório desta instalação (BepInEx/HellClockCoop/instalacao.txt), " +
                 "que não identifica você e serve para pedir a exclusão dos seus resumos por issue no GitHub do projeto. " +
                 "Nada é enviado enquanto estiver false. Os resumos sempre ficam também em BepInEx/HellClockCoop/metricas.");
+            _perguntado = config.Bind("Metricas", "AceitePerguntado", false,
+                "true depois que o jogador responde à janela do aceite (menu principal, no primeiro início). " +
+                "Ponha false para a pergunta aparecer de novo no próximo início.");
+            if (_aceite.Value && !_perguntado.Value) _perguntado.Value = true; // quem já tinha ligado à mão não é perguntado
         }
 
         private static bool Ligado => _aceite != null && _aceite.Value && EnvioConfig.Configurado;
 
-        /// <summary>Chamado quando um resumo é salvo no fim da run.</summary>
+        /// <summary>A janela do aceite deve aparecer: esta compilação tem destino de envio e o jogador ainda não respondeu.</summary>
+        internal static bool PrecisaPerguntar => _perguntado != null && !_perguntado.Value && EnvioConfig.Configurado;
+
+        /// <summary>Quantos resumos já estão salvos neste computador (a janela avisa que vão junto se aceitar).</summary>
+        internal static int ResumosSalvos()
+        {
+            int n = 0;
+            try
+            {
+                if (!Directory.Exists(Pasta)) return 0;
+                foreach (string f in Directory.GetFiles(Pasta, "run-*.json")) if (Serializar.NomeDeResumo(Path.GetFileName(f))) n++;
+            }
+            catch (Exception) { }
+            return n;
+        }
+
+        /// <summary>Resposta da janela: grava no .cfg (o BepInEx salva na hora) e, se aceitou, põe os resumos já salvos na fila.</summary>
+        internal static void Responder(bool aceitou)
+        {
+            if (_aceite == null || _perguntado == null) return;
+            _aceite.Value = aceitou;
+            _perguntado.Value = true;
+            Plugin.Log.LogInfo(aceitou
+                ? "[Métricas] Envio dos resumos aceito na janela do mod."
+                : "[Métricas] Envio dos resumos recusado na janela do mod; nada será enviado.");
+            if (aceitou) EnfileirarSalvos();
+        }
+
+        private static void EnfileirarSalvos()
+        {
+            int postos = 0, ignorados = 0;
+            try
+            {
+                if (!Directory.Exists(Pasta)) return;
+                foreach (string arquivo in Directory.GetFiles(Pasta, "run-*.json"))
+                {
+                    try
+                    {
+                        if (!Serializar.ResumoParaEnvio(Path.GetFileName(arquivo), File.ReadAllText(arquivo), out string id, out string corpo))
+                        {
+                            ignorados++;
+                            continue;
+                        }
+                        Directory.CreateDirectory(Pendentes);
+                        string destino = Path.Combine(Pendentes, id + ".json");
+                        if (File.Exists(destino)) continue;
+                        File.WriteAllText(destino, corpo, new UTF8Encoding(false));
+                        postos++;
+                    }
+                    catch (Exception e)
+                    {
+                        ignorados++;
+                        Plugin.Log.LogWarning($"[Métricas] Não deu para pôr {Path.GetFileName(arquivo)} na fila ({(e.InnerException ?? e).GetType().Name}).");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Métricas] Não deu para listar os resumos salvos ({(e.InnerException ?? e).GetType().Name}).");
+            }
+            if (postos > 0 || ignorados > 0)
+                Plugin.Log.LogInfo($"[Métricas] Resumos já salvos postos na fila: {postos}" + (ignorados > 0 ? $" ({ignorados} ilegível(is), ficaram só no computador)." : "."));
+            _proximaTentativa = 0f;
+        }
+
+        /// <summary>Chamado quando um resumo é salvo no fim da run (solo ou coop).</summary>
         internal static void RunSalva(string id, Doc doc)
         {
-            if (!Ligado)
-            {
-                if (!_avisou && _aceite != null && !_aceite.Value)
-                {
-                    _avisou = true;
-                    RunCompartilhada.Sessao?.Avisar("Resumo da run salvo. Para ajudar no balanceamento, ative EnviarResumoAnonimo no .cfg do mod (só dados do jogo, sem nome nem SteamID).");
-                }
-                return;
-            }
+            if (!Ligado) return;
             try
             {
                 Directory.CreateDirectory(Pendentes);

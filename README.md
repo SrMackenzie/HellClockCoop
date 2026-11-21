@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.8.0-ff7a1a?style=for-the-badge">
+  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.8.1-ff7a1a?style=for-the-badge">
   <img alt="Status" src="https://img.shields.io/badge/status-alpha%20jog%C3%A1vel-b3121f?style=for-the-badge">
   <img alt="Hell Clock" src="https://img.shields.io/badge/Hell%20Clock-2.1.1.1-4a1a1f?style=for-the-badge">
   <img alt="Jogadores" src="https://img.shields.io/badge/jogadores-2%20a%204-5fe08a?style=for-the-badge">
@@ -116,8 +116,9 @@ entra mais gente, então o balanceamento é uma **trilha permanente**: toda vers
   (configuráveis, seção `[Balanceamento]` do `.cfg`).
 - **Com dados:** cada run gera um resumo sem identificação direta (tempo por andar, inimigos mortos, dano causado e recebido, mortes)
   em `BepInEx/HellClockCoop/metricas`.
-- **Envio opcional:** com `EnviarResumoAnonimo = true` (seção `[Metricas]`, desligado por padrão), o resumo vai para um
-  Firestore exclusivo do mod. As [regras do banco](docs/firebase/firestore.rules) só permitem criar resumos no formato
+- **Envio opcional:** só com aceite. No primeiro início, uma janela no menu pergunta se pode enviar os resumos das runs
+  (solo e coop; o solo é a base de comparação). A resposta fica em `EnviarResumoAnonimo` (seção `[Metricas]`) e a
+  pergunta não volta. Com o aceite, o resumo vai para um Firestore exclusivo do mod. As [regras do banco](docs/firebase/firestore.rules) só permitem criar resumos no formato
   certo; ninguém lê pela internet. O painel solo × grupo está no roadmap.
 - **Privacidade (LGPD):** os resumos são pseudonimizados — só dados do jogo (números, dungeon, resultado, versões e data e hora da run),
   sem nome, SteamID, log ou caminhos, com um id aleatório da instalação (`BepInEx/HellClockCoop/instalacao.txt`) que vai

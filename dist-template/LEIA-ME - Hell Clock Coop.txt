@@ -52,8 +52,9 @@ ESTADO ATUAL (versão de teste, Fase 3)
     dano causado e recebido, mortes) em BepInEx\HellClockCoop\metricas. Não tem nome da Steam
     nem nada que identifique você diretamente. Mandar esses arquivos ajuda a calibrar o balanceamento.
 - NOVO (0.7.1): ENVIO OPCIONAL DOS RESUMOS.
-  * Desligado por padrão. Para ajudar, abra o .cfg do mod e, na seção [Metricas], troque
-    EnviarResumoAnonimo = false por true.
+  * Desligado por padrão. Da 0.8.1 em diante o mod pergunta numa janela no primeiro início
+    (veja abaixo). Também dá para mudar no .cfg do mod, seção [Metricas]:
+    EnviarResumoAnonimo = true (envia) ou false (não envia).
   * Vai só o resumo de cada run (o mesmo arquivo da pasta metricas), sem nome da Steam,
     SteamID, log ou qualquer arquivo do computador. Quem recebe é um banco só deste mod, que
     aceita apenas guardar resumos; ninguém consegue ler os dados pela internet.
@@ -81,6 +82,17 @@ ESTADO ATUAL (versão de teste, Fase 3)
   * Para desligar: no .cfg do mod, seção [Atualizacao], troque VerificarAoIniciar = true por false.
   * Para voltar à versão anterior à mão: desligue a opção acima e copie os arquivos de
     atualizador\anterior para os mesmos lugares dentro da pasta BepInEx.
+- NOVO (0.8.1): PERGUNTA DO ENVIO DOS RESUMOS.
+  * Na primeira vez que o mod abre, uma janela no menu do jogo pergunta se pode enviar os
+    resumos das runs (solo e coop) para calibrar o balanceamento: "Enviar resumos" ou "Não
+    enviar". Enter escolhe "Enviar resumos" (só depois de uns 3 segundos sem apertar Enter) e
+    N escolhe "Não enviar". Esc (ou B no controle) fecha sem responder, e a pergunta volta na
+    próxima abertura.
+  * A resposta fica no .cfg ([Metricas] EnviarResumoAnonimo) e a pergunta não volta. Para ver
+    a janela de novo, troque [Metricas] AceitePerguntado = true por false.
+  * Se aceitar, os resumos que já estavam salvos em BepInEx\HellClockCoop\metricas também são
+    enviados (a janela diz quantos). Vai só o que está descrito na 0.7.1: dados da run e o id
+    aleatório de instalacao.txt, para um banco Firebase (Google) só deste mod.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, aperte F6 (sai do coop) e depois use o menu normalmente.

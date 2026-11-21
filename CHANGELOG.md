@@ -4,6 +4,17 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.8.1 — Pergunta do envio das métricas 🧪
+_21/11/2026_
+
+- No primeiro início, uma janela no menu pergunta se pode enviar os resumos das runs: "Enviar resumos" ou "Não enviar"
+- A janela diz o que vai (só dados da run e o id aleatório da instalação), o que não vai, para onde vai e por quanto tempo, e como mudar depois no .cfg
+- A resposta fica em [Metricas] EnviarResumoAnonimo e a pergunta não volta ([Metricas] AceitePerguntado)
+- Enter escolhe "Enviar resumos" só depois de 3 s sem apertar Enter e N escolhe "Não enviar"; Esc (ou B no controle) deixa para o próximo início
+- Ao aceitar, os resumos já salvos no computador também entram na fila (a janela diz quantos)
+- Runs solo entram igual às de coop: são a base de comparação do balanceamento
+- Sem efeito no balanceamento
+
 ## 0.8.0 — Atualização automática ✅
 _21/11/2026_
 
