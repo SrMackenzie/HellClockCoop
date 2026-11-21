@@ -230,6 +230,7 @@ Requisito: overlay da Steam ligado (*Steam → Configurações → No jogo*).
 | <kbd>F6</kbd> | Sai do coop |
 | <kbd>F8</kbd> | **Modo eco**: um fantasma seu repete tudo com 1 s de atraso — testa o mod sem amigo |
 | <kbd>F9</kbd> | Diagnóstico: salva a estrutura do personagem |
+| <kbd>F10</kbd> | **Novidades**: o que mudou nas últimas versões do mod (também pelo botão no menu; abre sozinha uma vez depois de cada atualização) |
 
 **Host** (quem convida): entre num save e aperte <kbd>F7</kbd>. **Convidado**: aceite o convite na Steam (com o jogo
 fechado, ele abre e entra sozinho). Quando o host entra numa run, todos vão junto.
@@ -243,7 +244,8 @@ fechado, ele abre e entra sozinho). Quando o host entra numa run, todos vão jun
 - Com alguém no coop, abrir inventário, mapa ou menu **não pausa** o jogo.
 - Todos precisam ter (ou não ter) a DLC **Cursed War**. A Deluxe Edition (cosmética) não importa.
 - Ajustes em `BepInEx\config\br.srmackenzie.hellclockcoop.cfg`: teclas, nomes sobre a cabeça,
-  números de dano dos aliados (`MostrarDanoDosAliados`, `TamanhoDanoDosAliados`).
+  números de dano dos aliados (`MostrarDanoDosAliados`, `TamanhoDanoDosAliados`) e a última versão cujas novidades
+  já apareceram (`[Interface] NovidadesVistas`; apague para ver a janela de novo).
 </details>
 
 ## ⚙️ Como funciona

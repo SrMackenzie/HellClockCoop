@@ -5,7 +5,7 @@ Guia do ambiente. A arquitetura (patches, mensagens, decisões) está em [`ARQUI
 ## Requisitos
 - Hell Clock 2.1.1.1 (Steam), Unity 6000.0.60f1, scripting backend Mono.
 - .NET SDK 10 (o compilador e as ferramentas de `tools/`, que são net10.0; sem NuGet).
-- Python 3 (empacotamento e geração do progresso).
+- Python 3 (build, empacotamento e geração do progresso: o build roda `scripts/gerar-novidades.py`).
 
 ## BepInEx no Hell Clock (passo obrigatório)
 O build do jogo usa *managed stripping*: o `mscorlib.dll` embutido não tem `Module.GetPEKind`,
@@ -38,6 +38,9 @@ Em bash (Linux, Git Bash):
 scripts/build.sh "<jogo>/Hell Clock_Data/Managed" "<BepInEx>/BepInEx/core"
 # saída: build/HellClockCoop.dll  →  <jogo>/BepInEx/plugins/HellClockCoop/
 ```
+Antes do csc, os dois scripts rodam `scripts/gerar-novidades.py`, que gera
+`src/HellClockCoop/Interface/NovidadesTexto.gerado.cs` (texto da janela Novidades) a partir do `docs/changelog.json`;
+o arquivo vai para o git, mas não se edita à mão.
 O build compila com `-nostdlib` contra as DLLs **do próprio jogo**. Assim o compilador acusa na hora qualquer API
 removida pelo stripping (já apareceram: `LODGroup`, `AnimatorControllerParameter.type`, `InvalidDataException`, o setter
 de `GUIStyle.padding`, `GUI.Box(Rect,string,GUIStyle)`, `int.MinValue`, `float.MaxValue`, `Exception.GetBaseException`).
@@ -83,6 +86,9 @@ O LEIA-ME e as licenças que vão no zip estão em `dist-template/`.
 ```bash
 python3 scripts/gerar-progresso.py   # assets/progresso.svg, ROADMAP.md, CHANGELOG.md, docs/index.html
 ```
+Cada versão do `changelog.json` pode ter `testar` (3 a 5 itens curtos do roteiro de `docs/TESTES.md`): a janela
+Novidades do jogo mostra esses itens em "O que testar" enquanto `testado` for `false`. A janela leva a versão atual e
+as 3 anteriores, embutidas na DLL no build.
 
 ## Testar no jogo
 - **Console:** desde a 0.8.2 vem desligado. Para acompanhar ao vivo, `[Diagnostico] MostrarConsole = true` no .cfg do

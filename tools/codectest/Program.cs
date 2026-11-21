@@ -385,5 +385,50 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Checar(!(bool)rpe.Invoke(null, new object[] { "run-20261121-093015.json", new string('[', 5000) + new string(']', 5000), null, null }), "Métricas: JSON aninhado demais é recusado sem estourar a pilha");
 }
 
+// Novidades (0.9.2): regras puras da janela e o texto gerado do docs/changelog.json
+{
+    var tN = T("HellClockCoop.Interface.Novidades");
+    var abrir = tN.GetMethod("DeveAbrirSozinha", BindingFlags.Static | BindingFlags.NonPublic);
+    var trocar = tN.GetMethod("TrocarAba", BindingFlags.Static | BindingFlags.NonPublic);
+    var mostra = tN.GetMethod("MostraTestar", BindingFlags.Static | BindingFlags.NonPublic);
+    bool Abre(string vista, string atual) => (bool)abrir.Invoke(null, new object[] { vista, atual });
+    int Troca(int aba, int delta, int total) => (int)trocar.Invoke(null, new object[] { aba, delta, total });
+    Checar(Abre("", "0.9.2") && Abre(null, "0.9.2"), "Novidades: abre sozinha na primeira instalação (nada visto)");
+    Checar(Abre("0.9.1", "0.9.2"), "Novidades: abre sozinha depois de atualizar");
+    Checar(!Abre("0.9.2", "0.9.2") && !Abre(" 0.9.2 ", "0.9.2"), "Novidades: não abre de novo na mesma versão (espaços do .cfg ignorados)");
+    Checar(Troca(0, -1, 4) == 3 && Troca(3, 1, 4) == 0 && Troca(1, 1, 4) == 2 && Troca(2, 5, 0) == 0, "Novidades: troca de aba gira nas pontas e tolera lista vazia");
+
+    var tV = T("HellClockCoop.Interface.VersaoNovidade");
+    var versoes = (Array)T("HellClockCoop.Interface.NovidadesTexto").GetField("Versoes", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+    string Campo(object v, string f) => (string)tV.GetField(f, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(v);
+    string[] Lista(object v, string f) => (string[])tV.GetField(f, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(v);
+    // Plugin herda do BepInEx (fora do codectest): a constante da Novidades é cópia da PluginVersion, feita pelo compilador.
+    string versaoMod = (string)tN.GetField("VersaoAtual", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+    Checar(versoes.Length == 4, $"Novidades: 4 versões embutidas (atual + 3 anteriores): {versoes.Length}");
+    Checar(versoes.Length > 0 && Campo(versoes.GetValue(0), "V") == versaoMod, $"Novidades: a primeira versão embutida é a do mod ({versaoMod}); rodar scripts/gerar-novidades.py");
+    bool todasComItens = true;
+    foreach (var v in versoes) todasComItens &= Lista(v, "Itens").Length > 0 && Lista(v, "Testar") != null && !string.IsNullOrEmpty(Campo(v, "Titulo"));
+    Checar(todasComItens, "Novidades: toda versão embutida tem título e itens (testar nunca nulo)");
+    // Regra, não dado: toda versão embutida não testada e com roteiro mostra "O que testar", e todo roteiro tem 3 a 5 itens.
+    bool roteirosOk = true;
+    int comRoteiro = 0;
+    foreach (var v in versoes)
+    {
+        int n = Lista(v, "Testar").Length;
+        if (n == 0) continue;
+        comRoteiro++;
+        roteirosOk &= n >= 3 && n <= 5;
+        if (!(bool)tV.GetField("Testado", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(v))
+            roteirosOk &= (bool)mostra.Invoke(null, new[] { v });
+    }
+    Checar(roteirosOk, $"Novidades: versões não testadas com roteiro mostram \"O que testar\"; roteiros com 3 a 5 itens ({comRoteiro} com roteiro)");
+    var testada = Activator.CreateInstance(tV, BindingFlags.Instance | BindingFlags.NonPublic, null,
+        new object[] { "0.0.1", "01/01/2026", "x", true, new[] { "a" }, new[] { "b" } }, null);
+    var semRoteiro = Activator.CreateInstance(tV, BindingFlags.Instance | BindingFlags.NonPublic, null,
+        new object[] { "0.0.2", "01/01/2026", "x", false, new[] { "a" }, null }, null);
+    Checar(!(bool)mostra.Invoke(null, new[] { testada }) && !(bool)mostra.Invoke(null, new[] { semRoteiro }),
+        "Novidades: versão testada ou sem roteiro não mostra \"O que testar\"");
+}
+
 Console.WriteLine(falhas == 0 ? "\nTODOS OS TESTES PASSARAM" : $"\n{falhas} FALHA(S)");
 return falhas;

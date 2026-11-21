@@ -15,6 +15,9 @@ New-Item -ItemType Directory -Force (Join-Path $raiz "build") | Out-Null
 $refs = Get-ChildItem $managed -Filter *.dll | ForEach-Object { "-r:$($_.FullName)" }
 Push-Location $raiz
 try {
+    # Texto da janela Novidades: gerado do docs/changelog.json antes de compilar (fica embutido na DLL).
+    & python scripts/gerar-novidades.py
+    if ($LASTEXITCODE -ne 0) { throw "Falha ao gerar as novidades (scripts/gerar-novidades.py)." }
     & dotnet $csc.FullName -nologo -noconfig -nostdlib+ -target:library -langversion:9 -optimize+ -deterministic `
         -nowarn:1701,1702 -out:build/HellClockCoop.dll "-recurse:src/HellClockCoop/*.cs" @refs `
         "-r:$core\BepInEx.dll" "-r:$core\0Harmony.dll"

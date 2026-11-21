@@ -243,6 +243,27 @@ enfraquecimento, mais:
   convidado difere da definição do host): não é falha; mandar o log se repetir em toda run.
 - Se falhar, mandar: o `LogOutput.log` dos dois PCs e o nome da skill usada.
 
+## 0.9.2 — Janela de novidades dentro do jogo
+
+Solo basta (é só interface). Atualizar a partir da 0.9.1 (pelo atualizador ou à mão).
+
+- [ ] **Abertura automática:** ao abrir o jogo depois de atualizar, a janela Novidades aparece sozinha no menu, com a
+  aba `v0.9.2 NOVA` selecionada. Esc, B ou clique em "Fechar" logo ao abrir (no primeiro 1,5 s) não fecham, para
+  quem pula a abertura do jogo não perder a janela; a F10 fecha sempre. Na primeira instalação com a janela do aceite das métricas, a das Novidades só abre
+  depois de responder (ou adiar) o aceite.
+- [ ] **Uma vez só:** fechar (botão "Fechar", Esc ou F10) e reabrir o jogo: a janela não volta sozinha
+  (`[Interface] NovidadesVistas = 0.9.2` no .cfg). Apagar o valor faz ela voltar no próximo início.
+- [ ] **Botão do menu:** o botão "Novidades da 0.9.2 (F10)" no canto superior esquerdo do menu reabre a janela; com
+  personagem carregado o botão some.
+- [ ] **Navegação:** setas esquerda/direita (ou LB/RB) trocam de versão e giram nas pontas; no menu, clicar na aba
+  também troca. A aba `v0.9.1` mostra "O que testar"; texto longo rola com a roda do mouse ou as setas cima/baixo.
+- [ ] **Durante a run:** F10 abre e fecha a janela (o rodapé mostra só a F10); enquanto aberta, F6/F7 não disparam e
+  clicar na tela não troca aba nem rola. Anotar o que Esc e B fazem em jogo: o mod não segura o Rewired, então o Esc
+  pode abrir também o menu de pausa, o B, LB/RB, o direcional e as setas podem disparar a ação deles (risco conhecido, não é falha da janela).
+- [ ] **Telas:** em 1080p e numa resolução menor (ex.: 1366x768 em janela) a janela cabe inteira e o texto não
+  corta.
+- Se falhar, mandar: o `LogOutput.log` (linhas `[Novidades]`) e uma captura da tela.
+
 ---
 
 ## Mensagem para o testador

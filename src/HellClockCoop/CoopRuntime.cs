@@ -56,6 +56,7 @@ namespace HellClockCoop
             Fase3.DanosVisiveis.Configurar(config);
             Balanceamento.Escalonamento.Configurar(config);
             Balanceamento.Envio.Configurar(config);
+            Interface.Novidades.Configurar(config);
 
             var go = new GameObject("HellClockCoop_Runtime");
             DontDestroyOnLoad(go);
@@ -69,7 +70,10 @@ namespace HellClockCoop
         private void Update()
         {
             _sessao.TentarInicializar();
-            Balanceamento.JanelaAceite.Atualizar(JogadorLocal() == null);
+            bool semPersonagem = JogadorLocal() == null;
+            Balanceamento.JanelaAceite.Atualizar(semPersonagem);
+            Interface.Novidades.Atualizar(semPersonagem); // depois do aceite: abre só com ele fechado
+            if (Interface.Novidades.Aberta) return; // aberta, as teclas do coop (F6, F7...) não disparam por trás
 
             if (Teclas.Pressionou(TeclaConvidar.Value)) _sessao.HospedarOuConvidar();
             if (Teclas.Pressionou(TeclaSair.Value) && _sessao.EmSessao) _sessao.Sair("tecla " + TeclaSair.Value);
@@ -309,13 +313,16 @@ namespace HellClockCoop
             }
             foreach (KeyValuePair<float, string> a in _avisos) linhas.Add("» " + a.Value);
 
+            float yBotao = 12f;
             if (linhas.Count > 0)
             {
                 string texto = string.Join("\n", linhas);
                 var conteudo = new GUIContent(texto);
                 float altura = _estiloCaixa.CalcHeight(conteudo, 560f);
                 GUI.Box(new Rect(12, 12, 560, altura), conteudo, _estiloCaixa);
+                yBotao += altura + 8f;
             }
+            Interface.Novidades.DesenharBotaoMenu(yBotao); // só no menu (sem personagem)
 
             if (MostrarNomes.Value && Camera.main != null)
             {
@@ -330,6 +337,7 @@ namespace HellClockCoop
                 }
             }
 
+            Interface.Novidades.Desenhar();
             Balanceamento.JanelaAceite.Desenhar(); // por último: fica por cima do painel
         }
     }

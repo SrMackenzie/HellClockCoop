@@ -1,6 +1,26 @@
 {
-  "_leia": "Fonte única das novidades. testado: true = confirmado rodando no jogo. Depois de editar: python3 scripts/gerar-progresso.py",
+  "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
+    {
+      "v": "0.9.2",
+      "data": "21/11/2026",
+      "testado": false,
+      "titulo": "Janela de novidades dentro do jogo",
+      "itens": [
+        "Nova janela \"Novidades\": mostra o que mudou na versão atual do mod e nas 3 anteriores, sem precisar abrir a página da release",
+        "Abre sozinha uma vez, no menu, na primeira vez que o jogo abre depois de uma atualização; depois, pelo botão \"Novidades\" no menu ou pela tecla F10 (também durante o jogo)",
+        "Versões ainda não testadas no jogo mostram a seção \"O que testar\", com o roteiro curto para quem testa",
+        "Setas ou LB/RB trocam de versão; Esc, F10 ou B fecham. Durante o jogo a janela responde só ao teclado e ao controle, para o clique não mover o personagem; feche com F10 (Esc e B também chegam ao jogo)",
+        "Balanceamento: sem efeito (só interface). Protocolo não muda (10), mas o coop exige a mesma versão do mod nos dois PCs (o atualizador baixa a 0.9.2 sozinho ao abrir o jogo)"
+      ],
+      "testar": [
+        "Ao abrir o jogo depois de atualizar, a janela Novidades aparece sozinha no menu, com a aba v0.9.2 NOVA selecionada",
+        "Fechar (botão, Esc ou F10) e reabrir o jogo: a janela não volta sozinha; o botão \"Novidades\" no canto superior esquerdo do menu reabre",
+        "Setas esquerda/direita (ou LB/RB) trocam de versão; a aba v0.9.1 mostra \"O que testar\"",
+        "Durante uma run, F10 abre e fecha a janela; com ela aberta, F6/F7 não disparam e clicar na tela não muda nada na janela",
+        "Na primeira abertura com a janela do aceite das métricas, a das Novidades só aparece depois de responder o aceite"
+      ]
+    },
     {
       "v": "0.9.1",
       "data": "21/11/2026",
@@ -10,7 +30,14 @@
         "Continuam valendo no jogo do host o congelamento, o atordoamento, o enraizamento e a lentidão que o convidado aplica: o que mexe no corpo do inimigo é de todos",
         "Deixam de valer no host os efeitos do convidado que mexem no dano (vulnerabilidade, menos resistência, óleo, reações elementais): ficam pessoais, como no solo",
         "Balanceamento: na 0.9.0 o host também ganhava os enfraquecimentos do convidado, o que deixava o coop mais fácil. Agora cada um só aproveita os próprios; combos entre jogadores ficam para depois, guiados pelos resumos das runs",
-        "Protocolo não muda (10): 0.9.0 e 0.9.1 jogam juntos e vale o filtro mais restrito; com convidado na 0.9.0, o log do host mostra avisos de status recusado (o atualizador baixa a 0.9.1 sozinho ao abrir o jogo)"
+        "Protocolo não muda (10), mas o coop exige a mesma versão do mod nos dois PCs (o atualizador baixa a 0.9.1 sozinho ao abrir o jogo)"
+      ],
+      "testar": [
+        "Coop real, os dois PCs na 0.9.1: a lentidão e o congelamento do convidado continuam deixando o inimigo lento ou parado também no host",
+        "Enfraquecimento ou reação elemental do convidado (menos defesa, óleo, marca): o host NÃO causa dano a mais nesse inimigo; na tela do convidado o bônus dele segue valendo",
+        "Chefe: o convidado tenta congelar ou deixar lento; o resultado é o mesmo do solo (chefe imune segue imune)",
+        "Sangramento e queimadura do convidado tiram vida no mesmo ritmo de antes (não dobrou)",
+        "Log do host sem linhas \"[Inimigos] De <nome>: status ... recusado\" em toda run (um aviso isolado não é falha); se repetir, mandar o LogOutput.log dos dois PCs e o nome da skill"
       ]
     },
     {

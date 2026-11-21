@@ -4,13 +4,22 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.9.2 — Janela de novidades dentro do jogo 🧪
+_21/11/2026_
+
+- Nova janela "Novidades": mostra o que mudou na versão atual do mod e nas 3 anteriores, sem precisar abrir a página da release
+- Abre sozinha uma vez, no menu, na primeira vez que o jogo abre depois de uma atualização; depois, pelo botão "Novidades" no menu ou pela tecla F10 (também durante o jogo)
+- Versões ainda não testadas no jogo mostram a seção "O que testar", com o roteiro curto para quem testa
+- Setas ou LB/RB trocam de versão; Esc, F10 ou B fecham. Durante o jogo a janela responde só ao teclado e ao controle, para o clique não mover o personagem; feche com F10 (Esc e B também chegam ao jogo)
+- Balanceamento: sem efeito (só interface). Protocolo não muda (10), mas o coop exige a mesma versão do mod nos dois PCs (o atualizador baixa a 0.9.2 sozinho ao abrir o jogo)
+
 ## 0.9.1 — Só o controle do convidado vale para todos 🧪
 _21/11/2026_
 
 - Continuam valendo no jogo do host o congelamento, o atordoamento, o enraizamento e a lentidão que o convidado aplica: o que mexe no corpo do inimigo é de todos
 - Deixam de valer no host os efeitos do convidado que mexem no dano (vulnerabilidade, menos resistência, óleo, reações elementais): ficam pessoais, como no solo
 - Balanceamento: na 0.9.0 o host também ganhava os enfraquecimentos do convidado, o que deixava o coop mais fácil. Agora cada um só aproveita os próprios; combos entre jogadores ficam para depois, guiados pelos resumos das runs
-- Protocolo não muda (10): 0.9.0 e 0.9.1 jogam juntos e vale o filtro mais restrito; com convidado na 0.9.0, o log do host mostra avisos de status recusado (o atualizador baixa a 0.9.1 sozinho ao abrir o jogo)
+- Protocolo não muda (10), mas o coop exige a mesma versão do mod nos dois PCs (o atualizador baixa a 0.9.1 sozinho ao abrir o jogo)
 
 ## 0.9.0 — Lentidão e congelamento do convidado valem para todos 🧪
 _21/11/2026_

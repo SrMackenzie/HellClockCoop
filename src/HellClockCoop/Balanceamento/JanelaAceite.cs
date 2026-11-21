@@ -33,6 +33,9 @@ namespace HellClockCoop.Balanceamento
         private static readonly List<BaseInputModule> Desligados = new List<BaseInputModule>();
         private static GUIStyle _titulo, _texto, _rodape, _botao;
 
+        /// <summary>A janela das Novidades espera esta fechar (as duas não abrem uma por cima da outra).</summary>
+        internal static bool Aberta => _aberta;
+
         /// <summary>No Update do runtime, antes de tudo que lê teclas.</summary>
         internal static void Atualizar(bool semPersonagem)
         {

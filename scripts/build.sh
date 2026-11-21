@@ -8,6 +8,10 @@ MANAGED="$1"; CORE="$2"
 CSC=$(find "$(dirname "$(readlink -f "$(command -v dotnet)")")/sdk" -name csc.dll | head -1)
 cd "$(dirname "$0")/.."
 mkdir -p build
+# Texto da janela Novidades: gerado do docs/changelog.json antes de compilar (fica embutido na DLL).
+PY=$(command -v python3 || command -v python || true)
+[ -n "$PY" ] || { echo "ERRO: Python 3 não encontrado (o build roda scripts/gerar-novidades.py)." >&2; exit 1; }
+"$PY" scripts/gerar-novidades.py
 REFS=()
 for f in "$MANAGED"/*.dll; do REFS+=("-r:$f"); done
 dotnet "$CSC" -nologo -noconfig -nostdlib+ -target:library -langversion:9 -optimize+ -deterministic \

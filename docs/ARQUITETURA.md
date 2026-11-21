@@ -667,6 +667,29 @@ janela. O aviso no fim da run (0.7.1) saiu.
 
 **Próximos passos.** Painel solo × grupo, ajuste individual por diferença de progressão e jogador caído/reanimação.
 
+### 12.1 Janela Novidades (versão 0.9.2)
+
+`Interface/Novidades.cs` mostra, em IMGUI, a versão atual do mod e as 3 anteriores, com abas por versão e, nas que
+têm `testado: false`, a seção "O que testar" (campo opcional `testar` do `docs/changelog.json`). O texto vem de
+`Interface/NovidadesTexto.gerado.cs`, que `scripts/gerar-novidades.py` gera do `changelog.json` antes de cada build
+(`build.ps1` e `build.sh`): nada de JSON nem rede em runtime (o mscorlib do jogo é stripped). O arquivo gerado vai
+para o git, como `CHANGELOG.md`, mas não se edita à mão; o codectest confere que a primeira versão embutida é a
+`PluginVersion` (pela constante `Novidades.VersaoAtual`, para não carregar o `Plugin`, que depende do BepInEx).
+
+Abre sozinha uma vez, no menu (sem personagem), quando `[Interface] NovidadesVistas` difere da versão do mod (também
+na primeira instalação), e só com a janela do aceite (12) fechada; ao fechar, grava a versão atual ali. Como a
+exibição automática é única e abre já nas telas de abertura, Esc, B e o botão "Fechar" só respondem 1,5 s depois
+(quem aperta Esc para pular a abertura não a perde sem ver); a F10 fecha sempre. Depois, abre
+pelo botão "Novidades" abaixo do painel do coop (só no menu) ou pela tecla `[Teclas] Novidades` (F10, também em
+jogo). Com personagem carregado a janela só responde ao teclado e ao controle: o jogo lê o mouse pelo Rewired, fora do
+IMGUI, e o clique numa aba moveria o personagem. Como a JanelaAceite, desliga `EventSystem.currentInputModule` enquanto
+aberta e religa no quadro seguinte ao fechar; enquanto aberta, o `Update` do runtime não lê as teclas do coop
+(F6/F7/F8/F9). Setas esquerda/direita ou LB/RB (`JoystickButton4/5` no Input legado) trocam de versão; setas
+cima/baixo ou o direcional rolam; Esc, F10 ou B (`JoystickButton1`) fecham. O módulo desligado não segura o Rewired:
+em jogo, Esc, B, LB/RB, o direcional e as setas também chegam ao jogo, por isso o rodapé ali indica só a F10. Em jogo o corpo é recortado com
+`GUI.BeginGroup` e rola só pelas setas (a barra e a roda do `ScrollView` responderiam ao mouse); no menu usa
+`GUI.BeginScrollView`, que só existe na sobrecarga de 5 parâmetros no jogo (stripping). Sem efeito no balanceamento nem no protocolo.
+
 ## 13. Atualizador automático (versão 0.8.0)
 
 **Onde roda.** `BepInEx\patchers\HellClockCoop.Atualizador.dll`, um preloader patcher do BepInEx 5 sem DLL alvo: só o
