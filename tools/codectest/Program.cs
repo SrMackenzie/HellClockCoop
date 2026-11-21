@@ -220,6 +220,47 @@ IdaVolta("InimigoSkill", new (string, object)[] { ("Id", (ushort)300), ("SkillHa
 IdaVolta("ObjetoSpawn", new (string, object)[] { ("Id", (ushort)12), ("Andar", 3u), ("Tipo", (byte)1), ("DefinicaoHash", 777), ("Posicao", new UnityEngine.Vector3(5f, 0f, 9f)), ("Raio", 2.5f), ("Estado", (byte)2) }, 43);
 IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", (byte)1) }, 44);
 
+// Validação na recepção (0.8.4): a mensagem passa pelo codec e o valor lido de volta passa pelo filtro.
+{
+    var tv = T("HellClockCoop.Net.Validacao");
+    bool V(string m, params object[] a) => (bool)tv.GetMethod(m).Invoke(null, a);
+    object Lido(string tipo, (string campo, object valor)[] campos)
+    {
+        var t = T("HellClockCoop.Net." + tipo); var o = Activator.CreateInstance(t);
+        foreach (var (c, v) in campos) t.GetField(c).SetValue(o, v);
+        return t.GetMethod("Desserializar").Invoke(null, new object[] { (byte[])t.GetMethod("Serializar").Invoke(o, null) });
+    }
+    object Campo(object o, string c) => o.GetType().GetField(c).GetValue(o);
+
+    // PlanoAndar: MaxLevelIndex é a quantidade de andares (índices 0..Max-1); andar especial (sem dungeon = -1): teto de sanidade
+    uint andar = (uint)Campo(Lido("PlanoAndar", new (string, object)[] { ("IndiceAndar", 10u) }), "IndiceAndar");
+    Checar(V("AndarValido", andar, 11) && !V("AndarValido", andar + 1, 11) && !V("AndarValido", 0u, 0), "Validação: andar 10 aceito com MaxLevelIndex 11; 11 (um além do fim) recusado");
+    Checar(V("AndarValido", 200u, -1) && !V("AndarValido", 201u, -1) && !V("AndarValido", uint.MaxValue, -1), "Validação: andar especial até o teto de sanidade (200)");
+    Checar(!V("AndarValido", uint.MaxValue, 30), "Validação: andar uint.MaxValue recusado");
+
+    // FimRun: só EGameOverSource (0..4)
+    int mot(int m) => (int)Campo(Lido("FimRun", new (string, object)[] { ("Motivo", m) }), "Motivo");
+    Checar(V("MotivoFimRunValido", mot(0)) && V("MotivoFimRunValido", mot(4)), "Validação: FimRun motivo 0 e 4 aceitos");
+    Checar(!V("MotivoFimRunValido", mot(5)) && !V("MotivoFimRunValido", mot(-1)) && !V("MotivoFimRunValido", mot(int.MaxValue)), "Validação: FimRun motivo 5, -1 e int.MaxValue recusados");
+
+    // TimerBonus: finito, > 0 e até 120 s
+    float bonus(float s) => (float)Campo(Lido("TimerBonus", new (string, object)[] { ("Segundos", s) }), "Segundos");
+    Checar(V("BonusTempoValido", bonus(15f)) && V("BonusTempoValido", bonus(120f)), "Validação: TimerBonus 15 s e 120 s aceitos");
+    Checar(!V("BonusTempoValido", bonus(float.NaN)) && !V("BonusTempoValido", bonus(float.PositiveInfinity)) && !V("BonusTempoValido", bonus(0f))
+        && !V("BonusTempoValido", bonus(-5f)) && !V("BonusTempoValido", bonus(120.5f)) && !V("BonusTempoValido", bonus(3.4e38f)), "Validação: TimerBonus NaN, ∞, 0, negativo, 120,5 s e 3.4e38 recusados");
+
+    // TimerSync: os dois campos finitos e >= 0
+    object timer(float a, float b) => Lido("TimerSync", new (string, object)[] { ("Timer", a), ("TimerRelaxado", b) });
+    Checar(V("TimerValido", timer(0f, 0f)) && V("TimerValido", timer(417.25f, 999.5f)), "Validação: TimerSync 0 e valores normais aceitos");
+    Checar(!V("TimerValido", timer(float.NaN, 1f)) && !V("TimerValido", timer(1f, float.NegativeInfinity)) && !V("TimerValido", timer(-0.5f, 1f))
+        && !V("TimerValido", timer(1f, -1f)) && !V("TimerValido", new object[] { null }), "Validação: TimerSync NaN, -∞, negativo e nulo recusados");
+
+    // ObjetoUsado: Concluido (purificação) só do host; Usado de qualquer par
+    byte est(byte e) => (byte)Campo(Lido("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", e) }), "Estado");
+    Checar(V("ObjetoUsadoAceito", est(2), true) && !V("ObjetoUsadoAceito", est(2), false), "Validação: ObjetoUsado Concluido só do host");
+    Checar(V("ObjetoUsadoAceito", est(1), true) && V("ObjetoUsadoAceito", est(1), false), "Validação: ObjetoUsado Usado de qualquer par");
+}
+
 
 // Métricas: JSON local e corpo do Firestore
 {

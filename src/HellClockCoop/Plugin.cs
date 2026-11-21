@@ -18,7 +18,7 @@ namespace HellClockCoop
     {
         public const string PluginGuid = "br.srmackenzie.hellclockcoop";
         public const string PluginName = "Hell Clock Coop";
-        public const string PluginVersion = "0.8.3";
+        public const string PluginVersion = "0.8.4";
 
         /// <summary>Versão do jogo contra a qual os patches foram mapeados (Application.version).</summary>
         public const string VersaoMapeada = "2.1.1.1";
@@ -211,6 +211,7 @@ namespace HellClockCoop
 
         private static void LimparAntigos(string raiz, int manter)
         {
+            manter = Math.Max(1, manter); // .cfg com 0 ou negativo apagaria até o backup que acabou de ser feito
             string[] pastas = Directory.GetDirectories(raiz);
             Array.Sort(pastas, StringComparer.Ordinal); // nomes por data: ordem alfabética = cronológica
             for (int i = 0; i < pastas.Length - manter; i++)

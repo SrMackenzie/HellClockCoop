@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 21/11/2026 · versão 0.8.3. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 21/11/2026 · versão 0.8.4. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -80,7 +80,7 @@ _Mesmos inimigos para todos, cada um vê as skills do outro, inimigos atacam qua
 | ⬜ | Status do convidado (lentidão, congelamento) valendo no host |
 | ⬜ | Boneco de DPS do hub visível para o outro |
 
-## Fase 4 — Loot · 35%
+## Fase 4 — Loot · 55%
 
 _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio save._
 
@@ -90,7 +90,7 @@ _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio s
 | 🧪 | Loot próprio de baús e quebráveis |
 | ⬜ | Revisar XP de inimigos mortos longe do jogador |
 | ⬜ | Revisar drops de invocações, ondas de sobrevivência e temporadas |
-| ⬜ | Auditoria: o mod nunca escreve no save de outro jogador |
+| ✅ | Auditoria: o mod nunca escreve no save de outro jogador |
 
 ## Fase 5 — Polimento · 22%
 

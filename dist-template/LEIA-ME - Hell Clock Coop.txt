@@ -100,6 +100,10 @@ ESTADO ATUAL (versão de teste, Fase 3)
     por true. Vale a partir da próxima abertura do jogo.
 - NOVO (0.8.3): o erro da tela de saves que é do próprio jogo aparece no LogOutput.log numa
   única linha de aviso, sem a pilha (ver PROBLEMAS COMUNS).
+- NOVO (0.8.4): o seu save fica protegido de mensagens inválidas. Andar além do fim da dungeon,
+  fim de run desconhecido, tempo fora do normal e inimigos, baús ou santuários que não vêm do
+  host são ignorados (andar, fim de run e tempo ganho com aviso no log). O backup do save
+  sempre guarda pelo menos 1 cópia.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, aperte F6 (sai do coop) e depois use o menu normalmente.

@@ -137,6 +137,7 @@ namespace HellClockCoop.Fase2
                 case Protocolo.TipoPlanoAndar:
                     if (!Convidado || de != sessao.Host) return;
                     PlanoAndar plano = PlanoAndar.Desserializar(dados);
+                    if (!PlanoValido(plano)) return;
                     if (plano.Primeiro) { Planos.Clear(); SpawnsDoHost.Clear(); }
                     Planos[plano.IndiceAndar] = plano;
                     _planoPendente = plano;
@@ -153,6 +154,7 @@ namespace HellClockCoop.Fase2
                 case Protocolo.TipoTimer:
                     if (!Convidado || de != sessao.Host || !Dpm.RunStarted.Value) return;
                     TimerSync t = TimerSync.Desserializar(dados);
+                    if (!Validacao.TimerValido(t)) return; // 4 Hz: descarta sem log
                     TimerManager tm = TimerManager.Instance;
                     if (tm == null) return;
                     TimerRef(tm).Setter(t.Timer);
@@ -162,6 +164,11 @@ namespace HellClockCoop.Fase2
                 case Protocolo.TipoTimerBonus:
                     if (!Host) return;
                     TimerBonus b = TimerBonus.Desserializar(dados);
+                    if (!Validacao.BonusTempoValido(b.Segundos))
+                    {
+                        Plugin.Log.LogWarning($"[Run] Bônus de tempo inválido de {de.Nome} ({b.Segundos}s); ignorado.");
+                        return;
+                    }
                     Plugin.Log.LogInfo($"[Run] {de.Nome} ganhou {b.Segundos:0.#}s de Hell Clock.");
                     TimerManager.Instance?.IncrementTimer(b.Segundos);
                     break;
@@ -169,6 +176,11 @@ namespace HellClockCoop.Fase2
                 case Protocolo.TipoFimRun:
                     if (!Convidado || de != sessao.Host) return;
                     FimRun f = FimRun.Desserializar(dados);
+                    if (!Validacao.MotivoFimRunValido(f.Motivo))
+                    {
+                        Plugin.Log.LogWarning($"[Run] Fim de run com motivo desconhecido ({f.Motivo}); ignorado.");
+                        return;
+                    }
                     Planos.Clear(); SpawnsDoHost.Clear(); _planoPendente = null; _entradaTardia = null;
                     if (!Dpm.RunStarted.Value || Dpm.EndingExecuted.Value) return;
                     Plugin.Log.LogInfo($"[Run] Host encerrou a run ({(EGameOverSource)f.Motivo}).");
@@ -177,6 +189,30 @@ namespace HellClockCoop.Fase2
                     finally { _ordemDoHost = false; }
                     break;
             }
+        }
+
+        /// <summary>
+        /// Descarta plano com andar além do fim da dungeon: o convidado avançaria até ele e o jogo gravaria isso
+        /// no save dele (CurrentLevelChanged). Andar especial não tem DungeonConfig: vale o teto de sanidade.
+        /// </summary>
+        private static bool PlanoValido(PlanoAndar p)
+        {
+            int max = -1;
+            if (p.AndarEspecial == (int)ESpecialFloor.None)
+            {
+                DungeonConfig d = DungeonConfig.GetByID(p.DungeonHash);
+                if (d == null)
+                {
+                    Plugin.Log.LogWarning($"[Run] Plano do host ignorado: dungeon {p.DungeonHash} não existe neste jogo.");
+                    return false;
+                }
+                max = (int)d.MaxLevelIndex;
+            }
+            if (Validacao.AndarValido(p.IndiceAndar, max)) return true;
+            Plugin.Log.LogWarning(max >= 0
+                ? $"[Run] Plano do host ignorado: andar {p.IndiceAndar} além do fim da dungeon ({max} andares, índices 0 a {max - 1})."
+                : $"[Run] Plano do host ignorado: andar especial {p.IndiceAndar} acima do teto de sanidade ({Validacao.AndarMaximoSemDungeon}).");
+            return false;
         }
 
         /// <summary>Host: manda o andar atual para quem acabou de chegar (entrada no meio da run).</summary>

@@ -4,6 +4,16 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.8.4 — Save protegido de mensagens inválidas 🧪
+_21/11/2026_
+
+- Auditoria do save concluída: o mod nunca escreve no save de outro jogador; o que entra no save do convidado é gravado pelo próprio jogo dele
+- O convidado ignora um plano de andar além do último andar da dungeon e um fim de run com motivo desconhecido (aviso no log)
+- O host ignora bônus de tempo inválido (não numérico, zero, negativo ou acima de 120 s); o convidado ignora timer não numérico ou negativo
+- Inimigos, baús e santuários novos e a purificação de santuário amaldiçoado só são aceitos quando vêm do host
+- Backup do save: BackupsMantidos = 0 ou negativo no .cfg passa a manter pelo menos 1 cópia
+- Balanceamento: sem mudança nos valores normais; só um bônus de tempo acima de 120 s vindo de um convidado deixa de valer
+
 ## 0.8.3 — Erro conhecido da tela de saves ✅
 _21/11/2026_
 

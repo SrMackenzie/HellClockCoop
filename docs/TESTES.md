@@ -193,6 +193,19 @@ Para repetir o primeiro início: no `.cfg`, `[Metricas] AceitePerguntado = false
 - [ ] **Outros erros da Unity** seguem com a pilha e o agrupamento (`(repetido Nx)`).
 - Se falhar, mandar: o `LogOutput.log` e o `Player.log`.
 
+## 0.8.4 — Save protegido de mensagens inválidas
+
+- [ ] **Backup ao iniciar:** abrir o jogo e conferir uma pasta nova `yyyy-MM-dd_HH-mm-ss` em
+  `BepInEx\HellClockCoop\save-backups`, com os mesmos arquivos da pasta de save do jogo
+  (`Application.persistentDataPath`). Com `BackupsMantidos = 0` no `.cfg`, sobra 1 pasta (a nova).
+- [ ] **Run no modo eco (F8):** anotar a data de modificação dos arquivos de save, jogar 2 ou 3 andares e encerrar a run.
+  Esperado: os arquivos mudam ao trocar de andar e no fim da run (como no solo); nenhum `[Run] Plano do host ignorado`,
+  `Bônus de tempo inválido` ou `Fim de run com motivo desconhecido` no `LogOutput.log`.
+- [ ] **Coop real (autor + testador):** subir andares até o último da dungeon e concluir. Esperado: o convidado acompanha
+  todos os andares (nenhum plano ignorado), o tempo ganho pelo convidado soma no Hell Clock do host, inimigos, baús e
+  santuários aparecem para o convidado e a purificação de santuário amaldiçoado dá o ponto de constelação aos dois.
+- Se falhar, mandar: o `LogOutput.log` dos dois PCs.
+
 ---
 
 ## Mensagem para o testador

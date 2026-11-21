@@ -276,7 +276,7 @@ namespace HellClockCoop.Fase3
                 switch (dados[0])
                 {
                     case Protocolo.TipoBauSpawn:
-                        if (!Convidado) return;
+                        if (!Convidado || de != sessao.Host) return;
                         BauSpawn s = BauSpawn.Desserializar(dados);
                         if (!BausPorId.ContainsKey(s.Id)) { Pendentes[s.Id] = s; RecebidoEm[s.Id] = Time.unscaledTime; }
                         break;

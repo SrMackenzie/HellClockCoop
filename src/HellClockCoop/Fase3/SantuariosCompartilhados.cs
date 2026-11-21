@@ -264,12 +264,19 @@ namespace HellClockCoop.Fase3
                 switch (dados[0])
                 {
                     case Protocolo.TipoObjetoSpawn:
-                        if (!Convidado) return;
+                        if (!Convidado || de != sessao.Host) return;
                         ObjetoSpawn s = ObjetoSpawn.Desserializar(dados);
                         if (!PorId.ContainsKey(s.Id)) { Pendentes[s.Id] = s; RecebidoEm[s.Id] = Time.unscaledTime; }
                         break;
                     case Protocolo.TipoObjetoUsado:
-                        UsarPorOrdem(ObjetoUsado.Desserializar(dados), de);
+                        ObjetoUsado u = ObjetoUsado.Desserializar(dados);
+                        // Purificação (Concluido) dá ponto de constelação no save de quem recebe: só o host decide.
+                        if (!Validacao.ObjetoUsadoAceito(u.Estado, de == sessao.Host))
+                        {
+                            Plugin.Log.LogWarning($"[Objetos] Purificação do santuário {u.Id} vinda de {de.Nome} (não é o host); ignorada.");
+                            return;
+                        }
+                        UsarPorOrdem(u, de);
                         if (Host)
                         {
                             foreach (Par p in sessao.Pares.Values) if (p != de && p.Compativel && p.DlcOk) sessao.EnviarPara(p, dados);

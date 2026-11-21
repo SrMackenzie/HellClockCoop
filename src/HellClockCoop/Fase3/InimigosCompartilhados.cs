@@ -871,12 +871,12 @@ namespace HellClockCoop.Fase3
                 switch (dados[0])
                 {
                     case Protocolo.TipoInimigoSpawn:
-                        if (!Convidado) return;
+                        if (!Convidado || de != sessao.Host) return;
                         InimigoSpawn s = InimigoSpawn.Desserializar(dados);
                         if (!Replicas.ContainsKey(s.Id)) { Pendentes[s.Id] = s; RecebidoEm[s.Id] = Time.unscaledTime; }
                         break;
                     case Protocolo.TipoInimigosEstado:
-                        if (!Convidado) return;
+                        if (!Convidado || de != sessao.Host) return;
                         foreach (InimigosEstado.Item i in InimigosEstado.Desserializar(dados).Itens)
                         {
                             if (Replicas.TryGetValue(i.Id, out Replica r))
@@ -898,19 +898,19 @@ namespace HellClockCoop.Fase3
                         }
                         break;
                     case Protocolo.TipoInimigoMorte:
-                        if (Convidado) ConvidadoMatar(InimigoMorte.Desserializar(dados));
+                        if (Convidado && de == sessao.Host) ConvidadoMatar(InimigoMorte.Desserializar(dados));
                         break;
                     case Protocolo.TipoInimigoSumiu:
-                        if (Convidado) ConvidadoSumir(InimigoSumiu.Desserializar(dados).Id);
+                        if (Convidado && de == sessao.Host) ConvidadoSumir(InimigoSumiu.Desserializar(dados).Id);
                         break;
                     case Protocolo.TipoAndarLimpo:
-                        if (Convidado) ConvidadoAndarLimpo(AndarLimpo.Desserializar(dados));
+                        if (Convidado && de == sessao.Host) ConvidadoAndarLimpo(AndarLimpo.Desserializar(dados));
                         break;
                     case Protocolo.TipoInimigoSkill:
                         if (Convidado && de == sessao.Host) ConvidadoUsarSkill(InimigoSkill.Desserializar(dados));
                         break;
                     case Protocolo.TipoInimigoAjuste:
-                        if (!Convidado) return;
+                        if (!Convidado || de != sessao.Host) return;
                         InimigoAjuste aj = InimigoAjuste.Desserializar(dados);
                         if (Replicas.TryGetValue(aj.Id, out Replica ra) && ra.C != null) AplicarAjustes(ra.C, aj.Ajuste);
                         else if (Pendentes.TryGetValue(aj.Id, out InimigoSpawn pa)) pa.Ajustes |= aj.Ajuste;

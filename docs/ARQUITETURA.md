@@ -179,7 +179,7 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
 
 1. **Atualizações do jogo.** Toda a lista acima está em `PatchTargets.cs`. O plugin valida no boot e não aplica nada se faltar um alvo da fase ativa.
 2. **Conquistas (regra do projeto: "não mexer").** Decisão pendente do autor: em sessão coop, **bloquear** desbloqueios (`SteamAchievementsController`) para não haver conquista "fácil", ou deixar o jogo seguir normal? O plugin atual não toca nisso.
-3. **Progressão no save local.** Cada jogador grava só o próprio save, como manda a regra. Ainda assim, flags de narrativa e de bosses derrotados entram no save de quem estava como cliente. Avaliar se isso é desejado.
+3. **Progressão no save local.** Cada jogador grava só o próprio save, como manda a regra. Ainda assim, flags de narrativa e de bosses derrotados entram no save de quem estava como cliente. Auditado na 0.8.4 e aceito pelo projeto (seção 14).
 4. **Determinismo de VFX e projéteis.** Projéteis dos inimigos (`HellClock.Skill.Projectile`) colidem localmente. Nas réplicas, desligar dano de projétil e confiar no host.
 5. **Pooling** (`HellClock.Pool`, `ObjectPoolService`): réplicas e avatares precisam vir dos mesmos pools ou ser excluídos deles, para não serem reciclados por engano.
 6. **Unity 6 + BepInEx 5.** Usamos o BepInEx 5.4.23.6 oficial. **Confirmado no primeiro teste:** o `mscorlib.dll` do jogo é enxuto (2.072 tipos, sem `Module.GetPEKind`) e o preloader do BepInEx quebra. Faltam também APIs essenciais ao Harmony e ao MonoMod (`MethodBody`, `RuntimeMethodHandle.GetFunctionPointer`, `RuntimeHelpers.PrepareMethod`), então contornar só o `GetPEKind` não basta. A correção é um corlib completo **de Windows**, de `swyf-modding/Setup` (Unity 6000.3.10f1), em `BepInEx\unstripped_corlib`, via `dll_search_path_override`. O zip 6000.0.60 do unity.bepinex.dev é a variante Unix e trava o jogo no "Carregando". Compatibilidade conferida: zero referências ausentes e mesmas chamadas nativas do runtime. Há relatos de que o *listener* do log da Unity precisou de ajuste no Unity 6 em outros jogos. Se o `LogOutput.log` não mostrar as mensagens da Unity, os logs do próprio plugin continuam funcionando.
@@ -667,7 +667,41 @@ abertura. Tudo vai para o log.
 `LICENCAS.txt`, `HellClockCoop.Atualizador.dll`); a release do GitHub tem a tag `v<versão>` e esses anexos. A
 `Atualizador.Versao` tem de ser igual ao `PluginVersion` (o empacotar confere). Testes: `tools/atualizadortest`.
 
-## 14. Como reproduzir a análise
+## 14. Save e progressão (auditoria, versão 0.8.4)
+
+**Quem grava.** O mod não tem nenhum caminho de escrita no save: só copia a pasta (`SaveBackup`, ao iniciar). Quem grava
+é o próprio jogo de cada máquina, no save local, nos pontos em que já gravaria no solo: `CurrentLevelChanged` (troca de
+andar), `FinishRun` e `FinishDungeonRoutine` (fim da run). Nenhuma mensagem leva dados de save de um jogador para outro.
+
+**Ordens do host gravam o save do convidado.** Quando o host avança de andar (`InternalAdvanceLevel`), encerra a run
+(`FinishDungeon`) ou purifica um santuário amaldiçoado, o jogo do convidado executa a mesma ação e grava o save dele, com
+os dados dele (andar alcançado, run, ponto de constelação). O projeto aceita isso: é progressão individual, no próprio
+save, como o convidado teria se jogasse a mesma run.
+
+- **Morte e volta:** o convidado que morre termina a run dele como no solo (`ConvidadoMorreu`); ao voltar pela entrada no
+  meio da run, o jogo dele conta uma run nova.
+- **Conquistas por conclusão:** quando o host conclui a dungeon, o jogo do convidado também passa pelo fim de run
+  `Completed` e pode desbloquear as conquistas de conclusão. O mod não toca em conquistas (regra do projeto); manter ou
+  bloquear isso é decisão do autor (item 2 da seção 6).
+
+**Validação na recepção (0.8.4).** Como cada ordem do host vira gravação no save do convidado, o que chega pela rede é
+filtrado antes de chamar o jogo. O protocolo não mudou (`Protocolo.Versao` igual): só a recepção ficou mais estrita. Os
+filtros puros ficam em `Net/Validacao.cs` e têm casos no `tools/codectest`.
+
+| Mensagem | Quem aceita | Filtro |
+|---|---|---|
+| `PlanoAndar` | convidado, só do host | `IndiceAndar < DungeonConfig.GetByID(DungeonHash).MaxLevelIndex` (`MaxLevelIndex` é a quantidade de andares: o jogo usa `IsLastLevel = índice + 1 >= MaxLevelIndex`); dungeon desconhecida é descartada; andar especial (sem dungeon): até 200. Aviso no log |
+| `FimRun` | convidado, só do host | `Motivo` dentro de `EGameOverSource` (0..4). Aviso no log |
+| `TimerBonus` | host | finito, `> 0` e `<= 120 s`. Aviso no log |
+| `TimerSync` | convidado, só do host | os dois campos finitos e `>= 0` (4 Hz: descarte sem log) |
+| `InimigoSpawn`, `InimigosEstado`, `InimigoMorte`, `InimigoSumiu`, `AndarLimpo`, `InimigoAjuste` | convidado, só do host | — |
+| `BauSpawn`, `ObjetoSpawn` | convidado, só do host | — |
+| `ObjetoUsado` | qualquer par | `Estado = Concluido` (purificação) só do host. Aviso no log |
+| `BauAberto`, `Quebrou`, `ObjetoUsado` (`Usado`) | qualquer par | — (o host repassa) |
+
+**Backup.** `SaveBackup.LimparAntigos` mantém no mínimo 1 cópia, mesmo com `BackupsMantidos` 0 ou negativo no `.cfg`.
+
+## 15. Como reproduzir a análise
 
 1. Compilar o decompilador (ICSharpCode.Decompiler 9.1, a partir do código-fonte do ILSpy) ou usar o ILSpy no Windows.
 2. Decompilar `Hell Clock_Data/Managed/HellClock.dll`, `K10.dll` e `Assembly-CSharp.dll` para uma pasta **fora** do repositório (ver `.gitignore`).
