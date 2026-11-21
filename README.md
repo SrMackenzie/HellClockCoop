@@ -1,20 +1,18 @@
+<a href="https://store.steampowered.com/app/1782460/Hell_Clock/"><img src="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/library_hero.jpg" alt="Hell Clock — arte oficial" width="100%"></a>
+
 <p align="center">
-  <img src="assets/banner.svg" alt="Hell Clock Co-op — mod de fã cooperativo para Hell Clock" width="100%">
+  <a href="https://store.steampowered.com/app/1782460/Hell_Clock/"><img src="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/logo.png" alt="Hell Clock" width="440"></a>
 </p>
 
 <p align="center">
-  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.9.1-ff7a1a?style=for-the-badge">
-  <img alt="Status" src="https://img.shields.io/badge/status-alpha%20jog%C3%A1vel-b3121f?style=for-the-badge">
-  <img alt="Hell Clock" src="https://img.shields.io/badge/Hell%20Clock-2.1.1.1-4a1a1f?style=for-the-badge">
-  <img alt="Jogadores" src="https://img.shields.io/badge/jogadores-2%20a%204-5fe08a?style=for-the-badge">
-  <br>
-  <img alt="BepInEx" src="https://img.shields.io/badge/BepInEx-5.4.23.6-2b2b2b?style=flat-square">
-  <img alt="HarmonyX" src="https://img.shields.io/badge/HarmonyX-patches-2b2b2b?style=flat-square">
-  <img alt="Unity" src="https://img.shields.io/badge/Unity-6000.0.60f1%20(Mono)-2b2b2b?style=flat-square&logo=unity">
-  <img alt="Steam" src="https://img.shields.io/badge/rede-Steam%20P2P-2b2b2b?style=flat-square&logo=steam">
-  <img alt="C#" src="https://img.shields.io/badge/C%23-.NET%20Framework%204.x-2b2b2b?style=flat-square&logo=csharp">
-  <img alt="Licença" src="https://img.shields.io/badge/licen%C3%A7a-MIT-2b2b2b?style=flat-square">
-  <img alt="Idioma" src="https://img.shields.io/badge/idioma-pt--BR-2b2b2b?style=flat-square">
+  <img src="assets/coop.svg" alt="Co-op — mod de fã, 2 a 4 jogadores, mesma run, cada um no seu save" width="100%">
+</p>
+
+<p align="center">
+  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.9.1-e0763a?style=for-the-badge&labelColor=1c0f0b">
+  <img alt="Status" src="https://img.shields.io/badge/status-alpha%20jog%C3%A1vel-8a2418?style=for-the-badge&labelColor=1c0f0b">
+  <img alt="Hell Clock" src="https://img.shields.io/badge/Hell%20Clock-2.1.1.1-f2b04a?style=for-the-badge&labelColor=1c0f0b">
+  <img alt="Jogadores" src="https://img.shields.io/badge/jogadores-2%20a%204-5fe08a?style=for-the-badge&labelColor=1c0f0b">
 </p>
 
 <p align="center">
@@ -23,7 +21,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/SrMackenzie/HellClockCoop/releases/latest"><img alt="Baixar a última versão" src="https://img.shields.io/badge/%E2%AC%87%20baixar-%C3%BAltima%20vers%C3%A3o-ff7a1a?style=for-the-badge"></a>
+  <a href="https://github.com/SrMackenzie/HellClockCoop/releases/latest"><img alt="Baixar a última versão" src="https://img.shields.io/badge/%E2%AC%87%20%20baixar-%C3%BAltima%20vers%C3%A3o-e0763a?style=for-the-badge&labelColor=8a2418"></a>
   <br>
   <sub>Baixe o zip <code>HellClockCoop-v&lt;versão&gt;.zip</code> e siga a <a href="#-instalação">instalação</a>. Da 0.8.0 em diante, o mod se atualiza sozinho.</sub>
 </p>
@@ -46,6 +44,28 @@
 > **Mod de fã, gratuito e sem fins lucrativos.** Não é feito nem apoiado pela Rogue Snail. O repositório e o pacote
 > contêm só o código do mod e o carregador BepInEx: **nenhum arquivo, arte ou texto do jogo** é redistribuído.
 > Para jogar, cada pessoa precisa ter o próprio Hell Clock na Steam.
+
+## 🩸 O jogo
+
+**[Hell Clock](https://store.steampowered.com/app/1782460/Hell_Clock/)** é um ARPG roguelike brasileiro da **Rogue Snail**: Pajeú desce ao Purgatório durante a
+Guerra de Canudos, e o relógio do inferno não para. O jogo foi feito para uma pessoa só. Este mod coloca seus amigos
+na mesma run, com os mesmos inimigos, as skills de todos na tela e cada um com a própria progressão.
+
+<table>
+<tr>
+<td width="33%"><a href="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/0b3a59ae110b949908ea5f13a9a3c41abc53aa3b/ss_0b3a59ae110b949908ea5f13a9a3c41abc53aa3b.1920x1080.jpg"><img src="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/0b3a59ae110b949908ea5f13a9a3c41abc53aa3b/ss_0b3a59ae110b949908ea5f13a9a3c41abc53aa3b.600x338.jpg" alt="Captura de Hell Clock"></a></td>
+<td width="33%"><a href="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/60f52cf05077d01da8f730ca59d00627591db4da/ss_60f52cf05077d01da8f730ca59d00627591db4da.1920x1080.jpg"><img src="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/60f52cf05077d01da8f730ca59d00627591db4da/ss_60f52cf05077d01da8f730ca59d00627591db4da.600x338.jpg" alt="Captura de Hell Clock"></a></td>
+<td width="33%"><a href="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/0cce73c8a760678e6588c810bcf9aab38bc1a0f0/ss_0cce73c8a760678e6588c810bcf9aab38bc1a0f0.1920x1080.jpg"><img src="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/0cce73c8a760678e6588c810bcf9aab38bc1a0f0/ss_0cce73c8a760678e6588c810bcf9aab38bc1a0f0.600x338.jpg" alt="Captura de Hell Clock"></a></td>
+</tr>
+<tr>
+<td width="33%"><a href="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/c9e05aace697dd5d6a496014a44f4a6b86216c3a/ss_c9e05aace697dd5d6a496014a44f4a6b86216c3a.1920x1080.jpg"><img src="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/c9e05aace697dd5d6a496014a44f4a6b86216c3a/ss_c9e05aace697dd5d6a496014a44f4a6b86216c3a.600x338.jpg" alt="Captura de Hell Clock"></a></td>
+<td width="33%"><a href="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/312e816f088978075c8c705ff68329b573b93851/ss_312e816f088978075c8c705ff68329b573b93851.1920x1080.jpg"><img src="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/312e816f088978075c8c705ff68329b573b93851/ss_312e816f088978075c8c705ff68329b573b93851.600x338.jpg" alt="Captura de Hell Clock"></a></td>
+<td width="33%"><a href="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/4e9c8a6e4ab66e484f8ea22644c49d1b49b5b082/ss_4e9c8a6e4ab66e484f8ea22644c49d1b49b5b082.1920x1080.jpg"><img src="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/4e9c8a6e4ab66e484f8ea22644c49d1b49b5b082/ss_4e9c8a6e4ab66e484f8ea22644c49d1b49b5b082.600x338.jpg" alt="Captura de Hell Clock"></a></td>
+</tr>
+</table>
+
+<p align="center"><sub>Imagens oficiais da <a href="https://store.steampowered.com/app/1782460/Hell_Clock/">página do jogo na Steam</a> © Rogue Snail / Mad Mushroom, exibidas
+direto da Steam. Não fazem parte do repositório nem do pacote do mod.</sub></p>
 
 ## 🙏 Ajude a calibrar o balanceamento
 
@@ -283,6 +303,16 @@ A documentação completa, com cada patch, mensagem e decisão, está em
 
 ## 🛠️ Para desenvolvedores
 
+<p>
+  <img alt="BepInEx" src="https://img.shields.io/badge/BepInEx-5.4.23.6-2b2b2b?style=flat-square">
+  <img alt="HarmonyX" src="https://img.shields.io/badge/HarmonyX-patches-2b2b2b?style=flat-square">
+  <img alt="Unity" src="https://img.shields.io/badge/Unity-6000.0.60f1%20(Mono)-2b2b2b?style=flat-square&logo=unity">
+  <img alt="Steam" src="https://img.shields.io/badge/rede-Steam%20P2P-2b2b2b?style=flat-square&logo=steam">
+  <img alt="C#" src="https://img.shields.io/badge/C%23-.NET%20Framework%204.x-2b2b2b?style=flat-square&logo=csharp">
+  <img alt="Licença" src="https://img.shields.io/badge/licen%C3%A7a-MIT-2b2b2b?style=flat-square">
+  <img alt="Idioma" src="https://img.shields.io/badge/idioma-pt--BR-2b2b2b?style=flat-square">
+</p>
+
 ```bash
 # compilar o plugin e o atualizador (.NET SDK 10, sem NuGet)
 scripts/build.sh "<jogo>/Hell Clock_Data/Managed" "<BepInEx>/BepInEx/core"
@@ -330,11 +360,13 @@ docs/                               arquitetura, desenvolvimento, roadmap.json
 SrMackenzie: lê o save, mostra presets, relicário e dano por skill de cada run, e monta builds. O visual deste
 repositório (paleta brasa e ouro, serifa, brasas) segue o dele.
 
+<a href="https://store.steampowered.com/app/1782460/Hell_Clock/"><img src="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/99b1a04df8bc2acdce9dbd3a163947b7ed231b5b/page_bg_raw.jpg" alt="Hell Clock — arte oficial" width="100%"></a>
+
 ## 🤝 Créditos
 
 - **Autor:** [SrMackenzie](https://github.com/SrMackenzie)
 - **Testes:** amigos testadores
-- **Hell Clock** © Rogue Snail — jogue o original na Steam.
+- **Hell Clock** © Rogue Snail, publicado pela Mad Mushroom — [jogue o original na Steam](https://store.steampowered.com/app/1782460/Hell_Clock/). As imagens oficiais desta página são carregadas da Steam.
 - [BepInEx](https://github.com/BepInEx/BepInEx) (LGPL-2.1) · [HarmonyX](https://github.com/BepInEx/HarmonyX) (MIT) ·
   [UnityDoorstop](https://github.com/NeighTools/UnityDoorstop) (LGPL-2.1) · bibliotecas do Mono (MIT) via
   [swyf-modding/Setup](https://github.com/swyf-modding/Setup) · [ILSpy / ICSharpCode.Decompiler](https://github.com/icsharpcode/ILSpy) (MIT), usado só localmente para estudo.

@@ -7,6 +7,8 @@ Autor: SrMackenzie. Guia do ambiente: `docs/DESENVOLVIMENTO.md`. Arquitetura e d
 - Responder sempre em português do Brasil. Código, logs, comentários e documentação em pt-BR.
 - Mod de fã, sem fins lucrativos. Nunca redistribuir arquivos do jogo: o mod é só a nossa DLL e o loader.
 - Não incluir no repositório nenhum arquivo, arte ou texto extraído do jogo (nem código decompilado).
+  Imagens oficiais (README/site) só por link direto da loja Steam (`shared.akamai.steamstatic.com/.../1782460/...`),
+  com crédito à Rogue Snail / Mad Mushroom; nunca baixar para o repositório nem pôr no pacote.
 - Só cooperativo: não mexer em conquistas, placares ou recursos online do jogo.
 - Progressão individual: cada jogador mantém o próprio save; o mod nunca escreve no save de outro.
 - Antes de qualquer teste, backup automático da pasta de save (o mod já faz ao iniciar; não remover).
