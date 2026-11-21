@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "21/11/2026",
-  "versao": "0.9.2",
+  "versao": "0.9.3",
   "fases": [
     {
       "id": "B",
@@ -235,8 +235,8 @@
           "Modo silencioso: console do BepInEx desligado por padrão, com opção no .cfg para ligar"
         ],
         [
-          "planejado",
-          "Menu de coop dentro do jogo (no lugar das teclas F6/F7)"
+          "testar",
+          "Menu de coop dentro do jogo (no lugar das teclas F6/F7): gaveta com F7 ou View/Select, que segura a entrada do jogo enquanto aberta"
         ],
         [
           "planejado",

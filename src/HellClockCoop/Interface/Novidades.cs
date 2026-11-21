@@ -26,13 +26,11 @@ namespace HellClockCoop.Interface
     /// não testadas no jogo. O texto vem de NovidadesTexto (gerado do docs/changelog.json; sem JSON nem rede em runtime).
     /// - Abre sozinha uma vez, no menu (sem personagem), quando a versão do mod difere de [Interface] NovidadesVistas;
     ///   ao fechar, grava a versão atual ali. Espera a janela do aceite das métricas fechar antes.
-    /// - No menu: botão "Novidades" abaixo do painel do coop; abas e "Fechar" respondem ao mouse.
-    /// - Com personagem em jogo: só pela tecla ([Teclas] Novidades, F10) e só teclado/controle. O jogo lê o mouse pelo
-    ///   Rewired, fora do IMGUI, e o clique numa aba moveria o personagem.
-    /// - Aberta, desliga o módulo de entrada da UI do jogo (BaseInputModule), como a JanelaAceite, e religa ao fechar.
+    /// - Abre pela tecla ([Teclas] Novidades, F10) ou pelo item "Novidades" do menu do coop, no menu e em jogo.
+    /// - Aberta, segura a entrada do jogo (BloqueioEntrada: semáforo do jogo e módulo de UI); abas e "Fechar" respondem
+    ///   ao mouse. Em jogo, se o semáforo do jogo não travar, volta ao modo só teclado/controle da 0.9.2 (o clique numa
+    ///   aba moveria o personagem) e o rodapé indica só a F10.
     /// - Setas esquerda/direita ou LB/RB trocam de versão; setas cima/baixo (ou o direcional) rolam; Esc, F10 ou B fecham.
-    ///   Em jogo o rodapé indica só a F10: o BaseInputModule desligado não segura o Rewired, então Esc (pausa) e B
-    ///   também chegam ao jogo.
     /// </summary>
     internal static class Novidades
     {
@@ -48,10 +46,8 @@ namespace HellClockCoop.Interface
         private static bool _aberta, _semPersonagem, _automaticaFeita;
         private static int _aba;
         private static Vector2 _rolagem;
-        private static int _quadroFechada = -1;
         private static float _fecharLiberadoEm; // abertura automática: Esc/B/clique para pular a abertura do jogo não fecham
         private const float EsperaFechar = 1.5f;
-        private static readonly List<BaseInputModule> Desligados = new List<BaseInputModule>();
         private static GUIStyle _titulo, _cabVersao, _tituloVersao, _item, _rotuloTestar, _itemTestar, _aba0, _rodape, _botao, _invisivel;
 
         internal static bool Aberta => _aberta;
@@ -86,7 +82,6 @@ namespace HellClockCoop.Interface
             _semPersonagem = semPersonagem;
             if (!_aberta)
             {
-                Religar();
                 if (Balanceamento.JanelaAceite.Aberta) return;
                 if (Teclas.Pressionou(Tecla.Value)) Abrir("tecla " + Tecla.Value);
                 else if (!_automaticaFeita && semPersonagem && DeveAbrirSozinha(_vista.Value, VersaoAtual))
@@ -98,32 +93,24 @@ namespace HellClockCoop.Interface
                 return;
             }
 
-            Desligar();
+            BloqueioEntrada.Pedir();
             bool liberado = Time.unscaledTime >= _fecharLiberadoEm; // a tecla do mod fecha sempre
-            if (Teclas.Pressionou(Tecla.Value) || (liberado && (Teclas.Pressionou("Escape") || Controle(c => c.buttonEast, KeyCode.JoystickButton1))))
+            if (Teclas.Pressionou(Tecla.Value) || (liberado && (Teclas.Pressionou("Escape") || Teclas.Controle(c => c.buttonEast, KeyCode.JoystickButton1))))
             {
                 Fechar();
                 return;
             }
             int total = NovidadesTexto.Versoes.Length;
-            if (Teclas.Pressionou("LeftArrow") || Controle(c => c.leftShoulder, KeyCode.JoystickButton4)) MudarAba(TrocarAba(_aba, -1, total));
-            if (Teclas.Pressionou("RightArrow") || Controle(c => c.rightShoulder, KeyCode.JoystickButton5)) MudarAba(TrocarAba(_aba, 1, total));
-            if (Teclas.Pressionou("UpArrow") || Controle(c => c.dpad.up, null)) _rolagem.y -= PassoRolagem;
-            if (Teclas.Pressionou("DownArrow") || Controle(c => c.dpad.down, null)) _rolagem.y += PassoRolagem; // o limite vem no Desenhar
+            if (Teclas.Pressionou("LeftArrow") || Teclas.Controle(c => c.leftShoulder, KeyCode.JoystickButton4)) MudarAba(TrocarAba(_aba, -1, total));
+            if (Teclas.Pressionou("RightArrow") || Teclas.Controle(c => c.rightShoulder, KeyCode.JoystickButton5)) MudarAba(TrocarAba(_aba, 1, total));
+            if (Teclas.Pressionou("UpArrow") || Teclas.Controle(c => c.dpad.up, null)) _rolagem.y -= PassoRolagem;
+            if (Teclas.Pressionou("DownArrow") || Teclas.Controle(c => c.dpad.down, null)) _rolagem.y += PassoRolagem; // o limite vem no Desenhar
         }
 
-        /// <summary>Botão do controle pelo Input System, com o Input legado de reserva (o jogo usa o Rewired).</summary>
-        private static bool Controle(System.Func<Gamepad, UnityEngine.InputSystem.Controls.ButtonControl> botao, KeyCode? legado)
+        /// <summary>Item "Novidades" do menu do coop.</summary>
+        internal static void AbrirPeloMenu()
         {
-            try
-            {
-                Gamepad controle = Gamepad.current;
-                if (controle != null) return botao(controle).wasPressedThisFrame;
-            }
-            catch (System.Exception) { }
-            if (legado == null) return false;
-            try { return Input.GetKeyDown(legado.Value); }
-            catch (System.Exception) { return false; }
+            if (!_aberta) Abrir("menu do coop");
         }
 
         private static void Abrir(string motivo)
@@ -132,20 +119,8 @@ namespace HellClockCoop.Interface
             _aberta = true;
             _aba = 0;
             _rolagem = Vector2.zero;
-            Desligar(); // já no quadro em que abre (pelo botão, no OnGUI, o Update só viria no quadro seguinte)
+            BloqueioEntrada.Pedir(); // já no quadro em que abre (pelo menu, no OnGUI, o Update só viria no quadro seguinte)
             Plugin.Log.LogInfo($"[Novidades] Janela aberta ({motivo}).");
-        }
-
-        /// <summary>Desliga o módulo de entrada da UI do jogo (o EventSystem fica ligado; ver JanelaAceite).</summary>
-        private static void Desligar()
-        {
-            EventSystem es = EventSystem.current;
-            BaseInputModule modulo = es != null ? es.currentInputModule : null;
-            if (modulo != null && modulo.enabled)
-            {
-                modulo.enabled = false;
-                Desligados.Add(modulo);
-            }
         }
 
         private static void MudarAba(int aba)
@@ -157,33 +132,12 @@ namespace HellClockCoop.Interface
         private static void Fechar()
         {
             if (!_aberta) return;
-            _aberta = false;
-            _quadroFechada = Time.frameCount;
+            _aberta = false; // a entrada do jogo volta dois quadros depois (BloqueioEntrada)
             if (_vista.Value != Plugin.PluginVersion) _vista.Value = Plugin.PluginVersion; // o BepInEx grava o .cfg
             Plugin.Log.LogInfo("[Novidades] Janela fechada.");
         }
 
-        /// <summary>Religa só no quadro seguinte: o Esc ou o clique que fechou não chega ao menu do jogo.</summary>
-        private static void Religar()
-        {
-            if (Desligados.Count == 0 || Time.frameCount == _quadroFechada) return;
-            foreach (BaseInputModule modulo in Desligados)
-            {
-                if (modulo != null) modulo.enabled = true;
-            }
-            Desligados.Clear();
-        }
-
         // ---------- Desenho (no OnGUI do runtime) ----------
-
-        /// <summary>Botão "Novidades" do painel do coop: só no menu (sem personagem) e sem outra janela aberta.</summary>
-        internal static void DesenharBotaoMenu(float y)
-        {
-            if (_aberta || !_semPersonagem || Balanceamento.JanelaAceite.Aberta) return;
-            Estilos();
-            if (GUI.Button(new Rect(12f, y, 240f, 44f), new GUIContent($"Novidades da {Plugin.PluginVersion}  ({Tecla.Value})"), _botao))
-                Abrir("botão do painel");
-        }
 
         internal static void Desenhar()
         {
@@ -200,7 +154,7 @@ namespace HellClockCoop.Interface
             GUI.matrix = Matrix4x4.Scale(new Vector3(escala, escala, 1f));
             float telaL = Screen.width / escala, telaA = Screen.height / escala;
             Color corAntes = GUI.color, fundoAntes = GUI.backgroundColor;
-            bool mouse = _semPersonagem;
+            bool mouse = _semPersonagem || BloqueioEntrada.SeguraOJogo; // em jogo, só com o jogo travado (o clique vazaria)
 
             Retangulo(new Rect(0f, 0f, telaL, telaA), new Color(0f, 0f, 0f, 0.72f));
 
@@ -209,7 +163,7 @@ namespace HellClockCoop.Interface
             var titulo = new GUIContent("Novidades do Hell Clock Coop");
             var rodape = new GUIContent(mouse
                 ? "Setas ou LB/RB: trocar versão  ·  Esc, " + Tecla.Value + " ou B: fechar"
-                : "Setas: trocar versão e rolar  ·  " + Tecla.Value + ": fechar"); // em jogo, Esc e B também chegam ao jogo (Rewired)
+                : "Setas: trocar versão e rolar  ·  " + Tecla.Value + ": fechar"); // jogo sem trava: Esc e B também chegariam ao jogo
             float aTitulo = _titulo.CalcHeight(titulo, interna);
             float lRodape = mouse ? interna - 160f - 12f : interna;
             float aRodape = Mathf.Max(_rodape.CalcHeight(rodape, lRodape), mouse ? AlturaBotao : 0f);

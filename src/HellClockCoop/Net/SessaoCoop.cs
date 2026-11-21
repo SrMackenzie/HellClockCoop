@@ -117,7 +117,7 @@ namespace HellClockCoop.Net
 
             EstadoAtual = Estado.Livre;
             Plugin.Log.LogInfo($"[Sessão] DLCs: Deluxe={(MinhaDeluxe ? "sim" : "não")}, Cursed War={(MinhaCursedWar ? "sim" : "não")}.");
-            Plugin.Log.LogInfo($"[Sessão] Steam pronto ({SteamFriends.GetPersonaName()}). F7 cria o coop e abre o convite; F6 sai.");
+            Plugin.Log.LogInfo($"[Sessão] Steam pronto ({SteamFriends.GetPersonaName()}). O menu do coop (F7 ou View no controle) cria, convida e sai.");
 
             // Jogo aberto por um convite com o jogo fechado: a Steam passa "+connect_lobby <id>".
             _lobbyPendenteLinhaDeComando = LerLobby(string.Join(" ", Environment.GetCommandLineArgs()));
@@ -259,7 +259,7 @@ namespace HellClockCoop.Net
             SteamFriends.SetRichPresence("connect", "+connect_lobby " + lobby.m_SteamID);
             string dono = SteamFriends.GetFriendPersonaName(SteamMatchmaking.GetLobbyOwner(lobby));
             Plugin.Log.LogInfo($"[Sessão] No coop (lobby {lobby.m_SteamID}, host {dono}, {(SouHost ? "você é o host" : "você é convidado")}).");
-            Avisar(SouHost ? "Coop criado! Convide amigos pelo overlay (F7 abre de novo)." : $"Você entrou no coop de {dono}.");
+            Avisar(SouHost ? "Coop criado! Convide amigos pelo overlay (o menu do coop abre de novo)." : $"Você entrou no coop de {dono}.");
             AtualizarMembros();
         }
 

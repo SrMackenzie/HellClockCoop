@@ -188,7 +188,7 @@ entra mais gente, então o balanceamento é uma **trilha permanente**: toda vers
 3. Extraia **todo** o conteúdo do zip **dentro dessa pasta** (ao lado do `Hell Clock.exe`), substituindo os arquivos.
 4. Abra o jogo pela Steam. O mod roda em silêncio; para ver o registro ao vivo na janela do console do BepInEx, use
    `[Diagnostico] MostrarConsole = true` em `BepInEx\config\br.srmackenzie.hellclockcoop.cfg` (vale na próxima abertura).
-5. No canto superior esquerdo aparece **"Hell Clock Coop … F7 para jogar com amigos"**.
+5. No canto superior esquerdo aparece **"Hell Clock Coop … F7 abre o menu do coop para jogar com amigos"**.
 
 **Atualizações (a partir da 0.8.0):** ao abrir o jogo, o mod procura a versão nova na
 [página de releases](https://github.com/SrMackenzie/HellClockCoop/releases) e instala sozinho, sem perguntar; o painel do
@@ -226,24 +226,26 @@ Requisito: overlay da Steam ligado (*Steam → Configurações → No jogo*).
 
 | Tecla | Ação |
 |:-:|---|
-| <kbd>F7</kbd> | Cria o coop e abre o convite da Steam (de novo: reabre o convite) |
-| <kbd>F6</kbd> | Sai do coop |
-| <kbd>F8</kbd> | **Modo eco**: um fantasma seu repete tudo com 1 s de atraso — testa o mod sem amigo |
+| <kbd>F7</kbd> ou <kbd>View</kbd> no controle | **Menu do coop** (gaveta à direita): criar o coop e convidar amigos, sair do coop, modo eco, nomes e números de dano dos aliados, novidades. No menu do jogo também pelo botão "Menu do coop" |
+| <kbd>F8</kbd> | **Modo eco**: um fantasma seu repete tudo com 1 s de atraso — testa o mod sem amigo (também pelo menu do coop) |
 | <kbd>F9</kbd> | Diagnóstico: salva a estrutura do personagem |
-| <kbd>F10</kbd> | **Novidades**: o que mudou nas últimas versões do mod (também pelo botão no menu; abre sozinha uma vez depois de cada atualização) |
+| <kbd>F10</kbd> | **Novidades**: o que mudou nas últimas versões do mod (também pelo item Novidades do menu do coop; abre sozinha uma vez depois de cada atualização) |
 
-**Host** (quem convida): entre num save e aperte <kbd>F7</kbd>. **Convidado**: aceite o convite na Steam (com o jogo
-fechado, ele abre e entra sozinho). Quando o host entra numa run, todos vão junto.
+**Host** (quem convida): entre num save, aperte <kbd>F7</kbd> e escolha **Criar coop e convidar amigos**. **Convidado**:
+aceite o convite na Steam (com o jogo fechado, ele abre e entra sozinho). Quando o host entra numa run, todos vão junto.
+
+Com o menu do coop (ou a janela Novidades) aberto, o jogo não recebe mouse, teclado nem controle: dá para clicar sem
+mover o personagem. O jogo continua rodando (no coop não pausa), então abra o menu longe dos inimigos.
 
 <details>
 <summary><b>Regras do coop nesta versão</b></summary>
 
-- Portais, início e abandono de run são do host. Para sair sozinho: <kbd>F6</kbd> e depois o menu.
+- Portais, início e abandono de run são do host. Para sair sozinho: **Sair do coop** no menu do coop (<kbd>F7</kbd>) e depois o menu do jogo.
 - Se o **convidado** morre, a run dele acaba (resultados normais) e ele volta quando o host passar de andar.
   Se o **host** morre, a run acaba para todos.
 - Com alguém no coop, abrir inventário, mapa ou menu **não pausa** o jogo.
 - Todos precisam ter (ou não ter) a DLC **Cursed War**. A Deluxe Edition (cosmética) não importa.
-- Ajustes em `BepInEx\config\br.srmackenzie.hellclockcoop.cfg`: teclas, nomes sobre a cabeça,
+- Ajustes em `BepInEx\config\br.srmackenzie.hellclockcoop.cfg` (nomes e números de dano também pelo menu do coop): teclas, nomes sobre a cabeça,
   números de dano dos aliados (`MostrarDanoDosAliados`, `TamanhoDanoDosAliados`) e a última versão cujas novidades
   já apareceram (`[Interface] NovidadesVistas`; apague para ver a janela de novo).
 </details>

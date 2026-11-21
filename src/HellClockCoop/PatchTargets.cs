@@ -94,6 +94,9 @@ namespace HellClockCoop
 
             // Fase 4 — loot
             new Alvo("4", "DropManager", "SetupPlayerController", "Drops instanciados por jogador (namespace global, não HellClock.Drop)"),
+
+            // Fase 5 — polimento (interface; fora das fases ativas: se sumir, só este patch cai e o menu segue sem segurar os eixos)
+            new Alvo("5", "HellClock.GameInput.InputHandler", "Update", "Zerar movimento e mira com um painel do mod aberto (menu do coop, Novidades)"),
         };
 
         /// <summary>Fases com patches ativos nesta versão; se faltar qualquer alvo delas, nada é patcheado.</summary>

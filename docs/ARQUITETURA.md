@@ -252,7 +252,7 @@ No fantasma, a troca de estado usa `CrossFade` curto, e o mesmo estado com mais 
 ## 9. Fase 1b — coop pela Steam (versão 0.2.0)
 
 **Sessão (`Net/SessaoCoop.cs`):**
-- **Criar:** F7 cria um lobby `k_ELobbyTypeFriendsOnly` de até 4 jogadores e grava nos dados do lobby `hcc_mod`, `hcc_proto`, `hcc_game` e `hcc_host`. Depois abre `ActivateGameOverlayInviteDialog`.
+- **Criar:** "Criar coop e convidar amigos" no menu do coop (§12.2; até a 0.9.2, a F7) cria um lobby `k_ELobbyTypeFriendsOnly` de até 4 jogadores e grava nos dados do lobby `hcc_mod`, `hcc_proto`, `hcc_game` e `hcc_host`. Depois abre `ActivateGameOverlayInviteDialog`.
 - **Entrar:**
   - pelo convite: `GameLobbyJoinRequested_t`;
   - pela lista de amigos, com "Entrar no jogo": `GameRichPresenceJoinRequested_t` lê a chave `connect` = `+connect_lobby <id>`;
@@ -377,7 +377,7 @@ Fora desses modos, todos os patches deixam o jogo seguir como sem o mod.
 
 **Limitações conhecidas da 0.3.0:**
 - Se o host sai no meio da run, o convidado segue sozinho num andar vazio e sem portais. O timer volta a correr e encerra a run.
-- Enquanto acompanha o host, o convidado não abandona a run pelo menu. Precisa sair do coop (F6) antes.
+- Enquanto acompanha o host, o convidado não abandona a run pelo menu. Precisa sair do coop antes ("Sair do coop" no menu do coop, §12.2; até a 0.9.2, a F6).
 - O dano, os inimigos, o loot e as skills de um não aparecem para o outro (Fase 3).
 
 **1º teste (0.3.0, 20/11/2026) — confirmado:**
@@ -680,15 +680,67 @@ Abre sozinha uma vez, no menu (sem personagem), quando `[Interface] NovidadesVis
 na primeira instalação), e só com a janela do aceite (12) fechada; ao fechar, grava a versão atual ali. Como a
 exibição automática é única e abre já nas telas de abertura, Esc, B e o botão "Fechar" só respondem 1,5 s depois
 (quem aperta Esc para pular a abertura não a perde sem ver); a F10 fecha sempre. Depois, abre
-pelo botão "Novidades" abaixo do painel do coop (só no menu) ou pela tecla `[Teclas] Novidades` (F10, também em
-jogo). Com personagem carregado a janela só responde ao teclado e ao controle: o jogo lê o mouse pelo Rewired, fora do
-IMGUI, e o clique numa aba moveria o personagem. Como a JanelaAceite, desliga `EventSystem.currentInputModule` enquanto
-aberta e religa no quadro seguinte ao fechar; enquanto aberta, o `Update` do runtime não lê as teclas do coop
-(F6/F7/F8/F9). Setas esquerda/direita ou LB/RB (`JoystickButton4/5` no Input legado) trocam de versão; setas
-cima/baixo ou o direcional rolam; Esc, F10 ou B (`JoystickButton1`) fecham. O módulo desligado não segura o Rewired:
-em jogo, Esc, B, LB/RB, o direcional e as setas também chegam ao jogo, por isso o rodapé ali indica só a F10. Em jogo o corpo é recortado com
-`GUI.BeginGroup` e rola só pelas setas (a barra e a roda do `ScrollView` responderiam ao mouse); no menu usa
+pelo item "Novidades" do menu do coop (§12.2; na 0.9.2, um botão abaixo do painel do coop) ou pela tecla
+`[Teclas] Novidades` (F10, também em jogo). Desde a 0.9.3, aberta, segura a entrada do jogo pelo `BloqueioEntrada`
+(§12.2) e responde ao mouse também em jogo; enquanto aberta, o `Update` do runtime não lê o menu do coop nem as teclas
+F8/F9. Setas esquerda/direita ou LB/RB (`JoystickButton4/5` no Input legado) trocam de versão; setas
+cima/baixo ou o direcional rolam; Esc, F10 ou B (`JoystickButton1`) fecham. Se o semáforo do jogo não travar
+(`BloqueioEntrada.SeguraOJogo` falso), em jogo volta ao comportamento da 0.9.2: só teclado e controle, rodapé só com a
+F10 (Esc, B e o mouse chegariam ao jogo), corpo recortado com `GUI.BeginGroup` e rolagem só pelas setas. Com mouse usa
 `GUI.BeginScrollView`, que só existe na sobrecarga de 5 parâmetros no jogo (stripping). Sem efeito no balanceamento nem no protocolo.
+
+### 12.2 Menu do coop e bloqueio da entrada (versão 0.9.3)
+
+`Interface/MenuCoop.cs` desenha, em IMGUI (1080p escalado, como as outras janelas), uma gaveta à direita da tela, no
+lugar das teclas F6/F7. Largura de 30% da tela, entre 380 e 460 px; no menu do jogo escurece o resto a 35%, em jogo
+não escurece nem pausa (o jogo continua rodando e o personagem fica parado). Lista única, com o foco num item de cada
+vez (moldura creme): ALIADOS (só leitura, `CoopRuntime.EstadoDoPar`, o mesmo texto do painel do canto), COOP e AJUSTES.
+O foco é guardado pela ação, não pelo índice, porque a lista muda (ex.: "Sair do coop" some ao sair); a regra de
+navegação (`ProximoFoco`, pula cabeçalhos, informação e item indisponível, gira nas pontas) e a da confirmação de saída
+(`ConfirmaSaida`) são puras e testadas no codectest. O painel de status do canto continua como antes (as linhas citam a
+tecla do menu).
+
+`Interface/BloqueioEntrada.cs` segura a entrada do jogo enquanto o menu do coop ou a Novidades estão abertos:
+- Semáforo do próprio jogo: `HellClock.GameInput.InputHandler.DisableInput` (`Semaphore` do K10, o mesmo que o console
+  de cheats do jogo usa), travado com `BlockButDoNotIncrease(dono)` e solto com `Release(dono)`. Travado, o
+  `InputHandler` responde falso em `GetActionDown/State/Up`, `GetAnyButtonDown` e nos eventos de ação
+  (`EventForAction`), que cobrem o clique de mover (`MoveInteract`), skills, poção, pausa (`PauseButton`, `PauseGame`),
+  `Back` e as janelas do jogo (`WindowController`).
+- Os eixos não passam pelo semáforo (`GetAxisRaw`/`GetAxis` leem o `Rewired.Player` direto): o patch
+  `BloqueioEntrada_InputHandler_Update` (Alvo `InputHandler.Update`, fase 5 em `PatchTargets.cs`, fora das fases ativas)
+  zera `MovementDirection` e `AimDirection` depois da leitura. WASD e o analógico ficam parados.
+- Desliga também `EventSystem.currentInputModule` (o `RewiredStandaloneInputModule` da UI do jogo), como a JanelaAceite.
+- O painel chama `Pedir()` a cada quadro aberto; o `Update` do runtime chama `Atualizar()` antes de tudo, que libera só
+  dois quadros depois do último pedido (`DeveLiberar`, testada): o Esc ou o clique que fechou não chega ao jogo.
+- Nunca usa `InputHandler.Instance`: o getter cria um `InputHandler` se não houver (como o `PlayerController.Instance`).
+  Lê o campo estático `_instance` e guarda o semáforo travado; se a cena troca o `InputHandler`, solta o antigo e trava
+  o novo. Sem `InputHandler` (ou sem o campo), `SeguraOJogo` fica falso e, em jogo, menu e Novidades respondem só a
+  teclado e controle.
+- A confirmar no jogo: abrir o menu com o botão do mouse segurado pode engolir o "soltar" do jogo; o botão View pode ter
+  função no jogo no mesmo quadro em que abre o menu.
+
+Mapa dos controles do mod (fonte canônica; README e LEIA-ME descrevem para o jogador). Efeito: R = navega ou abre,
+S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum (só texto).
+
+| ID | Controle | Onde | Efeito | `.cfg` |
+|---|---|---|---|---|
+| COOP-MENU-TECLA | F7 abre e fecha o menu do coop | menu e jogo | R | `[Teclas] MenuDoCoop` (a antiga `CriarOuConvidar` fica sem uso; `SairDoCoop`, a F6, saiu) |
+| COOP-MENU-VIEW | View/Select do controle (`selectButton`, `JoystickButton6` no legado) abre e fecha | menu e jogo | R | — |
+| COOP-MENU-ABRIR | Botão "Menu do coop (F7)" abaixo do painel do canto | só no menu (sem personagem) | R | — |
+| COOP-MENU-FECHAR | [X] no cabeçalho; Esc, B, F7 ou View | gaveta aberta | R (libera a entrada 2 quadros depois) | — |
+| COOP-ALIADO | Linha por aliado: nome e estado | gaveta, em sessão | ∅ | — |
+| COOP-CRIAR | "Criar coop e convidar amigos" (sem sessão); "Esperando o Steam..." e "Conectando..." indisponíveis | gaveta | S (`SessaoCoop.HospedarOuConvidar`) | — |
+| COOP-CONVIDAR | "Convidar amigos (Steam)" | gaveta, em sessão | S (reabre o overlay de convite) | — |
+| COOP-SAIR | "Sair do coop"; o primeiro aperto vira "Confirmar: sair do coop?" por 3 s | gaveta, em sessão | S (`SessaoCoop.Sair`) | — |
+| COOP-ECO | "Modo eco (teste com um PC)" LIGADO/DESLIGADO; sem personagem: "entre num save" | gaveta | S (`CoopRuntime.AlternarEco`, também F8) | `[Teclas] ModoEco` |
+| COOP-CFG-NOMES | "Nomes dos aliados" | gaveta | P | `[Interface] MostrarNomesDosAliados` |
+| COOP-CFG-DANO | "Números de dano dos aliados" | gaveta | P | `[Interface] MostrarDanoDosAliados` |
+| COOP-NOVIDADES | "Novidades da <versão>": fecha a gaveta e abre a janela (§12.1) | gaveta | R | `[Teclas] Novidades` (F10) |
+| COOP-NAV | Setas ou direcional movem o foco; Enter ou A executam; mouse: passar por cima foca, clique executa, roda rola | gaveta | R | — |
+| COOP-ECO-TECLA / COOP-DIAG-TECLA | F8 (modo eco) e F9 (diagnóstico) | jogo, com gaveta e Novidades fechadas | S | `[Teclas] ModoEco`, `SalvarHierarquia` |
+
+Sem efeito nos números do balanceamento nem no protocolo (10). Com o menu aberto em jogo o personagem fica parado e o
+jogo segue (em coop não há pausa), o que só deixa o jogo mais difícil para quem abre o menu no meio do combate.
 
 ## 13. Atualizador automático (versão 0.8.0)
 

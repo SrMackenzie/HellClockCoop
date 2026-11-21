@@ -8,7 +8,7 @@ ESTADO ATUAL (versão de teste, Fase 3)
 --------------------------------------
 - Vocês se veem andando e atacando (posição, animações, roupas com física) e se veem no
   minimapa (seta verde).
-- A RUN É DO HOST (quem apertou F7 e convidou):
+- A RUN É DO HOST (quem criou o coop e convidou):
   * Quando o host entra numa run, os convidados que estão no hub vão junto, automaticamente.
     Quem estiver no menu entra na run assim que carregar o save.
   * Todos ficam no MESMO andar e no mesmo mapa; quando o host passa pelo portal, todos passam.
@@ -114,12 +114,17 @@ ESTADO ATUAL (versão de teste, Fase 3)
   resistência, óleo, reações elementais) ficam só para quem aplicou, como no solo.
 - NOVO (0.9.2): janela NOVIDADES. Na primeira vez que o jogo abre depois de uma atualização,
   ela aparece sozinha no menu com o que mudou na versão nova e nas 3 anteriores (e, nas versões
-  ainda não testadas, o que testar). Depois, abra pelo botão "Novidades" no canto superior
-  esquerdo do menu ou pela tecla F10 (também durante o jogo). Setas ou LB/RB trocam de versão;
-  Esc, F10 ou B fecham.
+  ainda não testadas, o que testar). Depois, abra pelo item "Novidades" do menu do coop ou
+  pela tecla F10 (também durante o jogo). Setas ou LB/RB trocam de versão; Esc, F10 ou B fecham.
+- NOVO (0.9.3): MENU DO COOP, no lugar das teclas F6/F7. A F7 (ou o botão View/Select do
+  controle, ou o botão "Menu do coop" no canto do menu do jogo) abre uma gaveta à direita com
+  os aliados, Criar coop e convidar amigos, Sair do coop (pede confirmação), Modo eco e os
+  ajustes de nomes e números de dano dos aliados. Com o menu ou a janela Novidades aberta, o
+  jogo não recebe mouse, teclado nem controle (dá para clicar sem mover o personagem), mas
+  continua rodando: abra o menu longe dos inimigos. A F6 deixou de existir.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
-  sozinho, aperte F6 (sai do coop) e depois use o menu normalmente.
+  sozinho, abra o menu do coop (F7), escolha "Sair do coop" e depois use o menu normalmente.
 - Todos precisam ter (ou não ter) a DLC Cursed War. Com DLC diferente vocês se veem, mas não
   dividem a run. A Deluxe Edition (cosmética) não importa.
 
@@ -135,7 +140,8 @@ INSTALAÇÃO (uma vez, cada jogador)
    Para ver o registro ao vivo numa janela preta (console do BepInEx): no .cfg do mod, seção
    [Diagnostico], troque MostrarConsole = false por true. Vale a partir da próxima abertura do
    jogo. Com ou sem a janela, o registro fica em BepInEx\LogOutput.log.
-4. No canto superior esquerdo do jogo aparece "Hell Clock Coop {VERSAO}: F7 para jogar com amigos".
+4. No canto superior esquerdo do jogo aparece "Hell Clock Coop {VERSAO}: F7 abre o menu do coop
+   para jogar com amigos".
 
 
 COMO JOGAR JUNTO
@@ -144,9 +150,9 @@ Requisito: o overlay da Steam precisa estar ativado
 (Steam > Configurações > No jogo > "Ativar o Steam Overlay durante o jogo").
 
 Quem convida (host):
-1. Entre num save (hub ou run) e aperte F7.
+1. Entre num save (hub ou run), aperte F7 e escolha "Criar coop e convidar amigos".
 2. Abre a janela de convite da Steam: escolha o amigo e clique em "Convidar".
-   F7 de novo reabre essa janela.
+   "Convidar amigos (Steam)" no menu do coop reabre essa janela.
 
 Quem é convidado:
 - Com o jogo aberto: aceite o convite que aparece na Steam (notificação ou chat).
@@ -156,8 +162,8 @@ Depois, entre num save. Quando os dois estiverem no mesmo lugar, um aparece para
 com o nome da Steam em cima da cabeça.
 
 Teclas (dá para trocar em BepInEx\config\br.srmackenzie.hellclockcoop.cfg):
-  F7  criar o coop / abrir o convite
-  F6  sair do coop
+  F7  menu do coop (no controle: View/Select): criar, convidar, sair, modo eco, ajustes
+      No menu: setas ou direcional escolhem, Enter ou A confirma, Esc, B ou F7 fecham.
   F8  modo eco: um "fantasma" seu repete o que você faz (teste sem amigos)
   F9  diagnóstico: salva a estrutura do personagem
   F10 novidades: o que mudou nas últimas versões do mod
@@ -189,7 +195,7 @@ PROBLEMAS COMUNS
 - "Versão do mod diferente": alguém do grupo está com outra versão. Todos fechem e abram o
   jogo (o mod se atualiza ao abrir); se continuar, usem o zip mais recente da página de releases.
 - O amigo aparece como "conectando..." por muito tempo: confiram se os dois estão com o
-  mesmo zip e se a Steam está online. Saiam (F6) e entrem de novo.
+  mesmo zip e se a Steam está online. Saiam (menu do coop > Sair do coop) e entrem de novo.
 - "Atualização do coop recusada" ou "falhou" no painel: o jogo seguiu com a versão que já
   estava instalada. Mande o BepInEx\LogOutput.log (as linhas começam com "Atualizador").
 - "[Jogo] erro conhecido do Hell Clock 2.1.1.1 na tela de saves" no LogOutput.log: é um erro

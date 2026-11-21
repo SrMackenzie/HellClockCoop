@@ -13,7 +13,7 @@ namespace HellClockCoop
 {
     /// <summary>
     /// Laço principal do mod (objeto próprio, DontDestroyOnLoad).
-    /// - Sessão coop pela Steam (F7 cria/convida, F6 sai): snapshots a 20 Hz para cada aliado.
+    /// - Sessão coop pela Steam, pelo menu do coop (F7 ou View/Select no controle): snapshots a 20 Hz para cada aliado.
     /// - Modo eco (F8): o mesmo caminho em loopback, com 1 s de atraso, para testar com um PC só.
     /// - F9: salva a hierarquia do personagem (diagnóstico).
     /// </summary>
@@ -26,7 +26,7 @@ namespace HellClockCoop
 
         public static CoopRuntime Instancia { get; private set; }
 
-        internal static ConfigEntry<string> TeclaConvidar, TeclaSair, TeclaEco, TeclaHierarquia;
+        internal static ConfigEntry<string> TeclaEco, TeclaHierarquia;
         internal static ConfigEntry<bool> MostrarNomes;
 
         private readonly SessaoCoop _sessao = new SessaoCoop();
@@ -48,8 +48,6 @@ namespace HellClockCoop
         public static void Criar(ConfigFile config)
         {
             if (Instancia != null) return;
-            TeclaConvidar = config.Bind("Teclas", "CriarOuConvidar", "F7", "Cria o coop e abre o convite da Steam (de novo: reabre o convite). Nomes do Input System da Unity: F1..F12, Insert, Home...");
-            TeclaSair = config.Bind("Teclas", "SairDoCoop", "F6", "Sai do coop.");
             TeclaEco = config.Bind("Teclas", "ModoEco", "F8", "Fantasma local que repete você (teste com um PC só).");
             TeclaHierarquia = config.Bind("Teclas", "SalvarHierarquia", "F9", "Diagnóstico: salva a estrutura do personagem.");
             MostrarNomes = config.Bind("Interface", "MostrarNomesDosAliados", true, "Mostra o nome da Steam sobre a cabeça dos aliados.");
@@ -57,6 +55,7 @@ namespace HellClockCoop
             Balanceamento.Escalonamento.Configurar(config);
             Balanceamento.Envio.Configurar(config);
             Interface.Novidades.Configurar(config);
+            Interface.MenuCoop.Configurar(config);
 
             var go = new GameObject("HellClockCoop_Runtime");
             DontDestroyOnLoad(go);
@@ -69,14 +68,19 @@ namespace HellClockCoop
 
         private void Update()
         {
+            Interface.BloqueioEntrada.Atualizar(); // primeiro: libera a entrada do jogo se nenhum painel pediu no quadro anterior
             _sessao.TentarInicializar();
             bool semPersonagem = JogadorLocal() == null;
             Balanceamento.JanelaAceite.Atualizar(semPersonagem);
             Interface.Novidades.Atualizar(semPersonagem); // depois do aceite: abre só com ele fechado
-            if (Interface.Novidades.Aberta) return; // aberta, as teclas do coop (F6, F7...) não disparam por trás
+            if (Interface.Novidades.Aberta)
+            {
+                Interface.MenuCoop.Fechar("Novidades aberta"); // F10 ou o item do menu: a Novidades fica sozinha na tela
+                return; // aberta, as teclas do coop não disparam por trás
+            }
+            Interface.MenuCoop.Atualizar(this, semPersonagem);
+            if (Interface.MenuCoop.Aberto) return;
 
-            if (Teclas.Pressionou(TeclaConvidar.Value)) _sessao.HospedarOuConvidar();
-            if (Teclas.Pressionou(TeclaSair.Value) && _sessao.EmSessao) _sessao.Sair("tecla " + TeclaSair.Value);
             if (Teclas.Pressionou(TeclaEco.Value)) AlternarEco();
             if (Teclas.Pressionou(TeclaHierarquia.Value)) RegistrarHierarquia(forcar: true);
         }
@@ -160,9 +164,12 @@ namespace HellClockCoop
             if (_sessao.EmSessao) _sessao.Sair("jogo fechado");
         }
 
+        internal SessaoCoop Sessao => _sessao;
+        internal bool EcoAtivo => _ecoAtivo;
+
         // ---------- Modo eco ----------
 
-        private void AlternarEco()
+        internal void AlternarEco()
         {
             if (_ecoAtivo)
             {
@@ -181,7 +188,7 @@ namespace HellClockCoop
                 _avatarEco.DeslocamentoMundo = DeslocamentoEco;
                 _ecoAtivo = true;
                 _filaEco.Clear();
-                Avisar($"Modo eco ligado ({TeclaEco.Value} desliga).");
+                Avisar($"Modo eco ligado ({TeclaEco.Value} ou o menu do coop desligam).");
             }
             catch (Exception e)
             {
@@ -261,6 +268,17 @@ namespace HellClockCoop
             }
         }
 
+        /// <summary>Estado de um aliado em poucas palavras (painel do canto e menu do coop).</summary>
+        internal static string EstadoDoPar(Par p)
+        {
+            if (!p.HelloRecebido) return "conectando...";
+            if (!p.Compativel) return "versão incompatível: " + p.Incompatibilidade;
+            if (!p.DlcOk) return "DLC Cursed War diferente (não divide a run)";
+            if (p.UltimoPacote < 0f) return "aguardando o personagem";
+            if (Time.unscaledTime - p.UltimoPacote > 5f) return "sem sinal";
+            return p.MesmoAndar ? (p.Morto ? "no mesmo andar (caído)" : "no mesmo andar") : "em outro lugar";
+        }
+
         private void Avisar(string texto)
         {
             _avisos.Add(new KeyValuePair<float, string>(Time.unscaledTime + 6f, texto));
@@ -282,18 +300,8 @@ namespace HellClockCoop
             if (_sessao.EmSessao)
             {
                 string run = _sessao.ModoConvidado ? " · acompanhando a run do host" : _sessao.ModoHost ? " · a run é sua" : "";
-                linhas.Add($"Coop — {(_sessao.SouHost ? "você é o host" : "convidado")}{run} · {_sessao.Pares.Count + 1}/{SessaoCoop.MaximoJogadores} jogadores · {TeclaConvidar.Value} convidar · {TeclaSair.Value} sair");
-                foreach (Par p in _sessao.Pares.Values)
-                {
-                    string estado;
-                    if (!p.HelloRecebido) estado = "conectando...";
-                    else if (!p.Compativel) estado = "versão incompatível: " + p.Incompatibilidade;
-                    else if (!p.DlcOk) estado = "DLC Cursed War diferente (não divide a run)";
-                    else if (p.UltimoPacote < 0f) estado = "aguardando o personagem";
-                    else if (Time.unscaledTime - p.UltimoPacote > 5f) estado = "sem sinal";
-                    else estado = p.MesmoAndar ? (p.Morto ? "no mesmo andar (caído)" : "no mesmo andar") : "em outro lugar";
-                    linhas.Add($"  • {p.Nome}: {estado}");
-                }
+                linhas.Add($"Coop — {(_sessao.SouHost ? "você é o host" : "convidado")}{run} · {_sessao.Pares.Count + 1}/{SessaoCoop.MaximoJogadores} jogadores · {Interface.MenuCoop.Tecla.Value}: menu do coop");
+                foreach (Par p in _sessao.Pares.Values) linhas.Add($"  • {p.Nome}: {EstadoDoPar(p)}");
                 string bal = Balanceamento.Escalonamento.Resumo();
                 if (bal != null) linhas.Add("  " + bal);
             }
@@ -303,7 +311,7 @@ namespace HellClockCoop
             }
             else if (Time.unscaledTime < _dicaAte)
             {
-                linhas.Add($"Hell Clock Coop {Plugin.PluginVersion}: {TeclaConvidar.Value} para jogar com amigos");
+                linhas.Add($"Hell Clock Coop {Plugin.PluginVersion}: {Interface.MenuCoop.Tecla.Value} abre o menu do coop para jogar com amigos");
             }
             if (_avisoAtualizacao != null && (_dicaAte < 0f || Time.unscaledTime < _dicaAte)) linhas.Add("» " + _avisoAtualizacao);
             if (_ecoAtivo) linhas.Add($"Modo eco ({TeclaEco.Value}): {_bytesUltimo} bytes por snapshot, 20/s");
@@ -322,7 +330,7 @@ namespace HellClockCoop
                 GUI.Box(new Rect(12, 12, 560, altura), conteudo, _estiloCaixa);
                 yBotao += altura + 8f;
             }
-            Interface.Novidades.DesenharBotaoMenu(yBotao); // só no menu (sem personagem)
+            Interface.MenuCoop.DesenharBotaoMenu(yBotao); // só no menu (sem personagem)
 
             if (MostrarNomes.Value && Camera.main != null)
             {
@@ -337,6 +345,7 @@ namespace HellClockCoop
                 }
             }
 
+            Interface.MenuCoop.Desenhar(this);
             Interface.Novidades.Desenhar();
             Balanceamento.JanelaAceite.Desenhar(); // por último: fica por cima do painel
         }
@@ -400,6 +409,20 @@ namespace HellClockCoop
                 _legadoIndisponivel = true;
                 return false;
             }
+        }
+
+        /// <summary>Botão do controle pelo Input System, com o Input legado de reserva (o jogo usa o Rewired).</summary>
+        public static bool Controle(Func<Gamepad, UnityEngine.InputSystem.Controls.ButtonControl> botao, KeyCode? legado)
+        {
+            try
+            {
+                Gamepad controle = Gamepad.current;
+                if (controle != null) return botao(controle).wasPressedThisFrame;
+            }
+            catch (Exception) { }
+            if (legado == null || _legadoIndisponivel) return false;
+            try { return Input.GetKeyDown(legado.Value); }
+            catch (Exception) { return false; }
         }
     }
 }

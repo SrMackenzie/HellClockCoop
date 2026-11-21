@@ -430,5 +430,25 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
         "Novidades: versão testada ou sem roteiro não mostra \"O que testar\"");
 }
 
+// Menu do coop (0.9.3): foco da lista, confirmação de saída e liberação da entrada do jogo
+{
+    var tM = T("HellClockCoop.Interface.MenuCoop");
+    var prox = tM.GetMethod("ProximoFoco", BindingFlags.Static | BindingFlags.NonPublic);
+    var conf = tM.GetMethod("ConfirmaSaida", BindingFlags.Static | BindingFlags.NonPublic);
+    var lib = T("HellClockCoop.Interface.BloqueioEntrada").GetMethod("DeveLiberar", BindingFlags.Static | BindingFlags.NonPublic);
+    int P(int atual, int delta, params bool[] sel) => (int)prox.Invoke(null, new object[] { atual, delta, sel });
+    bool C(float agora, float ate) => (bool)conf.Invoke(null, new object[] { agora, ate });
+    bool L(int pedido, int quadro) => (bool)lib.Invoke(null, new object[] { pedido, quadro });
+    // seção, item, info, item, item (desabilitado), item
+    bool[] lista = { false, true, false, true, false, true };
+    Checar(P(1, 1, lista) == 3 && P(3, 1, lista) == 5 && P(5, 1, lista) == 1, "Menu: descer pula cabeçalhos, linhas de info e itens indisponíveis, e gira no fim");
+    Checar(P(1, -1, lista) == 5 && P(5, -1, lista) == 3, "Menu: subir gira do primeiro para o último");
+    Checar(P(-1, 1, lista) == 1 && P(-1, -1, lista) == 5 && P(99, 1, lista) == 1, "Menu: sem foco válido começa pela ponta da direção");
+    Checar(P(0, 1, false, false) == -1 && P(0, 1) == -1 && P(0, 1, null) == -1, "Menu: lista sem item selecionável não tem foco");
+    Checar(P(1, 1, false, true, false) == 1, "Menu: um item só fica com o foco");
+    Checar(!C(10f, -1f) && C(10f, 12f) && C(12f, 12f) && !C(12.1f, 12f), "Menu: sair do coop só no segundo aperto, dentro do prazo");
+    Checar(!L(100, 100) && !L(100, 101) && L(100, 102) && L(-10, 0), "Entrada: libera o jogo só dois quadros depois do último pedido do painel");
+}
+
 Console.WriteLine(falhas == 0 ? "\nTODOS OS TESTES PASSARAM" : $"\n{falhas} FALHA(S)");
 return falhas;

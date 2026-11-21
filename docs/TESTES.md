@@ -11,7 +11,7 @@ Regra do projeto: uma versão só vira ✅ no roadmap depois de confirmada aqui,
 - [ ] Backup do save ativo. No log: `Backup do save: N arquivo(s) copiados para ...`. Sem essa linha, **não teste**:
       confira `BackupDoSaveAoIniciar = true` em `BepInEx\config\br.srmackenzie.hellclockcoop.cfg`.
 - [ ] Validação completa. No log: `[Validação] N/N alvos de patch encontrados` (os dois números iguais).
-- [ ] Host aperta **F7** e convida; convidado entra. No painel do host: `• <testador>: no mesmo andar` depois que a run começa.
+- [ ] Host abre o menu do coop (**F7**; até a 0.9.2, a F7 criava direto), escolhe **Criar coop e convidar amigos** e convida; convidado entra. No painel do host: `• <testador>: no mesmo andar` depois que a run começa.
 
 **Sobre o log:** fica em `<pasta do jogo>\BepInEx\LogOutput.log` e é **sobrescrito quando o jogo abre**. Se algo der
 errado, copie o arquivo **antes** de abrir o jogo de novo. Os dois logs (host e convidado) ajudam; o do lado onde o
@@ -247,6 +247,10 @@ enfraquecimento, mais:
 
 Solo basta (é só interface). Atualizar a partir da 0.9.1 (pelo atualizador ou à mão).
 
+> Testando já na 0.9.3: o botão "Novidades" do menu virou o item "Novidades" do menu do coop, e em jogo a janela passa
+> a segurar a entrada do jogo (responde ao mouse; Esc e B fecham sem abrir a pausa). Os itens "Botão do menu" e
+> "Durante a run" abaixo valem como estão só na 0.9.2; na 0.9.3, siga a seção 0.9.3.
+
 - [ ] **Abertura automática:** ao abrir o jogo depois de atualizar, a janela Novidades aparece sozinha no menu, com a
   aba `v0.9.2 NOVA` selecionada. Esc, B ou clique em "Fechar" logo ao abrir (no primeiro 1,5 s) não fecham, para
   quem pula a abertura do jogo não perder a janela; a F10 fecha sempre. Na primeira instalação com a janela do aceite das métricas, a das Novidades só abre
@@ -263,6 +267,32 @@ Solo basta (é só interface). Atualizar a partir da 0.9.1 (pelo atualizador ou 
 - [ ] **Telas:** em 1080p e numa resolução menor (ex.: 1366x768 em janela) a janela cabe inteira e o texto não
   corta.
 - Se falhar, mandar: o `LogOutput.log` (linhas `[Novidades]`) e uma captura da tela.
+
+## 0.9.3 — Menu do coop dentro do jogo
+
+Solo basta para quase tudo (modo eco); os itens de convite e saída precisam de dois PCs. Atualizar a partir da 0.9.2.
+
+- [ ] **Abrir e fechar no menu do jogo:** o botão "Menu do coop (F7)" abaixo do painel do canto e a F7 abrem a gaveta
+  à direita (o resto da tela escurece um pouco); Esc, F7 e o X fecham. Com a gaveta aberta, clicar fora dela não aciona
+  nada do menu do jogo.
+- [ ] **Em jogo, entrada segura:** durante uma run, F7 abre a gaveta sem escurecer a tela. Com ela aberta: clicar nos
+  itens (e fora deles) não move o personagem; WASD e o analógico não andam; skills e poção não disparam; Esc e B fecham
+  a gaveta **sem** abrir a pausa. Ao fechar, o personagem volta a responder normalmente. No log:
+  `[Entrada] Entrada do jogo bloqueada` e, ao fechar, `[Entrada] Entrada do jogo liberada`.
+- [ ] **Controle:** View/Select abre e fecha a gaveta; anotar se o View faz mais alguma coisa no jogo no mesmo aperto
+  (minimapa, HUD). Direcional cima/baixo move o foco, A confirma, B fecha; o rodapé passa a mostrar as dicas do controle.
+- [ ] **Clique segurado:** segurar o botão do mouse andando, abrir a gaveta pela F7, soltar o mouse e fechar a gaveta: o
+  personagem não deve continuar andando sozinho (se continuar, anotar: é o "soltar" engolido pelo bloqueio).
+- [ ] **Ações:** "Modo eco" liga e desliga o fantasma (no menu do jogo aparece "entre num save", indisponível). Com dois
+  PCs: "Criar coop e convidar amigos" cria o coop e abre o overlay; "Convidar amigos (Steam)" reabre o convite; "Sair do
+  coop" muda para "Confirmar: sair do coop?" e só sai no segundo aperto em até 3 s. A F6 não faz mais nada.
+- [ ] **Ajustes:** "Nomes dos aliados" e "Números de dano dos aliados" mudam na hora (LIGADO/DESLIGADO) e continuam
+  iguais depois de reabrir o jogo (`MostrarNomesDosAliados` e `MostrarDanoDosAliados` no .cfg).
+- [ ] **Novidades:** o item "Novidades da 0.9.3" fecha a gaveta e abre a janela; em jogo a janela responde ao mouse e
+  Esc ou B fecham sem abrir a pausa. A F10 com a gaveta aberta troca a gaveta pela janela.
+- [ ] **Telas:** em 1080p e em 1366x768 (janela) a gaveta cabe inteira, nenhum texto de item corta e os itens têm
+  altura confortável para o clique.
+- Se falhar, mandar: o `LogOutput.log` (linhas `[Menu]`, `[Entrada]` e `[Novidades]`) e uma captura da tela.
 
 ---
 

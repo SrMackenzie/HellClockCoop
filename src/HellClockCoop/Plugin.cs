@@ -18,7 +18,7 @@ namespace HellClockCoop
     {
         public const string PluginGuid = "br.srmackenzie.hellclockcoop";
         public const string PluginName = "Hell Clock Coop";
-        public const string PluginVersion = "0.9.2";
+        public const string PluginVersion = "0.9.3";
 
         /// <summary>Versão do jogo contra a qual os patches foram mapeados (Application.version).</summary>
         public const string VersaoMapeada = "2.1.1.1";
@@ -93,7 +93,7 @@ namespace HellClockCoop
             // Fase 1: laço do mod (coop pela Steam, modo eco, diagnóstico). Não depende de patch:
             // só lê o PlayerController local e usa o Steam que o próprio jogo inicializa.
             CoopRuntime.Criar(Config);
-            Log.LogInfo($"Fase 1 pronta: {CoopRuntime.TeclaConvidar.Value} cria/convida, {CoopRuntime.TeclaSair.Value} sai, {CoopRuntime.TeclaEco.Value} modo eco.");
+            Log.LogInfo($"Fase 1 pronta: {Interface.MenuCoop.Tecla.Value} (ou View no controle) abre o menu do coop, {CoopRuntime.TeclaEco.Value} modo eco.");
         }
 
         /// <summary>

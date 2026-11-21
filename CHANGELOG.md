@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.9.3 — Menu do coop dentro do jogo 🧪
+_21/11/2026_
+
+- Novo menu do coop: uma gaveta à direita da tela com os aliados e o estado de cada um, Criar coop e convidar amigos (Steam), Sair do coop (pede confirmação), Modo eco e os ajustes de nomes e números de dano dos aliados, além das Novidades
+- Abre e fecha pela F7, pelo botão View/Select do controle ou pelo botão "Menu do coop" no canto do menu; fecha também por Esc, B e pelo X. A F6 deixou de existir: sair do coop agora é pelo menu (a F7 deixou de criar o coop direto; se você tinha mudado a tecla CriarOuConvidar no .cfg, ajuste a nova MenuDoCoop)
+- Com o menu ou a janela Novidades aberta, o jogo não recebe mouse, teclado nem controle: dá para clicar durante a run sem mover o personagem e Esc ou B não abrem a pausa. O jogo continua rodando e o personagem fica parado
+- A janela Novidades agora responde ao mouse também durante a run
+- Balanceamento: sem efeito nos números; com o menu aberto o seu personagem fica parado e o jogo segue (no coop não pausa), então abra o menu longe dos inimigos. Protocolo não muda (10), mas o coop exige a mesma versão do mod nos dois PCs
+
 ## 0.9.2 — Janela de novidades dentro do jogo 🧪
 _21/11/2026_
 
