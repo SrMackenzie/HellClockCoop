@@ -135,6 +135,9 @@ namespace HellClockCoop.Fase3
 
         private static bool HaQuemVeja => (Sessao != null && Sessao.AlguemNoMesmoAndar) || AvatarEco != null;
 
+        /// <summary>Efeito de skill do jogador local rastreado aqui (o AvatarFactory não o clona: a cópia animada vem daqui).</summary>
+        internal static bool EhEfeitoDoJogador(GameObject go) => go != null && Locais.ContainsKey(go);
+
         /// <summary>Postfix de GameplayFx.CreateFx.</summary>
         internal static void EfeitoCriado(GameplayFx fx, ISkillCaster caster, Skill skill, GameObject go)
         {

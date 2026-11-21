@@ -294,6 +294,21 @@ Solo basta para quase tudo (modo eco); os itens de convite e saída precisam de 
   altura confortável para o clique.
 - Se falhar, mandar: o `LogOutput.log` (linhas `[Menu]`, `[Entrada]` e `[Novidades]`) e uma captura da tela.
 
+## 0.9.4 — Modo eco que fica ligado e adagas sem cópia parada
+
+Solo basta para os três primeiros itens; o último precisa de dois PCs. Corrige o que o teste da 0.9.3 achou no eco.
+
+- [ ] **Eco na troca de cena:** ligar o eco no hub, entrar numa run e passar de andar: o fantasma reaparece sozinho a
+  cada andar. No log: `[Eco] Fantasma recriado depois da troca de cena`.
+- [ ] **Eco no menu:** com o eco ligado, voltar ao menu e carregar o save: o fantasma volta. No menu do jogo, o menu do
+  coop mostra Modo eco LIGADO; um aperto desliga (`[Eco] Desligado (...)` no log).
+- [ ] **Adagas e orbes:** com as adagas do Reflexos (ou o orbe de poder) ativas, ligar o eco e trocar de andar: o
+  fantasma mostra só as adagas girando, sem cópias paradas. No log, a linha `[Avatar] 'HellClockCoop_Avatar_Eco'
+  criado: N efeito(s) de skill do jogador fora do clone` com N maior que 0 quando as adagas estavam ativas.
+- [ ] **Coop:** com as adagas ativas quando o aliado chega ao andar, o boneco dele não mostra adagas paradas (as dele,
+  girando, continuam aparecendo se ele usar a skill).
+- Se falhar, mandar: o `LogOutput.log` (linhas `[Eco]`, `[Avatar]` e `[Fx]`) e uma captura da tela.
+
 ---
 
 ## Mensagem para o testador

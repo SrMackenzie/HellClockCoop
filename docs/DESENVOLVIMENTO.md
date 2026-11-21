@@ -96,7 +96,8 @@ as 3 anteriores, embutidas na DLL no build.
 - **Fase 0:** ao abrir o jogo, o log mostra `Hell Clock Coop <versão> carregado`, `Backup do save: N arquivo(s)`,
   `Versão do jogo: 2.1.1.1` e `[Validação] N/N alvos de patch encontrados`.
 - **Modo eco (F8):** um clone aparece 2,5 m ao lado e repete tudo com 1 s de atraso, inclusive os efeitos das skills e
-  os números de dano. Serve para testar sem um segundo PC.
+  os números de dano. Serve para testar sem um segundo PC. Fica ligado ao trocar de andar, entrar numa run ou voltar
+  ao menu (o fantasma volta junto com o personagem) até ser desligado.
 - **Coop:** dois PCs com contas Steam diferentes. O log fica em `Hell Clock/BepInEx/LogOutput.log`; copie-o logo
   depois do problema (o jogo sobrescreve ao abrir).
 - **Diagnóstico (F9):** salva a hierarquia do personagem em `BepInEx/HellClockCoop/hierarquia-jogador.txt`.

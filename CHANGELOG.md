@@ -4,6 +4,14 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.9.4 — Modo eco que fica ligado e adagas sem cópia parada 🧪
+_21/11/2026_
+
+- Modo eco: continua ligado ao trocar de andar, entrar numa run ou voltar ao menu; o fantasma reaparece junto com o personagem (antes ele sumia e o primeiro F8 só desligava o eco)
+- Adagas do Reflexos e orbes de poder não aparecem mais duplicadas no fantasma do eco (umas paradas, outras girando): o boneco não leva mais uma cópia parada dos efeitos que estavam ativos quando ele foi criado
+- A mesma correção vale no coop: o boneco de um aliado não aparece mais com as suas adagas ou orbes paradas
+- Balanceamento: sem efeito (só visual e modo de teste). Protocolo não muda (10), mas o coop exige a mesma versão do mod nos dois PCs
+
 ## 0.9.3 — Menu do coop dentro do jogo 🧪
 _21/11/2026_
 

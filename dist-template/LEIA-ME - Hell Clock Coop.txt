@@ -122,6 +122,9 @@ ESTADO ATUAL (versão de teste, Fase 3)
   ajustes de nomes e números de dano dos aliados. Com o menu ou a janela Novidades aberta, o
   jogo não recebe mouse, teclado nem controle (dá para clicar sem mover o personagem), mas
   continua rodando: abra o menu longe dos inimigos. A F6 deixou de existir.
+- NOVO (0.9.4): o modo eco fica ligado ao trocar de andar, entrar numa run ou voltar ao menu
+  (o fantasma volta junto com o personagem). Adagas do Reflexos e orbes não aparecem mais
+  duplicadas e paradas no fantasma do eco nem no boneco dos aliados.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, abra o menu do coop (F7), escolha "Sair do coop" e depois use o menu normalmente.

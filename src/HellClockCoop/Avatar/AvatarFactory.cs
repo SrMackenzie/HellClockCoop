@@ -33,6 +33,7 @@ namespace HellClockCoop.Avatar
             clone.transform.localPosition = Vector3.zero;
             clone.transform.localRotation = Quaternion.identity;
 
+            int efeitos = RemoverEfeitosDoModelo(modelo.transform, clone.transform);
             int removidos = RemoverLogica(clone);
 
             // Localiza no clone os três Animators equivalentes aos do jogador (corpo, chicote, lança).
@@ -77,7 +78,7 @@ namespace HellClockCoop.Avatar
             {
                 if (c != null && c.GetType().FullName == "MagicaCloth2.MagicaCloth") panos++;
             }
-            Plugin.Log.LogInfo($"[Avatar] '{raiz.name}' criado: {removidos} componentes de lógica removidos, " +
+            Plugin.Log.LogInfo($"[Avatar] '{raiz.name}' criado: {efeitos} efeito(s) de skill do jogador fora do clone, {removidos} componentes de lógica removidos, " +
                                $"{clone.GetComponentsInChildren<Renderer>(true).Length} renderers, {panos} panos com física e {setas} seta(s) de minimapa mantidos.");
             return avatar;
         }
@@ -107,6 +108,28 @@ namespace HellClockCoop.Avatar
         private static bool EhIconeDoMinimapa(Component c) => c is SpriteRenderer && LayerIconeMinimapa >= 0 && c.gameObject.layer == LayerIconeMinimapa;
 
         private static bool Manter(Component c) => Mantidos.Contains(c.GetType()) || FisicaDeTecido.Contains(c.GetType().FullName) || EhIconeDoMinimapa(c);
+
+        /// <summary>
+        /// Tira do clone os efeitos de skill presos no jogador na hora da cópia (adagas do Reflexos, orbes): sem a
+        /// lógica eles ficariam parados no avatar, ao lado da cópia animada que o FxCompartilhados já manda.
+        /// O Instantiate preserva a ordem dos filhos, então original e clone são percorridos juntos (de trás para frente,
+        /// para a remoção não deslocar os índices que faltam).
+        /// </summary>
+        private static int RemoverEfeitosDoModelo(Transform original, Transform copia)
+        {
+            int n = 0;
+            for (int i = Mathf.Min(original.childCount, copia.childCount) - 1; i >= 0; i--)
+            {
+                Transform o = original.GetChild(i), c = copia.GetChild(i);
+                if (Fase3.FxCompartilhados.EhEfeitoDoJogador(o.gameObject))
+                {
+                    UnityEngine.Object.DestroyImmediate(c.gameObject); // o clone nunca foi ativado: nenhum OnDestroy roda
+                    n++;
+                }
+                else n += RemoverEfeitosDoModelo(o, c);
+            }
+            return n;
+        }
 
         private static int RemoverLogica(GameObject clone)
         {

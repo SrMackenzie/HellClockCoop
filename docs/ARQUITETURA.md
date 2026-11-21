@@ -495,6 +495,14 @@ visual) e prende no avatar (mesma hierarquia de ossos) ou solta no mundo com ext
 `fireEvents = false` e guarda de StateMachineBehaviours. Validade: 30 s solto sem atualização, 120 s preso.
 O modo eco também recebe as cópias. Efeitos de inimigos não vão pela rede (a réplica os cria ao repetir a skill).
 
+*0.9.4:* o avatar é clone do jogador local, então levava junto os efeitos presos nele na hora da cópia (adagas do
+Reflexos, orbe de poder) sem a lógica: ficavam parados ao lado da cópia animada que chega por aqui. O
+`AvatarFactory.Criar` agora tira do clone, antes de remover a lógica, toda subárvore cujo original é um efeito
+rastreado (`FxCompartilhados.EhEfeitoDoJogador`), percorrendo original e clone juntos (o `Instantiate` preserva a
+ordem dos filhos). Vale para o eco e para os avatares dos aliados. O modo eco também continua ligado ao trocar de
+andar ou de cena: a troca destrói o fantasma junto com a cena e o `LateUpdate` o recria quando o personagem está em
+cena (antes, `_ecoAtivo` ficava ligado sem fantasma e o primeiro F8 só desligava).
+
 *0.5.1:* `GameplayFx` tem `CreateFx<T>` com os mesmos parâmetros; o patch escolhe o método à mão (`TargetMethod`,
 não genérico, retorna GameObject). Sem isso o Harmony falhava com "Ambiguous match".
 

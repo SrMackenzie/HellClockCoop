@@ -112,10 +112,15 @@ namespace HellClockCoop
 
             if (jogador == null)
             {
-                if (_avatarEco != null) DesligarEco("o jogador local saiu de cena");
+                // O eco continua ligado: o fantasma volta quando o personagem reaparecer (próximo save, hub ou run).
+                if (_avatarEco != null) Destroy(_avatarEco.gameObject);
+                _avatarEco = null;
+                _filaEco.Clear();
                 _sessao.DestruirAvatares();
                 return;
             }
+            // Troca de andar ou de cena destrói o fantasma junto com a cena (o personagem continua): recria.
+            if (_ecoAtivo && _avatarEco == null) CriarFantasmaEco(jogador, "recriado depois da troca de cena");
             if (!_hierarquiaRegistrada) RegistrarHierarquia(forcar: false);
             if (_dicaAte < 0f) _dicaAte = Time.unscaledTime + 20f;
 
@@ -182,18 +187,26 @@ namespace HellClockCoop
                 Avisar("Entre num save (hub ou run) antes de ligar o modo eco.");
                 return;
             }
+            if (CriarFantasmaEco(jogador, "ligado")) Avisar($"Modo eco ligado ({TeclaEco.Value} ou o menu do coop desligam; continua ligado ao trocar de andar).");
+        }
+
+        /// <summary>Cria o fantasma do eco; com erro, desliga o eco (sem tentar de novo a cada quadro).</summary>
+        private bool CriarFantasmaEco(PlayerController jogador, string motivo)
+        {
             try
             {
                 _avatarEco = AvatarFactory.Criar(jogador, "Eco");
                 _avatarEco.DeslocamentoMundo = DeslocamentoEco;
                 _ecoAtivo = true;
                 _filaEco.Clear();
-                Avisar($"Modo eco ligado ({TeclaEco.Value} ou o menu do coop desligam).");
+                Plugin.Log.LogInfo($"[Eco] Fantasma {motivo}.");
+                return true;
             }
             catch (Exception e)
             {
                 Plugin.Log.LogError($"[Eco] Falha ao criar o fantasma: {e}");
                 DesligarEco("erro");
+                return false;
             }
         }
 
@@ -205,8 +218,9 @@ namespace HellClockCoop
             {
                 Plugin.Log.LogInfo($"[Eco] Desligado ({motivo}). Snapshots recebidos: {_avatarEco.Recebidos}, fora de ordem: {_avatarEco.ForaDeOrdem}.");
                 Destroy(_avatarEco.gameObject);
-                _avatarEco = null;
             }
+            else Plugin.Log.LogInfo($"[Eco] Desligado ({motivo}), sem fantasma em cena.");
+            _avatarEco = null;
         }
 
         // ---------- Diagnóstico ----------
