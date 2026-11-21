@@ -176,6 +176,7 @@ namespace HellClockCoop.Net
             Pares.Clear();
             Fase3.InimigosCompartilhados.Encerrar();
             Fase3.ObjetosCompartilhados.Encerrar();
+            Fase3.SantuariosCompartilhados.Encerrar();
             Fase3.FxCompartilhados.Encerrar();
             Fase3.AlvosAliados.Encerrar();
             Lobby = CSteamID.Nil;
@@ -409,6 +410,7 @@ namespace HellClockCoop.Net
                         Fase2.RunCompartilhada.AoNovoConvidado(this, p);
                         Fase3.InimigosCompartilhados.AoNovoConvidado(this, p);
                         Fase3.ObjetosCompartilhados.AoNovoConvidado(this, p);
+                        Fase3.SantuariosCompartilhados.AoNovoConvidado(this, p);
                     }
                     if (p.Compativel && jogadorLocal != null)
                     {
@@ -445,6 +447,10 @@ namespace HellClockCoop.Net
                     break;
                 case Protocolo.TipoInimigoSkill:
                     Fase3.InimigosCompartilhados.Receber(this, p, dados);
+                    break;
+                case Protocolo.TipoObjetoSpawn:
+                case Protocolo.TipoObjetoUsado:
+                    Fase3.SantuariosCompartilhados.Receber(this, p, dados);
                     break;
                 case Protocolo.TipoBauSpawn:
                 case Protocolo.TipoBauAberto:

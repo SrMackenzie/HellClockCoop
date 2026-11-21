@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.5.4-ff7a1a?style=for-the-badge">
+  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.6.0-ff7a1a?style=for-the-badge">
   <img alt="Status" src="https://img.shields.io/badge/status-alpha%20jog%C3%A1vel-b3121f?style=for-the-badge">
   <img alt="Hell Clock" src="https://img.shields.io/badge/Hell%20Clock-2.1.1.1-4a1a1f?style=for-the-badge">
   <img alt="Jogadores" src="https://img.shields.io/badge/jogadores-2%20a%204-5fe08a?style=for-the-badge">
@@ -66,7 +66,8 @@
 - **Um vê as skills do outro**: tiros, projéteis, áreas, auras, orbes, facas.
 - **Números de dano dos aliados** com cor própria por jogador.
 - Inimigos atacam quem estiver mais perto — host ou convidado.
-- Baús e vasos/caixas iguais para todos.
+- Baús, vasos/caixas, **santuários** e **totens** iguais para todos.
+- **Chefes** com barra de vida e dano também para o convidado.
 
 ### 🎒 Progressão individual
 - Loot, ouro, XP, relíquias e Bênçãos: **cada um no próprio save**.

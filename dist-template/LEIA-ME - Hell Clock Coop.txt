@@ -35,7 +35,13 @@ ESTADO ATUAL (versão de teste, Fase 3)
     quando o host passar de andar. Se o HOST morre, a run acaba para todos.
   * Teste sozinho: o modo eco (F8) também repete as suas skills e os seus números de dano,
     com o mesmo atraso do fantasma.
-- Ainda NÃO: santuários e totens só existem para o host.
+- NOVO (0.6.0): SANTUÁRIOS, TOTENS E CHEFES.
+  * Os santuários são os do host. Quem usar ativa para todos, e cada um recebe o efeito.
+  * Santuário amaldiçoado: quem ativar começa a sobrevivência para todos; ao purificar, cada
+    um ganha o próprio ponto de constelação.
+  * Totem de bênção: aparece no mesmo lugar, mas cada um escolhe e compra a própria bênção,
+    com o próprio ouro (só para quem já liberou os totens no próprio save).
+  * Chefes: o convidado vê a barra de vida do chefe e causa dano assim que a luta começa.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, aperte F6 (sai do coop) e depois use o menu normalmente.

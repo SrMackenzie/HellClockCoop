@@ -91,7 +91,7 @@ namespace HellClockCoop.Fase3
     [HarmonyPatch(typeof(HellClock.Player.PlayerController), nameof(HellClock.Player.PlayerController.InteractWith))]
     internal static class Objetos_InteractWith
     {
-        private static bool Prefix() => !ObjetosCompartilhados.OrdemRemota;
+        private static bool Prefix() => !(ObjetosCompartilhados.OrdemRemota || SantuariosCompartilhados.OrdemRemota);
     }
 
     /// <summary>Alvo: HellClock.Character.Enemy.BreakableController.Handle_OnDie (protegido) — quebrável quebrado.</summary>
@@ -155,5 +155,19 @@ namespace HellClockCoop.Fase3
     {
         private static void Postfix(Collider targetCollider, Transform targetTransform, DamageInstance damage) =>
             DanosVisiveis.NumeroCriado(targetCollider, targetTransform, damage);
+    }
+
+    /// <summary>Alvo: HellClock.Shrine.ShrineInteractable.ExecuteInteraction — santuário usado pelo jogador local vale para todos.</summary>
+    [HarmonyPatch(typeof(HellClock.Shrine.ShrineInteractable), nameof(HellClock.Shrine.ShrineInteractable.ExecuteInteraction))]
+    internal static class Objetos_UsarSantuario
+    {
+        private static void Prefix(HellClock.Shrine.ShrineInteractable __instance) => SantuariosCompartilhados.UsouSantuario(__instance);
+    }
+
+    /// <summary>Alvo: HellClock.Shrine.CursedShrineInteractable.OnSurvivalEnd(bool), privado — host purificou o santuário amaldiçoado.</summary>
+    [HarmonyPatch(typeof(HellClock.Shrine.CursedShrineInteractable), "OnSurvivalEnd")]
+    internal static class Objetos_SantuarioPurificado
+    {
+        private static void Postfix(HellClock.Shrine.CursedShrineInteractable __instance, bool completed) => SantuariosCompartilhados.Purificado(__instance, completed);
     }
 }

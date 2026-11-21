@@ -120,6 +120,7 @@ namespace HellClockCoop.Net
             public float Yaw;
             public float Vida;
             public bool JaNasceu;
+            public bool Agressivo;        // EnemyAIController.IsAggressive (chefe libera o dano e a barra)
             public AnimatorFrame Animacao; // null = sem Animator
         }
 
@@ -139,7 +140,7 @@ namespace HellClockCoop.Net
             Bin.Escrever(w, i.Posicao);
             w.Write((ushort)Mathf.RoundToInt(Mathf.Repeat(i.Yaw, 360f) / 360f * 65535f));
             w.Write((ushort)Mathf.RoundToInt(Mathf.Clamp01(i.Vida) * 65535f));
-            w.Write((byte)((i.JaNasceu ? 1 : 0) | (i.Animacao != null ? 2 : 0)));
+            w.Write((byte)((i.JaNasceu ? 1 : 0) | (i.Animacao != null ? 2 : 0) | (i.Agressivo ? 4 : 0)));
             i.Animacao?.Escrever(w);
         }
 
@@ -158,6 +159,7 @@ namespace HellClockCoop.Net
                 };
                 byte f = r.ReadByte();
                 i.JaNasceu = (f & 1) != 0;
+                i.Agressivo = (f & 4) != 0;
                 if ((f & 2) != 0) i.Animacao = AnimatorFrame.Ler(r);
                 e.Itens.Add(i);
             }
@@ -246,5 +248,43 @@ namespace HellClockCoop.Net
 
         public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoQuebrou, w => { w.Write(Andar); Bin.Escrever(w, Posicao); });
         public static Quebrou Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoQuebrou, r => new Quebrou { Andar = r.ReadUInt32(), Posicao = Bin.LerVetor(r) });
+    }
+}
+
+namespace HellClockCoop.Net
+{
+    /// <summary>Santuário (comum ou amaldiçoado) ou totem de bênção do andar do host.</summary>
+    internal sealed class ObjetoSpawn
+    {
+        public const byte Santuario = 1, Totem = 2;
+        public const byte Livre = 0, Usado = 1, Concluido = 2; // Concluido: santuário amaldiçoado purificado
+
+        public ushort Id;
+        public uint Andar;
+        public byte Tipo;
+        public int DefinicaoHash;   // ShrineDefinition.HashID (0 no totem)
+        public Vector3 Posicao;
+        public float Raio = 1f;
+        public byte Estado;
+
+        public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoObjetoSpawn, w =>
+        {
+            w.Write(Id); w.Write(Andar); w.Write(Tipo); w.Write(DefinicaoHash); Bin.Escrever(w, Posicao); w.Write(Raio); w.Write(Estado);
+        });
+
+        public static ObjetoSpawn Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoObjetoSpawn, r => new ObjetoSpawn
+        {
+            Id = r.ReadUInt16(), Andar = r.ReadUInt32(), Tipo = r.ReadByte(), DefinicaoHash = r.ReadInt32(), Posicao = Bin.LerVetor(r), Raio = r.ReadSingle(), Estado = r.ReadByte(),
+        });
+    }
+
+    /// <summary>Santuário usado (Estado = Usado) ou amaldiçoado purificado (Concluido). Nos dois sentidos; o host repassa.</summary>
+    internal sealed class ObjetoUsado
+    {
+        public ushort Id;
+        public byte Estado;
+
+        public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoObjetoUsado, w => { w.Write(Id); w.Write(Estado); });
+        public static ObjetoUsado Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoObjetoUsado, r => new ObjetoUsado { Id = r.ReadUInt16(), Estado = r.ReadByte() });
     }
 }

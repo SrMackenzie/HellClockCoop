@@ -63,6 +63,22 @@ namespace HellClockCoop.Fase3
         private static readonly AccessTools.FieldRef<EnemyController, bool> NasceuRef = AccessTools.FieldRefAccess<EnemyController, bool>("_spawned");
         private static readonly AccessTools.FieldRef<EnemyManager, bool> IgnorarLimpezaRef = AccessTools.FieldRefAccess<EnemyManager, bool>("_ignoreLevelClear");
         private static readonly AccessTools.FieldRef<EnemyManager, EventSlot> AndarLimpoRef = AccessTools.FieldRefAccess<EnemyManager, EventSlot>("_onAllEnemiesCleared");
+        private static readonly Func<HellClock.AI.Enemy.EnemyAIController, BoolState> AgressivoDe = CriarLeitorAgressivo();
+
+        private static Func<HellClock.AI.Enemy.EnemyAIController, BoolState> CriarLeitorAgressivo()
+        {
+            // EnemyAIController.IsAggressive é internal: delegate no getter (sem ele, a réplica só não fica agressiva).
+            try
+            {
+                System.Reflection.MethodInfo get = AccessTools.PropertyGetter(typeof(HellClock.AI.Enemy.EnemyAIController), "IsAggressive");
+                return get == null ? null : AccessTools.MethodDelegate<Func<HellClock.AI.Enemy.EnemyAIController, BoolState>>(get);
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Inimigos] IsAggressive indisponível: {(e.InnerException ?? e).Message}");
+                return null;
+            }
+        }
         private static readonly AccessTools.FieldRef<StatBasedValueController, DoubleState> VidaAtualRef = AccessTools.FieldRefAccess<StatBasedValueController, DoubleState>("_currentValue");
 
         // ================= Host =================
@@ -192,6 +208,24 @@ namespace HellClockCoop.Fase3
             h.Spawn.Vida = h.C.LifeController.CurrentRatio;
         }
 
+        private static bool EstaAgressivo(EnemyController c)
+        {
+            try { return AgressivoDe != null && c.EnemyAIController != null && (AgressivoDe(c.EnemyAIController)?.Value ?? false); }
+            catch (Exception) { return false; }
+        }
+
+        /// <summary>
+        /// Réplica fica "agressiva" quando o inimigo do host fica: dispara o que o jogo registra nessa hora
+        /// (no chefe, EnemyBossController.OnAggressive libera o dano, a barra de vida e a câmera do chefe).
+        /// </summary>
+        private static void TornarAgressivo(Replica r)
+        {
+            if (r.Agressivo || AgressivoDe == null || r.C == null || r.C.EnemyAIController == null) return;
+            r.Agressivo = true;
+            try { AgressivoDe(r.C.EnemyAIController)?.Setter(true); }
+            catch (Exception e) { Plugin.Log.LogWarning($"[Inimigos] Réplica {r.Id} agressiva falhou: {(e.InnerException ?? e).Message}"); }
+        }
+
         /// <summary>Inimigos dormentes acordam também quando um aliado chega perto (no jogo, só o jogador local).</summary>
         internal static bool HostAcordarPorAliado(EnemyController c, Vector3 origem)
         {
@@ -272,6 +306,7 @@ namespace HellClockCoop.Fase3
                     item.Yaw = h.C.transform.eulerAngles.y;
                     item.Vida = h.C.LifeController.CurrentRatio;
                     item.JaNasceu = NasceuRef(h.C);
+                    item.Agressivo = EstaAgressivo(h.C);
                     Animator an = h.C.Animator;
                     if (an != null && an.isActiveAndEnabled && an.runtimeAnimatorController != null)
                     {
@@ -378,6 +413,8 @@ namespace HellClockCoop.Fase3
             public bool RootMotionOriginal;
             public float SkillAte;
             public ActiveSkill UltimaSkill;
+            public bool Agressivo;
+            public bool QuerAgressivo;
         }
 
         private static readonly Dictionary<ushort, Replica> Replicas = new Dictionary<ushort, Replica>();
@@ -464,6 +501,7 @@ namespace HellClockCoop.Fase3
                     if (!usandoSkill) AnimatorSync.Aplicar(r.C.Animator, r.Animacao);
                 }
                 AplicarVida(r);
+                if (r.QuerAgressivo && !r.Agressivo) TornarAgressivo(r);
                 // SetupSpawn deixa IsSpawning=true esperando o PlaySpawnFX; o host já tocou o dele.
                 if (r.Nasceu && !r.TocouSpawn && !NasceuRef(r.C) && r.C.CharacterEffectsController != null)
                 {
@@ -847,6 +885,7 @@ namespace HellClockCoop.Fase3
                                 r.Yaw = i.Yaw;
                                 r.VidaHost = i.Vida;
                                 r.Nasceu |= i.JaNasceu;
+                                r.QuerAgressivo |= i.Agressivo;
                                 if (i.Animacao != null) { r.Animacao = i.Animacao; r.AnimacaoNova = true; }
                             }
                             else if (Pendentes.TryGetValue(i.Id, out InimigoSpawn p))

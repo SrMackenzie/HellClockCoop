@@ -123,6 +123,7 @@ IdaVolta("AndarLimpo", new (string, object)[] { ("Andar", 12u) }, 35);
         tI.GetField("Yaw").SetValue(i, 90f);
         tI.GetField("Vida").SetValue(i, 0.5f);
         tI.GetField("JaNasceu").SetValue(i, k == 1);
+        tI.GetField("Agressivo").SetValue(i, k == 1);
         if (k == 1)
         {
             var fr = Activator.CreateInstance(tFr);
@@ -140,6 +141,7 @@ IdaVolta("AndarLimpo", new (string, object)[] { ("Andar", 12u) }, 35);
     Checar((ushort)tI.GetField("Id").GetValue(ic) == 101 && ((UnityEngine.Vector3)tI.GetField("Posicao").GetValue(ic)).Equals(new UnityEngine.Vector3(1, 2f, -3.5f)), "InimigosEstado.Item Id/Posição");
     Checar(Math.Abs((float)tI.GetField("Yaw").GetValue(ic) - 90f) < 0.01f && Math.Abs((float)tI.GetField("Vida").GetValue(ic) - 0.5f) < 0.0001f, "InimigosEstado.Item Yaw/Vida (16 bits)");
     Checar(!(bool)tI.GetField("JaNasceu").GetValue(ia) && (bool)tI.GetField("JaNasceu").GetValue(ic), "InimigosEstado.Item JaNasceu");
+    Checar(!(bool)tI.GetField("Agressivo").GetValue(ia) && (bool)tI.GetField("Agressivo").GetValue(ic), "InimigosEstado.Item Agressivo");
     Checar(tI.GetField("Animacao").GetValue(ia) == null && ((int[])tFr.GetField("StateHashes").GetValue(tI.GetField("Animacao").GetValue(ic))).SequenceEqual(new[] { 42 }), "InimigosEstado.Item Animação opcional");
 }
 {
@@ -213,6 +215,10 @@ IdaVolta("InimigoSkill", new (string, object)[] { ("Id", (ushort)300), ("SkillHa
     Checar(b[0] == 54 && (ushort)t.GetField("Id").GetValue(o2b) == 9 && (string)tn.GetField("Caminho").GetValue(n2) == "0/3/1" && (bool)tn.GetField("Ativo").GetValue(n2)
         && ((UnityEngine.Vector3)tn.GetField("Posicao").GetValue(n2)).Equals(new UnityEngine.Vector3(1.8f, 0.8f, 0)), $"FxNos ida e volta ({b.Length} bytes)");
 }
+
+// Santuários e totens
+IdaVolta("ObjetoSpawn", new (string, object)[] { ("Id", (ushort)12), ("Andar", 3u), ("Tipo", (byte)1), ("DefinicaoHash", 777), ("Posicao", new UnityEngine.Vector3(5f, 0f, 9f)), ("Raio", 2.5f), ("Estado", (byte)2) }, 43);
+IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", (byte)1) }, 44);
 
 Console.WriteLine(falhas == 0 ? "\nTODOS OS TESTES PASSARAM" : $"\n{falhas} FALHA(S)");
 return falhas;

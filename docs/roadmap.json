@@ -1,18 +1,33 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "21/11/2026",
-  "versao": "0.5.4",
+  "versao": "0.6.0",
   "fases": [
     {
       "id": "0",
       "nome": "Ambiente e mapeamento",
       "resumo": "BepInEx funcionando num jogo com managed stripping, backup do save e mapa dos pontos de patch.",
       "itens": [
-        ["feito", "BepInEx 5 + bibliotecas base completas de Windows (unstripped_corlib)"],
-        ["feito", "Backup automático da pasta de save a cada início (15 cópias)"],
-        ["feito", "Checagem da versão do jogo e validação de todos os alvos de patch"],
-        ["feito", "Patches de diagnóstico (spawn, run, andares, alvos, Steam)"],
-        ["feito", "Erros da Unity copiados para o log do BepInEx"]
+        [
+          "feito",
+          "BepInEx 5 + bibliotecas base completas de Windows (unstripped_corlib)"
+        ],
+        [
+          "feito",
+          "Backup automático da pasta de save a cada início (15 cópias)"
+        ],
+        [
+          "feito",
+          "Checagem da versão do jogo e validação de todos os alvos de patch"
+        ],
+        [
+          "feito",
+          "Patches de diagnóstico (spawn, run, andares, alvos, Steam)"
+        ],
+        [
+          "feito",
+          "Erros da Unity copiados para o log do BepInEx"
+        ]
       ]
     },
     {
@@ -20,11 +35,26 @@
       "nome": "Fantasma",
       "resumo": "Um jogador vê o outro andando e atacando, pela Steam.",
       "itens": [
-        ["feito", "Modo eco (F8): fantasma local para testar sem amigo"],
-        ["feito", "Avatar-clone sem lógica, com animações sincronizadas por estado e parâmetros"],
-        ["feito", "Mira (ossos do tronco), roupas com física (MagicaCloth) e aparência"],
-        ["feito", "Lobby de amigos da Steam, convite, aperto de mão e checagem de versão/DLC"],
-        ["feito", "Nome sobre a cabeça e seta verde no minimapa"]
+        [
+          "feito",
+          "Modo eco (F8): fantasma local para testar sem amigo"
+        ],
+        [
+          "feito",
+          "Avatar-clone sem lógica, com animações sincronizadas por estado e parâmetros"
+        ],
+        [
+          "feito",
+          "Mira (ossos do tronco), roupas com física (MagicaCloth) e aparência"
+        ],
+        [
+          "feito",
+          "Lobby de amigos da Steam, convite, aperto de mão e checagem de versão/DLC"
+        ],
+        [
+          "feito",
+          "Nome sobre a cabeça e seta verde no minimapa"
+        ]
       ]
     },
     {
@@ -32,11 +62,26 @@
       "nome": "Mesma run",
       "resumo": "O host é dono da run: todos no mesmo andar, mesmo mapa, mesmo Hell Clock.",
       "itens": [
-        ["feito", "Convidado puxado para a run do host"],
-        ["feito", "Mesmo andar sorteado e mesmo ponto de spawn"],
-        ["feito", "Hell Clock do host (4x por segundo) e tempo ganho pelo convidado"],
-        ["feito", "Fim da run do host encerra a de todos; sem pausa com aliados"],
-        ["testar", "Entrada no meio da run, portal vermelho e fim por tempo"]
+        [
+          "feito",
+          "Convidado puxado para a run do host"
+        ],
+        [
+          "feito",
+          "Mesmo andar sorteado e mesmo ponto de spawn"
+        ],
+        [
+          "feito",
+          "Hell Clock do host (4x por segundo) e tempo ganho pelo convidado"
+        ],
+        [
+          "feito",
+          "Fim da run do host encerra a de todos; sem pausa com aliados"
+        ],
+        [
+          "testar",
+          "Entrada no meio da run, portal vermelho e fim por tempo"
+        ]
       ]
     },
     {
@@ -44,18 +89,54 @@
       "nome": "Combate",
       "resumo": "Mesmos inimigos para todos, cada um vê as skills do outro, inimigos atacam qualquer jogador.",
       "itens": [
-        ["feito", "3a: inimigos do host replicados no convidado (tipo, afixos, vida, animação)"],
-        ["feito", "3a: dano do convidado aplicado pelo host; morte vale para todos"],
-        ["testar", "Baús iguais para todos e vasos/caixas quebrados para todos"],
-        ["feito", "3b: efeitos das skills (tiros, projéteis, áreas, auras, orbes) no avatar"],
-        ["feito", "3b: números de dano dos aliados, com cor própria por aliado"],
-        ["testar", "3b: facas que giram e estacas cravadas nos inimigos"],
-        ["testar", "3c: inimigos atacam o convidado, com o dano calculado no jogo dele"],
-        ["testar", "3c: convidado que morre volta no próximo andar do host"],
-        ["planejado", "Santuários e totens de bênção compartilhados"],
-        ["planejado", "Boss: fase agressiva, barra de vida e números no convidado"],
-        ["planejado", "Status do convidado (lentidão, congelamento) valendo no host"],
-        ["planejado", "Boneco de DPS do hub visível para o outro"]
+        [
+          "feito",
+          "3a: inimigos do host replicados no convidado (tipo, afixos, vida, animação)"
+        ],
+        [
+          "feito",
+          "3a: dano do convidado aplicado pelo host; morte vale para todos"
+        ],
+        [
+          "testar",
+          "Baús iguais para todos e vasos/caixas quebrados para todos"
+        ],
+        [
+          "feito",
+          "3b: efeitos das skills (tiros, projéteis, áreas, auras, orbes) no avatar"
+        ],
+        [
+          "feito",
+          "3b: números de dano dos aliados, com cor própria por aliado"
+        ],
+        [
+          "testar",
+          "3b: facas que giram e estacas cravadas nos inimigos"
+        ],
+        [
+          "testar",
+          "3c: inimigos atacam o convidado, com o dano calculado no jogo dele"
+        ],
+        [
+          "testar",
+          "3c: convidado que morre volta no próximo andar do host"
+        ],
+        [
+          "testar",
+          "Santuários e totens de bênção compartilhados"
+        ],
+        [
+          "testar",
+          "Chefe no convidado: fase agressiva, barra de vida e dano"
+        ],
+        [
+          "planejado",
+          "Status do convidado (lentidão, congelamento) valendo no host"
+        ],
+        [
+          "planejado",
+          "Boneco de DPS do hub visível para o outro"
+        ]
       ]
     },
     {
@@ -63,11 +144,26 @@
       "nome": "Loot",
       "resumo": "Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio save.",
       "itens": [
-        ["feito", "Loot e XP de cada inimigo morto saem do jogo de cada um"],
-        ["testar", "Loot próprio de baús e quebráveis"],
-        ["planejado", "Revisar XP de inimigos mortos longe do jogador"],
-        ["planejado", "Revisar drops de invocações, ondas de sobrevivência e temporadas"],
-        ["planejado", "Auditoria: o mod nunca escreve no save de outro jogador"]
+        [
+          "feito",
+          "Loot e XP de cada inimigo morto saem do jogo de cada um"
+        ],
+        [
+          "testar",
+          "Loot próprio de baús e quebráveis"
+        ],
+        [
+          "planejado",
+          "Revisar XP de inimigos mortos longe do jogador"
+        ],
+        [
+          "planejado",
+          "Revisar drops de invocações, ondas de sobrevivência e temporadas"
+        ],
+        [
+          "planejado",
+          "Auditoria: o mod nunca escreve no save de outro jogador"
+        ]
       ]
     },
     {
@@ -75,12 +171,30 @@
       "nome": "Polimento",
       "resumo": "Deixar o coop confortável para qualquer pessoa instalar e jogar.",
       "itens": [
-        ["planejado", "Menu de coop dentro do jogo (no lugar das teclas F6/F7)"],
-        ["planejado", "Reconexão e troca de host sem perder a run"],
-        ["planejado", "Sons das skills e dos golpes dos aliados"],
-        ["planejado", "Dificuldade ajustada ao número de jogadores"],
-        ["planejado", "Desempenho com 4 jogadores e muitos inimigos"],
-        ["planejado", "Tradução para inglês e instalador"]
+        [
+          "planejado",
+          "Menu de coop dentro do jogo (no lugar das teclas F6/F7)"
+        ],
+        [
+          "planejado",
+          "Reconexão e troca de host sem perder a run"
+        ],
+        [
+          "planejado",
+          "Sons das skills e dos golpes dos aliados"
+        ],
+        [
+          "planejado",
+          "Dificuldade ajustada ao número de jogadores"
+        ],
+        [
+          "planejado",
+          "Desempenho com 4 jogadores e muitos inimigos"
+        ],
+        [
+          "planejado",
+          "Tradução para inglês e instalador"
+        ]
       ]
     }
   ]

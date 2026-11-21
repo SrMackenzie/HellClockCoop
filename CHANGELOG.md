@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.6.0 — Santuários, totens e chefes no coop 🧪
+_21/11/2026_
+
+- Santuários do host para todos: quem usar ativa para todos, cada um com o próprio efeito
+- Santuário amaldiçoado: a sobrevivência roda no host para todos e cada um ganha o próprio ponto de constelação
+- Totem de bênção no mesmo lugar, com escolha e compra individuais (só para quem já liberou os totens)
+- Chefes no convidado: quando o chefe fica agressivo no host, o convidado vê a barra de vida e consegue causar dano
+- Inimigos agressivos no host ficam agressivos também no convidado
+
 ## 0.5.4 — Eco completo e efeitos que se mexem por dentro 🧪
 _21/11/2026_
 

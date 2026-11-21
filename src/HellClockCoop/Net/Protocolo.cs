@@ -11,7 +11,7 @@ namespace HellClockCoop.Net
     internal static class Protocolo
     {
         /// <summary>Muda sempre que o formato de qualquer mensagem mudar. Pares com versões diferentes não conversam.</summary>
-        public const int Versao = 8;
+        public const int Versao = 9;
 
         public const int CanalConfiavel = 0;
         public const int CanalSnapshots = 1;
@@ -41,6 +41,8 @@ namespace HellClockCoop.Net
         public const byte TipoBauSpawn = 40;   // host → convidados
         public const byte TipoBauAberto = 41;  // nos dois sentidos (host repassa)
         public const byte TipoQuebrou = 42;    // nos dois sentidos (host repassa)
+        public const byte TipoObjetoSpawn = 43; // santuários e totens, host → convidados
+        public const byte TipoObjetoUsado = 44; // nos dois sentidos (host repassa)
 
         // Fase 3b/3c — efeitos das skills (todos → todos) e skills dos inimigos (host → convidados)
         public const byte TipoFxNovo = 50;

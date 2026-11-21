@@ -537,6 +537,24 @@ recebe clona a primeira irmã. Era o caso das facas da skill Reflexos girando em
 - *Morte do convidado:* `FinishDungeon(Defeat)` deixa de ser bloqueado quando o jogador local do convidado está
   morto: a run dele acaba como no solo, e o próximo PlanoAndar do host o traz de volta (entrada no meio da run).
 
+### 11.3 Santuários, totens e chefes (versão 0.6.0, protocolo 9)
+
+- **Santuários e totens** (tipos 43 ObjetoSpawn e 44 ObjetoUsado), em `Fase3/SantuariosCompartilhados.cs`. O host varre 1x/s
+  os `ShrineInteractable` (inclui `CursedShrineInteractable`) e os `BlessingTotemInteractable` ativos e manda HashID da
+  `ShrineDefinition`, posição, raio (amaldiçoado: `_radius`) e estado (livre / usado / purificado). O convidado cria a cópia
+  com `LevelObjectPoolController.SpawnShrine` e, para o totem, chama `SpawnBlessingTotem(posição)`: o sorteio da bênção é
+  do convidado (progressão individual), e só se `LevelObjects.TotemSpawnUnlocked` for verdadeiro no save dele.
+- **Uso:** prefixo em `ShrineInteractable.ExecuteInteraction` avisa (só se o santuário estava disponível). Quem recebe chama
+  `ExecuteInteraction` com `OrdemRemota` (o prefixo em `PlayerController.InteractWith` não para o jogador local):
+  santuário comum dá o efeito ao jogador local; amaldiçoado no host começa a sobrevivência (`SurvivalEventManager.StartSurvival`
+  segue bloqueado no convidado; as ondas chegam como inimigos replicados). Postfix em `CursedShrineInteractable.OnSurvivalEnd`
+  (privado) no host manda "purificado"; o convidado chama `OnSurvivalEnd(true)` na cópia: animação e `UseShrine`, que dá o
+  ponto de constelação dele (`ClaimCurrentFloorCursedShrine` no próprio save).
+- **Chefes e agressividade:** o item de estado ganhou o bit 4 = `EnemyAIController.IsAggressive` (internal, lido por delegate
+  no getter). Quando chega verdadeiro, a réplica recebe `IsAggressive.Setter(true)`: disparam os registros do jogo, entre eles
+  `EnemyBossController.OnAggressive` (libera `CanTakeDamage`, `TargetController.ChangeTargetBoss` = barra do chefe, câmera)
+  e a liberação de `CanUseSkill`.
+
 ## 12. Como reproduzir a análise
 
 1. Compilar o decompilador (ICSharpCode.Decompiler 9.1, a partir do código-fonte do ILSpy) ou usar o ILSpy no Windows.
