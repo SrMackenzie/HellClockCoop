@@ -31,6 +31,7 @@
 <p align="center">
   <a href="https://github.com/SrMackenzie/HellClockCoop/releases/latest">Baixar</a> ·
   <a href="#-o-que-já-funciona">O que funciona</a> ·
+  <a href="#-ajude-a-calibrar-o-balanceamento">Ajude no balanceamento</a> ·
   <a href="#-progresso">Progresso</a> ·
   <a href="#-instalação">Instalação</a> ·
   <a href="#-como-jogar">Como jogar</a> ·
@@ -45,6 +46,24 @@
 > **Mod de fã, gratuito e sem fins lucrativos.** Não é feito nem apoiado pela Rogue Snail. O repositório e o pacote
 > contêm só o código do mod e o carregador BepInEx: **nenhum arquivo, arte ou texto do jogo** é redistribuído.
 > Para jogar, cada pessoa precisa ter o próprio Hell Clock na Steam.
+
+## 🙏 Ajude a calibrar o balanceamento
+
+A meta é que o coop fique **um pouco mais difícil que o solo**: nem passeio, nem parede. Acertar esse ponto para 2, 3
+e 4 jogadores, em cada dificuldade, exige runs de muita gente, e quem joga com o mod é quem pode ajudar.
+
+1. **Aceite o envio dos resumos.** Na primeira vez que o mod abre (0.8.1 em diante), uma janela no menu pergunta se
+   pode enviar: clique em **Enviar resumos**. Já respondeu "Não enviar"? Troque `EnviarResumoAnonimo = false` por
+   `true` na seção `[Metricas]` de `BepInEx\config\br.srmackenzie.hellclockcoop.cfg`.
+2. **Jogue também sozinho.** As runs solo são a base de comparação: sem elas não dá para medir quanto o grupo está
+   mais difícil.
+3. **Conte como foi.** Achou fácil ou difícil demais? Abra uma [issue](https://github.com/SrMackenzie/HellClockCoop/issues)
+   com o número de jogadores, a dificuldade e o andar.
+
+O envio é opcional e pode ser desligado a qualquer momento. Vão só dados da run (tempo e inimigos por andar, dano,
+mortes, nível, dificuldade, resultado, versões, data e hora) e um id aleatório da instalação: nada de nome, SteamID,
+arquivos ou log. Detalhes, guarda e como apagar os seus resumos em
+[Balanceamento](#%EF%B8%8F-balanceamento--prioridade-1).
 
 ## 🔥 O que já funciona
 
