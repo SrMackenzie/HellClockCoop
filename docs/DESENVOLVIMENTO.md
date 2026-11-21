@@ -24,6 +24,12 @@ completas **de Windows**:
 O `scripts/empacotar.py` já monta o zip com tudo isso.
 
 ## Compilar
+No Windows (PowerShell), com o jogo no caminho padrão da Steam:
+```powershell
+scripts\build.ps1            # só compila
+scripts\build.ps1 -Instalar  # compila e copia para <jogo>\BepInEx\plugins\HellClockCoop
+```
+Em bash (Linux, Git Bash):
 ```bash
 scripts/build.sh "<jogo>/Hell Clock_Data/Managed" "<BepInEx>/BepInEx/core"
 # saída: build/HellClockCoop.dll  →  <jogo>/BepInEx/plugins/HellClockCoop/
@@ -31,6 +37,10 @@ scripts/build.sh "<jogo>/Hell Clock_Data/Managed" "<BepInEx>/BepInEx/core"
 O build compila com `-nostdlib` contra as DLLs **do próprio jogo**. Assim o compilador acusa na hora qualquer API
 removida pelo stripping (já apareceram: `LODGroup`, `AnimatorControllerParameter.type`, `InvalidDataException`, o setter
 de `GUIStyle.padding`, `GUI.Box(Rect,string,GUIStyle)`, `int.MinValue`, `float.MaxValue`, `Exception.GetBaseException`).
+
+## Envio de métricas (opcional)
+O destino fica em `src/HellClockCoop/Balanceamento/EnvioConfig.local.cs`, fora do git. Sem esse arquivo o mod compila
+e o envio fica desligado. Formato: um `partial` de `EnvioConfig` que preenche `projeto` e `chave` em `Carregar`.
 
 ## Testes
 ```bash
