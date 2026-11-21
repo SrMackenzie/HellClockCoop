@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "21/11/2026",
-  "versao": "0.9.4",
+  "versao": "0.9.5",
   "fases": [
     {
       "id": "B",
@@ -179,6 +179,10 @@
         [
           "testar",
           "Chefe no convidado: fase agressiva, barra de vida e dano"
+        ],
+        [
+          "testar",
+          "Barreiras de sangue (chefe, sobrevivência, santuário amaldiçoado) iguais para todos, com o convidado levado para perto do host"
         ],
         [
           "testar",

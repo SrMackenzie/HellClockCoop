@@ -97,6 +97,7 @@ namespace HellClockCoop
                 Fase3.InimigosCompartilhados.Atualizar();
                 Fase3.ObjetosCompartilhados.Atualizar();
                 Fase3.SantuariosCompartilhados.Atualizar();
+                Fase3.PortasCompartilhadas.Atualizar();
                 Fase3.AlvosAliados.Atualizar();
                 Fase3.FxCompartilhados.AvatarEco = _avatarEco;
                 Fase3.FxCompartilhados.Atualizar();

@@ -181,6 +181,9 @@ IdaVolta("AndarLimpo", new (string, object)[] { ("Andar", 12u) }, 35);
 IdaVolta("BauSpawn", new (string, object)[] { ("Id", (ushort)3), ("Andar", 2u), ("DefinicaoHash", 4455), ("Posicao", new UnityEngine.Vector3(10f, 0.5f, -20f)), ("Rotacao", 135f), ("Aberto", true) }, 40);
 IdaVolta("BauAberto", new (string, object)[] { ("Id", (ushort)3) }, 41);
 IdaVolta("Quebrou", new (string, object)[] { ("Andar", 2u), ("Posicao", new UnityEngine.Vector3(-1.25f, 0f, 7.5f)) }, 42);
+IdaVolta("PortaFumaca", new (string, object)[] {
+    ("Andar", 4u), ("Posicao", new UnityEngine.Vector3(12.5f, 0.25f, -3f)), ("Fechada", true), ("Animar", false),
+    ("PosicaoHost", new UnityEngine.Vector3(10f, 0f, -1.5f)) }, 45);
 
 // Fase 3b/3c
 {

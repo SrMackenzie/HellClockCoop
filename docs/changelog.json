@@ -2,6 +2,24 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.9.5",
+      "data": "21/11/2026",
+      "testado": false,
+      "titulo": "Barreiras de sangue também no convidado",
+      "itens": [
+        "Barreiras de sangue (luta de chefe, andar de sobrevivência e santuário amaldiçoado): quando fecham ou abrem no host, fecham ou abrem também no convidado, que antes passava livre por elas",
+        "Quando as barreiras fecham, o convidado que estiver longe é levado para perto do host, como o jogo já faz com os companheiros",
+        "Quem chega ao andar com as barreiras já fechadas também as vê fechadas (o host reenvia a cada 2 s) e é levado para perto do host; se o host sair do coop, as barreiras fechadas por ele reabrem no convidado",
+        "Balanceamento: o grupo volta a lutar preso na arena como no solo, sem o convidado escapar; um pouco mais difícil que antes. Protocolo 11: os dois PCs precisam da 0.9.5"
+      ],
+      "testar": [
+        "Luta de chefe com barreira: quando a barreira fecha no host, aparece e bloqueia a passagem também no convidado",
+        "Convidado longe quando a barreira fecha: é levado para perto do host, com o aviso no painel do coop",
+        "Fim da luta ou da sobrevivência: a barreira abre nos dois PCs",
+        "Santuário amaldiçoado ou andar de sobrevivência: as barreiras fecham e abrem nos dois PCs"
+      ]
+    },
+    {
       "v": "0.9.4",
       "data": "21/11/2026",
       "testado": false,

@@ -11,7 +11,7 @@ namespace HellClockCoop.Net
     internal static class Protocolo
     {
         /// <summary>Muda sempre que o formato de qualquer mensagem mudar. Pares com versões diferentes não conversam.</summary>
-        public const int Versao = 10;
+        public const int Versao = 11; // 11: PortaFumaca (0.9.5)
 
         public const int CanalConfiavel = 0;
         public const int CanalSnapshots = 1;
@@ -43,6 +43,7 @@ namespace HellClockCoop.Net
         public const byte TipoQuebrou = 42;    // nos dois sentidos (host repassa)
         public const byte TipoObjetoSpawn = 43; // santuários e totens, host → convidados
         public const byte TipoObjetoUsado = 44; // nos dois sentidos (host repassa)
+        public const byte TipoPortaFumaca = 45; // barreira de sangue, host → convidados (0.9.5)
 
         // Fase 3b/3c — efeitos das skills (todos → todos) e skills dos inimigos (host → convidados)
         public const byte TipoFxNovo = 50;

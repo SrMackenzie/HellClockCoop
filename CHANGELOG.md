@@ -4,6 +4,14 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.9.5 — Barreiras de sangue também no convidado 🧪
+_21/11/2026_
+
+- Barreiras de sangue (luta de chefe, andar de sobrevivência e santuário amaldiçoado): quando fecham ou abrem no host, fecham ou abrem também no convidado, que antes passava livre por elas
+- Quando as barreiras fecham, o convidado que estiver longe é levado para perto do host, como o jogo já faz com os companheiros
+- Quem chega ao andar com as barreiras já fechadas também as vê fechadas (o host reenvia a cada 2 s) e é levado para perto do host; se o host sair do coop, as barreiras fechadas por ele reabrem no convidado
+- Balanceamento: o grupo volta a lutar preso na arena como no solo, sem o convidado escapar; um pouco mais difícil que antes. Protocolo 11: os dois PCs precisam da 0.9.5
+
 ## 0.9.4 — Modo eco que fica ligado e adagas sem cópia parada 🧪
 _21/11/2026_
 

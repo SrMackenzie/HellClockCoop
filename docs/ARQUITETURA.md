@@ -617,6 +617,22 @@ recebe clona a primeira irmã. Era o caso das facas da skill Reflexos girando em
   O host usa a definição base da coleção: valores que a skill do convidado sobrescreve na cópia dela
   (`StatusDefinition.GetOverridableValue`) não vão; duração e intensidade vão, porque são argumentos do `AddStatus`.
 
+### 11.5 Barreiras de sangue (versão 0.9.5, protocolo 11)
+
+- **No jogo:** a barreira é a `SmokeDoor` (`Open(bool animate)`/`Close(bool animate)`, estado privado `_state`
+  NONE/OPENED/CLOSED, iniciado em `Start` por `SetState(!_startClosed)`). Fecha por `SurvivalEventManager.StartSurvival`
+  (`CloseAllSurvivalDoors`: andar de sobrevivência, `LevelDefinition.IsSurvivalFloor`/`AlwaysStartSurvival` no `ChangeLevel`,
+  e santuário amaldiçoado) e por roteiros Fungus (`OpenCloseSmokeDoor`, `OpenCloseSmokeRoomCommand` → `SmokeRoom.Close`,
+  que liga `_toActivate` e fecha `_smokeDoors`). No convidado o `StartSurvival` é bloqueado (Fase 2) e o roteiro não roda:
+  por isso ele passava livre (achado da sessão de 21/11/2026).
+- **Mensagem** (tipo 45 PortaFumaca, host → convidados, confiável), em `Fase3/PortasCompartilhadas.cs`: postfix em
+  `SmokeDoor.Close/Open` no host manda andar, posição da porta, fechada/aberta, `animate` e a posição do host, quando o
+  estado muda (as mudanças dentro de `Start` não contam: são iguais nos dois jogos). O host reenvia as fechadas a cada 2 s.
+- **Convidado:** aplica na porta mais próxima (até 1,5 m) do mesmo andar; porta dentro de um `SmokeRoom` desligado fecha
+  pela sala. Quando a barreira fecha nele (inclusive ao chegar depois), vai para perto do host com
+  `MovementController.Warp` (decisão do autor: ninguém fica de fora da luta), se a posição do host estiver a até 60 m da
+  porta. Ao sair do coop, reabre as barreiras que fechou por ordem do host. Até 64 ordens pendentes; uma busca por quadro.
+
 ## 12. Balanceamento (trilha permanente, versão 0.7.0)
 
 Decisão do projeto: **em grupo, um pouco mais difícil que o solo**. Prioridade 1: toda versão passa por revisão.

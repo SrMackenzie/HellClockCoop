@@ -309,6 +309,30 @@ Solo basta para os três primeiros itens; o último precisa de dois PCs. Corrige
   girando, continuam aparecendo se ele usar a skill).
 - Se falhar, mandar: o `LogOutput.log` (linhas `[Eco]`, `[Avatar]` e `[Fx]`) e uma captura da tela.
 
+## 0.9.5 — Barreiras de sangue também no convidado
+
+Só em coop real. Os dois PCs na 0.9.5 (protocolo 11). No início, `[Validação] N/N alvos de patch encontrados` com os três alvos novos da
+`SmokeDoor` (Start, Close, Open). Corrige o achado da sessão de 21/11: o convidado passava livre
+pelas barreiras de sangue da área do chefe.
+
+- [ ] **Chefe:** o host entra na área do chefe com barreira. Esperado: quando a barreira fecha no host, ela aparece e
+  bloqueia a passagem também no convidado. Log do host: `[Portas] Barreira em (...) fechou no host (andar N).`; do
+  convidado: `[Portas] Barreira em (...) fechada pelo host.`
+- [ ] **Convidado longe:** o convidado fica bem atrás (fora da arena) quando a barreira fecha. Esperado: ele é levado
+  para perto do host e o painel do coop avisa. Log do convidado: `[Portas] Barreiras fecharam: você foi levado para perto
+  do host.`
+- [ ] **Fim da luta:** a barreira abre nos dois PCs quando a luta acaba. Log do convidado: `[Portas] Barreira em (...) aberta pelo host.`
+  Depois de abrir, o convidado passa livre (nada invisível segurando) e não aparece `desligada neste jogo` no log.
+- [ ] **Sobrevivência e santuário amaldiçoado:** as barreiras desses eventos também fecham e abrem nos dois PCs.
+- [ ] **Chegou depois:** o convidado que entra no andar com a barreira já fechada (voltando de uma morte, ou entrando
+  no meio da run) também a vê fechada, em até 2 s, e é levado para perto do host.
+- [ ] **Host sai no meio da luta:** com a barreira fechada, o host sai do coop (ou o convidado sai). Esperado: a
+  barreira reabre no convidado. Log do convidado: `[Portas] Barreiras reabertas (o host saiu do coop): N fechada(s) pelo
+  host.` (ou `(fim do coop)` quando é o convidado que sai).
+- [ ] **Sem teleporte repetido:** depois de levado para perto do host, o convidado não é levado de novo a cada 2 s.
+- [ ] **Balanceamento:** com os dois presos na arena, a luta do chefe fica um pouco mais difícil que no solo (anotar).
+- Se falhar, mandar: o `LogOutput.log` dos dois PCs (linhas `[Portas]`, sobretudo `não existe neste jogo` ou `falhou`).
+
 ---
 
 ## Sessão em dupla na 0.9.4 — roteiro único
@@ -423,7 +447,8 @@ Relato do autor no meio da sessão. Nada foi marcado `[x]` ainda.
 - Passou: baú aberto pelo convidado abriu também no host (0.4.1, falta o caso do host abrindo).
 - Falhou: vaso e caixa quebrados num PC não quebram no outro, nos dois sentidos (0.4.1). Suspeita: cada PC sorteia os
   seus; a busca por posição (0,75 m) falha sem log.
-- Falhou: barreira de sangue da área do chefe não aparece no convidado, que passa livre (0.6.0).
+- Falhou: barreira de sangue da área do chefe não aparece no convidado, que passa livre (0.6.0). Corrigido na 0.9.5
+  (seção 0.9.5, a testar).
 - Falhou: inimigos sem som no convidado.
 - Falhou (menor): dano do convidado no boneco de treino do hub não aparece no host; nos inimigos aparece.
 - A investigar: travadinhas esporádicas.
@@ -457,10 +482,10 @@ passaram (fora os de controle); depois
 
 ## Mensagem para o testador
 
-> E aí! Saiu a 0.9.4 do coop e queria marcar uma sessão em dupla pra testar tudo de uma vez (uma run inteira, mais duas
+> E aí! Saiu a 0.9.5 do coop e queria marcar uma sessão em dupla pra testar tudo de uma vez (uma run inteira, mais duas
 > curtas). Se você já está na 0.8.0 ou mais nova, é só abrir o jogo que ele se atualiza sozinho (o painel do coop avisa);
 > abre, espera chegar no menu, fecha e abre de novo. Se está numa versão antes da 0.8.0, baixa o zip da release mais
-> recente (`HellClockCoop-v0.9.4.zip`), abre a pasta do jogo (Steam → Hell Clock → Gerenciar → Procurar arquivos locais)
+> recente (`HellClockCoop-v0.9.5.zip`), abre a pasta do jogo (Steam → Hell Clock → Gerenciar → Procurar arquivos locais)
 > e extrai lá dentro, substituindo tudo.
 >
 > No menu pode aparecer a janela perguntando se pode enviar os resumos das runs: se puder, clica em "Enviar resumos" (vai

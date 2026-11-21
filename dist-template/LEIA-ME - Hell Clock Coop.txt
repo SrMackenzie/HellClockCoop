@@ -125,6 +125,9 @@ ESTADO ATUAL (versão de teste, Fase 3)
 - NOVO (0.9.4): o modo eco fica ligado ao trocar de andar, entrar numa run ou voltar ao menu
   (o fantasma volta junto com o personagem). Adagas do Reflexos e orbes não aparecem mais
   duplicadas e paradas no fantasma do eco nem no boneco dos aliados.
+- NOVO (0.9.5): as barreiras de sangue (luta de chefe, andar de sobrevivência, santuário
+  amaldiçoado) fecham e abrem também no convidado. Quando fecham, o convidado que estiver longe
+  é levado para perto do host, para ninguém ficar de fora da luta.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, abra o menu do coop (F7), escolha "Sair do coop" e depois use o menu normalmente.

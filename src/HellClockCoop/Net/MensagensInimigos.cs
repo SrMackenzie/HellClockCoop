@@ -286,6 +286,30 @@ namespace HellClockCoop.Net
         public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoQuebrou, w => { w.Write(Andar); Bin.Escrever(w, Posicao); });
         public static Quebrou Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoQuebrou, r => new Quebrou { Andar = r.ReadUInt32(), Posicao = Bin.LerVetor(r) });
     }
+
+    /// <summary>
+    /// 0.9.5 — barreira de sangue (SmokeDoor do jogo) abriu ou fechou no host. Host → convidados. As portas fazem parte
+    /// do bloco do andar, então a identificação é pela posição. Vale também como reenvio (a cada 2 s, para quem chega
+    /// depois). PosicaoHost: onde o host está, para levar o convidado quando a barreira fecha nele.
+    /// </summary>
+    internal sealed class PortaFumaca
+    {
+        public uint Andar;
+        public Vector3 Posicao;
+        public bool Fechada;
+        public bool Animar;       // argumento animate de SmokeDoor.Open/Close no host
+        public Vector3 PosicaoHost;
+
+        public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoPortaFumaca, w =>
+        {
+            w.Write(Andar); Bin.Escrever(w, Posicao); w.Write(Fechada); w.Write(Animar); Bin.Escrever(w, PosicaoHost);
+        });
+
+        public static PortaFumaca Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoPortaFumaca, r => new PortaFumaca
+        {
+            Andar = r.ReadUInt32(), Posicao = Bin.LerVetor(r), Fechada = r.ReadBoolean(), Animar = r.ReadBoolean(), PosicaoHost = Bin.LerVetor(r),
+        });
+    }
 }
 
 namespace HellClockCoop.Net

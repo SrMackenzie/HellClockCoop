@@ -177,6 +177,7 @@ namespace HellClockCoop.Net
             Fase3.InimigosCompartilhados.Encerrar();
             Fase3.ObjetosCompartilhados.Encerrar();
             Fase3.SantuariosCompartilhados.Encerrar();
+            Fase3.PortasCompartilhadas.Encerrar();
             Fase3.FxCompartilhados.Encerrar();
             Fase3.AlvosAliados.Encerrar();
             Lobby = CSteamID.Nil;
@@ -457,6 +458,9 @@ namespace HellClockCoop.Net
                 case Protocolo.TipoBauAberto:
                 case Protocolo.TipoQuebrou:
                     Fase3.ObjetosCompartilhados.Receber(this, p, dados);
+                    break;
+                case Protocolo.TipoPortaFumaca:
+                    Fase3.PortasCompartilhadas.Receber(this, p, dados);
                     break;
             }
         }
