@@ -36,6 +36,8 @@ def svg(dados):
              '<linearGradient id="fundo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d1210"/><stop offset="1" stop-color="#120a08"/></linearGradient>'
              '<linearGradient id="fogo" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8a2418"/><stop offset="1" stop-color="#e0763a"/></linearGradient>'
              '<linearGradient id="teste" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b8862e"/><stop offset="1" stop-color="#f2b04a"/></linearGradient>'
+             '<pattern id="andamento" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
+             '<rect width="8" height="8" fill="#5a3a22"/><rect width="4" height="8" fill="#8a5a2e"/></pattern>'
              '</defs>')
     p.append(f'<rect width="{largura}" height="{altura}" rx="16" fill="url(#fundo)"/>')
     p.append(f'<rect x="1" y="1" width="{largura-2}" height="{altura-2}" rx="15" fill="none" stroke="#4a2f25"/>')
@@ -57,16 +59,34 @@ def svg(dados):
         rotulo = ("FASE " + f["id"]) if f["id"].isdigit() else "TRILHA"
         p.append(f'<text x="32" y="{y+20}" fill="#e0763a" font-size="13" font-weight="700">{escape(rotulo)}</text>')
         p.append(f'<text x="100" y="{y+20}" fill="{cor}" font-size="15" font-weight="600">{escape(f["nome"])}</text>')
-        p.append(f'<rect x="{barra_x}" y="{y+8}" width="{barra_w}" height="16" rx="8" fill="#0c0706"/>')
-        if pf > 0:
-            p.append(f'<rect x="{barra_x}" y="{y+8}" width="{barra_w*pf:.1f}" height="16" rx="8" fill="url(#fogo)"/>')
-        if pt > 0:
-            p.append(f'<rect x="{barra_x + barra_w*pf:.1f}" y="{y+8}" width="{barra_w*pt:.1f}" height="16" rx="0" fill="url(#teste)" opacity="0.9"/>')
+        # Trilho e preenchimento: o preenchimento inteiro é uma pílula (cantos sempre redondos) recortada por
+        # clipPath; dentro dela, os segmentos são retângulos retos com um filete escuro entre eles.
+        n = len(f["itens"])
+        segs = [(sum(PESO[st] for st, _ in f["itens"] if st == chave) / n, cor_seg)
+                for chave, cor_seg in (("feito", "url(#fogo)"), ("testar", "url(#teste)"), ("fazendo", "url(#andamento)"))]
+        segs = [(frac, c) for frac, c in segs if frac > 0]
+        p.append(f'<rect x="{barra_x}" y="{y+8}" width="{barra_w}" height="16" rx="8" fill="#0c0706" stroke="#2a1a15"/>')
+        larg_total = barra_w * sum(frac for frac, _ in segs)
+        if larg_total > 0:
+            larg_total = max(larg_total, 16)
+            cid = f"barra{i}"
+            p.append(f'<clipPath id="{cid}"><rect x="{barra_x}" y="{y+8}" width="{larg_total:.1f}" height="16" rx="8"/></clipPath>')
+            p.append(f'<g clip-path="url(#{cid})">')
+            x = barra_x
+            for k, (frac, c) in enumerate(segs):
+                w = barra_w * frac if k < len(segs) - 1 else barra_x + larg_total - x
+                p.append(f'<rect x="{x:.1f}" y="{y+8}" width="{w:.1f}" height="16" fill="{c}"/>')
+                if k > 0:
+                    p.append(f'<rect x="{x-1:.1f}" y="{y+8}" width="2" height="16" fill="#0c0706" opacity="0.85"/>')
+                x += w
+            p.append(f'<rect x="{barra_x}" y="{y+9}" width="{larg_total:.1f}" height="5" fill="#fff" opacity="0.10"/>')
+            p.append('</g>')
         p.append(f'<text x="{largura-32}" y="{y+21}" fill="#eadbc8" font-size="14" font-weight="700" text-anchor="end">{round(prog*100)}%</text>')
     yl = altura - 18
     p.append(f'<rect x="32" y="{yl-10}" width="12" height="12" rx="3" fill="url(#fogo)"/><text x="50" y="{yl}" fill="#a8927c" font-size="12">feito</text>')
     p.append(f'<rect x="100" y="{yl-10}" width="12" height="12" rx="3" fill="url(#teste)"/><text x="118" y="{yl}" fill="#a8927c" font-size="12">pronto, falta testar no jogo</text>')
-    p.append(f'<rect x="300" y="{yl-10}" width="12" height="12" rx="3" fill="#0c0706" stroke="#4a2f25"/><text x="318" y="{yl}" fill="#a8927c" font-size="12">planejado</text>')
+    p.append(f'<rect x="300" y="{yl-10}" width="12" height="12" rx="3" fill="url(#andamento)"/><text x="318" y="{yl}" fill="#a8927c" font-size="12">em andamento</text>')
+    p.append(f'<rect x="430" y="{yl-10}" width="12" height="12" rx="3" fill="#0c0706" stroke="#4a2f25"/><text x="448" y="{yl}" fill="#a8927c" font-size="12">planejado</text>')
     p.append('</svg>')
     return "\n".join(p)
 

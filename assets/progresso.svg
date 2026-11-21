@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="880" height="474" viewBox="0 0 880 474" font-family="Georgia, 'Times New Roman', serif">
-<defs><linearGradient id="fundo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d1210"/><stop offset="1" stop-color="#120a08"/></linearGradient><linearGradient id="fogo" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8a2418"/><stop offset="1" stop-color="#e0763a"/></linearGradient><linearGradient id="teste" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b8862e"/><stop offset="1" stop-color="#f2b04a"/></linearGradient></defs>
+<defs><linearGradient id="fundo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d1210"/><stop offset="1" stop-color="#120a08"/></linearGradient><linearGradient id="fogo" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8a2418"/><stop offset="1" stop-color="#e0763a"/></linearGradient><linearGradient id="teste" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b8862e"/><stop offset="1" stop-color="#f2b04a"/></linearGradient><pattern id="andamento" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#5a3a22"/><rect width="4" height="8" fill="#8a5a2e"/></pattern></defs>
 <rect width="880" height="474" rx="16" fill="url(#fundo)"/>
 <rect x="1" y="1" width="878" height="472" rx="15" fill="none" stroke="#4a2f25"/>
 <text x="32" y="46" fill="#eadbc8" font-size="22" font-weight="700">Progresso do projeto</text>
@@ -10,44 +10,77 @@
 <rect x="32" y="88" width="544.0" height="6" rx="3" fill="url(#fogo)"/>
 <text x="32" y="138" fill="#e0763a" font-size="13" font-weight="700">TRILHA</text>
 <text x="100" y="138" fill="#eadbc8" font-size="15" font-weight="600">Balanceamento</text>
-<rect x="300" y="126" width="470" height="16" rx="8" fill="#0c0706"/>
-<rect x="300.0" y="126" width="211.5" height="16" rx="0" fill="url(#teste)" opacity="0.9"/>
+<rect x="300" y="126" width="470" height="16" rx="8" fill="#0c0706" stroke="#2a1a15"/>
+<clipPath id="barra0"><rect x="300" y="126" width="211.5" height="16" rx="8"/></clipPath>
+<g clip-path="url(#barra0)">
+<rect x="300.0" y="126" width="211.5" height="16" fill="url(#teste)"/>
+<rect x="300" y="127" width="211.5" height="5" fill="#fff" opacity="0.10"/>
+</g>
 <text x="848" y="139" fill="#eadbc8" font-size="14" font-weight="700" text-anchor="end">45%</text>
 <text x="32" y="184" fill="#e0763a" font-size="13" font-weight="700">FASE 0</text>
 <text x="100" y="184" fill="#5fe08a" font-size="15" font-weight="600">Ambiente e mapeamento</text>
-<rect x="300" y="172" width="470" height="16" rx="8" fill="#0c0706"/>
-<rect x="300" y="172" width="470.0" height="16" rx="8" fill="url(#fogo)"/>
+<rect x="300" y="172" width="470" height="16" rx="8" fill="#0c0706" stroke="#2a1a15"/>
+<clipPath id="barra1"><rect x="300" y="172" width="470.0" height="16" rx="8"/></clipPath>
+<g clip-path="url(#barra1)">
+<rect x="300.0" y="172" width="470.0" height="16" fill="url(#fogo)"/>
+<rect x="300" y="173" width="470.0" height="5" fill="#fff" opacity="0.10"/>
+</g>
 <text x="848" y="185" fill="#eadbc8" font-size="14" font-weight="700" text-anchor="end">100%</text>
 <text x="32" y="230" fill="#e0763a" font-size="13" font-weight="700">FASE 1</text>
 <text x="100" y="230" fill="#5fe08a" font-size="15" font-weight="600">Fantasma</text>
-<rect x="300" y="218" width="470" height="16" rx="8" fill="#0c0706"/>
-<rect x="300" y="218" width="470.0" height="16" rx="8" fill="url(#fogo)"/>
+<rect x="300" y="218" width="470" height="16" rx="8" fill="#0c0706" stroke="#2a1a15"/>
+<clipPath id="barra2"><rect x="300" y="218" width="470.0" height="16" rx="8"/></clipPath>
+<g clip-path="url(#barra2)">
+<rect x="300.0" y="218" width="470.0" height="16" fill="url(#fogo)"/>
+<rect x="300" y="219" width="470.0" height="5" fill="#fff" opacity="0.10"/>
+</g>
 <text x="848" y="231" fill="#eadbc8" font-size="14" font-weight="700" text-anchor="end">100%</text>
 <text x="32" y="276" fill="#e0763a" font-size="13" font-weight="700">FASE 2</text>
 <text x="100" y="276" fill="#eadbc8" font-size="15" font-weight="600">Mesma run</text>
-<rect x="300" y="264" width="470" height="16" rx="8" fill="#0c0706"/>
-<rect x="300" y="264" width="376.0" height="16" rx="8" fill="url(#fogo)"/>
-<rect x="676.0" y="264" width="70.5" height="16" rx="0" fill="url(#teste)" opacity="0.9"/>
+<rect x="300" y="264" width="470" height="16" rx="8" fill="#0c0706" stroke="#2a1a15"/>
+<clipPath id="barra3"><rect x="300" y="264" width="446.5" height="16" rx="8"/></clipPath>
+<g clip-path="url(#barra3)">
+<rect x="300.0" y="264" width="376.0" height="16" fill="url(#fogo)"/>
+<rect x="676.0" y="264" width="70.5" height="16" fill="url(#teste)"/>
+<rect x="675.0" y="264" width="2" height="16" fill="#0c0706" opacity="0.85"/>
+<rect x="300" y="265" width="446.5" height="5" fill="#fff" opacity="0.10"/>
+</g>
 <text x="848" y="277" fill="#eadbc8" font-size="14" font-weight="700" text-anchor="end">95%</text>
 <text x="32" y="322" fill="#e0763a" font-size="13" font-weight="700">FASE 3</text>
 <text x="100" y="322" fill="#eadbc8" font-size="15" font-weight="600">Combate</text>
-<rect x="300" y="310" width="470" height="16" rx="8" fill="#0c0706"/>
-<rect x="300" y="310" width="156.7" height="16" rx="8" fill="url(#fogo)"/>
-<rect x="456.7" y="310" width="205.6" height="16" rx="0" fill="url(#teste)" opacity="0.9"/>
+<rect x="300" y="310" width="470" height="16" rx="8" fill="#0c0706" stroke="#2a1a15"/>
+<clipPath id="barra4"><rect x="300" y="310" width="362.3" height="16" rx="8"/></clipPath>
+<g clip-path="url(#barra4)">
+<rect x="300.0" y="310" width="156.7" height="16" fill="url(#fogo)"/>
+<rect x="456.7" y="310" width="205.6" height="16" fill="url(#teste)"/>
+<rect x="455.7" y="310" width="2" height="16" fill="#0c0706" opacity="0.85"/>
+<rect x="300" y="311" width="362.3" height="5" fill="#fff" opacity="0.10"/>
+</g>
 <text x="848" y="323" fill="#eadbc8" font-size="14" font-weight="700" text-anchor="end">77%</text>
 <text x="32" y="368" fill="#e0763a" font-size="13" font-weight="700">FASE 4</text>
 <text x="100" y="368" fill="#eadbc8" font-size="15" font-weight="600">Loot</text>
-<rect x="300" y="356" width="470" height="16" rx="8" fill="#0c0706"/>
-<rect x="300" y="356" width="188.0" height="16" rx="8" fill="url(#fogo)"/>
-<rect x="488.0" y="356" width="70.5" height="16" rx="0" fill="url(#teste)" opacity="0.9"/>
+<rect x="300" y="356" width="470" height="16" rx="8" fill="#0c0706" stroke="#2a1a15"/>
+<clipPath id="barra5"><rect x="300" y="356" width="258.5" height="16" rx="8"/></clipPath>
+<g clip-path="url(#barra5)">
+<rect x="300.0" y="356" width="188.0" height="16" fill="url(#fogo)"/>
+<rect x="488.0" y="356" width="70.5" height="16" fill="url(#teste)"/>
+<rect x="487.0" y="356" width="2" height="16" fill="#0c0706" opacity="0.85"/>
+<rect x="300" y="357" width="258.5" height="5" fill="#fff" opacity="0.10"/>
+</g>
 <text x="848" y="369" fill="#eadbc8" font-size="14" font-weight="700" text-anchor="end">55%</text>
 <text x="32" y="414" fill="#e0763a" font-size="13" font-weight="700">FASE 5</text>
 <text x="100" y="414" fill="#eadbc8" font-size="15" font-weight="600">Polimento</text>
-<rect x="300" y="402" width="470" height="16" rx="8" fill="#0c0706"/>
-<rect x="300" y="402" width="58.8" height="16" rx="8" fill="url(#fogo)"/>
-<rect x="358.8" y="402" width="44.1" height="16" rx="0" fill="url(#teste)" opacity="0.9"/>
+<rect x="300" y="402" width="470" height="16" rx="8" fill="#0c0706" stroke="#2a1a15"/>
+<clipPath id="barra6"><rect x="300" y="402" width="102.8" height="16" rx="8"/></clipPath>
+<g clip-path="url(#barra6)">
+<rect x="300.0" y="402" width="58.8" height="16" fill="url(#fogo)"/>
+<rect x="358.8" y="402" width="44.1" height="16" fill="url(#teste)"/>
+<rect x="357.8" y="402" width="2" height="16" fill="#0c0706" opacity="0.85"/>
+<rect x="300" y="403" width="102.8" height="5" fill="#fff" opacity="0.10"/>
+</g>
 <text x="848" y="415" fill="#eadbc8" font-size="14" font-weight="700" text-anchor="end">22%</text>
 <rect x="32" y="446" width="12" height="12" rx="3" fill="url(#fogo)"/><text x="50" y="456" fill="#a8927c" font-size="12">feito</text>
 <rect x="100" y="446" width="12" height="12" rx="3" fill="url(#teste)"/><text x="118" y="456" fill="#a8927c" font-size="12">pronto, falta testar no jogo</text>
-<rect x="300" y="446" width="12" height="12" rx="3" fill="#0c0706" stroke="#4a2f25"/><text x="318" y="456" fill="#a8927c" font-size="12">planejado</text>
+<rect x="300" y="446" width="12" height="12" rx="3" fill="url(#andamento)"/><text x="318" y="456" fill="#a8927c" font-size="12">em andamento</text>
+<rect x="430" y="446" width="12" height="12" rx="3" fill="#0c0706" stroke="#4a2f25"/><text x="448" y="456" fill="#a8927c" font-size="12">planejado</text>
 </svg>
