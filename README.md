@@ -1,7 +1,7 @@
 <a href="https://store.steampowered.com/app/1782460/Hell_Clock/"><img src="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/library_hero.jpg" alt="Hell Clock — arte oficial" width="100%"></a>
 
 <p align="center">
-  <a href="https://store.steampowered.com/app/1782460/Hell_Clock/"><img src="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/logo.png" alt="Hell Clock" width="440"></a>
+  <a href="https://store.steampowered.com/app/1782460/Hell_Clock/"><img src="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1782460/logo.png" alt="Hell Clock" width="360"></a>
 </p>
 
 <p align="center">
@@ -21,7 +21,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/SrMackenzie/HellClockCoop/releases/latest"><img alt="Baixar a última versão" src="https://img.shields.io/badge/%E2%AC%87%20%20baixar-%C3%BAltima%20vers%C3%A3o-e0763a?style=for-the-badge&labelColor=8a2418"></a>
+  <a href="https://github.com/SrMackenzie/HellClockCoop/releases/latest"><img alt="Baixar a última versão" src="assets/baixar.svg" width="260"></a>
   <br>
   <sub>Baixe o zip <code>HellClockCoop-v&lt;versão&gt;.zip</code> e siga a <a href="#-instalação">instalação</a>. Da 0.8.0 em diante, o mod se atualiza sozinho.</sub>
 </p>
