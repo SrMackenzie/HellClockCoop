@@ -53,6 +53,7 @@ namespace HellClockCoop
             TeclaHierarquia = config.Bind("Teclas", "SalvarHierarquia", "F9", "Diagnóstico: salva a estrutura do personagem.");
             MostrarNomes = config.Bind("Interface", "MostrarNomesDosAliados", true, "Mostra o nome da Steam sobre a cabeça dos aliados.");
             Fase3.DanosVisiveis.Configurar(config);
+            Balanceamento.Escalonamento.Configurar(config);
 
             var go = new GameObject("HellClockCoop_Runtime");
             DontDestroyOnLoad(go);
@@ -88,6 +89,8 @@ namespace HellClockCoop
                 Fase3.FxCompartilhados.AvatarEco = _avatarEco;
                 Fase3.FxCompartilhados.Atualizar();
                 Fase3.DanosVisiveis.Atualizar();
+                Balanceamento.Escalonamento.Atualizar();
+                Balanceamento.Metricas.Atualizar(jogador);
             }
             catch (Exception e)
             {
@@ -260,6 +263,8 @@ namespace HellClockCoop
                     else estado = p.MesmoAndar ? (p.Morto ? "no mesmo andar (caído)" : "no mesmo andar") : "em outro lugar";
                     linhas.Add($"  • {p.Nome}: {estado}");
                 }
+                string bal = Balanceamento.Escalonamento.Resumo();
+                if (bal != null) linhas.Add("  " + bal);
             }
             else if (_sessao.EstadoAtual == SessaoCoop.Estado.CriandoLobby || _sessao.EstadoAtual == SessaoCoop.Estado.EntrandoLobby)
             {

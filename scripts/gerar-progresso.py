@@ -54,7 +54,8 @@ def svg(dados):
         pt = testar * PESO["testar"] / len(f["itens"])
         prog = progresso(f)
         cor = "#5fe08a" if prog >= 0.999 else "#eadbc8"
-        p.append(f'<text x="32" y="{y+20}" fill="#e0763a" font-size="13" font-weight="700">FASE {escape(f["id"])}</text>')
+        rotulo = ("FASE " + f["id"]) if f["id"].isdigit() else "TRILHA"
+        p.append(f'<text x="32" y="{y+20}" fill="#e0763a" font-size="13" font-weight="700">{escape(rotulo)}</text>')
         p.append(f'<text x="100" y="{y+20}" fill="{cor}" font-size="15" font-weight="600">{escape(f["nome"])}</text>')
         p.append(f'<rect x="{barra_x}" y="{y+8}" width="{barra_w}" height="16" rx="8" fill="#0c0706"/>')
         if pf > 0:
@@ -79,7 +80,8 @@ def roadmap_md(dados):
          "Regra do projeto: uma fase só é dada como concluída depois de confirmada **rodando no jogo**.", ""]
     for f in dados["fases"]:
         prog = round(progresso(f) * 100)
-        l.append(f"## Fase {f['id']} — {f['nome']} · {prog}%")
+        titulo = f"Fase {f['id']}" if f['id'].isdigit() else "Trilha permanente"
+        l.append(f"## {titulo} — {f['nome']} · {prog}%")
         l.append("")
         l.append(f"_{f['resumo']}_")
         l.append("")

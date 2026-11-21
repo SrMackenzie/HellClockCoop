@@ -555,7 +555,32 @@ recebe clona a primeira irmã. Era o caso das facas da skill Reflexos girando em
   `EnemyBossController.OnAggressive` (libera `CanTakeDamage`, `TargetController.ChangeTargetBoss` = barra do chefe, câmera)
   e a liberação de `CanUseSkill`.
 
-## 12. Como reproduzir a análise
+## 12. Balanceamento (trilha permanente, versão 0.7.0)
+
+Decisão do projeto: **em grupo, um pouco mais difícil que o solo**. Prioridade 1: toda versão passa por revisão.
+
+**Alavancas (as do próprio jogo).**
+- *Vida e dano:* prefixo em `EnemyManager.ApplySheetScaling` (privado), que roda dentro do `SpawnEnemy` antes do
+  `FinishSetup`: modificador multiplicativo em `EnemySheet` (`Life`, `BaseDamage`) com chave própria. A chave é sempre
+  removida antes, porque o inimigo volta do pool com a ficha anterior. Vale no host e nas réplicas (o dano que o convidado
+  leva sai da ficha da réplica). Aumentar `Life` depois de criado soma a diferença na vida atual (`UpdateMaxValue`).
+- *Quantidade:* `EnemyGlobalModifiers.GetModifier(RegularEnemyQuantity).AddOrUpdateModifier(chave, fator, Multiplicative)`,
+  lido por `LevelObjects` ao montar o andar e pelo `SurvivalEventManager` nas ondas. Vale a partir do andar seguinte.
+- *Tempo:* prefixo em `TimerManager.IncrementTimer` no host, só para ganhos (> 0). O tempo do convidado chega por
+  TimerBonus e passa pelo mesmo ponto. Motivo: com loot individual, cada jogador pega as próprias recompensas de tempo.
+- *Jogadores:* 1 + aliados compatíveis com a mesma DLC (igual nos dois lados). Valores em `[Balanceamento]`, "2, 3, 4"
+  (aceita "1,7; 2,4; 3,1").
+
+**Métricas.** `Balanceamento/Metricas.cs` grava no fim de cada run (volta ao hub) `metricas/run-AAAAMMDD-hhmmss.json`:
+formato, versões, id aleatório da instalação, papel (solo/host/convidado), jogadores, dungeon, tier, Ascensão, nível,
+resultado (`FinishDungeon`), duração e, por andar: definição, chefe, jogadores, segundos, inimigos mortos
+(`OnEnemyKilled`), dano causado (`OnDealDamage`), dano recebido (`LifeController.OnHurt`, `LifeDamageValue`), mortes e
+Hell Clock na entrada e na saída. Sem nome, SteamID ou caminhos.
+
+**Próximos passos.** Envio opcional com aceite para um Firestore só de criação (regras validando o formato; leitura só
+do dono), painel solo × grupo, ajuste individual por diferença de progressão e jogador caído/reanimação.
+
+## 13. Como reproduzir a análise
 
 1. Compilar o decompilador (ICSharpCode.Decompiler 9.1, a partir do código-fonte do ILSpy) ou usar o ILSpy no Windows.
 2. Decompilar `Hell Clock_Data/Managed/HellClock.dll`, `K10.dll` e `Assembly-CSharp.dll` para uma pasta **fora** do repositório (ver `.gitignore`).

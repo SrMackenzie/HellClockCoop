@@ -13,7 +13,8 @@ Obrigado pelo interesse no **Hell Clock Coop**! Este é um mod de fã, sem fins 
 5. **Todo patch Harmony é documentado** com a classe e o método alvo (comentário no patch) e entra em
    `src/HellClockCoop/PatchTargets.cs`, que é validado ao iniciar. Uma atualização do jogo pode quebrá-los.
 6. **Uma fase só avança depois de confirmada rodando no jogo.**
-7. **Português do Brasil** em código, comentários, mensagens, documentação e commits.
+7. **Balanceamento é prioridade 1.** Em grupo o jogo deve ficar um pouco mais difícil que no solo; toda mudança passa por essa revisão.
+8. **Português do Brasil** em código, comentários, mensagens, documentação e commits.
 
 ## Antes de abrir um PR
 
@@ -23,6 +24,7 @@ Obrigado pelo interesse no **Hell Clock Coop**! Este é um mod de fã, sem fins 
 - [ ] Mudou o formato de alguma mensagem? Suba `Protocolo.Versao`.
 - [ ] Patch novo? Está em `PatchTargets.cs` e documentado em `docs/ARQUITETURA.md`.
 - [ ] Atualizou `docs/changelog.json` e/ou `docs/roadmap.json` e rodou `python3 scripts/gerar-progresso.py`.
+- [ ] **Balanceamento revisado:** a mudança altera dificuldade, tempo, loot ou XP em grupo? Diga como e ajuste `[Balanceamento]` se preciso.
 - [ ] Testou no jogo (modo eco e, se mexeu em rede, com dois PCs) e descreveu o teste no PR.
 
 ## Relatar um problema

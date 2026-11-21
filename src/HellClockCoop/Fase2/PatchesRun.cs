@@ -143,6 +143,7 @@ namespace HellClockCoop.Fase2
 
         private static void Postfix(EGameOverSource source)
         {
+            Balanceamento.Metricas.Motivo(source);
             if (!RunCompartilhada.Convidado) RunCompartilhada.HostTerminou(source);
         }
     }

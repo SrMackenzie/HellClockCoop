@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.6.0-ff7a1a?style=for-the-badge">
+  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.7.0-ff7a1a?style=for-the-badge">
   <img alt="Status" src="https://img.shields.io/badge/status-alpha%20jog%C3%A1vel-b3121f?style=for-the-badge">
   <img alt="Hell Clock" src="https://img.shields.io/badge/Hell%20Clock-2.1.1.1-4a1a1f?style=for-the-badge">
   <img alt="Jogadores" src="https://img.shields.io/badge/jogadores-2%20a%204-5fe08a?style=for-the-badge">
@@ -97,6 +97,28 @@ confirmada rodando no jogo, com dois PCs.
 | 3 | Combate: inimigos, skills, dano, baús e quebráveis | 🧪 em teste (3a confirmada) |
 | 4 | Loot individual | 🧪 parcial |
 | 5 | Polimento: menu de coop, reconexão, sons, dificuldade, tradução | ⬜ planejada |
+
+## ⚖️ Balanceamento — prioridade 1
+
+Hell Clock foi feito para uma pessoa. Cada sistema que o coop libera (dano, loot, tempo, chefes) muda de escala quando
+entra mais gente, então o balanceamento é uma **trilha permanente**: toda versão passa por ele.
+
+- **Meta:** em grupo, o jogo fica **um pouco mais difícil** que no solo.
+- **Como:** o mod usa as mesmas alavancas que o jogo usa na dificuldade e na Ascensão: vida e dano dos inimigos,
+  quantidade de inimigos por andar e tempo ganho no Hell Clock, com valores por número de jogadores
+  (configuráveis, seção `[Balanceamento]` do `.cfg`).
+- **Com dados:** cada run gera um resumo anônimo (tempo por andar, inimigos mortos, dano causado e recebido, mortes)
+  em `BepInEx/HellClockCoop/metricas`. O envio opcional, com aceite, e um painel solo × grupo estão no roadmap.
+
+| | 2 jogadores | 3 jogadores | 4 jogadores |
+|---|:-:|:-:|:-:|
+| Vida dos inimigos | ×1,7 | ×2,4 | ×3,1 |
+| Vida dos chefes | ×1,8 | ×2,6 | ×3,4 |
+| Dano dos inimigos | ×1,1 | ×1,2 | ×1,3 |
+| Quantidade de inimigos | ×1,2 | ×1,4 | ×1,6 |
+| Tempo ganho no Hell Clock | ×0,55 | ×0,40 | ×0,32 |
+
+<sub>Valores iniciais, a calibrar com as métricas.</sub>
 
 ## 📦 Instalação
 

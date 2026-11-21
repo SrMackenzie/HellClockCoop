@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.7.0 — Balanceamento por número de jogadores 🧪
+_21/11/2026_
+
+- Coop um pouco mais difícil que o solo: inimigos e chefes com mais vida, um pouco mais de dano e mais inimigos por andar
+- Tempo ganho no Hell Clock ajustado ao grupo (cada um pega as próprias recompensas de tempo)
+- Todos os valores ajustáveis no arquivo de configuração (seção Balanceamento)
+- Resumo de balanceamento de cada run salvo em BepInEx/HellClockCoop/metricas (anônimo, só números)
+- Linha do balanceamento atual no painel do coop
+
 ## 0.6.0 — Santuários, totens e chefes no coop 🧪
 _21/11/2026_
 

@@ -1,8 +1,43 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "21/11/2026",
-  "versao": "0.6.0",
+  "versao": "0.7.0",
   "fases": [
+    {
+      "id": "B",
+      "nome": "Balanceamento",
+      "resumo": "Prioridade 1, trilha permanente: o coop deve ser um pouco mais difícil que o solo, com ajustes guiados por dados. Toda versão passa por revisão de balanceamento.",
+      "itens": [
+        [
+          "testar",
+          "Escalonamento por número de jogadores: vida, chefes, dano, quantidade de inimigos e tempo ganho"
+        ],
+        [
+          "testar",
+          "Valores ajustáveis no arquivo de configuração, sem recompilar"
+        ],
+        [
+          "testar",
+          "Resumo de balanceamento de cada run, salvo no computador"
+        ],
+        [
+          "planejado",
+          "Envio anônimo dos resumos, só com aceite (Firebase)"
+        ],
+        [
+          "planejado",
+          "Painel de balanceamento: solo × 2, 3 e 4 jogadores, por andar e dificuldade"
+        ],
+        [
+          "planejado",
+          "Ajuste individual quando o convidado está muito abaixo ou acima do host"
+        ],
+        [
+          "planejado",
+          "Jogador caído e reanimação, em vez de a morte do host encerrar a run"
+        ]
+      ]
+    },
     {
       "id": "0",
       "nome": "Ambiente e mapeamento",

@@ -2,6 +2,19 @@
   "_leia": "Fonte única das novidades. testado: true = confirmado rodando no jogo. Depois de editar: python3 scripts/gerar-progresso.py",
   "versoes": [
     {
+      "v": "0.7.0",
+      "data": "21/11/2026",
+      "testado": false,
+      "titulo": "Balanceamento por número de jogadores",
+      "itens": [
+        "Coop um pouco mais difícil que o solo: inimigos e chefes com mais vida, um pouco mais de dano e mais inimigos por andar",
+        "Tempo ganho no Hell Clock ajustado ao grupo (cada um pega as próprias recompensas de tempo)",
+        "Todos os valores ajustáveis no arquivo de configuração (seção Balanceamento)",
+        "Resumo de balanceamento de cada run salvo em BepInEx/HellClockCoop/metricas (anônimo, só números)",
+        "Linha do balanceamento atual no painel do coop"
+      ]
+    },
+    {
       "v": "0.6.0",
       "data": "21/11/2026",
       "testado": false,

@@ -198,6 +198,7 @@ footer{text-align:center;color:var(--mut);font-size:12.5px;margin:24px 0 0}
 const DADOS = {{DADOS}};
 const PESO = {feito:1, testar:.75, fazendo:.5, planejado:0};
 const ROT = {feito:'feito', testar:'testar', fazendo:'fazendo', planejado:'planejado'};
+const rot = f => /^\d+$/.test(f.id) ? 'FASE '+f.id : 'TRILHA';
 const prog = f => f.itens.reduce((s,[st])=>s+PESO[st],0)/f.itens.length;
 const fases = DADOS.roadmap.fases;
 const nItens = fases.reduce((s,f)=>s+f.itens.length,0);
@@ -214,11 +215,11 @@ document.getElementById('kpis').innerHTML = [
 // progresso
 document.getElementById('total').textContent = Math.round(total*100)+'%';
 document.getElementById('totalbar').innerHTML = `<i class="f" style="width:${total*100}%"></i>`;
-document.getElementById('fases').innerHTML = fases.map(f=>`<div class="phase"><span class="n">FASE ${esc(f.id)}</span><span class="nm ${prog(f)>=.999?'ok':''}">${esc(f.nome)}</span><div class="bar">${barra(f)}</div><span class="p">${Math.round(prog(f)*100)}%</span></div>`).join('');
+document.getElementById('fases').innerHTML = fases.map(f=>`<div class="phase"><span class="n">${esc(rot(f))}</span><span class="nm ${prog(f)>=.999?'ok':''}">${esc(f.nome)}</span><div class="bar">${barra(f)}</div><span class="p">${Math.round(prog(f)*100)}%</span></div>`).join('');
 // roadmap
 let faseAtual = fases.findIndex(f=>prog(f)<.999); if(faseAtual<0) faseAtual=fases.length-1;
 function roadmap(i){faseAtual=i;
- document.getElementById('tabs').innerHTML = fases.map((f,k)=>`<button class="${k===i?'on':''}" data-k="${k}">Fase ${esc(f.id)} · ${esc(f.nome)} <span class="muted">${Math.round(prog(f)*100)}%</span></button>`).join('');
+ document.getElementById('tabs').innerHTML = fases.map((f,k)=>`<button class="${k===i?'on':''}" data-k="${k}">${/^\d+$/.test(f.id)?"Fase "+esc(f.id):"⚖"} · ${esc(f.nome)} <span class="muted">${Math.round(prog(f)*100)}%</span></button>`).join('');
  document.getElementById('resumo').textContent = fases[i].resumo;
  document.getElementById('items').innerHTML = fases[i].itens.map(([st,t])=>`<li><span class="st ${st}">${ROT[st]}</span><span>${esc(t)}</span></li>`).join('');
  document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>roadmap(+b.dataset.k));}

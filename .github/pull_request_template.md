@@ -5,6 +5,7 @@
 - [ ] Dois PCs (host + convidado)
 
 ## Checklist
+- [ ] Balanceamento revisado (dificuldade, tempo, loot e XP em grupo)
 - [ ] Compila contra as DLLs do jogo e `tools/refcheck` = 0 ausentes
 - [ ] `tools/codectest` passa
 - [ ] Patches novos em `PatchTargets.cs` e em `docs/ARQUITETURA.md`
