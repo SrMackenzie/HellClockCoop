@@ -29,7 +29,7 @@ Autor: SrMackenzie. Guia do ambiente: `docs/DESENVOLVIMENTO.md`. Arquitetura e d
 2. Atualizar `docs/roadmap.json` e `docs/changelog.json`, depois `python scripts/gerar-progresso.py`.
 3. Atualizar `PluginVersion` em `Plugin.cs`, o LEIA-ME em `dist-template/` e, se for o caso, README/ARQUITETURA.
 4. Empacotar com `scripts/empacotar.py`, instalar a DLL em `<jogo>\BepInEx\plugins\HellClockCoop\`.
-5. Commit como SrMackenzie e push para `SrMackenzie/HellClockCoop` (privado, MIT).
+5. Commit como SrMackenzie e push para `SrMackenzie/HellClockCoop` (público, MIT).
 
 ## Testes no jogo
 - Log: `<jogo>\BepInEx\LogOutput.log` (sobrescrito ao abrir o jogo).
