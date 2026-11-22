@@ -115,6 +115,19 @@ namespace HellClockCoop.Fase3
     }
 
     /// <summary>
+    /// Alvo: HellClock.Level.DrawRandomSceneObject.OnEnable — sorteio, por PC, de qual objeto da cena aparece
+    /// (vaso, caixa...). No coop, semeado com a semente do andar que o host mandou, para dar o mesmo nos dois.
+    /// O finalizer devolve o K10Random ao estado de antes, mesmo se o OnEnable lançar exceção.
+    /// </summary>
+    [HarmonyPatch(typeof(HellClock.Level.DrawRandomSceneObject), "OnEnable")]
+    internal static class Objetos_SorteioDaCena
+    {
+        private static void Prefix(HellClock.Level.DrawRandomSceneObject __instance) => ObjetosCompartilhados.SemearSorteio(__instance);
+
+        private static void Finalizer() => ObjetosCompartilhados.RestaurarSorteio();
+    }
+
+    /// <summary>
     /// Alvo: HellClock.Skill.ActiveSkill.Execute(ITarget) — postfix. No host, skill de inimigo da run vira
     /// InimigoSkill (as sobrescritas das subclasses chamam base.Execute, que é o que dispara o postfix).
     /// </summary>

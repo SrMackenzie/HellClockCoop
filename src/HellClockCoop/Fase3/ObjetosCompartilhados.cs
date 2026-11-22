@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
 using HellClock.Character.Enemy;
 using HellClock.Chests;
@@ -21,14 +22,26 @@ namespace HellClockCoop.Fase3
     /// cria a cópia pelo pool do jogo e esconde qualquer outro baú que apareça no andar dele. Quem abrir
     /// abre para todos e cada um recebe o próprio loot (progressão individual).
     ///
-    /// Quebráveis: fazem parte do mapa e estão no mesmo lugar nos dois jogos. Quem quebrar avisa a
-    /// posição; os outros quebram o quebrável mais próximo dali (até 0,75 m), com loot próprio.
+    /// Quebráveis: vêm na cena do andar, mas parte deles sai de um DrawRandomSceneObject, que sorteia em
+    /// cada PC qual objeto aparece naquele ponto (conferido no IL da 2.1.1.1). No coop, esse sorteio é
+    /// semeado com a semente do andar que o host manda no PlanoAndar e com a posição do ponto, e dá o
+    /// mesmo nos dois jogos. Quem quebrar avisa a posição; os outros quebram o quebrável mais próximo
+    /// dali (até 0,75 m), com loot próprio. Não achou: fica no log, com a distância do mais próximo.
     /// </summary>
     internal static class ObjetosCompartilhados
     {
         private const float IntervaloVarredura = 1f;
         private const float DistanciaQuebravel = 0.75f;
         private const float ValidadePendente = 90f;
+        private const int AvisosNaoAchouPorAndar = 5;
+
+        // Estado do gerador do jogo (K10Random), guardado e devolvido em volta do sorteio semeado.
+        private static readonly FieldInfo K10Estado = AccessTools.Field(typeof(K10Random), "_random");
+        private static readonly FieldInfo K10UsaSemente = AccessTools.Field(typeof(K10Random), "_useSeed");
+        private static readonly List<EstadoK10> SorteiosAbertos = new List<EstadoK10>(); // pilha prefixo → finalizer
+        private static bool _avisouSemK10;
+        private static int _sorteiosSemeados;
+        private static int _naoAchadosNoAndar;
 
         private static SessaoCoop Sessao => RunCompartilhada.Sessao;
         private static bool Host => RunCompartilhada.Host;
@@ -79,6 +92,7 @@ namespace HellClockCoop.Fase3
                 IdPorBau.Clear();
                 SpawnsDoHost.Clear();
                 _proximaVarredura = 0f;
+                LogarQuebraveis(andar);
             }
             if (Convidado && Pendentes.Count > 0) CriarPendentes(andar);
             if (Time.unscaledTime < _proximaVarredura) return;
@@ -248,23 +262,130 @@ namespace HellClockCoop.Fase3
             else if (Convidado && Sessao.Host != null) Sessao.EnviarPara(Sessao.Host, m);
         }
 
-        private static void QuebrarPorOrdem(Quebrou q)
+        private static void QuebrarPorOrdem(Quebrou q, Par de)
         {
             LevelInfo andar = AndarDeRun();
-            if (andar == null || andar.LevelIndex != q.Andar) return;
+            if (andar == null || andar.LevelIndex != q.Andar) return; // o outro está em outro andar (ou no hub)
+            float limite = DistanciaQuebravel * DistanciaQuebravel;
             BreakableController alvo = null;
-            float melhor = DistanciaQuebravel * DistanciaQuebravel;
+            float melhor = limite;
+            float maisPerto = 3.4e38f; // qualquer um, vivo ou quebrado; float.MaxValue não existe no mscorlib do jogo
+            bool jaQuebrado = false;
+            int vivos = 0;
             foreach (BreakableController b in BreakableController.AllBreakables)
             {
-                if (b == null || b.LifeController == null || b.LifeController.IsDead) continue;
+                if (b == null || b.LifeController == null) continue;
                 float d = (b.transform.position - q.Posicao).sqrMagnitude;
+                if (d < maisPerto) maisPerto = d;
+                if (b.LifeController.IsDead)
+                {
+                    if (d <= limite) jaQuebrado = true;
+                    continue;
+                }
+                vivos++;
                 if (d <= melhor) { melhor = d; alvo = b; }
             }
-            if (alvo == null) return;
+            if (alvo == null)
+            {
+                if (jaQuebrado) return; // já quebrado aqui (os dois quebraram o mesmo ao mesmo tempo)
+                if (++_naoAchadosNoAndar > AvisosNaoAchouPorAndar) return;
+                string perto = maisPerto < 3.4e38f ? $"o mais próximo está a {Mathf.Sqrt(maisPerto):0.00} m" : "nenhum quebrável no andar";
+                Plugin.Log.LogWarning($"[Objetos] {de.Nome} quebrou algo em {q.Posicao} no andar {q.Andar}, mas aqui não há quebrável inteiro a até " +
+                    $"{DistanciaQuebravel} m ({perto}; {vivos} inteiros no andar).{(_naoAchadosNoAndar == AvisosNaoAchouPorAndar ? " Os próximos deste andar não aparecem no log." : "")}");
+                return;
+            }
             OrdemRemota = true;
             try { alvo.Execute(); } // LifeController.Kill → quebra e rola o loot deste jogador
             catch (Exception e) { Plugin.Log.LogWarning($"[Objetos] Quebrar em {q.Posicao} falhou: {(e.InnerException ?? e).Message}"); }
             finally { OrdemRemota = false; }
+        }
+
+        // ---------------- Quebráveis: sorteio da cena ----------------
+
+        /// <summary>
+        /// Prefixo de DrawRandomSceneObject.OnEnable: com a semente do andar, semeia o K10Random (o gerador
+        /// que o sorteio usa) com semente + posição do ponto. Sempre empilha uma entrada (null = não semeou),
+        /// que o finalizer desempilha: um sorteio pode ativar outro ponto dentro dele.
+        /// </summary>
+        internal static void SemearSorteio(DrawRandomSceneObject ponto)
+        {
+            EstadoK10 antes = null;
+            try
+            {
+                uint semente = RunCompartilhada.SementeCena;
+                // Só com o coop ativo: fora dele o jogo sorteia como sem o mod, mesmo com semente sobrando.
+                if (semente == 0 || ponto == null || !(RunCompartilhada.Host || RunCompartilhada.Convidado)) return;
+                if (K10Estado == null || K10UsaSemente == null)
+                {
+                    if (!_avisouSemK10)
+                    {
+                        _avisouSemK10 = true;
+                        Plugin.Log.LogWarning("[Objetos] K10Random mudou nesta versão do jogo: vasos e caixas continuam sorteados por PC e podem não bater.");
+                    }
+                    return;
+                }
+                antes = new EstadoK10 { Gerador = K10Estado.GetValue(null), UsavaSemente = (bool)K10UsaSemente.GetValue(null) };
+                K10Random.SetRandomSeed(SementeDoPonto(semente, ponto.transform.position));
+                _sorteiosSemeados++;
+            }
+            finally { SorteiosAbertos.Add(antes); }
+        }
+
+        /// <summary>Finalizer de DrawRandomSceneObject.OnEnable: devolve o K10Random como estava antes do prefixo.</summary>
+        internal static void RestaurarSorteio()
+        {
+            if (SorteiosAbertos.Count == 0) return;
+            EstadoK10 e = SorteiosAbertos[SorteiosAbertos.Count - 1];
+            SorteiosAbertos.RemoveAt(SorteiosAbertos.Count - 1);
+            if (e == null) return;
+            K10Estado.SetValue(null, e.Gerador);
+            K10UsaSemente.SetValue(null, e.UsavaSemente);
+        }
+
+        private sealed class EstadoK10
+        {
+            public object Gerador;     // Unity.Mathematics.Random (struct, guardado em caixa)
+            public bool UsavaSemente;
+        }
+
+        /// <summary>Semente de um ponto da cena: igual nos dois PCs (mesma cena, mesma posição, em centímetros).</summary>
+        private static uint SementeDoPonto(uint semente, Vector3 p)
+        {
+            uint h = Misturar(semente ^ (uint)Mathf.RoundToInt(p.x * 100f));
+            h = Misturar(h ^ (uint)Mathf.RoundToInt(p.y * 100f));
+            h = Misturar(h ^ (uint)Mathf.RoundToInt(p.z * 100f));
+            return h == 0 ? 1u : h; // semente 0 trava o gerador do Unity.Mathematics
+        }
+
+        private static uint Misturar(uint h)
+        {
+            unchecked
+            {
+                h ^= h >> 16; h *= 0x85EBCA6B;
+                h ^= h >> 13; h *= 0xC2B2AE35;
+                h ^= h >> 16;
+            }
+            return h;
+        }
+
+        /// <summary>
+        /// Ao entrar no andar: quantos quebráveis há e uma assinatura das posições. Os dois PCs devem
+        /// mostrar o mesmo número e a mesma assinatura; se não, o sorteio da cena não bateu.
+        /// </summary>
+        private static void LogarQuebraveis(LevelInfo andar)
+        {
+            int total = 0;
+            uint assinatura = 0;
+            foreach (BreakableController b in BreakableController.AllBreakables)
+            {
+                if (b == null) continue;
+                total++;
+                assinatura ^= SementeDoPonto(0x9E3779B9, b.transform.position); // XOR: não depende da ordem da lista
+            }
+            Plugin.Log.LogInfo($"[Objetos] Andar {andar.LevelIndex}: {total} quebráveis (assinatura {assinatura:X8}); " +
+                $"{_sorteiosSemeados} sorteios da cena com a semente {RunCompartilhada.SementeCena:X8}. Compare com o log do outro PC.");
+            _sorteiosSemeados = 0;
+            _naoAchadosNoAndar = 0;
         }
 
         // ---------------- Rede ----------------
@@ -286,7 +407,7 @@ namespace HellClockCoop.Fase3
                         if (Host) Repassar(sessao, de, dados);
                         break;
                     case Protocolo.TipoQuebrou:
-                        QuebrarPorOrdem(Net.Quebrou.Desserializar(dados));
+                        QuebrarPorOrdem(Net.Quebrou.Desserializar(dados), de);
                         if (Host) Repassar(sessao, de, dados);
                         break;
                 }

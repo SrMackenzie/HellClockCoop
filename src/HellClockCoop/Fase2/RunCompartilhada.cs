@@ -16,8 +16,9 @@ namespace HellClockCoop.Fase2
     /// Fase 2 — a run é do host; o convidado acompanha.
     ///
     /// Host: a cada andar, captura o que o jogo sorteou (LevelBlock.GenerateNextLevel, ponto único de
-    /// sorteio da LevelDefinition) e o ponto de spawn usado, e envia aos convidados. Também envia o
-    /// Hell Clock 4x por segundo e o fim da run.
+    /// sorteio da LevelDefinition) e o ponto de spawn usado, e envia aos convidados junto com uma semente
+    /// para os sorteios da cena (vasos, caixas: ver ObjetosCompartilhados). Também envia o Hell Clock 4x
+    /// por segundo e o fim da run.
     ///
     /// Convidado: não inicia nem avança runs por conta própria (portais e menus bloqueados). Ao receber
     /// um plano, inicia a run ou avança até o andar do host; nos pontos de sorteio, substitui o resultado
@@ -52,6 +53,14 @@ namespace HellClockCoop.Fase2
         private static readonly AccessTools.FieldRef<TimerManager, FloatState> TimerRelaxadoRef = AccessTools.FieldRefAccess<TimerManager, FloatState>("_relaxedTimer");
         internal static readonly AccessTools.FieldRef<LevelObjects, int> SpawnIndexRef = AccessTools.FieldRefAccess<LevelObjects, int>("_currentPlayerSpawnIndex");
         private static readonly MethodInfo SetupPlayerSpawn = AccessTools.Method(typeof(LevelObjects), "SetupPlayerSpawn");
+
+        private static readonly System.Random Sorteador = new System.Random();
+
+        /// <summary>
+        /// Semente dos sorteios da cena do andar em carregamento (0 = sorteio normal do jogo). O host sorteia
+        /// uma por andar e manda no PlanoAndar; os dois lados semeiam com ela o DrawRandomSceneObject.
+        /// </summary>
+        public static uint SementeCena { get; private set; }
 
         public static bool Convidado => Sessao != null && Sessao.ModoConvidado;
         public static bool Host => Sessao != null && Sessao.ModoHost;
@@ -192,7 +201,7 @@ namespace HellClockCoop.Fase2
                         Plugin.Log.LogWarning($"[Run] Fim de run com motivo desconhecido ({f.Motivo}); ignorado.");
                         return;
                     }
-                    Planos.Clear(); SpawnsDoHost.Clear(); _planoPendente = null; _entradaTardia = null;
+                    Planos.Clear(); SpawnsDoHost.Clear(); _planoPendente = null; _entradaTardia = null; SementeCena = 0;
                     if (!Dpm.RunStarted.Value || Dpm.EndingExecuted.Value) return;
                     Plugin.Log.LogInfo($"[Run] Host encerrou a run ({(EGameOverSource)f.Motivo}).");
                     _ordemDoHost = true;
@@ -238,7 +247,9 @@ namespace HellClockCoop.Fase2
 
         internal static void HostCapturouAndar(uint indice, LevelBlockInfo bloco, LevelInfo resultado)
         {
+            SementeCena = 0; // fora do coop (ou sem plano) o sorteio da cena volta a ser o do jogo
             if (!Host || resultado == null || bloco?.LevelBlock == null || resultado.LevelDefinition == null) return;
+            SementeCena = (uint)Sorteador.Next(1, 2147483647); // int.MaxValue não existe no mscorlib do jogo
             var p = new PlanoAndar
             {
                 IndiceAndar = indice,
@@ -252,6 +263,7 @@ namespace HellClockCoop.Fase2
                 BossForcado = bloco.ForcedBossHashId,
                 DefinicaoHash = resultado.LevelDefinition.HashID,
                 EhBoss = resultado.IsBossLevel,
+                SementeCena = SementeCena,
             };
             _ultimoPlano = p;
             _ultimoSpawn = null;
@@ -268,6 +280,7 @@ namespace HellClockCoop.Fase2
 
         internal static void HostTerminou(EGameOverSource motivo)
         {
+            SementeCena = 0; // o hub e a próxima run solo sorteiam como no jogo
             _ultimoPlano = null;
             _ultimoSpawn = null;
             JanelasBonus.Clear(); // não guarda pares de runs passadas
@@ -303,7 +316,14 @@ namespace HellClockCoop.Fase2
         /// <summary>LevelDefinition do andar: troca a sorteada localmente pela do host, mantendo o resto.</summary>
         internal static LevelInfo AndarDoHost(uint indice, LevelBlockInfo bloco, LevelInfo sorteado)
         {
-            if (!Convidado || sorteado == null || !Planos.TryGetValue(indice, out PlanoAndar p)) return sorteado;
+            SementeCena = 0;
+            if (!Convidado || sorteado == null) return sorteado;
+            if (!Planos.TryGetValue(indice, out PlanoAndar p))
+            {
+                Plugin.Log.LogWarning($"[Run] Andar {indice} sem plano do host: vasos e caixas vão ser sorteados por este PC e podem não bater com os do host.");
+                return sorteado;
+            }
+            SementeCena = p.SementeCena;
             if (sorteado.LevelDefinition != null && sorteado.LevelDefinition.HashID == p.DefinicaoHash && sorteado.IsBossLevel == p.EhBoss) return sorteado;
             LevelDefinition def = global::HellClock.Constants.Collections.LEVEL_DEFINITION_COLLECTION.Reference.GetElement(p.DefinicaoHash);
             if (def == null)
@@ -345,6 +365,7 @@ namespace HellClockCoop.Fase2
             if (!Convidado || fonte != EGameOverSource.Defeat) return false;
             PlayerController local = CoopRuntime.JogadorLocal();
             if (local == null || !local.LifeController.IsDead) return false;
+            SementeCena = 0; // a run dele acaba: o hub sorteia como no jogo
             Plugin.Log.LogInfo("[Run] Você morreu: sua run acaba; você volta para a run do host quando ele passar de andar.");
             Sessao.Avisar("Você morreu. Quando o host passar de andar, você volta para a run dele.");
             return true;

@@ -20,12 +20,13 @@ namespace HellClockCoop.Net
         public int BossForcado;        // LevelBlockInfo.ForcedBossHashId
         public int DefinicaoHash;      // LevelDefinition.HashID
         public bool EhBoss;
+        public uint SementeCena;       // sorteios da cena (DrawRandomSceneObject: vasos, caixas...); 0 = sem semente
 
         public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoPlanoAndar, w =>
         {
             w.Write(IndiceAndar); w.Write(Primeiro); w.Write(DungeonHash); w.Write(AndarEspecial);
             w.Write(BlocoHash); w.Write(IndiceLocal); w.Write(TemSementeBoss); w.Write(SementeBoss);
-            w.Write(BossForcado); w.Write(DefinicaoHash); w.Write(EhBoss);
+            w.Write(BossForcado); w.Write(DefinicaoHash); w.Write(EhBoss); w.Write(SementeCena);
         });
 
         public static PlanoAndar Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoPlanoAndar, r => new PlanoAndar
@@ -33,10 +34,11 @@ namespace HellClockCoop.Net
             IndiceAndar = r.ReadUInt32(), Primeiro = r.ReadBoolean(), DungeonHash = r.ReadInt32(), AndarEspecial = r.ReadInt32(),
             BlocoHash = r.ReadInt32(), IndiceLocal = r.ReadUInt32(), TemSementeBoss = r.ReadBoolean(), SementeBoss = r.ReadUInt32(),
             BossForcado = r.ReadInt32(), DefinicaoHash = r.ReadInt32(), EhBoss = r.ReadBoolean(),
+            SementeCena = r.ReadUInt32(),
         });
 
         public override string ToString() =>
-            $"andar {IndiceAndar}{(Primeiro ? " (início da run)" : "")}, bloco {BlocoHash}/{IndiceLocal}, definição {DefinicaoHash}{(EhBoss ? ", boss" : "")}";
+            $"andar {IndiceAndar}{(Primeiro ? " (início da run)" : "")}, bloco {BlocoHash}/{IndiceLocal}, definição {DefinicaoHash}{(EhBoss ? ", boss" : "")}, cena {SementeCena:X8}";
     }
 
     /// <summary>Qual ponto de spawn do andar o host usou (LevelObjects._currentPlayerSpawnIndex).</summary>

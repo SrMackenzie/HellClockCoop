@@ -72,6 +72,7 @@ namespace HellClockCoop
             new Alvo("3", "HellClock.Chests.ChestInteractable", "ExecuteInteraction", "Baú aberto abre para todos"),
             new Alvo("3", "HellClock.Player.PlayerController", "InteractWith", "Abrir baú por ordem remota sem mexer no jogador local"),
             new Alvo("3", "HellClock.Character.Enemy.BreakableController", "Handle_OnDie", "Vaso/caixa quebrado quebra para todos"),
+            new Alvo("3", "HellClock.Level.DrawRandomSceneObject", "OnEnable", "Sorteio da cena (vasos, caixas) com a semente do host (0.9.6)"),
             new Alvo("3", "SmokeDoor", "Start", "Estado inicial da barreira de sangue não vira aviso (0.9.5)"),
             new Alvo("3", "SmokeDoor", "Close", "Barreira de sangue fechada no host fecha para todos (0.9.5)"),
             new Alvo("3", "SmokeDoor", "Open", "Barreira de sangue aberta no host abre para todos (0.9.5)"),

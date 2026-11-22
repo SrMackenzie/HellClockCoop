@@ -476,9 +476,19 @@ nem barra do boss. O boneco de DPS do hub não é replicado (só inimigos de run
   avisa; quem recebe chama `ExecuteInteraction` com `OrdemRemota` ligado e o prefixo em
   `PlayerController.InteractWith` evita parar o jogador local e gravar a flag no save. Cada um rola o
   próprio loot (`ChestDefinition.Use`). O host repassa o aviso dos convidados aos demais.
-- **Quebráveis** (tipo 42 Quebrou). `BreakableController` faz parte do mapa (mesmo lugar nos dois jogos):
-  identificação pela posição. Postfix em `Handle_OnDie` avisa; quem recebe chama `Execute()` (Kill) no
-  quebrável vivo mais próximo, até 0,75 m. Loot próprio. O host repassa.
+- **Quebráveis** (tipo 42 Quebrou). `BreakableController` vem na cena do andar: identificação pela posição.
+  Postfix em `Handle_OnDie` avisa; quem recebe chama `Execute()` (Kill) no quebrável vivo mais próximo,
+  até 0,75 m. Loot próprio. O host repassa. Não achou: aviso no log com a distância do mais próximo (até 5
+  por andar).
+- **Sorteio da cena (0.9.6, protocolo 12).** Parte dos quebráveis sai de um `DrawRandomSceneObject`, que no
+  `OnEnable` sorteia, com pesos, qual objeto do ponto aparece (gerador `K10Random`, sem semente: cada PC dava
+  um). O host sorteia uma `SementeCena` por andar e a manda no `PlanoAndar`; no `GenerateNextLevel` os dois
+  lados a guardam (o convidado, a do plano), e o prefixo em `DrawRandomSceneObject.OnEnable` semeia o
+  `K10Random` com semente + posição do ponto (em cm). O finalizer devolve o estado anterior do `K10Random`
+  (campos `_random` e `_useSeed`). A ordem do jogo garante a semente a tempo: `GenerateNextLevel` →
+  carrega a cena → `SetRootObjectsState(true)` (sorteio) → `SetupLevel`. Fim da run zera a semente (hub e
+  solo sorteiam como no jogo). Ao entrar no andar, cada PC loga o número de quebráveis e uma assinatura
+  (XOR das posições), para comparar os dois logs.
 - Limite: quem entra no meio do andar não recebe o que já foi quebrado.
 
 ### 11.2 Fase 3b e 3c (versão 0.5.0, protocolo 8)

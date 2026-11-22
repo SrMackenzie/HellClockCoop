@@ -333,6 +333,27 @@ pelas barreiras de sangue da área do chefe.
 - [ ] **Balanceamento:** com os dois presos na arena, a luta do chefe fica um pouco mais difícil que no solo (anotar).
 - Se falhar, mandar: o `LogOutput.log` dos dois PCs (linhas `[Portas]`, sobretudo `não existe neste jogo` ou `falhou`).
 
+## 0.9.6 — Vasos e caixas iguais nos dois PCs
+
+Só em coop real. Os dois PCs na 0.9.6 (protocolo 12). No início, `[Validação] N/N alvos de patch encontrados` com o
+alvo novo `DrawRandomSceneObject.OnEnable`. Corrige o achado da sessão de 21/11: vaso e caixa quebrados num PC não
+quebravam no outro. Causa achada no IL: o jogo sorteia em cada PC qual objeto aparece em cada ponto do mapa
+(`DrawRandomSceneObject`); agora o host manda a semente desse sorteio.
+
+- [ ] **Mesma assinatura:** ao entrar em cada andar, os dois logs têm a linha `[Objetos] Andar N: X quebráveis
+  (assinatura H); Y sorteios da cena com a semente S.` com os mesmos X, H e S nos dois PCs. Y > 0 confirma que o
+  sorteio foi semeado.
+- [ ] **Mesmos lugares:** os vasos e caixas estão nos mesmos pontos nos dois PCs (comparar dois ou três pontos perto do
+  spawn).
+- [ ] **Host quebra:** o host quebra alguns vasos e caixas. Esperado: quebram também no convidado. Sem `[Objetos] ...
+  aqui não há quebrável` no log do convidado.
+- [ ] **Convidado quebra:** o mesmo no sentido contrário, sem esse aviso no log do host.
+- [ ] **Loot próprio:** cada um recebe o próprio loot do vaso ou caixa, inclusive do que o outro quebrou.
+- [ ] **Controle (solo, sem coop):** numa run sozinho, os vasos e caixas continuam variando de uma run para outra, e a
+  linha `[Objetos] Andar N` não aparece (ela só sai com o coop criado).
+- Se falhar, mandar: o `LogOutput.log` dos dois PCs (linhas `[Objetos]` e `[Run] Plano do host`, sobretudo `aqui não
+  há quebrável`, `sem plano do host` ou `K10Random mudou`).
+
 ---
 
 ## Sessão em dupla na 0.9.4 — roteiro único
@@ -445,8 +466,9 @@ vazio no `.cfg`)
 Relato do autor no meio da sessão. Nada foi marcado `[x]` ainda.
 
 - Passou: baú aberto pelo convidado abriu também no host (0.4.1, falta o caso do host abrindo).
-- Falhou: vaso e caixa quebrados num PC não quebram no outro, nos dois sentidos (0.4.1). Suspeita: cada PC sorteia os
-  seus; a busca por posição (0,75 m) falha sem log.
+- Falhou: vaso e caixa quebrados num PC não quebram no outro, nos dois sentidos (0.4.1). Causa (IL): cada PC sorteia
+  os seus no `DrawRandomSceneObject`; a busca por posição (0,75 m) falhava sem log. Corrigido na 0.9.6 (seção 0.9.6,
+  a testar).
 - Falhou: barreira de sangue da área do chefe não aparece no convidado, que passa livre (0.6.0). Corrigido na 0.9.5
   (seção 0.9.5, a testar).
 - Falhou: inimigos sem som no convidado.

@@ -87,7 +87,8 @@ object IdaVolta(string tipo, (string campo, object valor)[] campos, byte tipoByt
 }
 IdaVolta("PlanoAndar", new (string, object)[] {
     ("IndiceAndar", 7u), ("Primeiro", true), ("DungeonHash", 12345), ("AndarEspecial", 2), ("BlocoHash", 3),
-    ("IndiceLocal", 2u), ("TemSementeBoss", true), ("SementeBoss", 4000000000u), ("BossForcado", -1), ("DefinicaoHash", 8), ("EhBoss", true) }, 20);
+    ("IndiceLocal", 2u), ("TemSementeBoss", true), ("SementeBoss", 4000000000u), ("BossForcado", -1), ("DefinicaoHash", 8), ("EhBoss", true),
+    ("SementeCena", 3735928559u) }, 20);
 IdaVolta("SpawnAndar", new (string, object)[] { ("IndiceAndar", 3u), ("IndiceSpawn", 2) }, 21);
 IdaVolta("TimerSync", new (string, object)[] { ("Timer", 417.25f), ("TimerRelaxado", 999.5f) }, 22);
 IdaVolta("TimerBonus", new (string, object)[] { ("Segundos", 15f) }, 23);

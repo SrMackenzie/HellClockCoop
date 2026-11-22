@@ -4,6 +4,14 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.9.6 — Vasos e caixas iguais nos dois PCs 🧪
+_21/11/2026_
+
+- Vasos, caixas e outros objetos que o jogo sorteia em cada ponto do mapa agora saem iguais no host e no convidado: o host manda uma semente por andar e os dois PCs sorteiam com ela (antes cada PC sorteava os seus, e quebrar num não quebrava no outro)
+- Quebrar um vaso ou caixa quebra também no outro PC, nos dois sentidos, e cada um continua com o próprio loot
+- Diagnóstico: ao entrar no andar, o log mostra quantos quebráveis há e uma assinatura (devem ser iguais nos dois PCs); quando um quebrável do outro não é achado, o log diz onde foi e a que distância está o mais próximo
+- Balanceamento: sem efeito na dificuldade; o loot por vaso ou caixa de cada jogador é o mesmo do solo. Protocolo 12: os dois PCs precisam da 0.9.6
+
 ## 0.9.5 — Barreiras de sangue também no convidado 🧪
 _21/11/2026_
 
