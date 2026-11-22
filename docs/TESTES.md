@@ -386,6 +386,22 @@ Golpe, ataque e morte não dependem disso. Se ainda faltar som depois desta vers
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `indisponível (som de movimento da
   réplica)`) e a lista do que falta de som.
 
+## 0.9.9 — Dano do aliado no boneco de treino
+
+Responde ao achado "dano do convidado no boneco de treino do hub não aparece no host". Causa achada no IL: o boneco
+não é um inimigo compartilhado; cada PC cria o seu ao chamá-lo no hub (`DummyInteractable`), fora da run, e o número
+só ia para inimigos com número de rede. Agora o número no boneco vai marcado como "boneco" e aparece no boneco de quem
+recebe. Só o número: a vida do boneco continua de cada um.
+
+- [ ] **Convidado → host:** no hub, os dois chamam o boneco; o convidado bate. Esperado: no host, o número aparece no
+  boneco dele, na cor do aliado e um pouco menor.
+- [ ] **Host → convidado:** o host bate no boneco dele. Esperado: o número aparece no boneco do convidado.
+- [ ] **Boneco não chamado (controle):** com o boneco do host guardado, o convidado bate no dele. Esperado: nada no host,
+  sem erro no log.
+- [ ] **Run (controle):** números do aliado nos inimigos aparecem como antes.
+- Se falhar, mandar: o `LogOutput.log` dos dois (linhas `[Dano]`; ao chamar o boneco, cada PC registra
+  `[Dano] Boneco de treino registrado`).
+
 ---
 
 ## Sessão em dupla na 0.9.4 — roteiro único
@@ -505,7 +521,8 @@ Relato do autor no meio da sessão. Nada foi marcado `[x]` ainda.
   (seção 0.9.5, a testar).
 - Falhou: inimigos sem som no convidado. Causa (IL): a réplica não calcula a própria velocidade, e passos e som de
   estado ficavam no modo parado. Corrigido na 0.9.8 (seção 0.9.8, a testar).
-- Falhou (menor): dano do convidado no boneco de treino do hub não aparece no host; nos inimigos aparece.
+- Falhou (menor): dano do convidado no boneco de treino do hub não aparece no host; nos inimigos aparece. Causa (IL):
+  cada PC cria o próprio boneco, que não tem número de rede. Corrigido na 0.9.9 (seção 0.9.9, a testar).
 - A investigar: travadinhas esporádicas. O log não tinha número de tempo; a 0.9.7 traz o medidor (seção 0.9.7, a
   testar) e a correção sai depois, com os números.
 

@@ -15,7 +15,8 @@ namespace HellClockCoop.Fase3
     /// <summary>
     /// Números de dano dos aliados. Postfix em DamageViewManager.SpawnDamageView: número de dano do jogador
     /// local num inimigo compartilhado vai para os outros (netId, valor, críticos), que mostram o mesmo número
-    /// no inimigo deles. No modo eco, o número se repete no mesmo inimigo, com o atraso do fantasma.
+    /// no inimigo deles. No boneco de treino do hub, que não é compartilhado, vai o IdBoneco e cada um mostra no
+    /// próprio boneco. No modo eco, o número se repete no mesmo inimigo, com o atraso do fantasma.
     /// O dano de verdade não passa por aqui (vai pelos Golpes); no host os golpes do convidado são aplicados
     /// sem número, para não aparecer duas vezes.
     /// </summary>
@@ -87,12 +88,32 @@ namespace HellClockCoop.Fase3
                     if (alvo != null) Mostrar(colisor, alvo, valor, criticos, 0);
                 }));
             }
-            if (Sessao == null || !Sessao.AlguemNoMesmoAndar) return;
+            if (Sessao == null || !Sessao.AlguemNoMesmoAndar || Pendentes.Count >= 255) return;
             EnemyController c = alvo.GetComponent<EnemyController>();
-            if (c != null && InimigosCompartilhados.IdDe(c, out ushort id) && Pendentes.Count < 255)
+            if (c == null) return;
+            if (!InimigosCompartilhados.IdDe(c, out ushort id))
             {
-                Pendentes.Add(new DanosVistos.Item { Id = id, Valor = valor, Criticos = criticos });
+                if (!(c is DummyEnemyController)) return;
+                id = DanosVistos.IdBoneco;
             }
+            Pendentes.Add(new DanosVistos.Item { Id = id, Valor = valor, Criticos = criticos });
+        }
+
+        // ---- Boneco de treino do hub: cada PC cria o seu (não é compartilhado); o número vai pelo IdBoneco ----
+
+        private static DummyEnemyController _boneco;
+
+        /// <summary>Postfix de EnemyManager.SpawnEnemy: o boneco de treino deste PC.</summary>
+        internal static void BonecoNasceu(DummyEnemyController boneco)
+        {
+            _boneco = boneco;
+            Plugin.Log.LogInfo("[Dano] Boneco de treino registrado (números dos aliados nele).");
+        }
+
+        private static EnemyController AlvoDe(ushort id)
+        {
+            if (id != DanosVistos.IdBoneco) return InimigosCompartilhados.PorId(id);
+            return _boneco != null ? _boneco : null; // null do Unity: boneco destruído na troca de cena
         }
 
         private static bool DoJogador(IAttacker atacante, PlayerController local)
@@ -161,7 +182,7 @@ namespace HellClockCoop.Fase3
             {
                 foreach (DanosVistos.Item i in DanosVistos.Desserializar(dados).Itens)
                 {
-                    EnemyController c = InimigosCompartilhados.PorId(i.Id);
+                    EnemyController c = AlvoDe(i.Id);
                     if (c == null || !c.gameObject.activeInHierarchy) continue;
                     Mostrar(c.CharacterCollider, c.Transform, i.Valor, i.Criticos, de.Id.m_SteamID);
                 }

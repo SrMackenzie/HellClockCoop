@@ -11,12 +11,14 @@ namespace HellClockCoop.Fase3
     /// <summary>
     /// Alvo: EnemyManager.SpawnEnemy(SpawnEnemyData) — postfix (o prefixo da Fase 2 continua bloqueando
     /// os inimigos próprios do convidado). No host, numera o inimigo e avisa os convidados.
+    /// O boneco de treino do hub (DummyInteractable.SpawnEnemy, um por PC) fica guardado para os números dos aliados.
     /// </summary>
     [HarmonyPatch(typeof(EnemyManager), nameof(EnemyManager.SpawnEnemy), typeof(SpawnEnemyData))]
     internal static class Inimigos_SpawnEnemy
     {
         private static void Postfix(SpawnEnemyData data, IEnemy __result)
         {
+            if (__result is DummyEnemyController boneco) DanosVisiveis.BonecoNasceu(boneco);
             if (__result is EnemyController c) InimigosCompartilhados.HostNasceu(c, data);
         }
     }

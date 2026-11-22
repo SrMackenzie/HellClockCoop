@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.9.8-e0763a?style=for-the-badge&labelColor=1c0f0b">
+  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.9.9-e0763a?style=for-the-badge&labelColor=1c0f0b">
   <img alt="Status" src="https://img.shields.io/badge/status-alpha%20jog%C3%A1vel-8a2418?style=for-the-badge&labelColor=1c0f0b">
   <img alt="Hell Clock" src="https://img.shields.io/badge/Hell%20Clock-2.1.1.1-f2b04a?style=for-the-badge&labelColor=1c0f0b">
   <img alt="Jogadores" src="https://img.shields.io/badge/jogadores-2%20a%204-5fe08a?style=for-the-badge&labelColor=1c0f0b">

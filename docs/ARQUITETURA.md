@@ -526,6 +526,11 @@ chegando ao andar): a skill passiva de orbes cria os objetos uma vez só. (b) Ef
 números do jogador local em inimigos compartilhados (netId, valor, críticos); quem recebe mostra no mesmo inimigo.
 No eco, o número se repete com o atraso do fantasma.
 
+*0.9.9:* o boneco de treino do hub (`DummyEnemyController`) não é compartilhado: cada PC cria o seu pelo
+`DummyInteractable.SpawnEnemy` → `EnemyManager.SpawnEnemy`, fora da run (o host só numera inimigos da run). O
+postfix de `SpawnEnemy` guarda o boneco local; o número num boneco vai com `DanosVistos.IdBoneco` (0, que o host
+nunca dá) e quem recebe mostra no próprio boneco, se estiver chamado. Só o número: a vida do boneco é de cada um.
+
 *0.5.3:* números dos aliados com cor própria (verde/ciano/lilás na ordem em que os aliados aparecem; o eco é
 verde, como a seta do minimapa) e escala 0,8. O `SpawnDamageView` escolhe cor e escala por dentro, a partir dos
 campos `_normalDamageColor`, `_criticalDamageColor`, `_randomStartScale` e `_randomFinalScale` do DamageViewManager:

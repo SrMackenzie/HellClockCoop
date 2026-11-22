@@ -136,9 +136,12 @@ namespace HellClockCoop.Net
     /// <summary>Números de dano de um jogador nos inimigos (todos → todos no mesmo andar, não confiável, 20 Hz).</summary>
     internal sealed class DanosVistos
     {
+        /// <summary>Id 0 (o host nunca dá): o boneco de treino do hub, que cada PC cria para si (0.9.9).</summary>
+        public const ushort IdBoneco = 0;
+
         internal struct Item
         {
-            public ushort Id;      // netId do inimigo
+            public ushort Id;      // netId do inimigo, ou IdBoneco
             public float Valor;
             public byte Criticos;
         }

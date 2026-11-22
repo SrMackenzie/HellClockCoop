@@ -2,6 +2,22 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.9.9",
+      "data": "21/11/2026",
+      "testado": false,
+      "titulo": "Dano do aliado no boneco de treino",
+      "itens": [
+        "Dano do convidado no boneco de treino do hub não aparecia no host (sessão de 21/11): cada PC cria o próprio boneco, que não é um inimigo compartilhado, então o número não tinha para onde ir",
+        "Agora o número de dano do aliado no boneco aparece no seu boneco, com a cor do aliado, nos dois sentidos. Para ver, o seu boneco precisa estar chamado (ativado no hub)",
+        "Só visual: o boneco continua de cada um, e a vida dele não muda com o golpe do aliado. Balanceamento: sem efeito na dificuldade. Protocolo não muda (12), mas o coop exige a mesma versão do mod nos dois PCs"
+      ],
+      "testar": [
+        "Hub, os dois com o boneco chamado: o golpe do convidado no boneco mostra o número (na cor do aliado) no boneco do host",
+        "Hub: o golpe do host no boneco mostra o número no boneco do convidado",
+        "Run: os números do aliado nos inimigos continuam aparecendo"
+      ]
+    },
+    {
       "v": "0.9.8",
       "data": "21/11/2026",
       "testado": false,

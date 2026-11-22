@@ -59,7 +59,7 @@ namespace HellClockCoop
             new Alvo("2", "HellClock.Manager.SurvivalEventManager", "StartSurvival", "Sem ondas de sobrevivência no convidado (Fase 2)"),
 
             // Fase 3 — combate
-            new Alvo("2", "EnemyManager", "SpawnEnemy", "Convidado sem inimigos próprios (Fase 2); réplicas e numeração no host (Fase 3a)"),
+            new Alvo("2", "EnemyManager", "SpawnEnemy", "Convidado sem inimigos próprios (Fase 2); réplicas e numeração no host (Fase 3a); boneco de treino do hub para os números dos aliados"),
             new Alvo("3", "EnemyManager", "Handle_EnemyDied", "Morte no host vira ordem de morte da réplica"),
             new Alvo("3", "EnemyManager", "DisposeEnemy", "Descarte sem morte (host avisa; convidado esquece a réplica)"),
             new Alvo("3", "EnemyManager", "RemoveEnemy", "Lê _ignoreLevelClear: andar limpo do convidado vem do host"),

@@ -4,6 +4,13 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.9.9 — Dano do aliado no boneco de treino 🧪
+_21/11/2026_
+
+- Dano do convidado no boneco de treino do hub não aparecia no host (sessão de 21/11): cada PC cria o próprio boneco, que não é um inimigo compartilhado, então o número não tinha para onde ir
+- Agora o número de dano do aliado no boneco aparece no seu boneco, com a cor do aliado, nos dois sentidos. Para ver, o seu boneco precisa estar chamado (ativado no hub)
+- Só visual: o boneco continua de cada um, e a vida dele não muda com o golpe do aliado. Balanceamento: sem efeito na dificuldade. Protocolo não muda (12), mas o coop exige a mesma versão do mod nos dois PCs
+
 ## 0.9.8 — Passos dos inimigos no convidado 🧪
 _21/11/2026_
 

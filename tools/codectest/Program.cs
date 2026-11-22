@@ -225,6 +225,13 @@ IdaVolta("InimigoSkill", new (string, object)[] { ("Id", (ushort)300), ("SkillHa
     var b = (byte[])t.GetMethod("Serializar").Invoke(o, null);
     var i2 = ((System.Collections.IList)t.GetField("Itens").GetValue(t.GetMethod("Desserializar").Invoke(null, new object[] { b })))[0];
     Checar(b[0] == 53 && (ushort)ti.GetField("Id").GetValue(i2) == 42 && (float)ti.GetField("Valor").GetValue(i2) == 987.5f && (byte)ti.GetField("Criticos").GetValue(i2) == 2, $"DanosVistos ida e volta ({b.Length} bytes)");
+
+    // 0.9.9: o boneco de treino do hub vai com o IdBoneco (0) no meio de inimigos compartilhados.
+    ushort idBoneco = (ushort)t.GetField("IdBoneco").GetValue(null);
+    var j = Activator.CreateInstance(ti); ti.GetField("Id").SetValue(j, idBoneco); ti.GetField("Valor").SetValue(j, 12.25f); ti.GetField("Criticos").SetValue(j, (byte)0); l.Add(j);
+    b = (byte[])t.GetMethod("Serializar").Invoke(o, null);
+    var l2 = (System.Collections.IList)t.GetField("Itens").GetValue(t.GetMethod("Desserializar").Invoke(null, new object[] { b }));
+    Checar(idBoneco == 0 && l2.Count == 2 && (ushort)ti.GetField("Id").GetValue(l2[0]) == 42 && (ushort)ti.GetField("Id").GetValue(l2[1]) == 0 && (float)ti.GetField("Valor").GetValue(l2[1]) == 12.25f, $"DanosVistos com o boneco de treino ({b.Length} bytes)");
 }
 
 {
