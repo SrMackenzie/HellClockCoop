@@ -97,6 +97,22 @@ namespace HellClockCoop.Fase3
         private static void Postfix(EnemyController __instance) => InimigosCompartilhados.HostAjustou(__instance, Net.InimigoAjuste.Descartavel);
     }
 
+    /// <summary>Alvo: EnemyController.SetExperienceMultiplier(float) — XP das ondas de sobrevivência (SurvivalEventManager.SpawnEnemy).</summary>
+    [HarmonyPatch(typeof(EnemyController), nameof(EnemyController.SetExperienceMultiplier))]
+    internal static class Inimigos_SetExperienceMultiplier
+    {
+        private static void Postfix(EnemyController __instance, float experienceMultiplier) =>
+            InimigosCompartilhados.HostAjustouXp(__instance, experienceMultiplier);
+    }
+
+    /// <summary>Alvo: EnemyController.SetInstanceTreasureClassOverride(TreasureClass) — tesouro próprio (sobrevivência, inclusive a do santuário de Miracles; único de Nightmare).</summary>
+    [HarmonyPatch(typeof(EnemyController), nameof(EnemyController.SetInstanceTreasureClassOverride))]
+    internal static class Inimigos_SetInstanceTreasureClassOverride
+    {
+        private static void Postfix(EnemyController __instance, HellClock.Drop.TreasureClass treasureClass) =>
+            InimigosCompartilhados.HostAjustouTesouro(__instance, treasureClass);
+    }
+
     /// <summary>Alvo: HellClock.Chests.ChestInteractable.ExecuteInteraction — baú aberto pelo jogador local vira aviso.</summary>
     [HarmonyPatch(typeof(HellClock.Chests.ChestInteractable), nameof(HellClock.Chests.ChestInteractable.ExecuteInteraction))]
     internal static class Objetos_AbrirBau

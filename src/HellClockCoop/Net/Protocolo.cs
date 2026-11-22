@@ -11,7 +11,7 @@ namespace HellClockCoop.Net
     internal static class Protocolo
     {
         /// <summary>Muda sempre que o formato de qualquer mensagem mudar. Pares com versões diferentes não conversam.</summary>
-        public const int Versao = 12; // 12: PlanoAndar.SementeCena (0.9.6)
+        public const int Versao = 13; // 13: XP e tesouro próprios da réplica em InimigoSpawn/InimigoAjuste (0.10.1)
 
         public const int CanalConfiavel = 0;
         public const int CanalSnapshots = 1;

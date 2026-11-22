@@ -83,7 +83,7 @@ _Mesmos inimigos para todos, cada um vê as skills do outro, inimigos atacam qua
 | 🧪 | Status de controle do convidado (lentidão, congelamento, atordoamento, enraizamento) valendo no host; os de dano ficam pessoais |
 | ⬜ | Boneco de DPS do hub visível para o outro |
 
-## Fase 4 — Loot · 75%
+## Fase 4 — Loot · 90%
 
 _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio save._
 
@@ -92,7 +92,7 @@ _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio s
 | ✅ | Loot e XP de cada inimigo morto saem do jogo de cada um |
 | 🧪 | Loot próprio de baús e quebráveis |
 | ✅ | Revisar XP de inimigos mortos longe do jogador (o jogo não confere distância: cada um ganha o XP de todo inimigo morto) |
-| ⬜ | Revisar drops de invocações, ondas de sobrevivência e temporadas |
+| 🧪 | Revisar drops de invocações, ondas de sobrevivência e temporadas (convidado com o XP e o tesouro próprio do host; equipamento sem redução, decisão do autor) |
 | ✅ | Auditoria: o mod nunca escreve no save de outro jogador |
 
 ## Fase 5 — Polimento · 39%

@@ -28,6 +28,8 @@ namespace HellClockCoop.Net
         public bool JaNasceu;              // _spawned no host (para quem chega depois)
         public float Vida = 1f;            // fração da vida máxima
         public byte Ajustes;               // InimigoAjuste.* aplicados depois do spawn (invocação etc.)
+        public float MultiplicadorXp = 1f; // EnemyController.SetExperienceMultiplier (ondas de sobrevivência)
+        public int TesouroHash;            // TreasureClass.HashID de SetInstanceTreasureClassOverride (0 = nenhum)
 
         public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoInimigoSpawn, w =>
         {
@@ -43,6 +45,8 @@ namespace HellClockCoop.Net
             w.Write(Yaw);
             w.Write(Vida);
             w.Write(Ajustes);
+            w.Write(MultiplicadorXp);
+            w.Write(TesouroHash);
         });
 
         public static InimigoSpawn Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoInimigoSpawn, r =>
@@ -62,6 +66,8 @@ namespace HellClockCoop.Net
             s.Yaw = r.ReadSingle();
             s.Vida = r.ReadSingle();
             s.Ajustes = r.ReadByte();
+            s.MultiplicadorXp = r.ReadSingle();
+            s.TesouroHash = r.ReadInt32();
             return s;
         });
     }
@@ -69,17 +75,34 @@ namespace HellClockCoop.Net
     /// <summary>
     /// Ajuste feito pelo jogo logo depois do spawn. Invocação (SetupSummon): sem XP e sem loot.
     /// Descartável (SetupDisposable): sem XP. Sem isto o convidado ganharia loot de invocações.
+    /// Xp (SetExperienceMultiplier): multiplicador das ondas de sobrevivência.
+    /// Tesouro (SetInstanceTreasureClassOverride): tesouro próprio da onda ou do chefe da sobrevivência (o santuário de
+    /// Miracles abre a sobrevivência com tesouro vazio) ou vazio no único de Nightmare. Sem isto o convidado sorteava o
+    /// loot comum do andar.
     /// </summary>
     internal sealed class InimigoAjuste
     {
         public const byte Invocacao = 1;
         public const byte Descartavel = 2;
+        public const byte Xp = 4;
+        public const byte Tesouro = 8;
 
         public ushort Id;
         public byte Ajuste;
+        public float MultiplicadorXp = 1f; // vale só com a marca Xp
+        public int TesouroHash;            // vale só com a marca Tesouro
 
-        public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoInimigoAjuste, w => { w.Write(Id); w.Write(Ajuste); });
-        public static InimigoAjuste Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoInimigoAjuste, r => new InimigoAjuste { Id = r.ReadUInt16(), Ajuste = r.ReadByte() });
+        /// <summary>Junta este ajuste no spawn (pendente no convidado, ou o guardado no host para quem chega depois).</summary>
+        public void JuntarEm(InimigoSpawn s)
+        {
+            s.Ajustes |= Ajuste;
+            if ((Ajuste & Xp) != 0) s.MultiplicadorXp = MultiplicadorXp;
+            if ((Ajuste & Tesouro) != 0) s.TesouroHash = TesouroHash;
+        }
+
+        public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoInimigoAjuste, w => { w.Write(Id); w.Write(Ajuste); w.Write(MultiplicadorXp); w.Write(TesouroHash); });
+        public static InimigoAjuste Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoInimigoAjuste, r =>
+            new InimigoAjuste { Id = r.ReadUInt16(), Ajuste = r.ReadByte(), MultiplicadorXp = r.ReadSingle(), TesouroHash = r.ReadInt32() });
     }
 
     /// <summary>Morte decidida pelo host. SemDrop = o host matou sem drops (limpeza dos opcionais).</summary>

@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.10.0-e0763a?style=for-the-badge&labelColor=1c0f0b">
+  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.10.1-e0763a?style=for-the-badge&labelColor=1c0f0b">
   <img alt="Status" src="https://img.shields.io/badge/status-alpha%20jog%C3%A1vel-8a2418?style=for-the-badge&labelColor=1c0f0b">
   <img alt="Hell Clock" src="https://img.shields.io/badge/Hell%20Clock-2.1.1.1-f2b04a?style=for-the-badge&labelColor=1c0f0b">
   <img alt="Jogadores" src="https://img.shields.io/badge/jogadores-2%20a%204-5fe08a?style=for-the-badge&labelColor=1c0f0b">
@@ -102,6 +102,8 @@ arquivos ou log. Detalhes, guarda e como apagar os seus resumos em
 - Mesmo andar, mesmo mapa, mesmo ponto de spawn.
 - O **Hell Clock é um só** — tempo ganho por qualquer um vai para ele.
 - Quem entra no meio da run cai no andar do host.
+- **Barreiras de sangue** (chefe, sobrevivência, santuário amaldiçoado) fecham para todos, e quem está longe é levado
+  para perto do host.
 
 </td>
 <td width="50%" valign="top">
@@ -112,11 +114,15 @@ arquivos ou log. Detalhes, guarda e como apagar os seus resumos em
 - **Um vê as skills do outro**: tiros, projéteis, áreas, auras, orbes, facas.
 - **Números de dano dos aliados** com cor própria por jogador.
 - Inimigos atacam quem estiver mais perto — host ou convidado.
-- Baús, vasos/caixas, **santuários** e **totens** iguais para todos.
+- Baús, vasos/caixas, **santuários** e **totens** iguais para todos; o vaso que um quebra quebra também no outro PC.
 - **Chefes** com barra de vida e dano também para o convidado.
+- Passos e sons dos inimigos acompanhando o movimento também no convidado.
+- Ondas de sobrevivência e inimigos de temporada com o mesmo XP e a mesma tabela de loot nos dois PCs.
 
 ### 🎒 Progressão individual
 - Loot, ouro, XP, relíquias e Bênçãos: **cada um no próprio save**.
+- Em grupo, XP, ouro, Soulstones e moedas de criação ficam perto do solo por andar; o **equipamento não tem
+  redução**: é o prêmio de jogar junto.
 - O mod **nunca escreve no save de outro jogador**.
 - Backup automático do save a cada vez que o jogo abre.
 
@@ -173,8 +179,11 @@ entra mais gente, então o balanceamento é uma **trilha permanente**: toda vers
 | Dano dos inimigos | ×1,1 | ×1,2 | ×1,3 |
 | Quantidade de inimigos | ×1,2 | ×1,4 | ×1,6 |
 | Tempo ganho no Hell Clock | ×0,55 | ×0,40 | ×0,32 |
+| XP, ouro, Soulstones e moedas de cada drop | ×0,83 | ×0,71 | ×0,63 |
+| Equipamento | sem redução | sem redução | sem redução |
 
-<sub>Valores iniciais, a calibrar com as métricas.</sub>
+<sub>Valores iniciais, a calibrar com as métricas. Como há mais inimigos por andar, o XP e o ouro de cada jogador por
+andar ficam perto do solo (0,83 × 1,2 ≈ 1,0). O equipamento passa do solo de propósito.</sub>
 
 ## 📦 Instalação
 
@@ -291,7 +300,9 @@ flowchart LR
 - **Inimigos:** o host numera cada inimigo e manda definição, tipo e afixos já sorteados; o convidado cria a réplica
   pelo próprio `EnemyManager`, sem IA. Golpes do convidado viram relatos ao host; a morte vem do host e dispara o
   loot local de cada um. Quando um inimigo usa uma skill, a réplica repete a skill no convidado — se o alvo é ele,
-  o dano é calculado no jogo dele, com as defesas dele.
+  o dano é calculado no jogo dele, com as defesas dele. Os ajustes que o jogo faz logo depois do spawn (invocação sem
+  loot, multiplicador de XP das ondas de sobrevivência, tesouro próprio da sobrevivência e das temporadas) vão junto
+  para a réplica.
 - **Skills:** todo efeito nasce em `GameplayFx.CreateFx` a partir de um prefab do Addressables, com o mesmo GUID nos
   dois jogos. Quem recebe instancia uma cópia só visual (sem scripts, colisores ou som) presa ao avatar, ao inimigo
   ou solta no mundo, com posição e partes internas transmitidas.

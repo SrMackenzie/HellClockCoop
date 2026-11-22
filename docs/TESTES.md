@@ -386,6 +386,24 @@ Golpe, ataque e morte não dependem disso. Se ainda faltar som depois desta vers
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `indisponível (som de movimento da
   réplica)`) e a lista do que falta de som.
 
+## 0.10.1 — Sobrevivência e temporadas iguais no convidado
+
+Achado no IL: a réplica do inimigo no convidado não levava o multiplicador de XP das ondas de sobrevivência
+(`SetExperienceMultiplier`) nem o tesouro próprio (`SetInstanceTreasureClassOverride`: o da onda e o do chefe da
+sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `MiraclesSeasonInstance.PlaySanctumFlow` a
+`StartSurvival`, e do único de Nightmare). Agora vão no `InimigoAjuste`
+(protocolo 13). Equipamento sem redução em grupo, por decisão do autor.
+
+- [ ] **Santuário amaldiçoado em dupla:** o XP de cada inimigo da onda é igual nos dois PCs (mesma barra de XP subindo
+  na mesma proporção, com o mesmo nível).
+- [ ] **Andar de sobrevivência em dupla:** o chefe final dá ao convidado o loot da mesma tabela que dá ao host.
+- [ ] **Temporada Miracles (se o host jogar com ela):** os inimigos das ondas do santuário não deixam loot comum no convidado.
+- [ ] **Invocações (controle):** os inimigos invocados continuam sem XP e sem loot nos dois PCs.
+- [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
+- Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
+
+---
+
 ## 0.10.0 — XP, ouro, Soulstones e moedas em grupo
 
 Decisão do autor: cada jogador ganha o valor de cada inimigo × 0,83 / 0,71 / 0,63 (2 / 3 / 4 jogadores), só em run com

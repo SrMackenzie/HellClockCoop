@@ -5,6 +5,7 @@ using HarmonyLib;
 using HellClock.Character;
 using HellClock.Character.Enemy;
 using HellClock.Damage;
+using HellClock.Drop;
 using HellClock.Level;
 using HellClock.Manager;
 using HellClock.Player;
@@ -170,11 +171,22 @@ namespace HellClockCoop.Fase3
             Sessao.EnviarParaConvidados(m.Serializar(), confiavel: true);
         }
 
-        internal static void HostAjustou(EnemyController c, byte ajuste)
+        internal static void HostAjustou(EnemyController c, byte ajuste) => HostAjustou(c, new InimigoAjuste { Ajuste = ajuste });
+
+        /// <summary>Postfix de SetExperienceMultiplier no host (ondas de sobrevivência).</summary>
+        internal static void HostAjustouXp(EnemyController c, float multiplicador) =>
+            HostAjustou(c, new InimigoAjuste { Ajuste = InimigoAjuste.Xp, MultiplicadorXp = multiplicador });
+
+        /// <summary>Postfix de SetInstanceTreasureClassOverride no host (sobrevivência, temporadas).</summary>
+        internal static void HostAjustouTesouro(EnemyController c, TreasureClass tesouro) =>
+            HostAjustou(c, new InimigoAjuste { Ajuste = InimigoAjuste.Tesouro, TesouroHash = tesouro != null ? tesouro.HashID : 0 });
+
+        private static void HostAjustou(EnemyController c, InimigoAjuste aj)
         {
             if (!Host || c == null || !HostPorControle.TryGetValue(c, out InimigoHost h)) return;
-            h.Spawn.Ajustes |= ajuste;
-            if (Sessao.ComAliados) Sessao.EnviarParaConvidados(new InimigoAjuste { Id = h.Id, Ajuste = ajuste }.Serializar(), confiavel: true);
+            aj.Id = h.Id;
+            aj.JuntarEm(h.Spawn);
+            if (Sessao.ComAliados) Sessao.EnviarParaConvidados(aj.Serializar(), confiavel: true);
         }
 
         internal static void HostMorreu(IEnemy inimigo)
@@ -776,7 +788,7 @@ namespace HellClockCoop.Fase3
                 // Eventos de animação ficam ligados: as skills repetidas pela réplica (3c) dependem deles
                 // para acertar. Sem skill ativa, o evento não tem ouvinte e não faz nada.
             }
-            AplicarAjustes(c, s.Ajustes);
+            AplicarAjustes(c, s.Ajustes, s.MultiplicadorXp, s.TesouroHash);
             Replicas[s.Id] = r;
             PorVida[c.LifeController] = r;
             Controles.Add(c);
@@ -784,10 +796,24 @@ namespace HellClockCoop.Fase3
             return true;
         }
 
-        private static void AplicarAjustes(EnemyController c, byte ajustes)
+        private static void AplicarAjustes(EnemyController c, byte ajustes, float multiplicadorXp, int tesouroHash)
         {
             if ((ajustes & InimigoAjuste.Invocacao) != 0) c.SetupSummon();
             else if ((ajustes & InimigoAjuste.Descartavel) != 0) c.SetupDisposable();
+            if ((ajustes & InimigoAjuste.Xp) != 0) c.SetExperienceMultiplier(multiplicadorXp);
+            if ((ajustes & InimigoAjuste.Tesouro) != 0)
+            {
+                TreasureClass tc = Tesouro(tesouroHash);
+                if (tc != null || tesouroHash == 0) c.SetInstanceTreasureClassOverride(tc);
+                else Plugin.Log.LogWarning($"[Inimigos] Tesouro {tesouroHash} do host não existe aqui; a réplica fica com o loot comum.");
+            }
+        }
+
+        private static TreasureClass Tesouro(int hash)
+        {
+            if (hash == 0) return null;
+            try { return global::HellClock.Constants.Collections.TREASURE_CLASS_COLLECTION.Reference.GetElement(hash); }
+            catch { return null; }
         }
 
         private static void Restaurar(Replica r)
@@ -1083,8 +1109,8 @@ namespace HellClockCoop.Fase3
                     case Protocolo.TipoInimigoAjuste:
                         if (!Convidado || de != sessao.Host) return;
                         InimigoAjuste aj = InimigoAjuste.Desserializar(dados);
-                        if (Replicas.TryGetValue(aj.Id, out Replica ra) && ra.C != null) AplicarAjustes(ra.C, aj.Ajuste);
-                        else if (Pendentes.TryGetValue(aj.Id, out InimigoSpawn pa)) pa.Ajustes |= aj.Ajuste;
+                        if (Replicas.TryGetValue(aj.Id, out Replica ra) && ra.C != null) AplicarAjustes(ra.C, aj.Ajuste, aj.MultiplicadorXp, aj.TesouroHash);
+                        else if (Pendentes.TryGetValue(aj.Id, out InimigoSpawn pa)) aj.JuntarEm(pa);
                         break;
                     case Protocolo.TipoGolpes:
                         if (Host && HostEmRun) HostAplicarGolpes(de, Golpes.Desserializar(dados));

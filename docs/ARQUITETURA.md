@@ -419,7 +419,7 @@ definição, tipo, arquétipo de campeão e afixos já sorteados no host. Na ré
 | 33 | InimigosEstado | não confiável, 10 Hz | host → convidados | vários itens por pacote (≤1100 bytes): netId, posição, yaw e vida em 16 bits, nasceu, AnimatorFrame opcional |
 | 34 | Golpes | confiável, 20 Hz | convidado → host | dano somado por inimigo e máscara de tipos, nº de críticos |
 | 35 | AndarLimpo | confiável | host → convidados | andar (o convidado dispara o próprio `OnAllEnemiesCleared`) |
-| 36 | InimigoAjuste | confiável | host → convidados | `SetupSummon`/`SetupDisposable` feitos logo após o spawn (invocações sem XP/loot) |
+| 36 | InimigoAjuste | confiável | host → convidados | `SetupSummon`/`SetupDisposable`, `SetExperienceMultiplier` e `SetInstanceTreasureClassOverride` feitos logo após o spawn (invocações sem XP/loot; XP das ondas de sobrevivência; tesouro próprio da sobrevivência e das temporadas, protocolo 13) |
 
 **Relevância.** O estado só vai para inimigos a até 45 m de algum aliado (no máximo 160 por tick, os mais
 próximos primeiro). Os demais ficam parados na última posição conhecida.
@@ -458,6 +458,9 @@ antes de morrer ou ser descartado, porque o inimigo volta ao pool.
 - `EnemyController.Update` prefix → réplica sem IA.
 - `EnemyController.CheckForSpawn` (privado) prefix → aliados acordam inimigos.
 - `EnemyController.SetupSummon` / `SetupDisposable` postfix → InimigoAjuste.
+- `EnemyController.SetExperienceMultiplier` / `SetInstanceTreasureClassOverride` postfix → InimigoAjuste com o valor
+  (marcas `Xp` = 4 e `Tesouro` = 8; o tesouro vai pelo `HashID` e o convidado acha na `TREASURE_CLASS_COLLECTION`).
+  `InimigoSpawn` guarda os mesmos valores para quem entra no meio da run (0.10.1, protocolo 13).
 - `LifeController.TryHurt` prefix → golpes do convidado.
 - Campos privados lidos/escritos: `EnemyController._spawned`, `EnemyController._spawnOrigin`,
   `EnemyManager._ignoreLevelClear`, `EnemyManager._onAllEnemiesCleared`, `StatBasedValueController._currentValue`.

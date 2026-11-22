@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.10.1 — Sobrevivência e temporadas iguais no convidado 🧪
+_21/11/2026_
+
+- Nas ondas de sobrevivência e nos inimigos das temporadas, o convidado ganhava XP e loot diferentes do host: a réplica do inimigo não levava o multiplicador de XP das ondas nem o tesouro próprio que o jogo dá a eles
+- Agora a réplica recebe os dois. O convidado ganha o XP das ondas como o host e deixa de sortear loot comum onde o jogo não dá nenhum (ondas do santuário de Miracles, que o jogo abre com tesouro vazio; único de Nightmare) ou dá um tesouro próprio (ondas e chefe da sobrevivência)
+- Invocações já saíam sem XP e sem loot nos dois PCs; XP, ouro, Soulstones e moedas dessas fontes já passavam pelos fatores da 0.10.0. O equipamento continua sem redução em grupo, por decisão do autor: é o prêmio do coop
+- Ainda não sincronizado: os prêmios de temporada (portal de Nightmare, fim do santuário de Miracles) só saem no PC do host, e cada um joga com a temporada do próprio save
+- Balanceamento: tira um ganho extra que só o convidado tinha. Protocolo 13: o coop exige a 0.10.1 nos dois PCs
+
 ## 0.10.0 — XP e ouro em grupo 🧪
 _21/11/2026_
 

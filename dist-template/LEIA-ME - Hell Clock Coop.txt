@@ -52,6 +52,9 @@ ESTADO ATUAL (versão de teste, Fase 3)
     o próprio (inimigos, chefes, vasos, baús, bênçãos), mas × 0,83 / 0,71 / 0,63 com 2 / 3 / 4
     jogadores (como há mais inimigos por andar, o ganho por andar fica perto do solo). Só vale em run com aliados; no
     solo nada muda. Valores no mesmo .cfg (XpGanho e OuroGanho), lidos no PC de cada jogador.
+  * NOVO (0.10.1): nas ondas de sobrevivência e nos inimigos das temporadas, o convidado ganha
+    o mesmo XP e sorteia o loot da mesma tabela que o host. O equipamento não tem redução em
+    grupo: é o prêmio de jogar junto. Exige a 0.10.1 nos dois PCs.
   * No fim de cada run, o mod salva um resumo só com números (tempo por andar, inimigos mortos,
     dano causado e recebido, mortes) em BepInEx\HellClockCoop\metricas. Não tem nome da Steam
     nem nada que identifique você diretamente. Mandar esses arquivos ajuda a calibrar o balanceamento.

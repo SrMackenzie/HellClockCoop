@@ -107,6 +107,27 @@ IdaVolta("InimigoSpawn", new (string, object)[] {
     var oa = t.GetMethod("Desserializar").Invoke(null, new object[] { (byte[])t.GetMethod("Serializar").Invoke(o, null) });
     Checar(((int[])t.GetField("Afixos").GetValue(oa)).SequenceEqual(new[] { 5, -6, 70000 }), "InimigoSpawn.Afixos");
 }
+// 0.10.1 (protocolo 13): multiplicador de XP (ondas de sobrevivência) e tesouro próprio vão para a réplica
+IdaVolta("InimigoSpawn", new (string, object)[] { ("Id", (ushort)7), ("Ajustes", (byte)12), ("MultiplicadorXp", 1.75f), ("TesouroHash", -123456) }, 30);
+{
+    var t = T("HellClockCoop.Net.InimigoSpawn");
+    Checar(Equals(t.GetField("MultiplicadorXp").GetValue(Activator.CreateInstance(t)), 1f), "InimigoSpawn.MultiplicadorXp começa em 1");
+}
+IdaVolta("InimigoAjuste", new (string, object)[] { ("Id", (ushort)40000), ("Ajuste", (byte)12), ("MultiplicadorXp", 2.5f), ("TesouroHash", 77) }, 36);
+IdaVolta("InimigoAjuste", new (string, object)[] { ("Id", (ushort)3), ("Ajuste", (byte)1) }, 36);
+{
+    // Ajuste que chega antes da réplica nascer: junta no spawn pendente sem apagar o que já veio
+    var tS2 = T("HellClockCoop.Net.InimigoSpawn"); var tA = T("HellClockCoop.Net.InimigoAjuste");
+    var sp = Activator.CreateInstance(tS2);
+    tS2.GetField("Ajustes").SetValue(sp, (byte)1);
+    var aXp = Activator.CreateInstance(tA); tA.GetField("Ajuste").SetValue(aXp, (byte)4); tA.GetField("MultiplicadorXp").SetValue(aXp, 3f);
+    tA.GetMethod("JuntarEm").Invoke(aXp, new[] { sp });
+    var aTc = Activator.CreateInstance(tA); tA.GetField("Ajuste").SetValue(aTc, (byte)8); tA.GetField("TesouroHash").SetValue(aTc, 99); tA.GetField("MultiplicadorXp").SetValue(aTc, 9f);
+    tA.GetMethod("JuntarEm").Invoke(aTc, new[] { sp });
+    Checar(Equals(tS2.GetField("Ajustes").GetValue(sp), (byte)13), "InimigoAjuste.JuntarEm soma as marcas (1|4|8)");
+    Checar(Equals(tS2.GetField("MultiplicadorXp").GetValue(sp), 3f), "InimigoAjuste.JuntarEm: XP só muda com a marca Xp");
+    Checar(Equals(tS2.GetField("TesouroHash").GetValue(sp), 99), "InimigoAjuste.JuntarEm: tesouro só muda com a marca Tesouro");
+}
 IdaVolta("InimigoMorte", new (string, object)[] { ("Id", (ushort)65000), ("SemDrop", true) }, 31);
 IdaVolta("InimigoSumiu", new (string, object)[] { ("Id", (ushort)9) }, 32);
 IdaVolta("AndarLimpo", new (string, object)[] { ("Andar", 12u) }, 35);
