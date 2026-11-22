@@ -92,6 +92,36 @@ namespace HellClockCoop.Net
         public static PedidoAvanco Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoPedidoAvanco, r => new PedidoAvanco { IndiceAndar = r.ReadUInt32(), Andares = r.ReadUInt32() });
     }
 
+    /// <summary>
+    /// Todos → todos no mesmo andar (0.16.0), a 5 Hz e no canal não confiável: quem está ao lado de um aliado caído
+    /// conta o progresso da reanimação. Alvo é o SteamID do caído; Estado: 0 enchendo, 1 interrompido (golpe),
+    /// 2 ao lado, mas se movendo ou usando skill ("fique parado"). Fracao de 0 a 1.
+    /// </summary>
+    internal sealed class Reanimando
+    {
+        public ulong Alvo;
+        public uint IndiceAndar;
+        public byte Estado;
+        public float Fracao;
+
+        public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoReanimando, w => { w.Write(Alvo); w.Write(IndiceAndar); w.Write(Estado); w.Write(Fracao); });
+        public static Reanimando Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoReanimando, r => new Reanimando { Alvo = r.ReadUInt64(), IndiceAndar = r.ReadUInt32(), Estado = r.ReadByte(), Fracao = r.ReadSingle() });
+    }
+
+    /// <summary>
+    /// Todos → todos no mesmo andar (0.16.0): a reanimação terminou; o caído (Alvo) levanta na máquina dele. Ordem é a
+    /// posição desta reanimação no andar (1 = primeira): cada PC fica com o maior valor visto, sem pular mais de um.
+    /// </summary>
+    internal sealed class Reanimou
+    {
+        public ulong Alvo;
+        public uint IndiceAndar;
+        public byte Ordem;
+
+        public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoReanimou, w => { w.Write(Alvo); w.Write(IndiceAndar); w.Write(Ordem); });
+        public static Reanimou Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoReanimou, r => new Reanimou { Alvo = r.ReadUInt64(), IndiceAndar = r.ReadUInt32(), Ordem = r.ReadByte() });
+    }
+
     internal static class Mensagem
     {
         public static byte[] Escrever(byte tipo, Action<BinaryWriter> corpo)

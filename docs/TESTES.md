@@ -402,6 +402,27 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.16.0 — Reanimação do aliado caído
+
+Só em dupla: o fantasma do modo eco não reanima. Exige a 0.16.0 nos dois PCs (protocolo 17). Dá para testar junto com
+a 0.15.0 (seção abaixo), que ainda não foi testada no jogo. Balanceamento (prioridade 1): anotar se reanimar fica fácil
+demais no meio da luta ou se 30% de vida é pouco.
+- [ ] **Reanimar:** um cai; o outro fica parado ao lado (até 2 m). Esperado: sob a barra do caído, uma barra verde
+  enche em 3 s com o rótulo "reanimando"; o caído vê na faixa "<nome> está te reanimando" e a barra. No fim, o caído
+  levanta com 30% da vida e todos veem "<nome> te levantou" / "Você levantou <nome>" em âmbar no topo. Log de quem
+  reanima: `[Reanimação] Você levantou <nome> (3 s; reanimação 1 do andar N).`; do caído: `[Reanimação] <nome> te
+  levantou: você volta com 30% da vida.`
+- [ ] **Segunda do andar:** no mesmo andar, caia de novo e reanime. Esperado: leva 6 s (log `Você levantou <nome> (6 s;
+  reanimação 2 do andar N)`). No andar seguinte, volta a 3 s.
+- [ ] **Golpe:** reanimando, leve um golpe. Esperado: a barra fica vermelha, o rótulo "interrompido" e o progresso
+  recua; sem novo golpe por 1 s, volta a encher em verde.
+- [ ] **Mover ou usar skill:** reanimando, ande ou use uma skill. Esperado: a barra zera, o rótulo "fique parado" e o
+  caído vê "<nome> está ao seu lado". Beber poção não zera.
+- [ ] **Queda repetida:** o reanimado cai de novo no mesmo andar. Esperado: no host, o Hell Clock perde mais 10 s.
+- [ ] **Métricas:** no fim da run, o `metricas\run-*.json` de cada PC traz `quedas`, `reanimacoes` e `reanimado` no
+  andar em que isso aconteceu.
+- Se falhar, mandar: o `LogOutput.log` dos dois (linhas `[Reanimação]` e `[Caído]`) e uma captura da tela.
+
 ## 0.15.0 — Jogador caído
 
 Solo com o modo eco (F8) cobre a queda, a tela do caído e o fim da run; a volta no próximo andar, o aviso de queda do

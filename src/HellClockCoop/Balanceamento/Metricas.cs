@@ -36,6 +36,7 @@ namespace HellClockCoop.Balanceamento
             public int Mortos;
             public double DanoCausado, DanoRecebido;
             public int Mortes;
+            public int Quedas, Reanimacoes, Reanimado; // 0.16.0: quedas suas, aliados que você levantou e vezes que te levantaram
             public float RelogioEntrada, RelogioSaida;
         }
 
@@ -131,6 +132,15 @@ namespace HellClockCoop.Balanceamento
             }
         }
 
+        /// <summary>Você caiu no coop (JogadorCaido.Cair, 0.16.0). A morte final continua em "mortes".</summary>
+        internal static void Caiu() { if (_ativa && _atual != null) _atual.Quedas++; }
+
+        /// <summary>Você levantou um aliado caído (Reanimacao, 0.16.0).</summary>
+        internal static void Reanimei() { if (_ativa && _atual != null) _atual.Reanimacoes++; }
+
+        /// <summary>Um aliado te levantou (Reanimacao, 0.16.0).</summary>
+        internal static void FuiReanimado() { if (_ativa && _atual != null) _atual.Reanimado++; }
+
         /// <summary>Postfix de DungeonProgressManager.FinishDungeon: guarda o motivo (vale o último antes de voltar ao hub).</summary>
         internal static void Motivo(EGameOverSource fonte) => _resultado = fonte.ToString();
 
@@ -218,6 +228,9 @@ namespace HellClockCoop.Balanceamento
                     { "danoCausado", Math.Round(a.DanoCausado) },
                     { "danoRecebido", Math.Round(a.DanoRecebido) },
                     { "mortes", a.Mortes },
+                    { "quedas", a.Quedas },
+                    { "reanimacoes", a.Reanimacoes },
+                    { "reanimado", a.Reanimado },
                     { "relogioEntrada", Math.Round(a.RelogioEntrada, 1) },
                     { "relogioSaida", Math.Round(a.RelogioSaida, 1) },
                 });

@@ -27,6 +27,7 @@ namespace HellClockCoop.Fase2
     ///   manda FimRun). O convidado caído espera o host; sem sessão, morre como no solo.
     /// - Cada queda tira SegundosPerdidosPorQueda do Hell Clock do host (o host aplica as dele e as dos convidados).
     /// - Modo eco (F8): o fantasma conta como aliado de pé (só teste); desligá-lo com você caído encerra a run.
+    /// - Reanimação (0.16.0, Fase2/Reanimacao): um aliado parado ao seu lado te levanta antes do próximo andar.
     /// Decisões do autor em 22/11/2026: volta no próximo andar com 50%, −10 s por queda, a escala continua contando o
     /// grupo todo, e com o host caído o portal do convidado vira pedido ao host (PedidoAvanco).
     /// </summary>
@@ -91,11 +92,29 @@ namespace HellClockCoop.Fase2
             return false;
         }
 
-        private static bool NaRun(Par p) =>
+        internal static bool NaRun(Par p) =>
             p.Compativel && p.DlcOk && p.UltimoPacote >= 0f && Time.unscaledTime - p.UltimoPacote < SemSinalSegundos &&
             (p.MesmoAndar || p.CenaRemota == -1); // -1: carregando o andar
 
         private static bool DePe(Par p) => NaRun(p) && !p.Morto;
+
+        /// <summary>Aliado caído que joga a run (para a reanimação, 0.16.0).</summary>
+        internal static bool CaidoNaRun(Par p) => NaRun(p) && p.Morto;
+
+        /// <summary>
+        /// O aliado foi reanimado (Reanimou, 0.16.0): a queda dele neste andar deixa de contar como já vista, para a
+        /// próxima mostrar o aviso de novo e, no host, tirar o tempo de novo.
+        /// </summary>
+        internal static void EsquecerQueda(ulong steamId) => QuedasNoAndar.Remove(steamId);
+
+        /// <summary>Um aliado te reanimou (Reanimacao, já validado): levanta com VidaAoReanimar.</summary>
+        internal static void Reanimado()
+        {
+            PlayerController local = CoopRuntime.JogadorLocal();
+            if (!Caido || local == null) return;
+            Balanceamento.Metricas.FuiReanimado();
+            Levantar(local, Reanimacao.FracaoAoReanimar, animar: true);
+        }
 
         /// <summary>Quantos estão de pé e quantos jogam a run (você, os aliados na run e o eco).</summary>
         internal static void Contar(out int dePe, out int total)
@@ -113,7 +132,7 @@ namespace HellClockCoop.Fase2
         }
 
         /// <summary>Fração da vida na volta, no intervalo aceito.</summary>
-        internal static float FracaoAoVoltar => Mathf.Clamp(VidaAoVoltar.Value, 0.05f, 1f);
+        internal static float FracaoAoVoltar => Mathf.Clamp(Validacao.Finito(VidaAoVoltar.Value) ? VidaAoVoltar.Value : 0.5f, 0.05f, 1f);
 
         // ---------------- Patches ----------------
 
@@ -257,7 +276,8 @@ namespace HellClockCoop.Fase2
                 Plugin.Log.LogWarning($"[Caído] Parte da queda falhou (o personagem pode não deitar): {e}");
             }
             float perdidos = RunCompartilhada.Convidado ? 0f : RunCompartilhada.PerderTempo(SegundosPorQueda.Value);
-            Plugin.Log.LogInfo($"[Caído] Você caiu{(perdidos > 0f ? $" (−{perdidos:0} s no Hell Clock)" : "")}; volta no próximo andar.");
+            Plugin.Log.LogInfo($"[Caído] Você caiu{(perdidos > 0f ? $" (−{perdidos:0} s no Hell Clock)" : "")}; volta no próximo andar ou se um aliado te reanimar.");
+            Balanceamento.Metricas.Caiu();
             Interface.CaidoNaTela.AoCair();
         }
 

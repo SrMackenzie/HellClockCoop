@@ -4,6 +4,16 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.16.0 — Reanimação do aliado caído 🧪
+_22/11/2026_
+
+- Fique parado ao lado de um aliado caído, a até 2 m e sem usar skill, para levantá-lo: não precisa de tecla. Ele volta com 30% da vida
+- A primeira reanimação de cada andar leva 3 s, a segunda 6 s, a terceira 9 s, e assim por diante: o grupo não vira imortal
+- Golpe recebido durante a reanimação congela o progresso por 1 s, e ele vai caindo enquanto você apanha. Andar, usar skill ou se afastar zera o progresso
+- Visual: uma barra verde enche sob a barra de vida do aliado, com o rótulo "reanimando", "interrompido" ou "fique parado". Quem está caído vê na faixa de baixo "Fulano está te reanimando" e a barra. No fim, todos veem "Fulano levantou Beltrano" no topo da tela
+- Balanceamento: a queda continua tirando 10 s do Hell Clock, também quando o mesmo jogador cai de novo depois de reanimado. No .cfg, seção [Balanceamento]: SegundosParaReanimar e VidaAoReanimar
+- Resumo da run (métricas com aceite): cada andar passa a contar as suas quedas, os aliados que você levantou e as vezes que te levantaram. Protocolo 17: exige a 0.16.0 em todos os PCs
+
 ## 0.15.0 — Jogador caído: a run só acaba quando todos caem 🧪
 _22/11/2026_
 

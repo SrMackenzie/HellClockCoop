@@ -170,7 +170,7 @@ namespace HellClockCoop.Balanceamento
                 : _salvos > 1 ? $" Vão junto os {_salvos} resumos que já estão salvos aqui." : "";
             return "O mod guarda neste computador um resumo de cada run, solo ou coop, para calibrar a dificuldade do coop. " +
                    "Posso enviar esses resumos ao autor do mod?" + salvos + "\n\n" +
-                   "<b>Vai:</b> só dados da run (tempo e inimigos por andar, dano causado e recebido, mortes, nível do personagem, " +
+                   "<b>Vai:</b> só dados da run (tempo e inimigos por andar, dano causado e recebido, mortes, quedas e reanimações, nível do personagem, " +
                    "quantos jogadores e se você era solo, host ou convidado, dificuldade, dungeon, resultado, ajustes de " +
                    "balanceamento, versões do jogo e do mod, data e hora) e o id aleatório desta instalação " +
                    "(BepInEx/HellClockCoop/instalacao.txt), que serve para pedir a exclusão dos seus resumos por issue no GitHub do projeto.\n\n" +

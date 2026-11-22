@@ -59,6 +59,7 @@ namespace HellClockCoop
             Fase3.SonsAliados.Configurar(config);
             Balanceamento.Escalonamento.Configurar(config);
             Fase2.JogadorCaido.Configurar(config);
+            Fase2.Reanimacao.Configurar(config);
             Balanceamento.Envio.Configurar(config);
             Interface.Novidades.Configurar(config);
             Interface.MenuCoop.Configurar(config);
@@ -148,6 +149,7 @@ namespace HellClockCoop
                 // O fantasma conta como aliado de pé (teste). Só a chave: o fantasma é recriado na troca de cena.
                 Fase2.JogadorCaido.EcoAtivo = _ecoAtivo;
                 Fase2.JogadorCaido.Atualizar(jogador);
+                Fase2.Reanimacao.Atualizar(jogador); // 0.16.0: reanimação do aliado caído
                 t = Desempenho.Somar(Desempenho.Parte.Run, t);
                 Fase3.InimigosCompartilhados.Atualizar();
                 t = Desempenho.Somar(Desempenho.Parte.Inimigos, t);

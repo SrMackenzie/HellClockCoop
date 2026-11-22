@@ -81,7 +81,7 @@ e 4 jogadores, em cada dificuldade, exige runs de muita gente, e quem joga com o
    com o número de jogadores, a dificuldade e o andar.
 
 O envio é opcional e pode ser desligado a qualquer momento. Vão só dados da run (tempo e inimigos por andar, dano,
-mortes, nível, dificuldade, resultado, versões, data e hora) e um id aleatório da instalação: nada de nome, SteamID,
+mortes, quedas e reanimações, nível, dificuldade, resultado, versões, data e hora) e um id aleatório da instalação: nada de nome, SteamID,
 arquivos ou log. Detalhes, guarda e como apagar os seus resumos em
 [Balanceamento](#%EF%B8%8F-balanceamento--prioridade-1).
 
@@ -159,7 +159,7 @@ entra mais gente, então o balanceamento é uma **trilha permanente**: toda vers
 - **Como:** o mod usa as mesmas alavancas que o jogo usa na dificuldade e na Ascensão: vida e dano dos inimigos,
   quantidade de inimigos por andar e tempo ganho no Hell Clock, com valores por número de jogadores
   (configuráveis, seção `[Balanceamento]` do `.cfg`).
-- **Com dados:** cada run gera um resumo sem identificação direta (tempo por andar, inimigos mortos, dano causado e recebido, mortes)
+- **Com dados:** cada run gera um resumo sem identificação direta (tempo por andar, inimigos mortos, dano causado e recebido, mortes, quedas e reanimações)
   em `BepInEx/HellClockCoop/metricas`.
 - **Envio opcional:** só com aceite. No primeiro início, uma janela no menu pergunta se pode enviar os resumos das runs
   (solo e coop; o solo é a base de comparação). A resposta fica em `EnviarResumoAnonimo` (seção `[Metricas]`) e a
@@ -253,6 +253,8 @@ mover o personagem. O jogo continua rodando (no coop não pausa), então abra o 
 - Portais, início e abandono de run são do host. Para sair sozinho: **Sair do coop** no menu do coop (<kbd>F7</kbd>) e depois o menu do jogo.
 - Quem morre (host ou convidado) fica **caído** e volta no próximo andar com metade da vida; a run só acaba quando
   todos caem. Cada queda tira 10 s do Hell Clock. Com o host caído, o portal do convidado leva o grupo (0.15.0).
+- Para **reanimar**, fique parado ao lado do aliado caído: ele levanta com 30% da vida em 3 s (6 s na segunda do
+  andar, 9 s na terceira). Golpe recebido atrasa, andar ou usar skill zera (0.16.0).
 - Com alguém no coop, abrir inventário, mapa ou menu **não pausa** o jogo.
 - Todos precisam ter (ou não ter) a DLC **Cursed War**. A Deluxe Edition (cosmética) não importa.
 - Ajustes em `BepInEx\config\br.srmackenzie.hellclockcoop.cfg` (nomes, vida, seta, dano, sons e volume dos aliados também pela aba Ajustes do menu do coop): teclas, nomes sobre a cabeça,

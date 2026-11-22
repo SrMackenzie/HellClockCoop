@@ -1026,6 +1026,58 @@ modo eco conta como aliado de pé (só teste).
   morte do host encerrava a run de todos, o grupo dura mais; o custo de tempo e a escala cheia mantêm o coop um pouco
   mais difícil que o solo. A calibragem (entrega 4) usa os dados da dupla.
 
+### 12.5 Reanimação do aliado caído (versão 0.16.0, protocolo 17)
+
+Entrega 3 de 4 da etapa "aliados na tela e reanimação" (a próxima: calibragem com os dados da dupla). Decisões do autor
+em 22/11/2026: reanimação automática, a até 2 m e parado; 3 s na primeira do andar, 6 s na segunda, 9 s na terceira;
+o reanimado volta com 30% da vida; golpe em quem reanima congela e faz o progresso cair; nenhum custo além dos −10 s da
+queda; visual da opção B ("barra do aliado").
+- **Quem conta (`Fase2/Reanimacao`):** quem reanima, porque só ele sabe se andou, usou skill ou apanhou. A cada quadro
+  (depois do `JogadorCaido.Atualizar`), com você de pé na run, o aliado caído mais perto (no plano do chão, pela posição
+  do avatar dele) a até `RaioMetros` (2 m) vira o alvo. Parado (`MovementController.IsMoving` falso) e sem skill
+  (`PlayerSkillsController.OnSuccessExecuteSkill`, menos a poção, `UsePotionSkill`), o progresso sobe 1 s por segundo
+  (`Time.unscaledDeltaTime`). Golpe (`LifeController.OnHurt` com `LifeDamageValue > 0`) congela o avanço por 1 s;
+  congelado, o progresso cai 1 s por segundo. Andar, usar skill, sair do raio ou trocar de alvo zera. Sem patch Harmony
+  novo: só eventos do jogo, registrados uma vez por personagem.
+- **Duração:** `SegundosParaReanimar` (1 a 15, padrão 3) vezes a ordem da reanimação no andar. Cada PC conta as
+  reanimações do andar (as suas e os `Reanimou` que ouviu); a conta zera na troca de andar e no fim da run.
+- **Rede (protocolo 17):** `Reanimando` (tipo 26, canal não confiável, a 5 Hz, todos → mesmo andar: alvo, andar, estado
+  0 enchendo / 1 interrompido / 2 "fique parado" e fração) e `Reanimou` (tipo 27, confiável, todos → mesmo andar: alvo e
+  andar e ordem). O `Reanimando` entra pelo desvio do canal de snapshots da `SessaoCoop`. Cada um é dono da própria vida: o caído levanta na máquina dele (`JogadorCaido.Reanimado`, mesma receita da
+  volta: `ForceRegeneratePercentage(VidaAoReanimar)`, gatilho `revive`, ações liberadas). Depois de terminar, o mesmo
+  alvo não recomeça por 3 s (o snapshot dele ainda pode dizer caído). Filtros na tabela da §14.
+- **Tempo:** com um `Reanimou` válido de outro par (alvo na run, caído ou já de pé, porque o snapshot "de pé" pode
+  chegar antes), todos esquecem a queda já vista (`JogadorCaido.EsquecerQueda`): a próxima mostra "Fulano caiu" de
+  novo e o host volta a cobrar os 10 s. O alvo nunca é quem manda: um caído não reabre a própria cobrança alternando `Morto` no
+  snapshot. A queda do próprio host já cobrava sempre.
+- **Conta do andar entre os PCs:** o `Reanimou` leva a `Ordem` da reanimação (1 = primeira do andar); cada PC fica
+  com o maior valor visto, subindo no máximo um por mensagem (`Validacao.OrdemReanimacao`): repetida não conta de
+  novo, perdida é recuperada na seguinte e uma `Ordem` forjada alta sobe só um. Uma série de `Reanimou` forjados
+  ainda alonga a duração para todos (+1 por mensagem); num coop entre amigos esse risco fica aceito. Duas reanimações
+  terminadas no mesmo instante levam a mesma `Ordem` e contam uma vez.
+- **Snapshot fora de ordem:** a `SessaoCoop` guarda a `Sequencia` do snapshot que decidiu `Morto`; um pacote igual ou
+  até 64 atrás não muda `Morto` (`Validacao.SequenciaAtrasada`), para um "caído" velho não cobrar a queda de novo
+  depois da reanimação. Diferença maior conta como contagem recomeçada no outro PC.
+- **`.cfg` inválido:** `NaN` ou infinito em `SegundosParaReanimar`, `VidaAoReanimar` ou `VidaAoVoltarDoChao` vale o
+  padrão.
+- **Visual (opção B, `AliadosNaTela` e `CaidoNaTela`):**
+  - Barra do aliado caído: barra fina 90x7 logo abaixo dela (trilho preto 62%, preenchimento verde #7FB77E, vermelho
+    #B3261E quando interrompido); o rótulo "caído" vira "reanimando" (verde), "interrompido" (vermelho) ou "fique
+    parado" (branco 60%). Quem reanima vê o próprio progresso; os outros, o último `Reanimando` (some 0,6 s depois).
+  - Faixa de quem caiu: a linha da volta vira "Fulano está te reanimando" ("Fulano está ao seu lado" se ele se mexe)
+    e uma barra 360x12 (trilho âmbar 22%) enche entre a linha e os pontos.
+  - Fim: aviso no topo, ao centro, em âmbar: "Fulano te levantou", "Você levantou Fulano" ou "Fulano levantou
+    Beltrano". O preenchimento é pela âncora (o `Image.Filled` sem sprite não corta). Reserva no `OnGUI` igual.
+- **Modo eco:** o fantasma não reanima nem é reanimado (ele repete você). O teste é em dupla.
+- **`.cfg`, seção `[Balanceamento]`:** `SegundosParaReanimar` (vale o de quem reanima) e `VidaAoReanimar` (0,05 a 1,
+  padrão 0,3; vale o de quem levanta).
+- **Métricas:** cada andar do resumo ganhou `quedas` (as suas), `reanimacoes` (aliados que você levantou) e `reanimado`
+  (vezes que te levantaram). As regras do Firestore só conferem os campos do topo, então o `formato` continua 1 e as
+  regras não mudam. `mortes` continua contando o `OnDie` do jogo (queda e morte final).
+- **Balanceamento:** reanimar tira quem levanta da luta por 3 s ou mais, e a duração cresce no andar; o reanimado
+  volta mais fraco (30%) que na volta do próximo andar (50%). A queda segue custando 10 s, também na repetida. O grupo
+  dura mais que na 0.15.0; a calibragem (entrega 4) confere com os dados.
+
 ## 13. Atualizador automático (versão 0.8.0)
 
 **Onde roda.** `BepInEx\patchers\HellClockCoop.Atualizador.dll`, um preloader patcher do BepInEx 5 sem DLL alvo: só o
@@ -1113,6 +1165,8 @@ filtros puros ficam em `Net/Validacao.cs` e têm casos no `tools/codectest`.
 | `PlanoAndar` | convidado, só do host | `IndiceAndar < DungeonConfig.GetByID(DungeonHash).MaxLevelIndex` (`MaxLevelIndex` é a quantidade de andares: o jogo usa `IsLastLevel = índice + 1 >= MaxLevelIndex`); dungeon desconhecida é descartada; andar especial (sem dungeon): até 200. Aviso no log |
 | `FimRun` | convidado, só do host | `Motivo` dentro de `EGameOverSource` (0..4). Aviso no log |
 | `PedidoAvanco` (0.15.0) | host, só caído, com a run em andamento e sem troca de andar, de par compatível, com a mesma DLC e no mesmo andar | `IndiceAndar` igual ao andar atual do host (pedido repetido ou atrasado é recusado), `Andares` ≥ 1 (o host limita a 3) e nunca no último andar, onde o avanço viraria `FinishDungeon(Completed)` no save do host (`Validacao.PedidoAvancoValido`); um avanço aceito por andar (o Endless Nightmare gera o bloco seguinte de forma assíncrona); o host chama `AdvanceLevel(n, false)` e o jogo ainda limita pelo máximo dele. O convidado manda no máximo um a cada 2 s. Log de recusa no máximo a cada 5 s |
+| `Reanimando` (0.16.0) | todos, de par compatível, com a mesma DLC, no mesmo andar e de pé, com a run em andamento | andar igual ao seu, estado 0 a 2 e fração finita de 0 a 1 (`Validacao.ReanimandoValido`); o alvo é você caído ou um aliado caído na run (outro alvo é descartado, para não ocupar memória). Só aparece na tela; não muda nada do jogo |
+| `Reanimou` (0.16.0) | todos, com os mesmos filtros do `Reanimando` | andar igual ao seu e alvo diferente de quem mandou (ninguém se levanta sozinho). A conta do andar fica com o maior `Ordem` visto, subindo no máximo um (`Validacao.OrdemReanimacao`). Com o alvo na run (caído ou já de pé), todos esquecem a queda já vista dele (a próxima avisa de novo e o host volta a cobrar). Para o caído: ele precisa estar caído e quem mandou a até 2 m + 2 m de folga (atraso do snapshot), pela posição do avatar (`Validacao.ReanimouValido`); sem avatar, recusa. Para os outros: o alvo precisa jogar a run. Efeito: o caído levanta com `VidaAoReanimar` e todos contam a reanimação do andar |
 | `TimerBonus` | host | finito, `> 0` e `<= 120 s`; desde a 0.8.5, também no máximo 120 s e 120 bônus somados por convidado (chave: SteamID, para sair e voltar ao lobby não zerar) numa janela fixa de 60 s (`Validacao.AceitarBonusNaJanela`; o recusado não conta; na virada da janela até o dobro passa em sequência, a média fica no teto). Um aviso de recusa por janela |
 | `TimerSync` | convidado, só do host | os dois campos finitos e `>= 0` (4 Hz: descarte sem log) |
 | `InimigoSpawn`, `InimigosEstado`, `InimigoMorte`, `InimigoSumiu`, `AndarLimpo`, `InimigoAjuste` | convidado, só do host | — |

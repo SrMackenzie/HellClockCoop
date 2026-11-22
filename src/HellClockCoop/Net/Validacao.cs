@@ -38,6 +38,37 @@ namespace HellClockCoop.Net
         public static bool PedidoAvancoValido(uint andarDoPedido, uint andares, uint andarDoHost, bool hostNoUltimoAndar) =>
             !hostNoUltimoAndar && andarDoPedido == andarDoHost && andares >= 1;
 
+        /// <summary>Reanimando (0.16.0): do andar em que você está, estado 0 a 2 e fração finita de 0 a 1.</summary>
+        public static bool ReanimandoValido(uint andarDaMensagem, byte estado, float fracao, uint andarLocal) =>
+            andarDaMensagem == andarLocal && estado <= 2 && Finito(fracao) && fracao >= 0f && fracao <= 1f;
+
+        /// <summary>
+        /// Reanimou (0.16.0): o caído só levanta se a mensagem é do andar dele e quem reanimou está perto (pela posição
+        /// do último snapshot, com folga para o atraso da rede): mensagem forjada de longe não levanta ninguém.
+        /// </summary>
+        public static bool ReanimouValido(uint andarDaMensagem, uint andarLocal, float distancia, float raio) =>
+            andarDaMensagem == andarLocal && Finito(distancia) && distancia >= 0f && distancia <= raio + FolgaReanimarMetros;
+
+        /// <summary>
+        /// Reanimou (0.16.0): nova conta das reanimações do andar a partir da Ordem recebida. Fica o maior valor, sem
+        /// pular mais de um de uma vez (Ordem forjada alta não infla a duração das próximas); 0 não muda nada.
+        /// </summary>
+        public static int OrdemReanimacao(byte ordem, int contaAtual) => System.Math.Max(contaAtual, System.Math.Min(ordem, contaAtual + 1));
+
+        /// <summary>
+        /// Snapshot (0.16.0): a sequência é igual ou até 64 atrás da última que decidiu Morto (-1 = nenhuma ainda). Mais
+        /// que isso conta como contagem recomeçada no outro PC, e o pacote vale.
+        /// </summary>
+        public static bool SequenciaAtrasada(ushort sequencia, int ultima)
+        {
+            if (ultima < 0) return false;
+            int dif = (short)(sequencia - (ushort)ultima);
+            return dif <= 0 && dif >= -64;
+        }
+
+        /// <summary>Folga, em metros, sobre o raio de reanimação ao conferir a distância de quem reanimou (atraso do snapshot).</summary>
+        public const float FolgaReanimarMetros = 2f;
+
         public static bool BonusTempoValido(float segundos) => Finito(segundos) && segundos > 0f && segundos <= BonusTempoMaximo;
 
         /// <summary>Janela do teto acumulado de bônus de tempo, por convidado.</summary>

@@ -11,7 +11,7 @@ namespace HellClockCoop.Net
     internal static class Protocolo
     {
         /// <summary>Muda sempre que o formato de qualquer mensagem mudar. Pares com versões diferentes não conversam.</summary>
-        public const int Versao = 16; // 16: PedidoAvanco (convidado leva o grupo com o host caído, 0.15.0)
+        public const int Versao = 17; // 17: Reanimando e Reanimou (reanimação do aliado caído, 0.16.0)
 
         public const int CanalConfiavel = 0;
         public const int CanalSnapshots = 1;
@@ -28,6 +28,8 @@ namespace HellClockCoop.Net
         public const byte TipoTimerBonus = 23;  // convidado → host
         public const byte TipoFimRun = 24;
         public const byte TipoPedidoAvanco = 25; // convidado → host, só com o host caído (0.15.0)
+        public const byte TipoReanimando = 26;   // todos → todos no mesmo andar, canal não confiável (0.16.0)
+        public const byte TipoReanimou = 27;     // todos → todos no mesmo andar (0.16.0)
 
         // Fase 3a — inimigos do host (host → convidados, salvo Golpes)
         public const byte TipoInimigoSpawn = 30;

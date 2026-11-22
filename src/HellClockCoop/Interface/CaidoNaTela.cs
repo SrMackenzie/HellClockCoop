@@ -21,6 +21,10 @@ namespace HellClockCoop.Interface
     ///   fonte do jogo (barra ainda não montada) ou com erro: reserva no OnGUI, como o visual antigo.
     /// - CameraPostEffectController.Instance é Guaranteed (criaria um): o efeito é achado na cena.
     /// - Só informação: nenhum clique, nada pausa o jogo.
+    /// - Reanimação (0.16.0, opção B): com um aliado ao seu lado, a linha da volta vira "Fulano está te reanimando"
+    ///   ("Fulano está ao seu lado" se ele se mexe) e uma barra 360x12 enche em verde (vermelha quando ele é golpeado),
+    ///   sobre um trilho âmbar 22%. Ao terminar, o aviso do topo sai em âmbar: "Fulano te levantou", "Você levantou
+    ///   Fulano" ou "Fulano levantou Beltrano".
     /// </summary>
     internal static class CaidoNaTela
     {
@@ -30,11 +34,13 @@ namespace HellClockCoop.Interface
         private static readonly Color Fundo = new Color(0f, 0f, 0f, 0.62f);
 
         private static GameObject _raiz;
-        private static RectTransform _faixa, _pontos;
+        private static RectTransform _faixa, _pontos, _barra, _barraEnche;
+        private static Image _barraCor;
         private static TMP_Text _titulo, _volta, _contagem, _aviso;
         private static readonly List<Image> Pontos = new List<Image>();
         private static bool _comErro, _cinzaAplicado;
         private static string _textoAviso;
+        private static Color _corAviso = Vermelho;
         private static float _avisoAte = -1f;
         private static GUIStyle _estiloTitulo, _estiloLinha, _estiloAviso;
 
@@ -57,8 +63,25 @@ namespace HellClockCoop.Interface
         internal static void AvisarQueda(string nome, float segundos)
         {
             _textoAviso = segundos > 0f ? $"{nome} caiu  -{segundos:0} s" : $"{nome} caiu";
+            _corAviso = Vermelho;
             _avisoAte = Time.unscaledTime + DuracaoAviso;
         }
+
+        /// <summary>Aviso de reanimação concluída (0.16.0), em âmbar: notícia boa.</summary>
+        internal static void AvisarReanimacao(string texto)
+        {
+            _textoAviso = texto;
+            _corAviso = Ambar;
+            _avisoAte = Time.unscaledTime + DuracaoAviso;
+        }
+
+        /// <summary>Linha da faixa: quem está te reanimando, ou a volta no próximo andar.</summary>
+        private static string TextoLinha(bool reanimando, Reanimacao.Progresso p) =>
+            !reanimando ? TextoVolta()
+            : p.Estado == Reanimacao.Estado.FiqueParado ? $"{p.Quem} está ao seu lado" : $"{p.Quem} está te reanimando";
+
+        private static Color CorBarra(Reanimacao.Estado e) =>
+            e == Reanimacao.Estado.Interrompido ? AliadosNaTela.VermelhoInterrompido : AliadosNaTela.VerdeReanimar;
 
         // ---------------- Laço (LateUpdate do CoopRuntime) ----------------
 
@@ -87,7 +110,15 @@ namespace HellClockCoop.Interface
         {
             if (_faixa.gameObject.activeSelf != ligada) _faixa.gameObject.SetActive(ligada);
             if (!ligada) return;
-            _volta.text = TextoVolta();
+            bool reanimando = Reanimacao.MeuProgresso(out Reanimacao.Progresso pr);
+            string linha = TextoLinha(reanimando, pr);
+            if (_volta.text != linha) _volta.text = linha;
+            if (_barra.gameObject.activeSelf != reanimando) _barra.gameObject.SetActive(reanimando);
+            if (reanimando)
+            {
+                _barraEnche.anchorMax = new Vector2(pr.Fracao, 1f);
+                _barraCor.color = CorBarra(pr.Estado);
+            }
             JogadorCaido.Contar(out int dePe, out int total);
             _contagem.text = $"{dePe} de {total} de pé";
             while (Pontos.Count < total) Pontos.Add(NovoPonto());
@@ -104,6 +135,7 @@ namespace HellClockCoop.Interface
             if (_aviso.gameObject.activeSelf != ligado) _aviso.gameObject.SetActive(ligado);
             if (!ligado) return;
             if (_aviso.text != _textoAviso) _aviso.text = _textoAviso;
+            _aviso.color = _corAviso;
             float resta = _avisoAte - Time.unscaledTime;
             _aviso.alpha = Mathf.Clamp01(resta / SumirAviso);
         }
@@ -132,6 +164,21 @@ namespace HellClockCoop.Interface
             _titulo = Texto("Titulo", _faixa, new Vector2(0f, 52f), 46f, Vermelho, FontStyles.Bold);
             _titulo.text = "VOCÊ CAIU";
             _volta = Texto("Volta", _faixa, new Vector2(0f, 2f), 25f, Color.white, FontStyles.Normal);
+            // Barra da reanimação (0.16.0): trilho âmbar 22%, preenchimento pela âncora (Image sem sprite não corta).
+            _barra = Caixa("Reanimacao", _faixa, new Vector2(0.5f, 0.5f), new Vector2(0f, -22f), new Vector2(360f, 12f));
+            _barra.pivot = new Vector2(0.5f, 0.5f);
+            Image trilho = _barra.gameObject.AddComponent<Image>();
+            trilho.color = new Color(Ambar.r, Ambar.g, Ambar.b, 0.22f);
+            trilho.raycastTarget = false;
+            var enche = new GameObject("Enche", typeof(RectTransform));
+            _barraEnche = (RectTransform)enche.transform;
+            _barraEnche.SetParent(_barra, false);
+            _barraEnche.anchorMin = Vector2.zero;
+            _barraEnche.anchorMax = new Vector2(0f, 1f);
+            _barraEnche.offsetMin = _barraEnche.offsetMax = Vector2.zero;
+            _barraCor = enche.AddComponent<Image>();
+            _barraCor.raycastTarget = false;
+            _barra.gameObject.SetActive(false);
             _pontos = Caixa("Pontos", _faixa, new Vector2(0.5f, 0.5f), new Vector2(-150f, -48f), new Vector2(120f, 18f));
             HorizontalLayoutGroup fila = _pontos.gameObject.AddComponent<HorizontalLayoutGroup>();
             fila.spacing = 10f;
@@ -235,7 +282,16 @@ namespace HellClockCoop.Interface
                 GUI.color = Vermelho;
                 GUI.Label(new Rect(r.x, r.y + 12f * k, r.width, 50f * k), "VOCÊ CAIU", _estiloTitulo);
                 GUI.color = Color.white;
-                GUI.Label(new Rect(r.x, r.y + 64f * k, r.width, 32f * k), TextoVolta(), _estiloLinha);
+                bool reanimando = Reanimacao.MeuProgresso(out Reanimacao.Progresso pr);
+                GUI.Label(new Rect(r.x, r.y + 64f * k, r.width, 32f * k), TextoLinha(reanimando, pr), _estiloLinha);
+                if (reanimando)
+                {
+                    var trilho = new Rect(r.x + r.width / 2f - 180f * k, r.y + 98f * k, 360f * k, 12f * k);
+                    GUI.color = new Color(Ambar.r, Ambar.g, Ambar.b, 0.22f);
+                    GUI.DrawTexture(trilho, Texture2D.whiteTexture);
+                    GUI.color = CorBarra(pr.Estado);
+                    GUI.DrawTexture(new Rect(trilho.x, trilho.y, trilho.width * pr.Fracao, trilho.height), Texture2D.whiteTexture);
+                }
                 JogadorCaido.Contar(out int dePe, out int total);
                 GUI.color = Ambar;
                 GUI.Label(new Rect(r.x, r.y + 112f * k, r.width, 32f * k), $"{dePe} de {total} de pé", _estiloLinha);
@@ -243,7 +299,7 @@ namespace HellClockCoop.Interface
             }
             if (aviso)
             {
-                GUI.color = new Color(Vermelho.r, Vermelho.g, Vermelho.b, Mathf.Clamp01((_avisoAte - Time.unscaledTime) / SumirAviso));
+                GUI.color = new Color(_corAviso.r, _corAviso.g, _corAviso.b, Mathf.Clamp01((_avisoAte - Time.unscaledTime) / SumirAviso));
                 GUI.Label(new Rect(Screen.width / 2f - 450f * k, 125f * k, 900f * k, 50f * k), _textoAviso, _estiloAviso);
                 GUI.color = Color.white;
             }

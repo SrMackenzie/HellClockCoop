@@ -39,7 +39,7 @@ namespace HellClockCoop.Balanceamento
         internal static void Configurar(ConfigFile config)
         {
             _aceite = config.Bind("Metricas", "EnviarResumoAnonimo", false,
-                "Envia o resumo de cada run (dados do jogo: tempo por andar, inimigos mortos, dano, mortes, dificuldade, " +
+                "Envia o resumo de cada run (dados do jogo: tempo por andar, inimigos mortos, dano, mortes, quedas e reanimações, dificuldade, " +
                 "dungeon, resultado, versões, data e hora) para calibrar o balanceamento do coop. Sem nome da Steam, SteamID " +
                 "ou arquivos do computador; vai junto um id aleatório desta instalação (BepInEx/HellClockCoop/instalacao.txt), " +
                 "que não identifica você e serve para pedir a exclusão dos seus resumos por issue no GitHub do projeto. " +

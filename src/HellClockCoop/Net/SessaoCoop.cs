@@ -21,6 +21,7 @@ namespace HellClockCoop.Net
         public float UltimoPacote = -1f;
         public bool MesmoAndar;
         public bool Morto;
+        public int SequenciaMorto = -1; // sequência do último snapshot que decidiu Morto (0.16.0; -1 = nenhum)
         public bool Deluxe, CursedWar;
         public bool DlcOk;              // mesma Cursed War (decide se o convidado acompanha a run)
         public int CenaRemota = -2;   // -2 = ainda não visto (int.MinValue foi removido do mscorlib do jogo)
@@ -436,6 +437,9 @@ namespace HellClockCoop.Net
                 case Protocolo.TipoPedidoAvanco:
                     Fase2.RunCompartilhada.Receber(this, p, dados);
                     break;
+                case Protocolo.TipoReanimou:
+                    Fase2.Reanimacao.Receber(this, p, dados);
+                    break;
                 case Protocolo.TipoInimigoSpawn:
                 case Protocolo.TipoInimigoMorte:
                 case Protocolo.TipoInimigoSumiu:
@@ -480,6 +484,11 @@ namespace HellClockCoop.Net
                 Fase2.RunCompartilhada.Receber(this, p, dados);
                 return;
             }
+            if (dados[0] == Protocolo.TipoReanimando) // 0.16.0, canal não confiável
+            {
+                Fase2.Reanimacao.Receber(this, p, dados);
+                return;
+            }
             if (dados[0] == Protocolo.TipoDanosVistos)
             {
                 Fase3.DanosVisiveis.Receber(this, p, dados);
@@ -510,9 +519,17 @@ namespace HellClockCoop.Net
                 p.CenaRemota = s.CenaHash;
                 Plugin.Log.LogInfo($"[Sessão] {p.Nome} agora na cena {s.CenaHash} (andar {s.Andar}); você na cena {cenaLocal} → {(s.CenaHash != -1 && s.CenaHash == cenaLocal ? "visível" : "não visível")}.");
             }
-            bool caiu = s.Morto && !p.Morto && p.UltimoPacote >= 0f; // 0.15.0: aviso e −10 s (no host) a cada queda
+            // 0.16.0: snapshot um pouco atrasado (fora de ordem no canal não confiável) não muda Morto: depois de uma
+            // reanimação, um "caído" velho cobraria a queda de novo. Diferença grande (o outro PC recomeçou a contagem)
+            // vale como nova.
+            bool atrasado = Validacao.SequenciaAtrasada(s.Sequencia, p.SequenciaMorto);
+            bool caiu = !atrasado && s.Morto && !p.Morto && p.UltimoPacote >= 0f; // 0.15.0: aviso e −10 s (no host) a cada queda
             p.UltimoPacote = Time.unscaledTime;
-            p.Morto = s.Morto;
+            if (!atrasado)
+            {
+                p.Morto = s.Morto;
+                p.SequenciaMorto = s.Sequencia;
+            }
             p.MesmoAndar = s.CenaHash != -1 && s.CenaHash == cenaLocal;
             if (caiu && p.MesmoAndar) Fase2.JogadorCaido.AliadoCaiu(p);
 

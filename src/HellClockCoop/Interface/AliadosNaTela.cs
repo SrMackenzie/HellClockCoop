@@ -26,6 +26,9 @@ namespace HellClockCoop.Interface
     /// - GenericHUD.Instance é Guaranteed (criaria uma HUD): a HUD e o pool são achados com Resources.FindObjectsOfTypeAll.
     /// - Peça ausente ou erro: reserva no OnGUI (barra e seta desenhadas à mão), como o menu antigo.
     /// - Modo eco: o fantasma entra como aliado "Eco" (chave 0). DistanciaDoEco no .cfg afasta o fantasma para testar a seta.
+    /// - Reanimação (0.16.0, opção B "barra do aliado"): com alguém ao lado do aliado caído, uma barra fina verde de
+    ///   progresso aparece logo abaixo da barra dele e o rótulo "caído" vira "reanimando" (verde), "interrompido"
+    ///   (vermelho) ou "fique parado" (branco 60%).
     /// </summary>
     internal static class AliadosNaTela
     {
@@ -50,6 +53,8 @@ namespace HellClockCoop.Interface
             public RectTransform Barra, Seta, SetaNome;
             public Image Preenche, Atraso, SetaImagem;
             public TMP_Text SetaTexto, Rotulo; // Rotulo: "caído" sobre a moldura da barra (0.15.0)
+            public RectTransform Progresso, ProgressoEnche; // reanimação, abaixo da barra (0.16.0)
+            public Image ProgressoCor;
             public float ValorAtraso = -1f; // < 0: barra nova, começa na vida atual (sem cair de 100%)
             public bool Visto;
         }
@@ -66,6 +71,18 @@ namespace HellClockCoop.Interface
         /// <summary>Aliado caído (0.15.0, opção B): seta e nome em cinza, barra sem preenchimento com o rótulo "caído".</summary>
         private static readonly Color CinzaCaido = new Color(0.62f, 0.62f, 0.62f, 0.9f);
         private const string TextoCaido = "caído";
+
+        /// <summary>Reanimação (0.16.0): verde só para o progresso; vermelho para interrompido; branco 60% para a dica.</summary>
+        internal static readonly Color VerdeReanimar = new Color(0.50f, 0.72f, 0.49f);      // #7FB77E
+        internal static readonly Color VermelhoInterrompido = new Color(0.70f, 0.15f, 0.12f); // #B3261E
+        private static readonly Color BrancoDica = new Color(1f, 1f, 1f, 0.6f);
+        private const float AbaixoDaBarra = 14f, LarguraProgresso = 90f, AlturaProgresso = 7f;
+
+        private static string TextoEstado(Fase2.Reanimacao.Estado e) =>
+            e == Fase2.Reanimacao.Estado.Interrompido ? "interrompido" : e == Fase2.Reanimacao.Estado.FiqueParado ? "fique parado" : "reanimando";
+
+        private static Color CorEstado(Fase2.Reanimacao.Estado e) =>
+            e == Fase2.Reanimacao.Estado.Interrompido ? VermelhoInterrompido : e == Fase2.Reanimacao.Estado.FiqueParado ? BrancoDica : VerdeReanimar;
 
         private static readonly Dictionary<ulong, Visual> Visuais = new Dictionary<ulong, Visual>();
         private static readonly List<ulong> Apagar = new List<ulong>();
@@ -197,8 +214,18 @@ namespace HellClockCoop.Interface
                     GUI.DrawTexture(fundo, Texture2D.whiteTexture);
                     GUI.color = new Color(0.78f, 0.12f, 0.10f);
                     if (!a.Caido) GUI.DrawTexture(new Rect(fundo.x + 1f, fundo.y + 1f, (fundo.width - 2f) * Mathf.Clamp01(a.Avatar.Vida), fundo.height - 2f), Texture2D.whiteTexture);
-                    GUI.color = CinzaCaido;
-                    if (a.Caido) GUI.Label(new Rect(fundo.x - 30f, fundo.y + 4f, fundo.width + 60f, 20f), TextoCaido, _estiloNomeSeta);
+                    Fase2.Reanimacao.Progresso pr = default;
+                    bool reanimando = a.Caido && Fase2.Reanimacao.ProgressoDe(a.Chave, out pr);
+                    GUI.color = reanimando ? CorEstado(pr.Estado) : CinzaCaido;
+                    if (a.Caido) GUI.Label(new Rect(fundo.x - 30f, fundo.y + 4f, fundo.width + 60f, 20f), reanimando ? TextoEstado(pr.Estado) : TextoCaido, _estiloNomeSeta);
+                    if (reanimando)
+                    {
+                        var trilho = new Rect(cabeca.x - LarguraProgresso / 2f, y + AbaixoDaBarra - AlturaProgresso / 2f, LarguraProgresso, AlturaProgresso);
+                        GUI.color = new Color(0f, 0f, 0f, 0.62f);
+                        GUI.DrawTexture(trilho, Texture2D.whiteTexture);
+                        GUI.color = pr.Estado == Fase2.Reanimacao.Estado.Interrompido ? VermelhoInterrompido : VerdeReanimar;
+                        GUI.DrawTexture(new Rect(trilho.x + 1f, trilho.y + 1f, (trilho.width - 2f) * pr.Fracao, trilho.height - 2f), Texture2D.whiteTexture);
+                    }
                     GUI.color = Color.white;
                 }
                 else if (MostrarSeta.Value)
@@ -262,6 +289,20 @@ namespace HellClockCoop.Interface
                         if (v.Atraso != null) v.Atraso.fillAmount = v.ValorAtraso;
                     }
                     if (v.Rotulo != null && v.Rotulo.gameObject.activeSelf != (barra && a.Caido)) v.Rotulo.gameObject.SetActive(barra && a.Caido);
+                    Fase2.Reanimacao.Progresso pr = default;
+                    bool reanimando = barra && a.Caido && Fase2.Reanimacao.ProgressoDe(a.Chave, out pr);
+                    if (v.Rotulo != null && barra && a.Caido)
+                    {
+                        string texto = reanimando ? TextoEstado(pr.Estado) : TextoCaido;
+                        if (v.Rotulo.text != texto) v.Rotulo.text = texto;
+                        v.Rotulo.color = reanimando ? CorEstado(pr.Estado) : CinzaCaido;
+                    }
+                    Ativar(v.Progresso, reanimando);
+                    if (reanimando)
+                    {
+                        v.ProgressoEnche.anchorMax = new Vector2(pr.Fracao, 1f);
+                        v.ProgressoCor.color = pr.Estado == Fase2.Reanimacao.Estado.Interrompido ? VermelhoInterrompido : VerdeReanimar;
+                    }
 
                     bool seta = MostrarSeta.Value && !naTela;
                     Ativar(v.Seta, seta);
@@ -555,6 +596,29 @@ namespace HellClockCoop.Interface
             rotulo.text = TextoCaido;
             r.SetActive(false);
             v.Rotulo = rotulo;
+
+            // Progresso da reanimação (0.16.0): trilho preto 62% com o preenchimento pela âncora (sem sprite, o
+            // Image.Filled não corta), logo abaixo da barra.
+            var g = new GameObject("HellClockCoop.Reanimacao", typeof(RectTransform));
+            v.Progresso = (RectTransform)g.transform;
+            v.Progresso.SetParent(v.Barra, false);
+            v.Progresso.anchorMin = v.Progresso.anchorMax = v.Progresso.pivot = new Vector2(0.5f, 0.5f);
+            v.Progresso.anchoredPosition = new Vector2(0f, -AbaixoDaBarra);
+            v.Progresso.sizeDelta = new Vector2(LarguraProgresso, AlturaProgresso);
+            Image trilho = g.AddComponent<Image>();
+            trilho.color = new Color(0f, 0f, 0f, 0.62f);
+            trilho.raycastTarget = false;
+            var e = new GameObject("Enche", typeof(RectTransform));
+            v.ProgressoEnche = (RectTransform)e.transform;
+            v.ProgressoEnche.SetParent(v.Progresso, false);
+            v.ProgressoEnche.anchorMin = Vector2.zero;
+            v.ProgressoEnche.anchorMax = new Vector2(0f, 1f);
+            v.ProgressoEnche.offsetMin = new Vector2(1f, 1f);
+            v.ProgressoEnche.offsetMax = new Vector2(-1f, -1f);
+            v.ProgressoCor = e.AddComponent<Image>();
+            v.ProgressoCor.color = VerdeReanimar;
+            v.ProgressoCor.raycastTarget = false;
+            g.SetActive(false);
 
             Visuais[chave] = v;
             return v;

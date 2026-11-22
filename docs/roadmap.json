@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "22/11/2026",
-  "versao": "0.15.0",
+  "versao": "0.16.0",
   "fases": [
     {
       "id": "B",
@@ -49,7 +49,7 @@
           "Jogador caído: a run só acaba quando todos caem; o caído volta no próximo andar com 50% da vida e cada queda tira 10 s do Hell Clock"
         ],
         [
-          "planejado",
+          "testar",
           "Reanimação do aliado caído, com as quedas e reanimações no resumo da run"
         ],
         [

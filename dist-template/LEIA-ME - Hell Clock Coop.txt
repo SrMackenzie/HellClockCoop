@@ -56,7 +56,7 @@ ESTADO ATUAL (versão de teste, Fase 3)
     o mesmo XP e sorteia o loot da mesma tabela que o host. O equipamento não tem redução em
     grupo: é o prêmio de jogar junto. Exige a 0.10.1 nos dois PCs.
   * No fim de cada run, o mod salva um resumo só com números (tempo por andar, inimigos mortos,
-    dano causado e recebido, mortes) em BepInEx\HellClockCoop\metricas. Não tem nome da Steam
+    dano causado e recebido, mortes, quedas e reanimações) em BepInEx\HellClockCoop\metricas. Não tem nome da Steam
     nem nada que identifique você diretamente. Mandar esses arquivos ajuda a calibrar o balanceamento.
 - NOVO (0.7.1): ENVIO OPCIONAL DOS RESUMOS.
   * Desligado por padrão. Da 0.8.1 em diante o mod pergunta numa janela no primeiro início
@@ -169,6 +169,12 @@ ESTADO ATUAL (versão de teste, Fase 3)
   Cada queda tira 10 s do Hell Clock (no .cfg, seção [Balanceamento]: SegundosPerdidosPorQueda,
   que vale o do host, e VidaAoVoltarDoChao, que vale o de cada PC). No modo eco (F8) o fantasma conta como aliado de
   pé, para testar sozinho. Exige a 0.15.0 nos dois PCs.
+- NOVO (0.16.0): reanimação. Fique parado ao lado do aliado caído (até 2 m, sem usar skill)
+  e ele levanta com 30% da vida, sem tecla. A primeira reanimação do andar leva 3 s, a segunda
+  6 s, a terceira 9 s. Golpe recebido congela e faz o progresso cair; andar ou usar skill zera.
+  Uma barra verde aparece sob a barra do aliado, e quem caiu vê "Fulano está te reanimando".
+  No .cfg, seção [Balanceamento]: SegundosParaReanimar e VidaAoReanimar. Exige a 0.16.0 em
+  todos os PCs.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, abra o menu do coop (F7), escolha "Sair do coop" e depois use o menu normalmente.

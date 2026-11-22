@@ -99,6 +99,8 @@ IdaVolta("TimerSync", new (string, object)[] { ("Timer", 417.25f), ("TimerRelaxa
 IdaVolta("TimerBonus", new (string, object)[] { ("Segundos", 15f) }, 23);
 IdaVolta("FimRun", new (string, object)[] { ("Motivo", 3) }, 24);
 IdaVolta("PedidoAvanco", new (string, object)[] { ("IndiceAndar", 6u), ("Andares", 1u) }, 25); // 0.15.0
+IdaVolta("Reanimando", new (string, object)[] { ("Alvo", 76561198000000123UL), ("IndiceAndar", 4u), ("Estado", (byte)1), ("Fracao", 0.375f) }, 26); // 0.16.0
+IdaVolta("Reanimou", new (string, object)[] { ("Alvo", 76561198000000123UL), ("IndiceAndar", 4u), ("Ordem", (byte)2) }, 27); // 0.16.0
 try { T("HellClockCoop.Net.FimRun").GetMethod("Desserializar").Invoke(null, new object[] { new byte[] { 20, 0, 0, 0, 0 } }); Checar(false, "PlanoAndar lido como FimRun deveria falhar"); }
 catch (TargetInvocationException e) { Checar(e.InnerException is FormatException, "Tipo errado é recusado (FimRun ≠ PlanoAndar)"); }
 
@@ -398,6 +400,30 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Checar(!V("PedidoAvancoValido", 6u, 0u, 6u, false), "Validação: PedidoAvanco com 0 andares recusado");
     Checar(!V("PedidoAvancoValido", 6u, 1u, 6u, true), "Validação: PedidoAvanco no último andar recusado (viraria dungeon concluída no save do host)");
     Checar((uint)tv.GetField("AvancoMaximo").GetValue(null) == 3u, "Validação: teto de 3 andares por pedido");
+
+    // Reanimando (0.16.0): andar atual, estado 0..2, fração finita de 0 a 1
+    Checar(V("ReanimandoValido", 4u, (byte)0, 0f, 4u) && V("ReanimandoValido", 4u, (byte)2, 1f, 4u) && V("ReanimandoValido", 4u, (byte)1, 0.5f, 4u), "Validação: Reanimando do andar atual com estado 0, 1 e 2 aceito");
+    Checar(!V("ReanimandoValido", 3u, (byte)0, 0.5f, 4u), "Validação: Reanimando de outro andar recusado");
+    Checar(!V("ReanimandoValido", 4u, (byte)3, 0.5f, 4u) && !V("ReanimandoValido", 4u, (byte)255, 0.5f, 4u), "Validação: Reanimando com estado 3 e 255 recusado");
+    Checar(!V("ReanimandoValido", 4u, (byte)0, float.NaN, 4u) && !V("ReanimandoValido", 4u, (byte)0, float.PositiveInfinity, 4u)
+        && !V("ReanimandoValido", 4u, (byte)0, -0.1f, 4u) && !V("ReanimandoValido", 4u, (byte)0, 1.01f, 4u), "Validação: Reanimando com fração NaN, ∞, negativa e acima de 1 recusado");
+
+    // Reanimou (0.16.0): andar do caído e quem reanimou a até raio + folga (2 + 2 m)
+    Checar(V("ReanimouValido", 4u, 4u, 0f, 2f) && V("ReanimouValido", 4u, 4u, 4f, 2f), "Validação: Reanimou do andar com quem reanimou a 0 e 4 m (raio 2 + folga 2) aceito");
+    Checar(!V("ReanimouValido", 4u, 4u, 4.5f, 2f) && !V("ReanimouValido", 4u, 4u, 3.4e38f, 2f), "Validação: Reanimou de longe (4,5 m) ou sem posição de quem reanimou recusado");
+    Checar(!V("ReanimouValido", 3u, 4u, 1f, 2f) && !V("ReanimouValido", 4u, 4u, float.NaN, 2f) && !V("ReanimouValido", 4u, 4u, -1f, 2f), "Validação: Reanimou de outro andar, com distância NaN ou negativa recusado");
+
+    // Ordem da reanimação (0.16.0): fica o maior valor, subindo no máximo um por mensagem
+    int ordem(byte o, int conta) => (int)tv.GetMethod("OrdemReanimacao").Invoke(null, new object[] { o, conta });
+    Checar(ordem(1, 0) == 1 && ordem(3, 2) == 3, "Validação: Reanimou com a ordem seguinte sobe a conta do andar");
+    Checar(ordem(1, 1) == 1 && ordem(1, 3) == 3 && ordem(0, 2) == 2, "Validação: Reanimou repetido, atrasado ou com ordem 0 não muda a conta");
+    Checar(ordem(255, 0) == 1 && ordem(9, 2) == 3, "Validação: Reanimou com ordem forjada alta sobe só um");
+
+    // Sequência do snapshot para Morto (0.16.0): atrasado até 64 é ignorado; recomeço da contagem vale
+    bool atr(ushort s, int u) => (bool)tv.GetMethod("SequenciaAtrasada").Invoke(null, new object[] { s, u });
+    Checar(!atr(5, -1) && !atr(11, 10) && !atr(3, 65535), "Validação: snapshot novo (primeiro, seguinte e virada de 65535 para 3) muda Morto");
+    Checar(atr(10, 10) && atr(9, 10) && atr(65530, 2), "Validação: snapshot repetido ou um pouco atrasado (também na virada) não muda Morto");
+    Checar(!atr(0, 5000), "Validação: snapshot muito atrás (o outro PC recomeçou a contagem) muda Morto");
 
     // TimerBonus: finito, > 0 e até 120 s
     float bonus(float s) => (float)Campo(Lido("TimerBonus", new (string, object)[] { ("Segundos", s) }), "Segundos");
