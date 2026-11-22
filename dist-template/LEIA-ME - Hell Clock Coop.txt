@@ -130,6 +130,9 @@ ESTADO ATUAL (versão de teste, Fase 3)
   é levado para perto do host, para ninguém ficar de fora da luta.
 - NOVO (0.9.6): vasos e caixas ficam nos mesmos lugares nos dois PCs, e quebrar num quebra
   também no outro (cada um com o próprio loot).
+- NOVO (0.9.7): medidor de travadas. Quando o jogo dá uma travadinha, o log
+  (BepInEx\LogOutput.log) ganha uma linha [Desempenho] dizendo o que pesou naquele quadro, e
+  a cada 5 minutos um resumo. Só mede, não muda nada no jogo: mande o log depois de jogar.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, abra o menu do coop (F7), escolha "Sair do coop" e depois use o menu normalmente.

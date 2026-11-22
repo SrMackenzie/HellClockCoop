@@ -510,7 +510,9 @@ namespace HellClockCoop.Net
             if (p.Avatar == null)
             {
                 if (!p.MesmoAndar) return;
+                double inicio = Desempenho.Agora();
                 p.Avatar = AvatarFactory.Criar(jogadorLocal, p.Nome);
+                Desempenho.SomarDetalhe(Desempenho.Detalhe.CriarAvatar, inicio);
                 if (p.Aparencia != null) AparenciaPersonagem.Aplicar(p.Avatar.ModeloCorpo, p.Aparencia);
             }
 

@@ -61,7 +61,12 @@ namespace HellClockCoop.Fase3
     [HarmonyPatch(typeof(LifeController), nameof(LifeController.TryHurt))]
     internal static class Inimigos_TryHurt
     {
-        private static void Prefix(LifeController __instance, DamageInstance damage) => InimigosCompartilhados.ConvidadoGolpeou(__instance, damage);
+        private static void Prefix(LifeController __instance, DamageInstance damage)
+        {
+            double inicio = Desempenho.InicioGancho();
+            try { InimigosCompartilhados.ConvidadoGolpeou(__instance, damage); }
+            finally { Desempenho.FimGancho(inicio); }
+        }
     }
 
     /// <summary>
@@ -171,7 +176,9 @@ namespace HellClockCoop.Fase3
 
         private static void Postfix(HellClock.VFX.GameplayFx __instance, HellClock.Skill.ISkillCaster skillCaster, HellClock.Skill.Skill sourceSkill, GameObject __result)
         {
-            FxCompartilhados.EfeitoCriado(__instance, skillCaster, sourceSkill, __result);
+            double inicio = Desempenho.InicioGancho();
+            try { FxCompartilhados.EfeitoCriado(__instance, skillCaster, sourceSkill, __result); }
+            finally { Desempenho.FimGancho(inicio); }
         }
     }
 
@@ -179,8 +186,12 @@ namespace HellClockCoop.Fase3
     [HarmonyPatch(typeof(DamageViewManager), nameof(DamageViewManager.SpawnDamageView))]
     internal static class Dano_SpawnDamageView
     {
-        private static void Postfix(Collider targetCollider, Transform targetTransform, DamageInstance damage) =>
-            DanosVisiveis.NumeroCriado(targetCollider, targetTransform, damage);
+        private static void Postfix(Collider targetCollider, Transform targetTransform, DamageInstance damage)
+        {
+            double inicio = Desempenho.InicioGancho();
+            try { DanosVisiveis.NumeroCriado(targetCollider, targetTransform, damage); }
+            finally { Desempenho.FimGancho(inicio); }
+        }
     }
 
     /// <summary>Alvo: HellClock.Shrine.ShrineInteractable.ExecuteInteraction — santuário usado pelo jogador local vale para todos.</summary>

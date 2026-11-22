@@ -415,8 +415,10 @@ namespace HellClockCoop.Fase3
             if (PrefabsRuins.Contains(guid)) return null;
             try
             {
+                double inicio = Desempenho.Agora(); // carga síncrona: suspeita de travada (medidor, 0.9.7)
                 AsyncOperationHandle<GameObject> h = Addressables.LoadAssetAsync<GameObject>(guid);
                 if (!h.IsDone) h.WaitForCompletion();
+                Desempenho.SomarDetalhe(Desempenho.Detalhe.CarregarPrefabFx, inicio);
                 pf = h.Status == AsyncOperationStatus.Succeeded ? h.Result : null; // o handle fica aberto: o prefab é reusado
             }
             catch (Exception e)
@@ -443,8 +445,10 @@ namespace HellClockCoop.Fase3
             GameObject go;
             try
             {
+                double inicio = Desempenho.Agora();
                 go = UnityEngine.Object.Instantiate(prefab, _estacionamento.transform);
                 LimparParaVisual(go);
+                Desempenho.SomarDetalhe(Desempenho.Detalhe.CopiarFx, inicio);
             }
             catch (Exception e)
             {

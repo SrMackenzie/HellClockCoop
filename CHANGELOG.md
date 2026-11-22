@@ -4,6 +4,14 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.9.7 — Medidor de travadas 🧪
+_21/11/2026_
+
+- Diagnóstico das travadinhas: o mod agora cronometra cada parte dele a cada quadro e, quando um quadro passa de 50 ms (e de 2,5 vezes o normal), escreve no log quanto foi do mod e de qual parte, se teve coleta de lixo, rede e log naquele quadro
+- A cada 5 minutos em jogo, e ao passar do solo para o coop, o log ganha um resumo: quadros, média, pior quadro, travadas e o peso de cada parte do mod; os carregamentos ficam fora da conta
+- Medidos à parte os três suspeitos: criar o avatar do aliado, carregar o prefab de um efeito do aliado (carga síncrona) e copiar o efeito
+- Só mede: nada muda no jogo, na rede ou no save. Balanceamento: sem efeito na dificuldade. Protocolo não muda (12), mas o coop exige a mesma versão do mod nos dois PCs
+
 ## 0.9.6 — Vasos e caixas iguais nos dois PCs 🧪
 _21/11/2026_
 

@@ -354,6 +354,23 @@ quebravam no outro. Causa achada no IL: o jogo sorteia em cada PC qual objeto ap
 - Se falhar, mandar: o `LogOutput.log` dos dois PCs (linhas `[Objetos]` e `[Run] Plano do host`, sobretudo `aqui não
   há quebrável`, `sem plano do host` ou `K10Random mudou`).
 
+## 0.9.7 — Medidor de travadas
+
+Só mede: nada muda no jogo. Responde ao achado "travadinhas esporádicas" da sessão de 21/11, que veio sem número. Uma
+travada é um quadro com 50 ms ou mais e pelo menos 2,5 vezes o quadro normal (a média dos quadros sem travada). Quadros
+em carregamento (sem personagem ou na troca de cena) ficam fora da conta.
+
+- [ ] **Resumo no solo (controle):** jogar uns 6 min sozinho, sem coop nem eco. Esperado: uma linha `[Desempenho] Resumo
+  de 5,0 min em jogo (solo)` (ou `5.0`, conforme o Windows) com quadros, média, travadas e as partes do mod. Ela dá a base para comparar com o coop.
+- [ ] **Resumo em coop:** na sessão em dupla, os dois logs têm linhas `[Desempenho] Resumo ... (host com 1 aliado(s))` e
+  `(convidado com 1 aliado(s))`; ao criar ou entrar no coop sai também o resumo do trecho solo (`contexto mudou`), se ele tiver 30 s ou mais.
+- [ ] **Travada anotada:** quando sentir uma travadinha, anotar a hora. Esperado: uma linha `[Desempenho] Travada de N ms`
+  perto dela, dizendo quanto foi do mod (e de qual parte), se teve coleta de lixo, rede e log naquele quadro.
+- [ ] **Sem peso:** a média de `mod` no resumo fica bem abaixo de 1 ms por quadro.
+- Depois da sessão, mandar o `LogOutput.log` dos dois PCs (linhas `[Desempenho]`). Com esses números sai a correção:
+  os suspeitos medidos à parte são criar avatar, carregar prefab de efeito (carga síncrona, a primeira
+  vez de cada efeito do aliado) e copiar efeito.
+
 ---
 
 ## Sessão em dupla na 0.9.4 — roteiro único
@@ -473,7 +490,8 @@ Relato do autor no meio da sessão. Nada foi marcado `[x]` ainda.
   (seção 0.9.5, a testar).
 - Falhou: inimigos sem som no convidado.
 - Falhou (menor): dano do convidado no boneco de treino do hub não aparece no host; nos inimigos aparece.
-- A investigar: travadinhas esporádicas.
+- A investigar: travadinhas esporádicas. O log não tinha número de tempo; a 0.9.7 traz o medidor (seção 0.9.7, a
+  testar) e a correção sai depois, com os números.
 
 ### Depois da sessão
 

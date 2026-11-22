@@ -51,6 +51,7 @@ namespace HellClockCoop.Net
                     SteamNetworkingMessage_t msg = SteamNetworkingMessage_t.FromIntPtr(Buffer[i]);
                     dados = new byte[msg.m_cbSize];
                     Marshal.Copy(msg.m_pData, dados, 0, msg.m_cbSize);
+                    Desempenho.MensagemRecebida(msg.m_cbSize);
                     de = msg.m_identityPeer.GetSteamID();
                 }
                 finally

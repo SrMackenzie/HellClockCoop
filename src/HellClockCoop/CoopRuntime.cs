@@ -68,9 +68,37 @@ namespace HellClockCoop
 
         private void Update()
         {
+            bool semPersonagem = JogadorLocal() == null;
+            try
+            {
+                Desempenho.NovoQuadro(semPersonagem, LocalPlayerSampler.CenaAtual()); // fecha o quadro anterior (medidor de travadas)
+            }
+            catch (Exception e)
+            {
+                if (_errosMedidor++ < 3) Plugin.Log.LogWarning($"[Desempenho] Erro no medidor (os menus seguem): {e.Message}");
+            }
+            double inicio = Desempenho.Agora();
+            Desempenho.NoLaco = true;
+            try
+            {
+                AtualizarMenus(semPersonagem);
+            }
+            finally
+            {
+                Desempenho.NoLaco = false;
+                Desempenho.Somar(Desempenho.Parte.Menus, inicio);
+            }
+        }
+
+        private int _errosMedidor;
+
+        private void OnApplicationFocus(bool foco) => Desempenho.Recomecar(); // alt-tab não vira travada
+        private void OnApplicationPause(bool pausa) => Desempenho.Recomecar();
+
+        private void AtualizarMenus(bool semPersonagem)
+        {
             Interface.BloqueioEntrada.Atualizar(); // primeiro: libera a entrada do jogo se nenhum painel pediu no quadro anterior
             _sessao.TentarInicializar();
-            bool semPersonagem = JogadorLocal() == null;
             Balanceamento.JanelaAceite.Atualizar(semPersonagem);
             Interface.Novidades.Atualizar(semPersonagem); // depois do aceite: abre só com ele fechado
             if (Interface.Novidades.Aberta)
@@ -87,21 +115,44 @@ namespace HellClockCoop
 
         private void LateUpdate()
         {
+            Desempenho.NoLaco = true;
+            try
+            {
+                AtualizarLaco();
+            }
+            finally
+            {
+                Desempenho.NoLaco = false;
+            }
+        }
+
+        private void AtualizarLaco()
+        {
+            double t = Desempenho.Agora(); // cada parte soma o próprio tempo no medidor de travadas
             PlayerController jogador = JogadorLocal();
             int cena = LocalPlayerSampler.CenaAtual();
 
             try
             {
                 _sessao.Atualizar(jogador, cena);
+                t = Desempenho.Somar(Desempenho.Parte.Rede, t);
                 Fase2.RunCompartilhada.Atualizar(jogador);
+                t = Desempenho.Somar(Desempenho.Parte.Run, t);
                 Fase3.InimigosCompartilhados.Atualizar();
+                t = Desempenho.Somar(Desempenho.Parte.Inimigos, t);
                 Fase3.ObjetosCompartilhados.Atualizar();
+                t = Desempenho.Somar(Desempenho.Parte.Objetos, t);
                 Fase3.SantuariosCompartilhados.Atualizar();
+                t = Desempenho.Somar(Desempenho.Parte.Santuarios, t);
                 Fase3.PortasCompartilhadas.Atualizar();
+                t = Desempenho.Somar(Desempenho.Parte.Portas, t);
                 Fase3.AlvosAliados.Atualizar();
+                t = Desempenho.Somar(Desempenho.Parte.Alvos, t);
                 Fase3.FxCompartilhados.AvatarEco = _avatarEco;
                 Fase3.FxCompartilhados.Atualizar();
+                t = Desempenho.Somar(Desempenho.Parte.Fx, t);
                 Fase3.DanosVisiveis.Atualizar();
+                t = Desempenho.Somar(Desempenho.Parte.Danos, t);
                 Balanceamento.Escalonamento.Atualizar();
                 Balanceamento.Metricas.Atualizar(jogador);
                 Balanceamento.Envio.Atualizar();
@@ -110,7 +161,19 @@ namespace HellClockCoop
             {
                 Plugin.Log.LogError($"[Sessão] Erro no laço de rede: {e}");
             }
+            t = Desempenho.Somar(Desempenho.Parte.Balanceamento, t); // (com erro, o resto do quadro cai aqui)
+            try
+            {
+                AtualizarPersonagem(jogador);
+            }
+            finally
+            {
+                Desempenho.Somar(Desempenho.Parte.Personagem, t);
+            }
+        }
 
+        private void AtualizarPersonagem(PlayerController jogador)
+        {
             if (jogador == null)
             {
                 // O eco continua ligado: o fantasma volta quando o personagem reaparecer (próximo save, hub ou run).
@@ -167,6 +230,7 @@ namespace HellClockCoop
 
         private void OnApplicationQuit()
         {
+            Desempenho.Resumir("jogo fechado");
             if (_sessao.EmSessao) _sessao.Sair("jogo fechado");
         }
 
@@ -196,7 +260,9 @@ namespace HellClockCoop
         {
             try
             {
+                double inicio = Desempenho.Agora();
                 _avatarEco = AvatarFactory.Criar(jogador, "Eco");
+                Desempenho.SomarDetalhe(Desempenho.Detalhe.CriarAvatar, inicio);
                 _avatarEco.DeslocamentoMundo = DeslocamentoEco;
                 _ecoAtivo = true;
                 _filaEco.Clear();
@@ -301,6 +367,21 @@ namespace HellClockCoop
         }
 
         private void OnGUI()
+        {
+            double inicio = Desempenho.Agora();
+            Desempenho.NoLaco = true;
+            try
+            {
+                DesenharInterface();
+            }
+            finally
+            {
+                Desempenho.NoLaco = false;
+                Desempenho.Somar(Desempenho.Parte.Interface, inicio);
+            }
+        }
+
+        private void DesenharInterface()
         {
             if (_estiloCaixa == null)
             {
