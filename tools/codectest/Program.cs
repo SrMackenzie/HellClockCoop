@@ -570,6 +570,22 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Checar(P(1, 1, false, true, false) == 1, "Menu: um item só fica com o foco");
     Checar(!C(10f, -1f) && C(10f, 12f) && C(12f, 12f) && !C(12.1f, 12f), "Menu: sair do coop só no segundo aperto, dentro do prazo");
     Checar(!L(100, 100) && !L(100, 101) && L(100, 102) && L(-10, 0), "Entrada: libera o jogo só dois quadros depois do último pedido do painel");
+
+    // 0.12.0: abas e deslizantes do menu com a interface do jogo
+    var aba = tM.GetMethod("ProximaAba", BindingFlags.Static | BindingFlags.NonPublic);
+    var ajustar = tM.GetMethod("AjustarNumero", BindingFlags.Static | BindingFlags.NonPublic);
+    var pelaFracao = tM.GetMethod("NumeroPelaFracao", BindingFlags.Static | BindingFlags.NonPublic);
+    int A(int atual, int delta, int total) => (int)aba.Invoke(null, new object[] { atual, delta, total });
+    float J(float v, int d, float passo, float min, float max) => (float)ajustar.Invoke(null, new object[] { v, d, passo, min, max });
+    float F(float f, float passo, float min, float max) => (float)pelaFracao.Invoke(null, new object[] { f, passo, min, max });
+    Checar(A(0, 1, 2) == 1 && A(1, 1, 2) == 0 && A(0, -1, 2) == 1 && A(5, 1, 2) == 0 && A(0, 1, 0) == 0, "Menu: LB/RB e setas trocam de aba girando nas pontas");
+    Checar(J(0.8f, 1, 0.05f, 0f, 1f) == 0.85f && J(0.8f, -1, 0.05f, 0f, 1f) == 0.75f && J(1f, 1, 0.05f, 0f, 1f) == 1f && J(0f, -1, 0.05f, 0f, 1f) == 0f,
+        "Menu: deslizante anda um passo e para nas pontas");
+    Checar(J(0.83f, 1, 0.1f, 0.3f, 2f) == 0.9f && J(5f, -1, 0.1f, 0.3f, 2f) == 2f && J(float.NaN, 1, 0.1f, 0.3f, 2f) == 0.4f,
+        "Menu: deslizante alinha ao passo e corrige valor fora da faixa ou inválido no .cfg");
+    Checar(F(0f, 0.05f, 0f, 1f) == 0f && F(1f, 0.05f, 0f, 1f) == 1f && F(0.42f, 0.05f, 0f, 1f) == 0.4f && F(-3f, 0.1f, 0.3f, 2f) == 0.3f
+           && F(2f, 0.1f, 0.3f, 2f) == 2f && F(float.NaN, 0.1f, 0.3f, 2f) == 0.3f && F(0.5f, 0.1f, 0f, 2f) == 1f,
+        "Menu: clique na barra vira valor alinhado ao passo, dentro da faixa");
 }
 
 // Balanceamento: lista "2, 3, 4" do .cfg e XP/ouro/Soulstones/moedas em coop (cada um × fator, arredondamento sorteado)

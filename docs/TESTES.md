@@ -402,6 +402,34 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.12.0 — Menu do coop com a interface do jogo
+
+Solo basta (o convite e a saída não mudaram desde a 0.9.3). Atualizar a partir da 0.11.0. Teclas simuladas no PC do
+autor em 22/11/2026: a janela abre com a interface do jogo e a seta para a direita troca de aba (com o painel ainda à
+direita, antes de ir para o centro); a janela central e os itens abaixo ainda não foram vistos no jogo.
+
+- [ ] **Abrir e visual:** no menu do jogo, F7 (e o botão "Menu do coop (F7)") abre a janela **no centro** com a moldura,
+  o título "COOP", o [X] e as abas das Opções do jogo; o resto da tela escurece. No log:
+  `[Menu] Painel do coop montado com a interface do jogo.` e `[Menu] Menu do coop aberto (tecla F7; interface do jogo).`
+- [ ] **Abas:** LB/RB, setas esquerda/direita (fora de uma barra) e o clique na aba trocam entre Sessão e Ajustes, girando
+  nas pontas; o foco vai para o primeiro item da aba.
+- [ ] **Teclado:** na aba Ajustes, setas cima/baixo movem o foco (o destaque das Opções acompanha), Enter executa. Na aba
+  Sessão do menu do jogo sem coop só "Criar coop" é selecionável (o eco pede um save), então ali a seta não move. **Anotar se a seta para
+  baixo não mexer o foco** (no teste com teclas simuladas ela não mexeu; pode ter sido o foco do Windows).
+- [ ] **Ajustes:** as caixas "Nomes dos aliados", "Números de dano dos aliados" e "Sons das skills dos aliados" marcam e
+  desmarcam; as barras "Tamanho do dano" e "Volume dos sons" andam com esquerda/direita e com clique ou arrasto na barra (clicar no rótulo só foca, sem mudar o valor); com os
+  números (ou os sons) desligados, a barra correspondente fica apagada. Tudo continua igual depois de reabrir o jogo
+  (`[Interface]` e `[Audio]` no .cfg) e as Opções do jogo não mudam.
+- [ ] **Balanceamento:** a aba Ajustes mostra os multiplicadores (com 2 jogadores fora do coop), só para leitura.
+- [ ] **Em jogo:** durante uma run, F7 abre a janela sem escurecer e sem pausar; clicar nela (e fora) não move o personagem;
+  Esc, B, F7 e o [X] fecham sem abrir a pausa.
+- [ ] **Controle:** View abre, LB/RB trocam de aba, direcional move e ajusta, A confirma, B fecha; o rodapé mostra as dicas
+  do controle.
+- [ ] **Telas:** em 1080p, 1366x768 (janela) e ultrawide a janela cabe inteira e não estica; nenhum rótulo corta.
+- [ ] **Reserva:** (opcional) se o log disser `menu simples`, o menu antigo (gaveta à direita) aparece com as duas abas
+  numa lista só e as barras mudam com esquerda/direita ou clique nas metades.
+- Se falhar, mandar: o `LogOutput.log` (linhas `[Menu]` e `[Entrada]`) e uma captura da tela.
+
 ## 0.11.0 — Sons das skills e golpes dos aliados
 
 Achado no IL: a cópia dos efeitos do aliado nunca passava pelo `GameplayFx.CreateFx`, que é onde o jogo toca o som do

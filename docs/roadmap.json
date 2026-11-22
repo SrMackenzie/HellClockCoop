@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "22/11/2026",
-  "versao": "0.11.0",
+  "versao": "0.12.0",
   "fases": [
     {
       "id": "B",
@@ -245,6 +245,10 @@
         [
           "feito",
           "Menu de coop dentro do jogo (no lugar das teclas F6/F7): gaveta com F7 ou View/Select, que segura a entrada do jogo enquanto aberta"
+        ],
+        [
+          "testar",
+          "Menu do coop com a interface do jogo: janela com as abas Sessão e Ajustes, nas fontes e cores das Opções, e os ajustes do mod (nomes, dano, sons e volume dos aliados) gravados no .cfg"
         ],
         [
           "planejado",

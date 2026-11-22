@@ -235,7 +235,7 @@ Requisito: overlay da Steam ligado (*Steam → Configurações → No jogo*).
 
 | Tecla | Ação |
 |:-:|---|
-| <kbd>F7</kbd> ou <kbd>View</kbd> no controle | **Menu do coop** (gaveta à direita): criar o coop e convidar amigos, sair do coop, modo eco, nomes e números de dano dos aliados, novidades. No menu do jogo também pelo botão "Menu do coop" |
+| <kbd>F7</kbd> ou <kbd>View</kbd> no controle | **Menu do coop** (janela com a cara das Opções do jogo, abas Sessão e Ajustes): criar o coop e convidar amigos, sair do coop, modo eco; nomes, números e tamanho do dano dos aliados, sons e volume dos aliados, balanceamento (só leitura), novidades. No menu do jogo também pelo botão "Menu do coop" |
 | <kbd>F8</kbd> | **Modo eco**: um fantasma seu repete tudo com 1 s de atraso — testa o mod sem amigo (também pelo menu do coop) |
 | <kbd>F9</kbd> | Diagnóstico: salva a estrutura do personagem |
 | <kbd>F10</kbd> | **Novidades**: o que mudou nas últimas versões do mod (também pelo item Novidades do menu do coop; abre sozinha uma vez depois de cada atualização) |
@@ -254,7 +254,7 @@ mover o personagem. O jogo continua rodando (no coop não pausa), então abra o 
   Se o **host** morre, a run acaba para todos.
 - Com alguém no coop, abrir inventário, mapa ou menu **não pausa** o jogo.
 - Todos precisam ter (ou não ter) a DLC **Cursed War**. A Deluxe Edition (cosmética) não importa.
-- Ajustes em `BepInEx\config\br.srmackenzie.hellclockcoop.cfg` (nomes e números de dano também pelo menu do coop): teclas, nomes sobre a cabeça,
+- Ajustes em `BepInEx\config\br.srmackenzie.hellclockcoop.cfg` (nomes, dano, sons e volume dos aliados também pela aba Ajustes do menu do coop): teclas, nomes sobre a cabeça,
   números de dano dos aliados (`MostrarDanoDosAliados`, `TamanhoDanoDosAliados`) e a última versão cujas novidades
   já apareceram (`[Interface] NovidadesVistas`; apague para ver a janela de novo).
 </details>

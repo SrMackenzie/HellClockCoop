@@ -148,6 +148,11 @@ ESTADO ATUAL (versão de teste, Fase 3)
   som no seu PC, perto dele, e o golpe dele num inimigo faz o som de dor e o sangue, como os seus.
   No .cfg, seção [Audio]: SonsDosAliados = false desliga; VolumeDosAliados (0 a 1) muda o volume dos sons das skills (o som de dor dos golpes sai no volume normal).
   No modo eco (F8) o fantasma repete os seus sons. Exige a 0.11.0 nos dois PCs.
+- NOVO (0.12.0): o MENU DO COOP (F7 ou View/Select) virou uma janela no centro da tela com a
+  cara das Opções do jogo, em duas abas (LB/RB, setas laterais ou clique): Sessão (aliados,
+  criar e convidar, sair, modo eco) e Ajustes (nomes, números e tamanho do dano dos aliados,
+  sons e volume dos aliados, o balanceamento do .cfg só para leitura e as Novidades). Os
+  ajustes vão para o .cfg do mod, nunca para as opções do jogo. Exige a 0.12.0 nos dois PCs.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, abra o menu do coop (F7), escolha "Sair do coop" e depois use o menu normalmente.
@@ -188,8 +193,9 @@ Depois, entre num save. Quando os dois estiverem no mesmo lugar, um aparece para
 com o nome da Steam em cima da cabeça.
 
 Teclas (dá para trocar em BepInEx\config\br.srmackenzie.hellclockcoop.cfg):
-  F7  menu do coop (no controle: View/Select): criar, convidar, sair, modo eco, ajustes
-      No menu: setas ou direcional escolhem, Enter ou A confirma, Esc, B ou F7 fecham.
+  F7  menu do coop (no controle: View/Select): abas Sessão (criar, convidar, sair, modo eco) e Ajustes
+      No menu: setas ou direcional escolhem, LB/RB trocam de aba, setas laterais trocam de aba
+      ou mexem na barra focada, Enter ou A confirma, Esc, B ou F7 fecham.
   F8  modo eco: um "fantasma" seu repete o que você faz (teste sem amigos)
   F9  diagnóstico: salva a estrutura do personagem
   F10 novidades: o que mudou nas últimas versões do mod

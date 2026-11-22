@@ -813,16 +813,46 @@ cima/baixo ou o direcional rolam; Esc, F10 ou B (`JoystickButton1`) fecham. Se o
 F10 (Esc, B e o mouse chegariam ao jogo), corpo recortado com `GUI.BeginGroup` e rolagem só pelas setas. Com mouse usa
 `GUI.BeginScrollView`, que só existe na sobrecarga de 5 parâmetros no jogo (stripping). Sem efeito no balanceamento nem no protocolo.
 
-### 12.2 Menu do coop e bloqueio da entrada (versão 0.9.3)
+### 12.2 Menu do coop e bloqueio da entrada (versões 0.9.3 e 0.12.0)
 
-`Interface/MenuCoop.cs` desenha, em IMGUI (1080p escalado, como as outras janelas), uma gaveta à direita da tela, no
-lugar das teclas F6/F7. Largura de 30% da tela, entre 380 e 460 px; no menu do jogo escurece o resto a 35%, em jogo
-não escurece nem pausa (o jogo continua rodando e o personagem fica parado). Lista única, com o foco num item de cada
-vez (moldura creme): ALIADOS (só leitura, `CoopRuntime.EstadoDoPar`, o mesmo texto do painel do canto), COOP e AJUSTES.
-O foco é guardado pela ação, não pelo índice, porque a lista muda (ex.: "Sair do coop" some ao sair); a regra de
-navegação (`ProximoFoco`, pula cabeçalhos, informação e item indisponível, gira nas pontas) e a da confirmação de saída
-(`ConfirmaSaida`) são puras e testadas no codectest. O painel de status do canto continua como antes (as linhas citam a
-tecla do menu).
+Desde a 0.12.0, `Interface/MenuCoop.cs` guarda o conteúdo, o foco e a entrada, e `Interface/PainelNativo.cs` desenha o
+menu com a interface do próprio jogo: uma janela no centro da tela (720 × 900 no canvas de 1080 de altura), montada na
+primeira abertura com cópias, em tempo de execução, das peças da `HellClock.UI.Options.OptionsWindow` de PC (a de
+celular, `OptionsScreenMobile`, fica de fora): fundo `Container/MiddleLeftAnchor/Background`, cabeçalho `Header` (linhas,
+título "COOP" e o [X]), botão de aba `SwitchButtons/GameplayButton` (duas cópias: Sessão e Ajustes), fundo do conteúdo
+`Content/Bg`, título de seção `TitleGameplay`, a primeira linha `ToggleWithLabel` (caixa de marcar) e a primeira
+`SliderWithLabel` (barra). Fontes (Avara, Avrile), sprites e cores são os do jogo; nada é extraído para o repositório
+nem para o pacote.
+- Das cópias saem todos os scripts antes de ativar (copiadas para um depósito inativo, o `Awake` não roda): ficam só
+  `Graphic` (imagens e textos, incluindo o `RTLTextMeshPro` do jogo, que é um TMP), `Mask`, `RectMask2D`, `CanvasGroup` e
+  `CanvasRenderer`. Saem `ToggleWithLabel`/`SliderWithLabel` (presos aos `BoolState`/`FloatState` das opções), o
+  `TextMeshLocalizer` (trocaria o texto do mod), sons, `ButtonAnimator`, `Animator`, botões e layouts. Assim o menu não
+  liga nada às opções do jogo nem passa pelo `OptionsWindow.Save()`; os valores vão só para o `.cfg` do mod.
+- Canvas próprio em sobreposição (ordem 900, abaixo do aviso de save do jogo), escala do jogo (1920 × 1080 pela altura:
+  em ultrawide a janela não estica). Sem `GraphicRaycaster`: o mouse é lido pelo `MenuCoop` (Input System, legado de
+  reserva) e testado nos retângulos do painel (`AcaoSob`, que devolve a ação desenhada e não o índice; `AbaSob`, `FecharSob`, `NaBarra`, `FracaoNoDeslizante`).
+- Sem patch Harmony novo e sem mudança no `BloqueioEntrada`: o módulo de entrada da UI do jogo continua desligado com o
+  menu aberto, porque a navegação é do mod.
+- Se uma peça não é achada (ex.: o jogo renomeou), o menu usa a gaveta desenhada no OnGUI (IMGUI, 1080p escalado, à
+  direita, 30% da tela entre 380 e 460 px, lista única com o conteúdo das duas abas), como na 0.9.3; se a montagem ou o
+  desenho falham, o painel nativo fica desligado até reabrir o jogo. O log diz qual abriu
+  (`[Menu] Menu do coop aberto (...; interface do jogo|menu simples)`).
+
+Conteúdo das duas abas (LB/RB, setas laterais fora de um deslizante ou clique na aba):
+- **Sessão:** estado da sessão (e, em jogo, o aviso de que o jogo continua rodando), ALIADOS (só leitura,
+  `CoopRuntime.EstadoDoPar`, o mesmo texto do painel do canto) e COOP (criar e convidar, sair com confirmação, modo eco).
+- **Ajustes:** aliados na tela (nomes, números de dano e tamanho do dano), som (sons das skills dos aliados e volume),
+  balanceamento deste `.cfg` só para leitura (`Escalonamento.LinhasDoMenu`: os multiplicadores do número de jogadores
+  atual, ou de 2 fora do coop; os valores só mudam no arquivo) e Novidades.
+- Deslizantes: esquerda/direita andam um passo (tamanho 0,3–2 em passos de 0,1, a mesma faixa que `DanosVisiveis`
+  aplica; volume 0–1 em passos de 0,05); clique ou arrasto na barra escolhe o valor (o clique no rótulo só foca). Regras puras testadas no codectest:
+  `ProximaAba`, `AjustarNumero`, `NumeroPelaFracao`.
+
+No menu do jogo escurece o resto da tela; em jogo não escurece nem pausa (o jogo continua rodando e o personagem fica
+parado). O foco é guardado pela ação, não pelo índice, porque a lista muda (ex.: "Sair do coop" some ao sair); a regra
+de navegação (`ProximoFoco`, pula cabeçalhos, informação e item indisponível, gira nas pontas) e a da confirmação de
+saída (`ConfirmaSaida`) são puras e testadas no codectest. Altura mínima das linhas: 48 no canvas e 44 px reais em
+telas abaixo de 1080p. O painel de status do canto continua como antes (as linhas citam a tecla do menu).
 
 `Interface/BloqueioEntrada.cs` segura a entrada do jogo enquanto o menu do coop ou a Novidades estão abertos:
 - Semáforo do próprio jogo: `HellClock.GameInput.InputHandler.DisableInput` (`Semaphore` do K10, o mesmo que o console
@@ -844,24 +874,29 @@ tecla do menu).
   função no jogo no mesmo quadro em que abre o menu.
 
 Mapa dos controles do mod (fonte canônica; README e LEIA-ME descrevem para o jogador). Efeito: R = navega ou abre,
-S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum (só texto).
+S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum do mod (o [X], a caixa de marcar e a barra são as imagens do próprio jogo; na reserva, só texto).
 
 | ID | Controle | Onde | Efeito | `.cfg` |
 |---|---|---|---|---|
 | COOP-MENU-TECLA | F7 abre e fecha o menu do coop | menu e jogo | R | `[Teclas] MenuDoCoop` (a antiga `CriarOuConvidar` fica sem uso; `SairDoCoop`, a F6, saiu) |
 | COOP-MENU-VIEW | View/Select do controle (`selectButton`, `JoystickButton6` no legado) abre e fecha | menu e jogo | R | — |
 | COOP-MENU-ABRIR | Botão "Menu do coop (F7)" abaixo do painel do canto | só no menu (sem personagem) | R | — |
-| COOP-MENU-FECHAR | [X] no cabeçalho; Esc, B, F7 ou View | gaveta aberta | R (libera a entrada 2 quadros depois) | — |
-| COOP-ALIADO | Linha por aliado: nome e estado | gaveta, em sessão | ∅ | — |
-| COOP-CRIAR | "Criar coop e convidar amigos" (sem sessão); "Esperando o Steam..." e "Conectando..." indisponíveis | gaveta | S (`SessaoCoop.HospedarOuConvidar`) | — |
-| COOP-CONVIDAR | "Convidar amigos (Steam)" | gaveta, em sessão | S (reabre o overlay de convite) | — |
-| COOP-SAIR | "Sair do coop"; o primeiro aperto vira "Confirmar: sair do coop?" por 3 s | gaveta, em sessão | S (`SessaoCoop.Sair`) | — |
-| COOP-ECO | "Modo eco (teste com um PC)" LIGADO/DESLIGADO; sem personagem: "entre num save" | gaveta | S (`CoopRuntime.AlternarEco`, também F8) | `[Teclas] ModoEco` |
-| COOP-CFG-NOMES | "Nomes dos aliados" | gaveta | P | `[Interface] MostrarNomesDosAliados` |
-| COOP-CFG-DANO | "Números de dano dos aliados" | gaveta | P | `[Interface] MostrarDanoDosAliados` |
-| COOP-NOVIDADES | "Novidades da <versão>": fecha a gaveta e abre a janela (§12.1) | gaveta | R | `[Teclas] Novidades` (F10) |
-| COOP-NAV | Setas ou direcional movem o foco; Enter ou A executam; mouse: passar por cima foca, clique executa, roda rola | gaveta | R | — |
-| COOP-ECO-TECLA / COOP-DIAG-TECLA | F8 (modo eco) e F9 (diagnóstico) | jogo, com gaveta e Novidades fechadas | S | `[Teclas] ModoEco`, `SalvarHierarquia` |
+| COOP-MENU-FECHAR | [X] no cabeçalho; Esc, B, F7 ou View | menu aberto | R (libera a entrada 2 quadros depois) | — |
+| COOP-ABA-SESSAO / COOP-ABA-AJUSTES | Abas "Sessão" e "Ajustes" (botão de aba das Opções do jogo); LB/RB, setas laterais fora de um deslizante ou clique | janela (0.12.0); na reserva, uma lista só | R | — |
+| COOP-ALIADO | Linha por aliado: nome e estado | aba Sessão, em sessão | ∅ | — |
+| COOP-CRIAR | "Criar coop e convidar amigos" (sem sessão); "Esperando o Steam..." e "Conectando..." indisponíveis | aba Sessão | S (`SessaoCoop.HospedarOuConvidar`) | — |
+| COOP-CONVIDAR | "Convidar amigos (Steam)" | aba Sessão, em sessão | S (reabre o overlay de convite) | — |
+| COOP-SAIR | "Sair do coop"; o primeiro aperto vira "Confirmar: sair do coop?" por 3 s | aba Sessão, em sessão | S (`SessaoCoop.Sair`) | — |
+| COOP-ECO | "Modo eco (teste com um PC)" LIGADO/DESLIGADO; sem personagem: "entre num save" | aba Sessão | S (`CoopRuntime.AlternarEco`, também F8) | `[Teclas] ModoEco` |
+| COOP-CFG-NOMES | "Nomes dos aliados" (caixa de marcar) | aba Ajustes | P | `[Interface] MostrarNomesDosAliados` |
+| COOP-CFG-DANO | "Números de dano dos aliados" (caixa de marcar) | aba Ajustes | P | `[Interface] MostrarDanoDosAliados` |
+| COOP-CFG-DANO-TAM | "Tamanho do dano" (barra, 30–200%; indisponível com os números desligados) | aba Ajustes | P | `[Interface] TamanhoDanoDosAliados` |
+| COOP-CFG-SOM | "Sons das skills dos aliados" (caixa de marcar) | aba Ajustes | P | `[Audio] SonsDosAliados` |
+| COOP-CFG-VOL | "Volume dos sons" (barra, 0–100%; indisponível com os sons desligados) | aba Ajustes | P | `[Audio] VolumeDosAliados` |
+| COOP-BAL-LEITURA | Multiplicadores do balanceamento deste `.cfg` | aba Ajustes | ∅ (só muda no arquivo) | `[Balanceamento]` |
+| COOP-NOVIDADES | "Novidades da <versão>": fecha o menu e abre a janela (§12.1) | aba Ajustes | R | `[Teclas] Novidades` (F10) |
+| COOP-NAV | Setas ou direcional movem o foco; esquerda/direita ajustam a barra focada; Enter ou A executam; mouse: passar por cima foca, clique executa, clique ou arrasto na barra escolhe o valor, roda rola | menu aberto | R | — |
+| COOP-ECO-TECLA / COOP-DIAG-TECLA | F8 (modo eco) e F9 (diagnóstico) | jogo, com o menu do coop e a Novidades fechados | S | `[Teclas] ModoEco`, `SalvarHierarquia` |
 
 Sem efeito nos números do balanceamento nem no protocolo (10). Com o menu aberto em jogo o personagem fica parado e o
 jogo segue (em coop não há pausa), o que só deixa o jogo mais difícil para quem abre o menu no meio do combate.

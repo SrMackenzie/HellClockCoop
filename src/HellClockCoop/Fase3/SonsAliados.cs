@@ -46,6 +46,10 @@ namespace HellClockCoop.Fase3
 
         internal static bool Ligado => _ligado == null || _ligado.Value;
 
+        /// <summary>[Audio] SonsDosAliados e VolumeDosAliados (aba Ajustes do menu do coop).</summary>
+        internal static ConfigEntry<bool> EntradaLigado => _ligado;
+        internal static ConfigEntry<float> EntradaVolume => _volume;
+
         internal static void Configurar(ConfigFile config)
         {
             _ligado = config.Bind("Audio", "SonsDosAliados", true, "Toca os sons das skills e dos golpes dos aliados (e do fantasma do modo eco).");

@@ -2,6 +2,26 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.12.0",
+      "data": "22/11/2026",
+      "testado": false,
+      "titulo": "Menu do coop com a cara do jogo",
+      "itens": [
+        "O menu do coop (F7 ou View/Select) virou uma janela no centro da tela feita com as peças das Opções do próprio jogo: moldura, fontes, cores, abas, caixas de marcar e barras",
+        "Duas abas, trocadas com LB/RB, com as setas laterais ou com o clique: Sessão (estado, aliados, criar e convidar, sair, modo eco) e Ajustes",
+        "Na aba Ajustes, além dos nomes e dos números de dano dos aliados: o tamanho do dano, os sons das skills dos aliados e o volume deles, que antes só mudavam no .cfg. Tudo continua gravado no .cfg do mod, nunca nas opções do jogo",
+        "A aba Ajustes mostra também o balanceamento deste .cfg, só para leitura",
+        "Se a interface do jogo não puder ser montada (por exemplo, depois de uma atualização do jogo), o menu volta ao visual antigo, com as mesmas funções",
+        "Balanceamento: sem mudança de dificuldade. Protocolo 14, o mesmo da 0.11.0, mas o coop continua exigindo a mesma versão do mod nos dois PCs (0.12.0)"
+      ],
+      "testar": [
+        "F7 no menu e em jogo: a janela abre no centro, com o visual das Opções",
+        "LB/RB e setas: trocam de aba e mexem nas barras; mouse: clique e arrasto na barra",
+        "Volume e tamanho do dano mudam na hora e ficam no .cfg depois de reabrir o jogo",
+        "Esc, B, F7 e o [X] fecham sem abrir a pausa nem mexer o personagem"
+      ]
+    },
+    {
       "v": "0.11.0",
       "data": "22/11/2026",
       "testado": false,

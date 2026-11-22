@@ -4,6 +4,16 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.12.0 — Menu do coop com a cara do jogo 🧪
+_22/11/2026_
+
+- O menu do coop (F7 ou View/Select) virou uma janela no centro da tela feita com as peças das Opções do próprio jogo: moldura, fontes, cores, abas, caixas de marcar e barras
+- Duas abas, trocadas com LB/RB, com as setas laterais ou com o clique: Sessão (estado, aliados, criar e convidar, sair, modo eco) e Ajustes
+- Na aba Ajustes, além dos nomes e dos números de dano dos aliados: o tamanho do dano, os sons das skills dos aliados e o volume deles, que antes só mudavam no .cfg. Tudo continua gravado no .cfg do mod, nunca nas opções do jogo
+- A aba Ajustes mostra também o balanceamento deste .cfg, só para leitura
+- Se a interface do jogo não puder ser montada (por exemplo, depois de uma atualização do jogo), o menu volta ao visual antigo, com as mesmas funções
+- Balanceamento: sem mudança de dificuldade. Protocolo 14, o mesmo da 0.11.0, mas o coop continua exigindo a mesma versão do mod nos dois PCs (0.12.0)
+
 ## 0.11.0 — Sons das skills e golpes dos aliados 🧪
 _22/11/2026_
 

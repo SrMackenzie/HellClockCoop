@@ -39,6 +39,9 @@ namespace HellClockCoop.Fase3
         /// <summary>[Interface] MostrarDanoDosAliados (interruptor do menu do coop).</summary>
         internal static ConfigEntry<bool> MostrarDano => _mostrar;
 
+        /// <summary>[Interface] TamanhoDanoDosAliados (deslizante da aba Ajustes; o uso limita a 0,3–2).</summary>
+        internal static ConfigEntry<float> TamanhoDano => _tamanho;
+
         /// <summary>(normal, crítico) por aliado, na ordem em que aparecem. O 1º é verde, como a seta no minimapa.</summary>
         private static readonly Color[,] Paleta =
         {

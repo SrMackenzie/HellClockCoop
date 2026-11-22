@@ -177,6 +177,24 @@ namespace HellClockCoop.Balanceamento
             }
         }
 
+        /// <summary>Aba Ajustes do menu do coop: os multiplicadores deste .cfg, só para leitura (com 2 jogadores fora do coop).</summary>
+        internal static System.Collections.Generic.List<string> LinhasDoMenu()
+        {
+            var l = new System.Collections.Generic.List<string>();
+            if (!Ligado)
+            {
+                l.Add("Desligado neste .cfg ([Balanceamento] Ativo = false).");
+                return l;
+            }
+            int agora = Jogadores, n = Mathf.Max(2, agora);
+            l.Add(agora > 1 ? $"Agora, com {n} jogadores:" : "Com 2 jogadores (os valores de 3 e 4 estão no .cfg):");
+            l.Add($"Vida dos inimigos x{Fator(_vida, n):0.##}   Chefes x{Fator(_vidaChefe, n):0.##}");
+            l.Add($"Dano dos inimigos x{Fator(_dano, n):0.##}   Quantidade x{Fator(_quantidade, n):0.##}");
+            l.Add($"Tempo ganho x{Fator(_tempo, n):0.##}   XP x{Fator(_xp, n):0.##}   Ouro x{Fator(_moedas, n):0.##}");
+            l.Add("O host decide os inimigos; os valores devem ser iguais para todos e só mudam no arquivo de configuração.");
+            return l;
+        }
+
         /// <summary>Linha para o painel do coop.</summary>
         internal static string Resumo()
         {
