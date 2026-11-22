@@ -57,6 +57,13 @@ namespace HellClockCoop.Interface
         private static TMP_Text _botaoTexto;
         private static int _botaoQuadro;
         private static float _proximaTentativa;
+        private static bool _semJanela = true;
+
+        /// <summary>
+        /// A janela das Opções do jogo ainda não existe (telas de abertura, antes do menu de saves): o botão do menu espera
+        /// por ela em vez de aparecer no visual simples. Com a janela presente e a montagem falhando, vale o botão simples.
+        /// </summary>
+        internal static bool EsperandoJanela => !_desativado && _raiz == null && _semJanela;
         private static Transform _deposito;
         private static GameObject _mSecao, _mInfo, _mLinha, _mDeslizante;
         private static TMP_Text _rodape;
@@ -76,6 +83,7 @@ namespace HellClockCoop.Interface
             try
             {
                 OptionsWindow janela = JanelaDoJogo();
+                _semJanela = janela == null;
                 Transform ancora = janela != null ? janela.transform.Find("Container/MiddleLeftAnchor") : null;
                 Transform fundo = ancora != null ? ancora.Find("Background") : null;
                 Transform cabecalho = ancora != null ? ancora.Find("Header") : null;
@@ -88,9 +96,11 @@ namespace HellClockCoop.Interface
                 Transform deslizante = barras != null && barras.Length > 0 ? barras[0].transform : null;
                 if (fundo == null || cabecalho == null || aba == null || fundoConteudo == null || secao == null || linha == null || deslizante == null)
                 {
-                    if (!_avisouSemModelo)
-                        Plugin.Log.LogInfo($"[Menu] Interface do jogo ainda não encontrada (janela {(janela != null ? "ok" : "ausente")}); usando o menu simples.");
-                    _avisouSemModelo = true;
+                    if (janela != null && !_avisouSemModelo) // sem a janela (telas de abertura) é só esperar, sem aviso
+                    {
+                        Plugin.Log.LogInfo("[Menu] Peças da interface do jogo não encontradas na janela das Opções; usando o menu simples.");
+                        _avisouSemModelo = true;
+                    }
                     return false;
                 }
                 Construir(fundo, cabecalho, aba, fundoConteudo, secao, linha, deslizante);

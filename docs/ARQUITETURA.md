@@ -835,8 +835,9 @@ nem para o pacote.
   ordem 890). O `MenuCoop.DesenharBotaoMenu` (OnGUI) chama `PainelNativo.BotaoDoMenu`, que o põe nos pixels do OnGUI
   divididos por `Screen.height / 1080` e acende o destaque com o mouse em cima; um `GUI.Button` invisível na mesma área
   recebe o clique. O `EsconderBotaoParado`, no começo do `AtualizarMenus` (antes da saída com a Novidades aberta), apaga o
-  canvas quando o OnGUI deixa de pedir o botão (menu aberto, run, Novidades, aceite). Sem a interface do jogo, o botão
-  simples do OnGUI.
+  canvas quando o OnGUI deixa de pedir o botão (menu aberto, run, Novidades, aceite). Nas telas de abertura, antes de a
+  `OptionsWindow` existir, o botão não aparece (`EsperandoJanela`); com a janela presente e alguma peça faltando, o
+  botão simples do OnGUI.
 - Sem patch Harmony novo e sem mudança no `BloqueioEntrada`: o módulo de entrada da UI do jogo continua desligado com o
   menu aberto, porque a navegação é do mod.
 - Se uma peça não é achada (ex.: o jogo renomeou), o menu usa a gaveta desenhada no OnGUI (IMGUI, 1080p escalado, à

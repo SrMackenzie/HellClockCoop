@@ -413,7 +413,8 @@ Depois, o botão "Menu do coop (F7)" do canto do menu, que ainda era o botão ci
 das Opções:
 - [ ] **Botão do menu:** no menu do jogo, abaixo do painel do canto, o botão "Menu do coop (F7)" tem o visual das abas
   da janela; ao passar o mouse o texto clareia e aparece o enfeite de baixo; o clique abre a janela. Some com a janela
-  aberta, durante a run e com a Novidades (F10) aberta, e volta ao fechar.
+  aberta, durante a run e com a Novidades (F10) aberta, e volta ao fechar. Nas telas de abertura (patrocínio, antes do
+  menu de saves) o botão não aparece; antes aparecia o cinza e trocava sozinho.
 
 - [ ] **Abrir e visual:** no menu do jogo, F7 (e o botão "Menu do coop (F7)") abre a janela **no centro** com a moldura,
   o título "COOP", o [X] e as abas das Opções do jogo; o resto da tela escurece. No log:

@@ -568,6 +568,7 @@ namespace HellClockCoop.Interface
                 if (GUI.Button(area, GUIContent.none, _invisivel)) Abrir("botão do painel", false);
                 return;
             }
+            if (PainelNativo.EsperandoJanela) return; // telas de abertura: sem botão até a interface do jogo existir
             if (GUI.Button(new Rect(12f, y, 240f, LadoBotao), new GUIContent(texto), _botao))
                 Abrir("botão do painel", false);
         }
