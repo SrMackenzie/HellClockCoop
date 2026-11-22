@@ -2,6 +2,25 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.16.1",
+      "data": "22/11/2026",
+      "testado": false,
+      "titulo": "Menu do jogo com você caído",
+      "itens": [
+        "Caído, o Esc abre o menu do jogo, como de pé. Inventário e janelas continuam fechados até você levantar",
+        "Host caído: \"Terminar run\" encerra a run para todos, como o host de pé",
+        "Convidado caído: \"Terminar run\" tira só você. O grupo continua e você não é puxado de volta no próximo andar; volta na próxima run do host",
+        "A duração (3 s, 6 s, 9 s...) e a vida da reanimação (30%) agora são fixas no mod: saíram do .cfg (SegundosParaReanimar e VidaAoReanimar não são mais lidos)",
+        "Exige a 0.16.1 em todos os PCs (o protocolo continua o 17)"
+      ],
+      "testar": [
+        "Caia e aperte Esc: o menu abre e o inventário (I) continua fechado",
+        "Host caído com o convidado de pé: Terminar run leva os dois ao hub",
+        "Convidado caído: Terminar run leva só ele ao hub; o host passa de andar e o convidado continua no hub",
+        "Depois disso, o host termina a run e começa outra: o convidado acompanha de novo"
+      ]
+    },
+    {
       "v": "0.16.0",
       "data": "22/11/2026",
       "testado": false,

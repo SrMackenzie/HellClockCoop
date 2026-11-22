@@ -59,7 +59,6 @@ namespace HellClockCoop
             Fase3.SonsAliados.Configurar(config);
             Balanceamento.Escalonamento.Configurar(config);
             Fase2.JogadorCaido.Configurar(config);
-            Fase2.Reanimacao.Configurar(config);
             Balanceamento.Envio.Configurar(config);
             Interface.Novidades.Configurar(config);
             Interface.MenuCoop.Configurar(config);

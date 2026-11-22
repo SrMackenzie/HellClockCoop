@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using BepInEx.Configuration;
 using HellClock.Damage;
 using HellClock.Manager;
 using HellClock.Player;
@@ -15,11 +14,11 @@ namespace HellClockCoop.Fase2
     /// em 22/11/2026:
     /// - Automática: quem está de pé fica a até 2 m do aliado caído, parado e sem usar skill (a poção não conta), e a
     ///   reanimação corre; não há tecla.
-    /// - Duração: SegundosParaReanimar (padrão 3) vezes a ordem da reanimação no andar (3, 6, 9 s…), para o grupo não
+    /// - Duração: SegundosBase (3 s, fixo no código) vezes a ordem da reanimação no andar (3, 6, 9 s…), para o grupo não
     ///   virar imortal sem cobrar de novo o relógio (os −10 s da queda já cobram).
     /// - Golpe recebido por quem reanima congela o avanço por 1 s; enquanto congelado, o progresso cai 1 s por segundo.
     ///   Mover, usar skill, sair do raio ou trocar de alvo zera.
-    /// - O reanimado volta com VidaAoReanimar (padrão 30%; a volta no próximo andar continua com VidaAoVoltarDoChao).
+    /// - O reanimado volta com VidaAoReanimar (30%, fixo no código; a volta no próximo andar continua com VidaAoVoltarDoChao).
     /// Rede: quem reanima conta o progresso (só ele sabe se andou, usou skill ou levou golpe) e manda Reanimando a 5 Hz
     /// para o andar; ao terminar manda Reanimou. Cada um é dono da própria vida: o caído levanta na máquina dele, se a
     /// mensagem é do andar dele e quem a mandou está perto (Validacao.ReanimouValido). Todos contam a reanimação do andar
@@ -38,7 +37,9 @@ namespace HellClockCoop.Fase2
 
         internal enum Estado : byte { Enchendo = 0, Interrompido = 1, FiqueParado = 2 }
 
-        internal static ConfigEntry<float> SegundosBase, VidaAoReanimar;
+        // Valores do autor, fixos no código: não vão para o .cfg (decisão de 22/11/2026). Iguais em todos os PCs.
+        internal const float SegundosBase = 3f;       // 1ª reanimação do andar; a n-ésima leva n × isso
+        internal const float VidaAoReanimar = 0.3f;   // fração da vida com que o reanimado levanta
 
         /// <summary>Progresso visto na tela para um caído (o seu, se é você quem reanima, ou o recebido de outro).</summary>
         internal struct Progresso
@@ -69,19 +70,10 @@ namespace HellClockCoop.Fase2
         private static SessaoCoop Sessao => RunCompartilhada.Sessao;
         private static DungeonProgressManager Dpm => DungeonProgressManager.Instance;
 
-        internal static void Configurar(ConfigFile config)
-        {
-            SegundosBase = config.Bind("Balanceamento", "SegundosParaReanimar", 3f,
-                "Segundos parado ao lado do aliado caído para reanimá-lo (1 a 15). No mesmo andar, cada reanimação " +
-                "seguinte demora mais: 1×, 2×, 3× esse tempo. Padrão 3.");
-            VidaAoReanimar = config.Bind("Balanceamento", "VidaAoReanimar", 0.3f,
-                "Fração da vida (0,05 a 1) com que o aliado reanimado levanta. Vale o valor de quem levanta. Padrão 0,3.");
-        }
+        internal static float FracaoAoReanimar => VidaAoReanimar;
 
-        internal static float FracaoAoReanimar => Mathf.Clamp(Validacao.Finito(VidaAoReanimar.Value) ? VidaAoReanimar.Value : 0.3f, 0.05f, 1f);
-
-        /// <summary>Duração da próxima reanimação neste andar (3, 6, 9 s… com o padrão).</summary>
-        internal static float DuracaoAtual => Mathf.Clamp(Validacao.Finito(SegundosBase.Value) ? SegundosBase.Value : 3f, 1f, 15f) * (_noAndar + 1);
+        /// <summary>Duração da próxima reanimação neste andar (3, 6, 9 s…).</summary>
+        internal static float DuracaoAtual => SegundosBase * (_noAndar + 1);
 
         private static bool EmRun => Dpm != null && Dpm.RunStarted.Value && !Dpm.EndingExecuted.Value;
 

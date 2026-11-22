@@ -1025,6 +1025,22 @@ modo eco conta como aliado de pé (só teste).
   escalados para o grupo inteiro. Quem fica de pé luta sozinho contra inimigos de dupla. Comparado à 0.14.0, em que a
   morte do host encerrava a run de todos, o grupo dura mais; o custo de tempo e a escala cheia mantêm o coop um pouco
   mais difícil que o solo. A calibragem (entrega 4) usa os dados da dupla.
+- **Menu com você caído (Esc):** o `PauseButton.TogglePause` do jogo recusa a pausa quando
+  `PlayerController.IsPlayerBlockedFromPause` é verdadeiro, e ele é verdadeiro com o jogador local morto
+  (`LifeController.IsDead`), que é como o caído fica. O `Caido_BloqueioPausa` (postfix) devolve falso com você caído
+  numa run em andamento (`RunStarted` e sem `EndingExecuted`). O mesmo método entra no `IsPlayerBlockedFromUIActions`,
+  mas ali o `CanPerformAction` bloqueado pelo caído continua barrando inventário e janelas. No coop o menu não congela o
+  mundo (`Run_PauseGame`). "Terminar run" no menu (decisões do autor em 22/11/2026):
+  - **Host caído:** encerra a run para todos, como o host de pé (`FinishDungeon(ManualFinish)` → `FimRun`).
+  - **Convidado caído:** sai sozinho (`RunCompartilhada.ConvidadoAbandonou`, só com `ManualFinish` e você caído). A
+    run dele acaba como no solo e os outros continuam. Até o `FimRun` daquele host ou o primeiro plano da run seguinte,
+    os planos dele são ignorados, para o convidado não ser puxado de volta no próximo andar. No host, o convidado no
+    hub deixa de contar como "na run" (`NaRun`), então não segura a run de ninguém. De pé, o "Terminar run" do
+    convidado continua bloqueado. A trava zera também quando este PC deixa de ser convidado (saiu ou caiu da sessão).
+  - Caso conhecido, não tratado: na Penitência, no último andar sem inimigos, o "Terminar run" do jogo vira
+    `Disappear` + `FinishDungeon(Completed)`, não `ManualFinish`. O convidado caído ali segue bloqueado como o de pé
+    (o personagem some e a run continua até o host usar o portal). É raro, porque o andar limpo já levanta o caído.
+  - O `Run_FinishDungeon` só devolve a vida do caído (`FimDaRun`) quando o fim roda de fato neste PC (`__state`).
 
 ### 12.5 Reanimação do aliado caído (versão 0.16.0, protocolo 17)
 
@@ -1039,7 +1055,7 @@ queda; visual da opção B ("barra do aliado").
   (`Time.unscaledDeltaTime`). Golpe (`LifeController.OnHurt` com `LifeDamageValue > 0`) congela o avanço por 1 s;
   congelado, o progresso cai 1 s por segundo. Andar, usar skill, sair do raio ou trocar de alvo zera. Sem patch Harmony
   novo: só eventos do jogo, registrados uma vez por personagem.
-- **Duração:** `SegundosParaReanimar` (1 a 15, padrão 3) vezes a ordem da reanimação no andar. Cada PC conta as
+- **Duração:** `Reanimacao.SegundosBase` (3 s) vezes a ordem da reanimação no andar. Cada PC conta as
   reanimações do andar (as suas e os `Reanimou` que ouviu); a conta zera na troca de andar e no fim da run.
 - **Rede (protocolo 17):** `Reanimando` (tipo 26, canal não confiável, a 5 Hz, todos → mesmo andar: alvo, andar, estado
   0 enchendo / 1 interrompido / 2 "fique parado" e fração) e `Reanimou` (tipo 27, confiável, todos → mesmo andar: alvo e
@@ -1058,8 +1074,7 @@ queda; visual da opção B ("barra do aliado").
 - **Snapshot fora de ordem:** a `SessaoCoop` guarda a `Sequencia` do snapshot que decidiu `Morto`; um pacote igual ou
   até 64 atrás não muda `Morto` (`Validacao.SequenciaAtrasada`), para um "caído" velho não cobrar a queda de novo
   depois da reanimação. Diferença maior conta como contagem recomeçada no outro PC.
-- **`.cfg` inválido:** `NaN` ou infinito em `SegundosParaReanimar`, `VidaAoReanimar` ou `VidaAoVoltarDoChao` vale o
-  padrão.
+- **`.cfg` inválido:** `NaN` ou infinito em `VidaAoVoltarDoChao` vale o padrão.
 - **Visual (opção B, `AliadosNaTela` e `CaidoNaTela`):**
   - Barra do aliado caído: barra fina 90x7 logo abaixo dela (trilho preto 62%, preenchimento verde #7FB77E, vermelho
     #B3261E quando interrompido); o rótulo "caído" vira "reanimando" (verde), "interrompido" (vermelho) ou "fique
@@ -1069,8 +1084,9 @@ queda; visual da opção B ("barra do aliado").
   - Fim: aviso no topo, ao centro, em âmbar: "Fulano te levantou", "Você levantou Fulano" ou "Fulano levantou
     Beltrano". O preenchimento é pela âncora (o `Image.Filled` sem sprite não corta). Reserva no `OnGUI` igual.
 - **Modo eco:** o fantasma não reanima nem é reanimado (ele repete você). O teste é em dupla.
-- **`.cfg`, seção `[Balanceamento]`:** `SegundosParaReanimar` (vale o de quem reanima) e `VidaAoReanimar` (0,05 a 1,
-  padrão 0,3; vale o de quem levanta).
+- **Valores fixos (fora do `.cfg`):** `SegundosBase` (3 s) e `VidaAoReanimar` (30%) são constantes da `Reanimacao`,
+  iguais em todos os PCs. O autor do mod os calibra; o jogador não os muda (decisão de 22/11/2026). As linhas
+  `SegundosParaReanimar` e `VidaAoReanimar` que a 0.16.0 gravou no `.cfg` ficam órfãs e não são lidas.
 - **Métricas:** cada andar do resumo ganhou `quedas` (as suas), `reanimacoes` (aliados que você levantou) e `reanimado`
   (vezes que te levantaram). As regras do Firestore só conferem os campos do topo, então o `formato` continua 1 e as
   regras não mudam. `mortes` continua contando o `OnDie` do jogo (queda e morte final).

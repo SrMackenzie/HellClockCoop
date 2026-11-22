@@ -44,6 +44,7 @@ namespace HellClockCoop
             new Alvo("2", "HellClock.Manager.DungeonProgressManager", "AdvanceLevel", "Avanço de andar comandado pelo host; com o host caído, o portal do convidado vira pedido (0.15.0)"),
             new Alvo("2", "HellClock.Player.PlayerController", "Handle_OnDie", "Jogador caído: a morte do jogador local vira queda; a run só acaba quando todos caem (0.15.0)"),
             new Alvo("2", "HellClock.Character.StatBasedValueController", "Refill", "Subir de nível caído não devolve a vida (0.15.0)"),
+            new Alvo("2", "HellClock.Player.PlayerController", "IsPlayerBlockedFromPause", "Caído abre o menu (Esc) e pode abandonar a run"),
             new Alvo("2", "HellClock.Level.LevelBlock", "GenerateNextLevel", "Forçar no cliente a LevelDefinition sorteada pelo host"),
             new Alvo("2", "HellClock.Level.LevelObjects", "SetupEnemies", "Cliente não gera inimigos próprios"),
             new Alvo("2", "HellClock.Level.LevelObjects", "SetupLevelObjects", "Totens, santuários e portais vêm do host"),

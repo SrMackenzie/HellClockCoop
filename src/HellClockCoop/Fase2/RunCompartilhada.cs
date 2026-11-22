@@ -38,6 +38,7 @@ namespace HellClockCoop.Fase2
         private static PlanoAndar _entradaTardia;   // entrar numa run já em andamento
         private static bool _ordemDoHost;            // libera as entradas de run bloqueadas
         private static bool _avisouBloqueio;
+        private static ulong _abandonouHost;         // SteamID do host cuja run você abandonou caído (0 = nenhum)
 
         // Estado do host
         private static PlanoAndar _ultimoPlano;
@@ -90,6 +91,7 @@ namespace HellClockCoop.Fase2
 
         public static void Atualizar(PlayerController jogador)
         {
+            if (!Convidado) _abandonouHost = 0; // fora da sessão (saiu ou caiu): ao voltar, acompanha a run do host
             if (Sessao == null) return;
             if (Host) AtualizarHost();
             if (Convidado) AtualizarConvidado(jogador);
@@ -161,6 +163,8 @@ namespace HellClockCoop.Fase2
                     if (!Convidado || de != sessao.Host) return;
                     PlanoAndar plano = PlanoAndar.Desserializar(dados);
                     if (!PlanoValido(plano)) return;
+                    if (plano.Primeiro) _abandonouHost = 0; // run nova do host: você volta a acompanhar
+                    else if (_abandonouHost != 0 && _abandonouHost == de.Id.m_SteamID) return; // você saiu desta run
                     if (plano.Primeiro) { Planos.Clear(); SpawnsDoHost.Clear(); }
                     Planos[plano.IndiceAndar] = plano;
                     _planoPendente = plano;
@@ -245,6 +249,7 @@ namespace HellClockCoop.Fase2
                         return;
                     }
                     Planos.Clear(); SpawnsDoHost.Clear(); _planoPendente = null; _entradaTardia = null; SementeCena = 0;
+                    _abandonouHost = 0; // a run que você abandonou acabou
                     JogadorCaido.FimDaRunNoHost(); // o convidado também esquece as quedas já avisadas
                     if (!Dpm.RunStarted.Value || Dpm.EndingExecuted.Value) return;
                     Plugin.Log.LogInfo($"[Run] Host encerrou a run ({(EGameOverSource)f.Motivo}).");
@@ -414,6 +419,22 @@ namespace HellClockCoop.Fase2
             SementeCena = 0; // a run dele acaba: o hub sorteia como no jogo
             Plugin.Log.LogWarning("[Run] A morte do jogo rodou no convidado (era para ficar caído): sua run acaba; você volta quando o host passar de andar.");
             Sessao.Avisar("Sua run acabou. Quando o host passar de andar, você volta para a run dele.");
+            return true;
+        }
+
+        /// <summary>
+        /// Convidado caído que abandona a run pelo menu (Esc → Terminar run): só a run dele acaba, como no
+        /// solo; o host e os outros continuam. Até o host encerrar a run (FimRun) ou começar outra, os planos dela são
+        /// ignorados, para ele não ser puxado de volta no próximo andar. De pé, o "Terminar run" do convidado segue
+        /// bloqueado (o fim da run é do host). Decisão do autor em 22/11/2026.
+        /// </summary>
+        internal static bool ConvidadoAbandonou(EGameOverSource fonte)
+        {
+            if (!Convidado || _ordemDoHost || fonte != EGameOverSource.ManualFinish || !JogadorCaido.Caido) return false;
+            _abandonouHost = Sessao.Host != null ? Sessao.Host.Id.m_SteamID : 0;
+            Planos.Clear(); SpawnsDoHost.Clear(); _planoPendente = null; _entradaTardia = null; SementeCena = 0;
+            Plugin.Log.LogInfo("[Run] Você abandonou a run caído; o grupo continua sem você.");
+            Sessao.Avisar("Você saiu da run. O grupo continua; você volta na próxima run do host.");
             return true;
         }
 

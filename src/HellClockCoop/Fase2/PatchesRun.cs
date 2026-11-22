@@ -146,20 +146,23 @@ namespace HellClockCoop.Fase2
     [HarmonyPatch(typeof(DungeonProgressManager), nameof(DungeonProgressManager.FinishDungeon))]
     internal static class Run_FinishDungeon
     {
-        private static bool Prefix(EGameOverSource source, ref Coroutine __result)
+        private static bool Prefix(EGameOverSource source, ref Coroutine __result, out bool __state)
         {
+            __state = true; // o fim da run vai rodar neste PC
             if (RunCompartilhada.ConvidadoMorreu(source)) return true; // a run DELE acaba; volta no próximo andar do host
+            if (RunCompartilhada.ConvidadoAbandonou(source)) return true; // caído, saiu pelo menu: só a run dele acaba
             if (!RunCompartilhada.BloquearAcaoDoConvidado("encerra a run")) return true;
+            __state = false;
             __result = null;
             return false;
         }
 
-        private static void Postfix(EGameOverSource source)
+        private static void Postfix(EGameOverSource source, bool __state)
         {
             Balanceamento.Metricas.Motivo(source);
-            // Caído no fim da run: libera as ações; a volta ao hub fica com o jogo. No convidado, só no fim mandado pelo
-            // host (o postfix roda mesmo com o prefixo bloqueando).
-            if (!RunCompartilhada.Convidado || RunCompartilhada.PermitidoAgora) JogadorCaido.FimDaRun();
+            // Caído no fim da run: libera as ações; a volta ao hub fica com o jogo. Só quando o fim roda de verdade (o
+            // postfix roda mesmo com o prefixo bloqueando o convidado).
+            if (__state) JogadorCaido.FimDaRun();
             if (!RunCompartilhada.Convidado) RunCompartilhada.HostTerminou(source);
         }
     }

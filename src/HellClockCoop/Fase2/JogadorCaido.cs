@@ -148,6 +148,14 @@ namespace HellClockCoop.Fase2
             return false;
         }
 
+        /// <summary>Postfix de IsPlayerBlockedFromPause: caído numa run que ainda não acabou pode abrir o menu.</summary>
+        internal static bool PodePausarCaido()
+        {
+            if (!Caido) return false;
+            DungeonProgressManager dpm = Dpm;
+            return dpm != null && dpm.RunStarted.Value && !dpm.EndingExecuted.Value;
+        }
+
         /// <summary>Prefixo de StatBasedValueController.Refill: subir de nível caído não devolve a vida.</summary>
         internal static bool PodeEncher(StatBasedValueController valor)
         {
@@ -335,6 +343,21 @@ namespace HellClockCoop.Fase2
     internal static class Caido_HandleOnDie
     {
         private static bool Prefix(PlayerController __instance) => JogadorCaido.AoMorrer(__instance);
+    }
+
+    /// <summary>
+    /// Alvo: HellClock.Player.PlayerController.IsPlayerBlockedFromPause (estático) — o jogo barra a pausa (Esc,
+    /// PauseButton.TogglePause) com o jogador local morto, e o caído fica com vida 0. Caído numa run em andamento, o
+    /// menu abre: dá para abandonar a run (convidado sai sozinho, host encerra para todos; Run_FinishDungeon). As ações
+    /// de interface (IsPlayerBlockedFromUIActions, que chama este método) continuam barradas pelo CanPerformAction.
+    /// </summary>
+    [HarmonyPatch(typeof(PlayerController), nameof(PlayerController.IsPlayerBlockedFromPause))]
+    internal static class Caido_BloqueioPausa
+    {
+        private static void Postfix(ref bool __result)
+        {
+            if (__result && JogadorCaido.PodePausarCaido()) __result = false;
+        }
     }
 
     /// <summary>Alvo: HellClock.Character.StatBasedValueController.Refill — subir de nível caído não devolve a vida.</summary>

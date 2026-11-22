@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.16.1 — Menu do jogo com você caído 🧪
+_22/11/2026_
+
+- Caído, o Esc abre o menu do jogo, como de pé. Inventário e janelas continuam fechados até você levantar
+- Host caído: "Terminar run" encerra a run para todos, como o host de pé
+- Convidado caído: "Terminar run" tira só você. O grupo continua e você não é puxado de volta no próximo andar; volta na próxima run do host
+- A duração (3 s, 6 s, 9 s...) e a vida da reanimação (30%) agora são fixas no mod: saíram do .cfg (SegundosParaReanimar e VidaAoReanimar não são mais lidos)
+- Exige a 0.16.1 em todos os PCs (o protocolo continua o 17)
+
 ## 0.16.0 — Reanimação do aliado caído 🧪
 _22/11/2026_
 
