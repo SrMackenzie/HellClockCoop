@@ -554,12 +554,21 @@ namespace HellClockCoop.Interface
 
         // ---------- Reserva: desenho no OnGUI do runtime ----------
 
-        /// <summary>Botão "Menu do coop" abaixo do painel do canto: só no menu (sem personagem) e sem outra janela aberta.</summary>
+        /// <summary>
+        /// Botão "Menu do coop" abaixo do painel do canto: só no menu (sem personagem) e sem outra janela aberta. Desenhado
+        /// com a peça de aba do jogo (PainelNativo) e um botão invisível por cima para o clique; sem ela, o botão simples.
+        /// </summary>
         internal static void DesenharBotaoMenu(float y)
         {
             if (_aberto || !_semPersonagem || Balanceamento.JanelaAceite.Aberta || Novidades.Aberta) return;
             Estilos();
-            if (GUI.Button(new Rect(12f, y, 240f, LadoBotao), new GUIContent($"Menu do coop  ({Tecla.Value})"), _botao))
+            string texto = $"Menu do coop ({Tecla.Value})";
+            if (PainelNativo.BotaoDoMenu(12f, y, texto, out Rect area))
+            {
+                if (GUI.Button(area, GUIContent.none, _invisivel)) Abrir("botão do painel", false);
+                return;
+            }
+            if (GUI.Button(new Rect(12f, y, 240f, LadoBotao), new GUIContent(texto), _botao))
                 Abrir("botão do painel", false);
         }
 

@@ -19,13 +19,16 @@ namespace HellClockCoop.Interface
     ///   trocado pela localização. Quem posiciona, foca e grava (no .cfg do mod) é o MenuCoop.
     /// - Canvas próprio (sobreposição, ordem 900), escala do jogo (1920x1080, pela altura). Sem GraphicRaycaster: o
     ///   EventSystem fica desligado pelo BloqueioEntrada e o mouse é lido pelo MenuCoop (AcaoSob, AbaSob, FecharSob, NaBarra).
+    /// - Montado na primeira vez que o botão "Menu do coop" aparece no menu do jogo (o BotaoDoMenu tenta a cada 2 s) ou na
+    ///   primeira abertura. O botão usa a peça de aba num segundo canvas (HellClockCoop.BotaoDoMenu, ordem 890), posto nos
+    ///   pixels do OnGUI divididos por Screen.height/1080; o EsconderBotaoParado o apaga no Update quando o OnGUI deixa de pedi-lo.
     /// - Qualquer peça ausente ou erro: o MenuCoop volta à gaveta desenhada no OnGUI.
     /// </summary>
     internal static class PainelNativo
     {
         private const float LarguraPainel = 720f, AlturaPainel = 900f, AlturaSecao = 46f, AlturaMinimaItem = 48f;
         private const float TopoAbas = -150f, TopoConteudo = -196f, BaseConteudo = 78f;
-        private const float LarguraAba = 180f, AlturaAba = 44f, LarguraValor = 180f;
+        private const float LarguraAba = 180f, AlturaAba = 44f, LarguraValor = 180f, LarguraBotao = 260f;
         private const float TamanhoTexto = 18f, TamanhoInfo = 17f, TamanhoRodape = 15f;
 
         private static readonly Color CorTexto = new Color(0.62f, 0.57f, 0.55f);
@@ -49,8 +52,11 @@ namespace HellClockCoop.Interface
             public GameObject Destaque;
         }
 
-        private static GameObject _raiz, _escurecer;
-        private static RectTransform _painel, _viewport, _lista, _fechar;
+        private static GameObject _raiz, _escurecer, _botaoRaiz, _botaoDestaque;
+        private static RectTransform _painel, _viewport, _lista, _fechar, _botao;
+        private static TMP_Text _botaoTexto;
+        private static int _botaoQuadro;
+        private static float _proximaTentativa;
         private static Transform _deposito;
         private static GameObject _mSecao, _mInfo, _mLinha, _mDeslizante;
         private static TMP_Text _rodape;
@@ -104,7 +110,9 @@ namespace HellClockCoop.Interface
         {
             _desativado = true;
             if (_raiz != null) Object.Destroy(_raiz);
-            _raiz = null;
+            if (_botaoRaiz != null) Object.Destroy(_botaoRaiz);
+            _raiz = _botaoRaiz = null;
+            _botao = null;
             Abas.Clear();
             Visuais.Clear();
         }
@@ -126,17 +134,7 @@ namespace HellClockCoop.Interface
         private static void Construir(Transform fundo, Transform cabecalho, Transform aba, Transform fundoConteudo,
                                       Transform secao, Transform linha, Transform deslizante)
         {
-            _raiz = new GameObject("HellClockCoop.MenuDoCoop");
-            Object.DontDestroyOnLoad(_raiz);
-            _raiz.SetActive(false);
-            Canvas canvas = _raiz.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 900; // acima das janelas do jogo, abaixo do aviso de save (1000)
-            CanvasScaler escala = _raiz.AddComponent<CanvasScaler>();
-            escala.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            escala.referenceResolution = new Vector2(1920f, 1080f);
-            escala.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            escala.matchWidthOrHeight = 1f; // como o jogo: pela altura (ultrawide ganha largura, não escala)
+            _raiz = NovoCanvas("HellClockCoop.MenuDoCoop", 900); // acima das janelas do jogo, abaixo do aviso de save (1000)
 
             var deposito = new GameObject("Modelos");
             deposito.transform.SetParent(_raiz.transform, false);
@@ -201,6 +199,23 @@ namespace HellClockCoop.Interface
                 Transform destaque = rt.Find("GuideHighlight (1)");
                 Abas.Add(new Aba { Rt = rt, Texto = t, Destaque = destaque != null ? destaque.gameObject : null });
             }
+
+            // Botão "Menu do coop" do menu do jogo: a mesma peça das abas, num canvas próprio (a janela só fica ativa aberta).
+            // Quem posiciona e trata o clique é o MenuCoop, no OnGUI, logo abaixo do painel do canto.
+            _botaoRaiz = NovoCanvas("HellClockCoop.BotaoDoMenu", 890);
+            _botao = Copiar(aba, _botaoRaiz.transform, "Botao");
+            _botao.anchorMin = _botao.anchorMax = new Vector2(0f, 1f);
+            _botao.pivot = new Vector2(0f, 1f);
+            Transform fundoBotao = _botao.Find("Background");
+            if (fundoBotao != null) Esticar((RectTransform)fundoBotao, 0f, 0f, 0f, 0f);
+            _botaoTexto = Texto(_botao, "Text");
+            if (_botaoTexto != null)
+            {
+                Esticar(_botaoTexto.rectTransform, 0f, 0f, 0f, 0f);
+                Estilo(_botaoTexto, TamanhoTexto, TextAlignmentOptions.Center, false);
+            }
+            Transform destaqueBotao = _botao.Find("GuideHighlight (1)");
+            _botaoDestaque = destaqueBotao != null ? destaqueBotao.gameObject : null;
 
             // Conteúdo: fundo interno das Opções, com recorte e a lista que rola.
             RectTransform conteudo = Copiar(fundoConteudo, _painel, "Conteudo");
@@ -348,6 +363,55 @@ namespace HellClockCoop.Interface
         internal static void Esconder()
         {
             if (_raiz != null && _raiz.activeSelf) _raiz.SetActive(false);
+        }
+
+        /// <summary>
+        /// Mostra o botão "Menu do coop" com a interface do jogo a partir de (x, y) em pixels da tela (coordenadas do OnGUI)
+        /// e devolve a área dele, para o clique. Falso: interface do jogo indisponível, o MenuCoop desenha o botão simples.
+        /// Chamado no OnGUI a cada quadro em que o botão deve aparecer; sem chamada, o EsconderBotaoParado o apaga.
+        /// </summary>
+        internal static bool BotaoDoMenu(float x, float y, string texto, out Rect area)
+        {
+            area = default(Rect);
+            if (_desativado) return false;
+            if (_raiz == null)
+            {
+                if (Time.unscaledTime < _proximaTentativa) return false; // sem a janela das Opções: tenta de novo a cada 2 s
+                _proximaTentativa = Time.unscaledTime + 2f;
+                if (!Preparar()) return false;
+            }
+            if (_botao == null) return false;
+            try
+            {
+                float escala = Screen.height / 1080f; // escala do canvas (pela altura)
+                if (escala <= 0f) return false;
+                float alturaPx = Mathf.Max(44f, AlturaAba * escala); // alvo de 44 px reais também abaixo de 1080p
+                area = new Rect(x, y, LarguraBotao * escala, alturaPx);
+                _botao.anchoredPosition = new Vector2(x / escala, -y / escala);
+                _botao.sizeDelta = new Vector2(LarguraBotao, alturaPx / escala);
+                bool sob = area.Contains(Event.current.mousePosition);
+                if (_botaoTexto != null)
+                {
+                    if (_botaoTexto.text != texto) _botaoTexto.text = texto;
+                    _botaoTexto.color = sob ? Color.white : new Color(1f, 1f, 1f, 0.8f);
+                }
+                if (_botaoDestaque != null && _botaoDestaque.activeSelf != sob) _botaoDestaque.SetActive(sob);
+                if (!_botaoRaiz.activeSelf) _botaoRaiz.SetActive(true);
+                _botaoQuadro = Time.frameCount;
+                return true;
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Menu] Botão do menu com a interface do jogo falhou; volta ao botão simples: {e}");
+                Desativar();
+                return false;
+            }
+        }
+
+        /// <summary>No Update: apaga o botão do menu se o OnGUI parou de pedi-lo (menu aberto, run, outra janela).</summary>
+        internal static void EsconderBotaoParado()
+        {
+            if (_botaoRaiz != null && _botaoRaiz.activeSelf && Time.frameCount - _botaoQuadro > 1) _botaoRaiz.SetActive(false);
         }
 
         internal static void ZerarRolagem() => _rolagem = 0f;
@@ -568,6 +632,23 @@ namespace HellClockCoop.Interface
         }
 
         // ---------- Cópia e limpeza ----------
+
+        /// <summary>Canvas próprio, inativo: sobreposição na ordem dada e a escala do jogo (1920x1080, pela altura).</summary>
+        private static GameObject NovoCanvas(string nome, int ordem)
+        {
+            var go = new GameObject(nome);
+            Object.DontDestroyOnLoad(go);
+            go.SetActive(false);
+            Canvas canvas = go.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = ordem;
+            CanvasScaler escala = go.AddComponent<CanvasScaler>();
+            escala.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            escala.referenceResolution = new Vector2(1920f, 1080f);
+            escala.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            escala.matchWidthOrHeight = 1f; // como o jogo: pela altura (ultrawide ganha largura, não escala)
+            return go;
+        }
 
         /// <summary>Copia uma peça do jogo para o depósito inativo, tira os scripts e só então a põe no destino.</summary>
         private static RectTransform Copiar(Transform modelo, Transform destino, string nome)

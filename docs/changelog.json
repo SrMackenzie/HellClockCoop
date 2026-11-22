@@ -7,7 +7,7 @@
       "testado": false,
       "titulo": "Menu do coop com a cara do jogo",
       "itens": [
-        "O menu do coop (F7 ou View/Select) virou uma janela no centro da tela feita com as peças das Opções do próprio jogo: moldura, fontes, cores, abas, caixas de marcar e barras",
+        "O menu do coop (F7 ou View/Select) virou uma janela no centro da tela feita com as peças das Opções do próprio jogo: moldura, fontes, cores, abas, caixas de marcar e barras. O botão \"Menu do coop\" no canto do menu do jogo também ganhou esse visual",
         "Duas abas, trocadas com LB/RB, com as setas laterais ou com o clique: Sessão (estado, aliados, criar e convidar, sair, modo eco) e Ajustes",
         "Na aba Ajustes, além dos nomes e dos números de dano dos aliados: o tamanho do dano, os sons das skills dos aliados e o volume deles, que antes só mudavam no .cfg. Tudo continua gravado no .cfg do mod, nunca nas opções do jogo",
         "A aba Ajustes mostra também o balanceamento deste .cfg, só para leitura",

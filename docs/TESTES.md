@@ -408,7 +408,12 @@ Solo basta (o convite e a saída não mudaram desde a 0.9.3). Atualizar a partir
 autor em 22/11/2026: a janela abre com a interface do jogo e a seta para a direita troca de aba (com o painel ainda à
 direita, antes de ir para o centro). Teste do autor no jogo, em 22/11/2026: a janela central e os itens abaixo passaram,
 menos as linhas do cabeçalho, que vazavam pelos lados (eram da largura da janela das Opções). Corrigido: o log mostra
-`[Menu] Cabeçalho cabendo na janela (720): …` com as peças encurtadas; conferir que as linhas acabam dentro da janela.
+`[Menu] Cabeçalho cabendo na janela (720): …` com as peças encurtadas (conferido: TopLine 880→720, BottomLine 854→720).
+Depois, o botão "Menu do coop (F7)" do canto do menu, que ainda era o botão cinza do Unity, passou a usar a peça de aba
+das Opções:
+- [ ] **Botão do menu:** no menu do jogo, abaixo do painel do canto, o botão "Menu do coop (F7)" tem o visual das abas
+  da janela; ao passar o mouse o texto clareia e aparece o enfeite de baixo; o clique abre a janela. Some com a janela
+  aberta, durante a run e com a Novidades (F10) aberta, e volta ao fechar.
 
 - [ ] **Abrir e visual:** no menu do jogo, F7 (e o botão "Menu do coop (F7)") abre a janela **no centro** com a moldura,
   o título "COOP", o [X] e as abas das Opções do jogo; o resto da tela escurece. No log:

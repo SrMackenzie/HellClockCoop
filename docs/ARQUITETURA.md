@@ -817,7 +817,7 @@ F10 (Esc, B e o mouse chegariam ao jogo), corpo recortado com `GUI.BeginGroup` e
 
 Desde a 0.12.0, `Interface/MenuCoop.cs` guarda o conteúdo, o foco e a entrada, e `Interface/PainelNativo.cs` desenha o
 menu com a interface do próprio jogo: uma janela no centro da tela (720 × 900 no canvas de 1080 de altura), montada na
-primeira abertura com cópias, em tempo de execução, das peças da `HellClock.UI.Options.OptionsWindow` de PC (a de
+primeira exibição do botão "Menu do coop" no menu do jogo (nova tentativa a cada 2 s) ou na primeira abertura, com cópias, em tempo de execução, das peças da `HellClock.UI.Options.OptionsWindow` de PC (a de
 celular, `OptionsScreenMobile`, fica de fora): fundo `Container/MiddleLeftAnchor/Background`, cabeçalho `Header` (linhas,
 título "COOP" e o [X]), botão de aba `SwitchButtons/GameplayButton` (duas cópias: Sessão e Ajustes), fundo do conteúdo
 `Content/Bg`, título de seção `TitleGameplay`, a primeira linha `ToggleWithLabel` (caixa de marcar) e a primeira
@@ -831,6 +831,12 @@ nem para o pacote.
 - Canvas próprio em sobreposição (ordem 900, abaixo do aviso de save do jogo), escala do jogo (1920 × 1080 pela altura:
   em ultrawide a janela não estica). Sem `GraphicRaycaster`: o mouse é lido pelo `MenuCoop` (Input System, legado de
   reserva) e testado nos retângulos do painel (`AcaoSob`, que devolve a ação desenhada e não o índice; `AbaSob`, `FecharSob`, `NaBarra`, `FracaoNoDeslizante`).
+- Botão "Menu do coop (F7)" do canto do menu: outra cópia do botão de aba, num segundo canvas (`HellClockCoop.BotaoDoMenu`,
+  ordem 890). O `MenuCoop.DesenharBotaoMenu` (OnGUI) chama `PainelNativo.BotaoDoMenu`, que o põe nos pixels do OnGUI
+  divididos por `Screen.height / 1080` e acende o destaque com o mouse em cima; um `GUI.Button` invisível na mesma área
+  recebe o clique. O `EsconderBotaoParado`, no começo do `AtualizarMenus` (antes da saída com a Novidades aberta), apaga o
+  canvas quando o OnGUI deixa de pedir o botão (menu aberto, run, Novidades, aceite). Sem a interface do jogo, o botão
+  simples do OnGUI.
 - Sem patch Harmony novo e sem mudança no `BloqueioEntrada`: o módulo de entrada da UI do jogo continua desligado com o
   menu aberto, porque a navegação é do mod.
 - Se uma peça não é achada (ex.: o jogo renomeou), o menu usa a gaveta desenhada no OnGUI (IMGUI, 1080p escalado, à
@@ -880,7 +886,7 @@ S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum 
 |---|---|---|---|---|
 | COOP-MENU-TECLA | F7 abre e fecha o menu do coop | menu e jogo | R | `[Teclas] MenuDoCoop` (a antiga `CriarOuConvidar` fica sem uso; `SairDoCoop`, a F6, saiu) |
 | COOP-MENU-VIEW | View/Select do controle (`selectButton`, `JoystickButton6` no legado) abre e fecha | menu e jogo | R | — |
-| COOP-MENU-ABRIR | Botão "Menu do coop (F7)" abaixo do painel do canto | só no menu (sem personagem) | R | — |
+| COOP-MENU-ABRIR | Botão "Menu do coop (F7)" abaixo do painel do canto (0.12.0: peça de aba das Opções do jogo, destaque ao passar o mouse; na reserva, o botão simples do OnGUI) | só no menu (sem personagem) | R | — |
 | COOP-MENU-FECHAR | [X] no cabeçalho; Esc, B, F7 ou View | menu aberto | R (libera a entrada 2 quadros depois) | — |
 | COOP-ABA-SESSAO / COOP-ABA-AJUSTES | Abas "Sessão" e "Ajustes" (botão de aba das Opções do jogo); LB/RB, setas laterais fora de um deslizante ou clique | janela (0.12.0); na reserva, uma lista só | R | — |
 | COOP-ALIADO | Linha por aliado: nome e estado | aba Sessão, em sessão | ∅ | — |

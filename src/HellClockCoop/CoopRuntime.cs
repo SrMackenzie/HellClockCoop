@@ -99,6 +99,7 @@ namespace HellClockCoop
         private void AtualizarMenus(bool semPersonagem)
         {
             Interface.BloqueioEntrada.Atualizar(); // primeiro: libera a entrada do jogo se nenhum painel pediu no quadro anterior
+            Interface.PainelNativo.EsconderBotaoParado(); // o botão do menu some quando o OnGUI deixa de pedi-lo
             _sessao.TentarInicializar();
             Balanceamento.JanelaAceite.Atualizar(semPersonagem);
             Interface.Novidades.Atualizar(semPersonagem); // depois do aceite: abre só com ele fechado
