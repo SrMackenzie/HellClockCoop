@@ -154,7 +154,8 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
 |---|---|---|
 | `DropManager.SetupPlayerController` | — | Referência: cada máquina rola o próprio loot com o próprio `PlayerController` |
 | `EnemyManager.OnAfterEnemyKilled` (evento) | — | Garantir que a morte de réplica no cliente passe pelo fluxo normal de kill; o drop sai sozinho |
-| **A investigar** | — | Como XP, ouro e Soulstones são concedidos: por `attacker.OnKill` (só quem mata) ou por evento global? |
+| `DropBalance.CalculateExperienceDrop` | Prefixo | XP: não é por `attacker.OnKill`. Cada máquina, na morte local do inimigo (`DropManager.CalculateEnemyDrop` → `RollDrop`), dá `xp × ExperienceGain` ao próprio jogador, sem checar distância; chefe pelo `FeedbackBossXp`. O mod multiplica `baseExperience` pelo fator de XP em run multiplayer |
+| `GoldTreasureClass.RollGoldValue` / `SoulStoneTreasureClass.RollSoulStonesAmount` / `CurrencyTreasureClass.RollLoot` | Postfix / Postfix / Prefixo | Ouro e Soulstones são sorteados no drop (e na bênção) com os atributos do jogador local e coletados no chão (`PlayerInventoryController.Collect`). O mod multiplica o valor; a moeda de criação é sempre 1, então o fator vira a chance de o drop sair. Venda (`SellGear`), ouro inicial (`StartedRun`) e cheats não passam por aqui |
 
 ### Fase 5 — Polimento
 - Escala por número de jogadores: `EnemyManager.SheetScalingModifiers` e `EnemyGlobalModifiers` já existem para modificadores de sheet dos inimigos.
@@ -672,6 +673,13 @@ Decisão do projeto: **em grupo, um pouco mais difícil que o solo**. Prioridade
   TimerBonus e passa pelo mesmo ponto. Motivo: com loot individual, cada jogador pega as próprias recompensas de tempo.
 - *Jogadores:* 1 + aliados compatíveis com a mesma DLC (igual nos dois lados). Valores em `[Balanceamento]`, "2, 3, 4"
   (aceita "1,7; 2,4; 3,1").
+- *XP, ouro, Soulstones e moedas de criação (0.10.0):* decisão do autor, cada um ganha o valor de cada inimigo × fator
+  (`XpGanho`, `OuroGanho`; padrão 0,83 / 0,71 / 0,63 = 1/quantidade, para o ganho por andar ficar perto do solo). Só com
+  run iniciada e mais de um jogador; aplicado em cada PC, no próprio ganho (o loot é individual). Pontos:
+  prefixo em `DropBalance.CalculateExperienceDrop` (`baseExperience`), postfix em `GoldTreasureClass.RollGoldValue` e
+  `SoulStoneTreasureClass.RollSoulStonesAmount` (drop e bênção; vale para inimigo, chefe, vaso, baú, loot do andar, goblin e Sanctum, tudo que rola esses tesouros) e prefixo em `CurrencyTreasureClass.RollLoot` (a moeda é
+  sempre 1: o fator vira a chance de sair). `Escalonamento.Escalar` arredonda por sorteio, para a média ficar
+  valor × fator sem zerar ganhos pequenos (teste no `codectest`).
 
 **Métricas.** `Balanceamento/Metricas.cs` grava no fim de cada run (volta ao hub) `metricas/run-AAAAMMDD-hhmmss.json`:
 formato, versões, id aleatório da instalação, papel (solo/host/convidado), jogadores, dungeon, tier, Ascensão, nível,

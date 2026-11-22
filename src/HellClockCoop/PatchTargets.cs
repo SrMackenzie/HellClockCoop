@@ -95,6 +95,10 @@ namespace HellClockCoop
             // Balanceamento (trilha permanente)
             new Alvo("3", "EnemyManager", "ApplySheetScaling", "Vida e dano dos inimigos por número de jogadores"),
             new Alvo("3", "TimerManager", "IncrementTimer", "Tempo ganho no Hell Clock por número de jogadores"),
+            new Alvo("3", "HellClock.Drop.DropBalance", "CalculateExperienceDrop", "XP de cada inimigo por número de jogadores (em run)"),
+            new Alvo("3", "HellClock.Drop.GoldTreasureClass", "RollGoldValue", "Ouro de drop e bênção por número de jogadores (em run)"),
+            new Alvo("3", "HellClock.Drop.SoulStoneTreasureClass", "RollSoulStonesAmount", "Soulstones de drop e bênção por número de jogadores (em run)"),
+            new Alvo("3", "HellClock.Drop.CurrencyTreasureClass", "RollLoot", "Chance de a moeda de criação sair, por número de jogadores (em run)"),
 
             // Fase 4 — loot
             new Alvo("4", "DropManager", "SetupPlayerController", "Drops instanciados por jogador (namespace global, não HellClock.Drop)"),

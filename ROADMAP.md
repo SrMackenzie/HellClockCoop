@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 21/11/2026 · versão 0.9.9. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 21/11/2026 · versão 0.10.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -8,13 +8,14 @@
 
 Regra do projeto: uma fase só é dada como concluída depois de confirmada **rodando no jogo**.
 
-## Trilha permanente — Balanceamento · 45%
+## Trilha permanente — Balanceamento · 48%
 
 _Prioridade 1, trilha permanente: o coop deve ser um pouco mais difícil que o solo, com ajustes guiados por dados. Toda versão passa por revisão de balanceamento._
 
 | | Item |
 |:-:|---|
 | 🧪 | Escalonamento por número de jogadores: vida, chefes, dano, quantidade de inimigos e tempo ganho |
+| 🧪 | XP, ouro, Soulstones e moedas de criação em grupo: cada um × 0,83 / 0,71 / 0,63 (2 / 3 / 4 jogadores), só em run |
 | 🧪 | Valores ajustáveis no arquivo de configuração, sem recompilar |
 | 🧪 | Resumo de balanceamento de cada run, salvo no computador |
 | 🧪 | Envio anônimo dos resumos, só com aceite (Firebase, só criação) |
@@ -82,7 +83,7 @@ _Mesmos inimigos para todos, cada um vê as skills do outro, inimigos atacam qua
 | 🧪 | Status de controle do convidado (lentidão, congelamento, atordoamento, enraizamento) valendo no host; os de dano ficam pessoais |
 | ⬜ | Boneco de DPS do hub visível para o outro |
 
-## Fase 4 — Loot · 55%
+## Fase 4 — Loot · 75%
 
 _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio save._
 
@@ -90,7 +91,7 @@ _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio s
 |:-:|---|
 | ✅ | Loot e XP de cada inimigo morto saem do jogo de cada um |
 | 🧪 | Loot próprio de baús e quebráveis |
-| ⬜ | Revisar XP de inimigos mortos longe do jogador |
+| ✅ | Revisar XP de inimigos mortos longe do jogador (o jogo não confere distância: cada um ganha o XP de todo inimigo morto) |
 | ⬜ | Revisar drops de invocações, ondas de sobrevivência e temporadas |
 | ✅ | Auditoria: o mod nunca escreve no save de outro jogador |
 

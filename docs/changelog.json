@@ -2,6 +2,24 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.10.0",
+      "data": "21/11/2026",
+      "testado": false,
+      "titulo": "XP e ouro em grupo",
+      "itens": [
+        "Em grupo cada jogador ganhava 100% do XP, do ouro, das Soulstones e das moedas de criação de cada inimigo, e com mais inimigos por andar (×1,2 / 1,4 / 1,6) o ganho passava do solo",
+        "Agora, só em run com aliados, cada um ganha o próprio × 0,83 / 0,71 / 0,63 com 2 / 3 / 4 jogadores, o que deixa o ganho por andar perto do solo. Vale para tudo que o jogo sorteia como drop: inimigos, chefes, vasos e caixas, baús, loot do andar e as bênçãos de ouro e de Soulstones. Nas moedas de criação o fator é a chance de o drop sair",
+        "Valores no .cfg (seção Balanceamento: XpGanho e OuroGanho), lidos no PC de cada um. No solo e no hub nada muda. Venda de equipamento e ouro inicial não mudam",
+        "Balanceamento: o ganho por andar fica perto do solo (0,83 × 1,2 ≈ 1,0), sem deixar o grupo subir de nível mais rápido. Protocolo não muda (12), mas o coop exige a mesma versão do mod nos dois PCs"
+      ],
+      "testar": [
+        "Solo: o XP e o ouro de um inimigo comum ficam iguais aos de antes",
+        "Run com 2 jogadores: o XP de cada inimigo e o ouro do chão ficam em torno de 83% do solo, nos dois PCs",
+        "Log ao entrar o aliado: a linha [Balanceamento] mostra XP ×0,83 e ouro/Soulstones/moedas ×0,83",
+        "Hub com aliado: comprar e vender continuam com os valores normais"
+      ]
+    },
+    {
       "v": "0.9.9",
       "data": "21/11/2026",
       "testado": false,

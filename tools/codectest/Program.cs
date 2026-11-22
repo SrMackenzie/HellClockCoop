@@ -461,5 +461,36 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Checar(!L(100, 100) && !L(100, 101) && L(100, 102) && L(-10, 0), "Entrada: libera o jogo só dois quadros depois do último pedido do painel");
 }
 
+// Balanceamento: lista "2, 3, 4" do .cfg e XP/ouro/Soulstones/moedas em coop (cada um × fator, arredondamento sorteado)
+{
+    var te = T("HellClockCoop.Balanceamento.Escalonamento");
+    var fl = te.GetMethod("FatorDaLista", BindingFlags.NonPublic | BindingFlags.Static);
+    var es = te.GetMethod("Escalar", BindingFlags.NonPublic | BindingFlags.Static);
+    float F(string texto, int n) => (float)fl.Invoke(null, new object[] { texto, n });
+    double E(double v, float f, double sorteio) => (double)es.Invoke(null, new object[] { v, f, sorteio });
+    bool Perto(float a, float b) => Math.Abs(a - b) < 1e-6f;
+
+    const string padrao = "0.83, 0.71, 0.63";
+    Checar(Perto(F(padrao, 2), 0.83f) && Perto(F(padrao, 3), 0.71f) && Perto(F(padrao, 4), 0.63f), "Fator: 0,83 / 0,71 / 0,63 para 2 / 3 / 4 jogadores");
+    Checar(F(padrao, 1) == 1f && F(padrao, 0) == 1f, "Fator: solo (1 jogador) fica ×1");
+    Checar(Perto(F(padrao, 5), 0.63f) && Perto(F("0.9", 4), 0.9f), "Fator: além da lista usa o último valor");
+    Checar(Perto(F("0,83; 0,71; 0,63", 3), 0.71f) && Perto(F("0,83 / 0,71 / 0,63", 4), 0.63f), "Fator: vírgula decimal com ; ou /");
+    Checar(F("", 2) == 1f && F(null, 2) == 1f && F("abc, 0.7", 2) == 1f && F("-0.5", 2) == 1f && F("0", 2) == 1f, "Fator: vazio, inválido, zero ou negativo fica ×1");
+
+    Checar(E(100, 1f, 0.99) == 100 && E(7.5, 1f, 0) == 7.5, "Escalar: fator 1 não mexe no valor");
+    Checar(E(0, 0.83f, 0) == 0, "Escalar: zero continua zero");
+    Checar(E(10, 0.83f, 0.29) == 9 && E(10, 0.83f, 0.31) == 8, "Escalar: 10 × 0,83 = 8,3 → 9 se o sorteio < 0,3, senão 8");
+    Checar(E(1, 0.63f, 0.62) == 1 && E(1, 0.63f, 0.64) == 0, "Escalar: 1 × 0,63 → 1 com 63% de chance (moeda/XP pequeno não some sempre)");
+    Checar(E(250, 0.71f, 0.999) == 177 && E(250, 0.71f, 0) == 178, "Escalar: 250 × 0,71 = 177,5 → 177 ou 178");
+    Checar(E(-5, 0.83f, 0) == -5 && double.IsNaN(E(double.NaN, 0.83f, 0)), "Escalar: valor negativo ou NaN passa sem mexer");
+    // a média sobre sorteios uniformes tem de ser valor × fator (sem viés para cima nem para baixo)
+    foreach (var (v, f) in new[] { (1.0, 0.63f), (3.0, 0.83f), (37.0, 0.71f), (1234.0, 0.63f) })
+    {
+        double soma = 0; const int passos = 10000;
+        for (int i = 0; i < passos; i++) soma += E(v, f, (i + 0.5) / passos);
+        Checar(Math.Abs(soma / passos - v * f) < 1e-3, $"Escalar: média de {v} × {f} = {soma / passos:0.####} (esperado {v * f:0.####})");
+    }
+}
+
 Console.WriteLine(falhas == 0 ? "\nTODOS OS TESTES PASSARAM" : $"\n{falhas} FALHA(S)");
 return falhas;

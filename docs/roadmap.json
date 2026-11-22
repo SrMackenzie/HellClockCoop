@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "21/11/2026",
-  "versao": "0.9.9",
+  "versao": "0.10.0",
   "fases": [
     {
       "id": "B",
@@ -11,6 +11,10 @@
         [
           "testar",
           "Escalonamento por número de jogadores: vida, chefes, dano, quantidade de inimigos e tempo ganho"
+        ],
+        [
+          "testar",
+          "XP, ouro, Soulstones e moedas de criação em grupo: cada um × 0,83 / 0,71 / 0,63 (2 / 3 / 4 jogadores), só em run"
         ],
         [
           "testar",
@@ -208,8 +212,8 @@
           "Loot próprio de baús e quebráveis"
         ],
         [
-          "planejado",
-          "Revisar XP de inimigos mortos longe do jogador"
+          "feito",
+          "Revisar XP de inimigos mortos longe do jogador (o jogo não confere distância: cada um ganha o XP de todo inimigo morto)"
         ],
         [
           "planejado",

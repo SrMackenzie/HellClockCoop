@@ -4,6 +4,14 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.10.0 — XP e ouro em grupo 🧪
+_21/11/2026_
+
+- Em grupo cada jogador ganhava 100% do XP, do ouro, das Soulstones e das moedas de criação de cada inimigo, e com mais inimigos por andar (×1,2 / 1,4 / 1,6) o ganho passava do solo
+- Agora, só em run com aliados, cada um ganha o próprio × 0,83 / 0,71 / 0,63 com 2 / 3 / 4 jogadores, o que deixa o ganho por andar perto do solo. Vale para tudo que o jogo sorteia como drop: inimigos, chefes, vasos e caixas, baús, loot do andar e as bênçãos de ouro e de Soulstones. Nas moedas de criação o fator é a chance de o drop sair
+- Valores no .cfg (seção Balanceamento: XpGanho e OuroGanho), lidos no PC de cada um. No solo e no hub nada muda. Venda de equipamento e ouro inicial não mudam
+- Balanceamento: o ganho por andar fica perto do solo (0,83 × 1,2 ≈ 1,0), sem deixar o grupo subir de nível mais rápido. Protocolo não muda (12), mas o coop exige a mesma versão do mod nos dois PCs
+
 ## 0.9.9 — Dano do aliado no boneco de treino 🧪
 _21/11/2026_
 

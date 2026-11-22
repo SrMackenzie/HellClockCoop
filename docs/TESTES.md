@@ -386,6 +386,26 @@ Golpe, ataque e morte não dependem disso. Se ainda faltar som depois desta vers
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `indisponível (som de movimento da
   réplica)`) e a lista do que falta de som.
 
+## 0.10.0 — XP, ouro, Soulstones e moedas em grupo
+
+Decisão do autor: cada jogador ganha o valor de cada inimigo × 0,83 / 0,71 / 0,63 (2 / 3 / 4 jogadores), só em run com
+aliados. Achado no IL: o ganho não é de quem mata; cada PC dá XP e rola o próprio loot na morte local do inimigo, sem
+checar distância. O fator é aplicado em cada PC (sem mensagem de rede). Ouro e Soulstones arredondam por sorteio
+(a média fica exata); a moeda de criação (sempre 1) sai com chance igual ao fator.
+
+- [ ] **Solo (controle):** XP de um inimigo comum e ouro do chão como na 0.9.9; o log não mostra XP/ouro escalados.
+- [ ] **Run em dupla:** em cada PC, o XP por inimigo e o ouro do chão ficam em torno de 83% do solo (comparar o mesmo
+  andar e dificuldade). A linha `[Balanceamento] 2 jogador(es): … XP ×0,83, ouro/Soulstones/moedas ×0,83` aparece.
+- [ ] **Chefe em dupla:** o XP do chefe também cai para ~83% nos dois PCs.
+- [ ] **Bênção de ouro ou de Soulstones em dupla:** o valor oferecido é ~83% do solo.
+- [ ] **Vasos e baús em dupla:** o ouro de cada vaso ou baú também cai para ~83% (muda o "igual ao solo" da 0.9.6).
+- [ ] **Moedas de missão:** nenhuma moeda obrigatória de progressão deixa de cair (o fator vale para toda moeda do
+  `CurrencyTreasureClass`, inclusive fragmentos).
+- [ ] **Hub com aliado (controle):** vender equipamento e o ouro inicial da run continuam normais.
+- Se falhar, mandar: o `LogOutput.log` dos dois (linhas `[Balanceamento]` e qualquer erro de patch ao iniciar).
+
+---
+
 ## 0.9.9 — Dano do aliado no boneco de treino
 
 Responde ao achado "dano do convidado no boneco de treino do hub não aparece no host". Causa achada no IL: o boneco
