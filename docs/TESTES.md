@@ -405,7 +405,7 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 ## 0.16.0 — Reanimação do aliado caído
 
 Só em dupla: o fantasma do modo eco não reanima. Exige a 0.16.0 nos dois PCs (protocolo 17). Dá para testar junto com
-a 0.15.0 (seção abaixo), que ainda não foi testada no jogo. Balanceamento (prioridade 1): anotar se reanimar fica fácil
+a 0.15.0 (seção abaixo), que só teve o teste solo do autor (22/11/2026). Balanceamento (prioridade 1): anotar se reanimar fica fácil
 demais no meio da luta ou se 30% de vida é pouco.
 - [ ] **Reanimar:** um cai; o outro fica parado ao lado (até 2 m). Esperado: sob a barra do caído, uma barra verde
   enche em 3 s com o rótulo "reanimando"; o caído vê na faixa "<nome> está te reanimando" e a barra. No fim, o caído
@@ -428,11 +428,17 @@ demais no meio da luta ou se 30% de vida é pouco.
 Solo com o modo eco (F8) cobre a queda, a tela do caído e o fim da run; a volta no próximo andar, o aviso de queda do
 aliado e o portal com o host caído ficam para a dupla. Exige a 0.15.0 nos dois PCs (protocolo 16). Balanceamento
 (prioridade 1): anotar se o grupo fica fácil demais ou se a perda de 10 s pesa demais.
-- [ ] **Queda (eco):** numa run, com o eco ligado, morra. Esperado: o personagem deita e não anda nem ataca; a tela fica
+
+**Teste solo do autor (22/11/2026, DLL 0.16.0):** queda e relógio confirmados (o personagem fica caído, o Hell Clock
+segue correndo). Pedidos para a próxima entrega: (1) refazer a tela do caído com peças do próprio jogo, porque a faixa
+atual ficou fraca; (2) com você caído, o menu do jogo não abre: precisa abrir, inclusive para abandonar a run ali.
+- [x] **Queda (eco):** numa run, com o eco ligado, morra. Esperado: o personagem deita e não anda nem ataca; a tela fica
   em cinza; embaixo, a faixa "VOCÊ CAIU", "Volta no próximo andar, com 50% da vida" e "1 de 2 de pé"; o Hell Clock
   perde 10 s; os inimigos largam você; a HUD do jogo continua e a run não acaba. Log: `[Caído] Você caiu (−10 s no Hell
-  Clock); volta no próximo andar.` e `[Caído] Faixa do jogador caído montada com a fonte do jogo.` (sem essa linha, a
-  faixa sai no desenho simples: anotar).
+  Clock); volta no próximo andar ou se um aliado te reanimar.` e `[Caído] Faixa do jogador caído montada com a fonte do
+  jogo.` (sem essa linha, a faixa sai no desenho simples: anotar). Confirmado em 22/11/2026; a faixa vai ser refeita.
+- [ ] **Menu caído (eco, falhou em 22/11/2026):** caído, aperte Esc. Hoje o menu do jogo não abre; a correção vem na
+  próxima entrega (menu e abandono da run com você caído).
 - [ ] **Subir de nível caído (eco):** se o XP dos aliados subir o nível, você continua no chão. Esperado, não é falha:
   sozinho com o eco, ninguém mata inimigos, então isso só aparece na dupla.
 - [ ] **Fim da run (eco):** ainda caído, desligue o eco (F8). Esperado: a morte do jogo roda (câmera, resultados) e a
@@ -445,8 +451,9 @@ aliado e o portal com o host caído ficam para a dupla. Exige a 0.15.0 nos dois 
   `[Run] Você está caído: <testador> leva o grupo`.
 - [ ] **Dupla, os dois caem:** a run acaba para os dois (resultados normais). Log do host: `[Caído] Ninguém de pé: a run
   acaba.` e `[Run] Fim da run (Defeat); avisando os convidados.` O convidado não vê "Sua run acabou...".
-- [ ] **Hell Clock com o host caído (eco):** caído, o relógio continua descendo (não para). Se zerar, a run acaba por
-  tempo e, no hub, o personagem está de pé com a vida cheia.
+- [x] **Hell Clock com o host caído (eco):** caído, o relógio continua descendo (não para; confirmado em 22/11/2026).
+- [ ] **Relógio zerado caído (eco):** se zerar com você caído, a run acaba por tempo e, no hub, o personagem está de pé
+  com a vida cheia (ainda não visto).
 - [ ] **Último andar com o host caído (dupla):** o convidado mata o chefão; o host levanta com metade da vida e usa o
   portal final. Log do host: `[Caído] Último andar limpo: você levanta`.
   Se o host cair depois de o último andar já estar limpo, ele levanta logo em seguida (log igual).
