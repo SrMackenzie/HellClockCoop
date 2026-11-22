@@ -402,6 +402,30 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.11.0 — Sons das skills e golpes dos aliados
+
+Achado no IL: a cópia dos efeitos do aliado nunca passava pelo `GameplayFx.CreateFx`, que é onde o jogo toca o som do
+efeito, e as skills, o golpe e o disparo do aliado não tocavam nada no outro PC. O golpe do aliado num inimigo também saía
+sem som de dor e sem sangue, porque o jogo só cria esses efeitos no próprio golpe. Agora os sons vão pela rede (só o
+identificador do som) e o golpe se repete no mesmo inimigo. Protocolo 14: o coop exige a 0.11.0 nos dois PCs.
+
+- [ ] **Log ao abrir o jogo:** `[Sons] Contexto de som em N método(s) de skill (0 com falha, 0 ausente(s), 0 sem lançador)`
+  e nenhuma linha `[Validação] Fase 8`.
+- [ ] **Modo eco (F8), sozinho:** cada skill sua toca de novo ~1 s depois, no fantasma (ataque com arma, skills com
+  projétil, área e explosão). O golpe do fantasma no inimigo repete sangue e som de dor.
+- [ ] **Coop, cada um na sua vez:** as skills do aliado soam perto dele (mais baixo quando ele está longe), o ataque com a
+  arma e os disparos também; o golpe do aliado num inimigo faz o som de dor e o sangue, nos dois sentidos (host e convidado).
+- [ ] **Sem som em dobro:** as suas próprias skills soam uma vez só no seu PC (com e sem o aliado perto). O golpe e a morte
+  de um inimigo pelo aliado (tiro, facas) soam uma vez só no seu PC.
+- [ ] **Sons que duram:** skill contínua ou canalizada do aliado para de soar quando ele para; nada fica tocando sozinho
+  depois (no máximo 20 s).
+- [ ] **Configuração:** `[Audio] SonsDosAliados = false` no `.cfg` deixa as skills e o som de dor dos aliados mudos (o sangue
+  continua); `VolumeDosAliados` entre 0 e 1 muda o volume dos sons das skills (o som de dor dos golpes fica no volume normal).
+- [ ] **Versão:** com 0.10.1 de um lado e 0.11.0 do outro, o coop recusa a conexão (protocolo 13 × 14).
+- Se faltar som em alguma skill, anotar qual e mandar o `LogOutput.log` dos dois PCs (linhas `[Sons]`, `[Golpes]` e
+  `[Fx] Cópia de … sem N emissor(es)`). Corrotinas que tocam vários sons espaçados podem soar só no primeiro: é a parte
+  pendente da etapa.
+
 ---
 
 ## 0.10.0 — XP, ouro, Soulstones e moedas em grupo

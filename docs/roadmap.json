@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
-  "atualizado": "21/11/2026",
-  "versao": "0.10.0",
+  "atualizado": "22/11/2026",
+  "versao": "0.11.0",
   "fases": [
     {
       "id": "B",
@@ -251,7 +251,7 @@
           "Reconexão e troca de host sem perder a run"
         ],
         [
-          "planejado",
+          "testar",
           "Sons das skills e dos golpes dos aliados"
         ],
         [

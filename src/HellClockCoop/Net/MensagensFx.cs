@@ -41,7 +41,7 @@ namespace HellClockCoop.Net
 
         public static FxNovo Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoFxNovo, r =>
         {
-            var f = new FxNovo { Id = r.ReadUInt16(), Guid = r.ReadString(), TipoPai = r.ReadByte(), Caminho = r.ReadString(), InimigoId = r.ReadUInt16(), Posicao = Bin.LerVetor(r) };
+            var f = new FxNovo { Id = r.ReadUInt16(), Guid = Bin.LerTexto(r, Bin.TextoCurto), TipoPai = r.ReadByte(), Caminho = Bin.LerTexto(r, Bin.TextoCaminho), InimigoId = r.ReadUInt16(), Posicao = Bin.LerVetor(r) };
             f.Rotacao = new Quaternion(r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
             f.Escala = Bin.LerVetor(r);
             f.LinhaNoMundo = r.ReadBoolean();
@@ -206,7 +206,7 @@ namespace HellClockCoop.Net
             {
                 f.Nos.Add(new No
                 {
-                    Caminho = r.ReadString(),
+                    Caminho = Bin.LerTexto(r, Bin.TextoCaminho),
                     Ativo = r.ReadBoolean(),
                     Posicao = Bin.LerVetor(r),
                     Rotacao = new Quaternion(r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle()),

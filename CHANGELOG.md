@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.11.0 — Sons das skills e golpes dos aliados 🧪
+_22/11/2026_
+
+- As skills do aliado apareciam sem som: a cópia dos efeitos é só visual e o jogo toca o som de cada efeito num ponto por onde a cópia não passa. A skill em si, o ataque com a arma e os disparos também não tocavam nada no outro PC
+- Agora o som de cada skill, ataque e disparo do aliado vai pela rede (só o identificador do som) e toca no seu PC, perto dele ou preso ao efeito, junto com a animação. Sons que duram param quando param no PC dele
+- O golpe do aliado num inimigo passa a fazer o som de dor do tipo de dano, o sangue e a luz, como o seu; antes saía mudo nos dois sentidos
+- Novo no .cfg, seção [Audio]: SonsDosAliados (liga e desliga) e VolumeDosAliados (0 a 1). No modo eco (F8), o fantasma repete os seus sons para testar com um PC só
+- Balanceamento: só som e efeito, sem mudança de dificuldade. Protocolo 14: o coop exige a 0.11.0 nos dois PCs
+
 ## 0.10.1 — Sobrevivência e temporadas iguais no convidado 🧪
 _21/11/2026_
 

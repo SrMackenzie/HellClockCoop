@@ -25,7 +25,7 @@ namespace HellClockCoop
         }
 
         // Tipo = nome completo como aparece no HellClock.dll (namespace + classe).
-        internal static readonly Alvo[] Todos =
+        private static readonly Alvo[] Fixos =
         {
             // Fase 0 — diagnóstico (patches ativos nesta versão)
             new Alvo("0", "PlayerManager", "Setup", "Detectar o PlayerController local pronto"),
@@ -107,7 +107,18 @@ namespace HellClockCoop
 
             // Fase 5 — polimento (interface; fora das fases ativas: se sumir, só este patch cai e o menu segue sem segurar os eixos)
             new Alvo("5", "HellClock.GameInput.InputHandler", "Update", "Zerar movimento e mira com um painel do mod aberto (menu do coop, Novidades)"),
+
+            // Etapa 8 — sons e golpes dos aliados (0.11.0). Fase "8": só cosmético; se faltar, avisa e o resto do mod roda.
+            // Os métodos de contexto das skills (ContextosDeSom.Lista) entram no fim da lista, em Todos.
+            new Alvo("8", "HellClock.Audio.AudioController", "PlaySfx", "Som num ponto numa skill do jogador local vai aos aliados"),
+            new Alvo("8", "HellClock.Audio.AudioController", "PlayAndAttachSfx", "Som preso ao jogador local ou a um efeito dele vai aos aliados"),
+            new Alvo("8", "HellClock.VFX.CharacterEffectsController", "CreateDamageFX", "Sangue, som de dor e efeito do golpe do jogador local vão aos aliados"),
+            new Alvo("8", "HellClock.Damage.DamageDealer", "PerformDamageWrapper", "Sons do golpe (dor, morte) não vão como som de skill"),
         };
+
+        internal static readonly Alvo[] Todos = Fixos
+            .Concat(Fase3.ContextosDeSom.Lista.Select(c => new Alvo("8", c.Tipo, c.Metodo, c.Corrotina ? "Contexto de som da skill (corrotina: MoveNext)" : "Contexto de som da skill")))
+            .ToArray();
 
         /// <summary>Fases com patches ativos nesta versão; se faltar qualquer alvo delas, nada é patcheado.</summary>
         private static readonly string[] FasesAtivas = { "0", "1", "2", "3" };

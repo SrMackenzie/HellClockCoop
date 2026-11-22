@@ -110,7 +110,8 @@ namespace HellClockCoop.Fase3
             Plugin.Log.LogInfo("[Dano] Boneco de treino registrado (números dos aliados nele).");
         }
 
-        private static EnemyController AlvoDe(ushort id)
+        /// <summary>Inimigo compartilhado pelo netId, ou o boneco de treino deste PC (também usado pelos golpes vistos).</summary>
+        internal static EnemyController AlvoDe(ushort id)
         {
             if (id != DanosVistos.IdBoneco) return InimigosCompartilhados.PorId(id);
             return _boneco != null ? _boneco : null; // null do Unity: boneco destruído na troca de cena

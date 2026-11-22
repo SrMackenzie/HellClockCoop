@@ -11,7 +11,7 @@ namespace HellClockCoop.Net
     internal static class Protocolo
     {
         /// <summary>Muda sempre que o formato de qualquer mensagem mudar. Pares com versões diferentes não conversam.</summary>
-        public const int Versao = 13; // 13: XP e tesouro próprios da réplica em InimigoSpawn/InimigoAjuste (0.10.1)
+        public const int Versao = 14; // 14: sons das skills (55, 56) e golpes vistos (57) dos aliados (0.11.0)
 
         public const int CanalConfiavel = 0;
         public const int CanalSnapshots = 1;
@@ -53,6 +53,11 @@ namespace HellClockCoop.Net
         public const byte TipoFxNos = 54;       // canal não confiável
         public const byte TipoInimigoSkill = 37;
         public const byte TipoStatusInimigos = 38; // convidado → host (0.9.0)
+
+        // Etapa 8 — sons das skills e golpes dos aliados (0.11.0)
+        public const byte TipoSonsAliado = 55;   // todos → todos no mesmo andar
+        public const byte TipoSonsFim = 56;
+        public const byte TipoGolpesVistos = 57; // canal não confiável
 
         /// <summary>Chaves gravadas nos dados do lobby da Steam.</summary>
         public const string ChaveLobbyMod = "hcc_mod";
@@ -96,7 +101,7 @@ namespace HellClockCoop.Net
             using (var r = new BinaryReader(new MemoryStream(dados)))
             {
                 r.ReadByte();
-                return new Hello { Protocolo = r.ReadInt32(), VersaoMod = r.ReadString(), VersaoJogo = r.ReadString(), Nome = r.ReadString(), JaTeOuvi = r.ReadBoolean(), Deluxe = r.ReadBoolean(), CursedWar = r.ReadBoolean() };
+                return new Hello { Protocolo = r.ReadInt32(), VersaoMod = Bin.LerTexto(r, Bin.TextoCurto), VersaoJogo = Bin.LerTexto(r, Bin.TextoCurto), Nome = Bin.LerTexto(r, Bin.TextoNome), JaTeOuvi = r.ReadBoolean(), Deluxe = r.ReadBoolean(), CursedWar = r.ReadBoolean() };
             }
         }
     }
@@ -135,7 +140,7 @@ namespace HellClockCoop.Net
                 int n = r.ReadUInt16();
                 for (int i = 0; i < n; i++)
                 {
-                    a.Nos.Add(new KeyValuePair<string, bool>(r.ReadString(), r.ReadBoolean()));
+                    a.Nos.Add(new KeyValuePair<string, bool>(Bin.LerTexto(r, Bin.TextoCaminho), r.ReadBoolean()));
                 }
                 return a;
             }

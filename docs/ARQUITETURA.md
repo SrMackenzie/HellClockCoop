@@ -661,6 +661,71 @@ recebe clona a primeira irmã. Era o caso das facas da skill Reflexos girando em
   `MovementController.Warp` (decisão do autor: ninguém fica de fora da luta), se a posição do host estiver a até 60 m da
   porta. Ao sair do coop, reabre as barreiras que fechou por ordem do host. Até 64 ordens pendentes; uma busca por quadro.
 
+### 11.6 Sons das skills e golpes dos aliados (versão 0.11.0, protocolo 14)
+
+**De onde sai o som (IL do 2.1.1.1).** Todo som passa por `AudioController.PlaySfx(EventReference, Vector3?, List, bool, bool)`
+(num ponto) ou `PlayAndAttachSfx(EventReference, ISkillCaster | GameObject, List, bool)` (preso); as versões com
+`HcAudioEventReference` só repassam para estes. O `EventReference` do FMOD é um GUID (`getEventByID`), igual nos dois
+jogos. Nas skills: `ActiveSkill.Execute`/`ExecuteRaw` (`ActiveSkillDefinition.Sfx`, modo 1 no ponto do lançador, modo 2
+preso a ele em `_attachedActivationSfx`), `SkillMeleeAttack.Execute` (`CustomActivationSfx`), o fim do `GameplayFx.CreateFx`
+(`GameplaySfxConfig.SetupSfx` → `ActivateSfx(vfx, caster, pos)`, na hora ou no `IActivationVfx.OnActivation`; cinco
+posições: objeto, preso ao objeto, lançador, preso ao lançador, âncora do objeto), os disparos (`FireProjectile*`,
+`RangedAttack.FireSingleBullet`) e corrotinas de algumas skills (Reflexos, SecondWind, ChargedAttack…). Eventos de
+animação do jogador: `HellClockCharacterController.OnTriggerSfx` → `PlayAndAttachSfx(this)`. Golpe: `CharacterEffectsController.CreateDamageFX`
+(sangue, `_hurtSfx` com o parâmetro do tipo de dano quando há `EFxOnDamage.PlayDamageTypeHitSfx`, efeito do tipo e luz), chamado só
+pelo `DamageDealer.PerformDamageWrapper`, depois do `Hurt`.
+
+**Por que saía mudo.** A cópia do efeito (3b) nunca passa pelo `CreateFx` (o som mora na configuração do `GameplayFx`, não no
+prefab) e a limpeza tira tudo fora do `UnityEngine` (também um eventual `StudioEventEmitter`; o log `[Fx] Cópia de … sem N
+emissor(es)` mostra se algum prefab tem). Nada da skill em si ia pela rede. O avatar tem `fireEvents = false`. O golpe do
+convidado é aplicado no host com `LifeController.Hurt` direto e o do host chega ao convidado como vida: nenhum dos dois passa
+pelo `PerformDamageWrapper`.
+
+**Sons (55 SonsAliado e 56 SonsFim, confiáveis, todos → todos no mesmo andar), `Fase3/SonsAliados.cs`.**
+- *Captura:* prefixo/postfix/finalizador nos dois métodos centrais (`Fase3/PatchesSons.cs`); só a chamada de fora conta
+  (profundidade). O som é do jogador local quando vai preso a ele ou a algo dele (`SourceOrSelf`; companheiro vai como ponto),
+  ou quando toca dentro de um método de skill do jogador local: contador de contexto ligado por prefixo e finalizador nos
+  métodos de `ContextosDeSom.Lista` (em `Fase3/SonsAliados.cs`; a lista do IL acima; corrotina pelo `MoveNext` de `<Metodo>d__N`). O lançador sai da
+  instância (`Skill.SkillCaster`), de um parâmetro (`ISkillCaster`, `IAttacker`, `Skill`, `SingleBulletRequest`) ou de um
+  campo da máquina de estados (`<>4__this`, `skillCaster`). Skills de inimigo passam pelo mesmo prefixo e não contam.
+- *Item:* GUID (4 × int), modo (ponto, preso ao jogador, preso ao efeito pelo id do `FxCompartilhados`), posição de mundo e
+  até 4 parâmetros (nome, valor). Som preso a um efeito que não vai pela rede vira ponto. Som que dura (`isOneShot` falso, ou
+  `AttachedSfx._isOneShot` falso) ganha um Id; quando para (`AttachedSfx.Stopped` ou `PLAYBACK_STATE.STOPPED`), vai o
+  `SonsFim`. Até 64 itens por mensagem e 4 parâmetros por som (acima disso a mensagem é recusada inteira).
+- *Quem recebe:* espera 0,1 s (como os efeitos; no eco, o atraso do fantasma) e toca pelo mesmo `AudioController`: preso ao
+  avatar, preso à cópia do efeito (sem a cópia ainda carregada, no ponto) ou no ponto; `EventInstance.setVolume` com
+  `[Audio] VolumeDosAliados`; `[Audio] SonsDosAliados = false` desliga. Som que dura é parado no `SonsFim`, ao sumir o avatar,
+  ao sair do coop ou em 20 s.
+- *Golpe dentro da skill:* tiro, facas e golpes de corrotina aplicam o dano dentro do método de skill. Enquanto roda o
+  `DamageDealer.PerformDamageWrapper` (contador próprio), nada é capturado: o som de dor vai pelos golpes vistos e o de morte
+  sai da morte do inimigo em cada PC; sem isso, os dois tocariam duas vezes em quem recebe.
+- *Parâmetros:* o `PlaySfx` devolve a lista ao pool (que a esvazia) antes de sair; o prefixo copia os parâmetros.
+- *Evento aceito:* quem recebe consulta o FMOD (`getEventByID`, guardado por GUID): só evento 3D que não é snapshot (um 2D
+  tocaria em volume cheio em qualquer lugar; um snapshot mexe na mixagem) e som que dura só com Id. Até 64 sons que duram por
+  aliado; som de uma vez preso ao avatar ou à cópia é parado quando o FMOD termina (o `AudioController` guardaria a peça até
+  a próxima cena). Volume e parâmetros são reaplicados quando o `AudioController` recria a instância (corte por distância).
+- *Duas vezes no PC de quem lançou:* não. O som local é o do próprio jogo; o recebido só vem de mensagens dos outros; cópia e
+  avatar não tocam nada. O modo eco repete os próprios sons no fantasma de propósito (teste com um PC só).
+- *Pendente:* corrotina com espera entre sons fora da lista (o `ProjectileSpawnerConfig.FireProjectilesCoroutine` não sabe
+  quem lança: só o primeiro disparo, dentro do `Execute`, vai); sons dos gatilhos que rodam dentro do golpe (ao acertar e ao
+matar: `OnDealDamage`, `OnKill`, `TryToApplyAilments`) e loops de status presos ao jogador criados nesse momento, cortados
+junto com o som de dor; passos do avatar (`FootL/FootR`), fora desta etapa.
+
+**Golpes vistos (57 GolpesVistos, não confiável, 20 Hz, todos → todos no mesmo andar), `Fase3/GolpesVisiveis.cs`.** Postfix em
+`CharacterEffectsController.CreateDamageFX`: golpe do jogador local (atacante ou `SourceOrSelf`) num inimigo compartilhado (ou no
+boneco de treino, `DanosVistos.IdBoneco`) manda netId, `EFxOnDamage`, os tipos de dano presentes, o tipo principal (maior parte),
+crítico, direção e o ponto do golpe em relação ao inimigo. Quem recebe chama `CreateDamageFX` no mesmo inimigo com um
+`DamageInstance.RentDummy` dos mesmos tipos. Cada PC mostra cada golpe uma vez (o `Hurt` direto do host não cria efeito). Com
+`SonsDosAliados = false`, vai sem o som de dor.
+
+**Validação na recepção** (`Validacao`, casos no `codectest`): som com GUID não nulo, ponto finito a até 40 m do avatar de
+quem mandou, no máximo 40 sons por segundo por aliado, parâmetro com nome de 1 a 64 letras e valor finito; golpe visto só com
+os bits conhecidos de `EFxOnDamage` e de tipo, principal entre os presentes, vetores finitos, ponto a até 10 m do inimigo e no
+máximo 120 por segundo por aliado, e o inimigo a até 40 m do avatar de quem mandou. Avisos no máximo a cada 5 s por
+aliado. Todo texto lido da rede (todos os codecs) passa por `Bin.LerTexto`, que confere o tamanho declarado antes de ler: o
+`ReadString` do mscorlib do jogo reserva a memória pelo tamanho declarado. Os alvos são da fase "8" do `PatchTargets`: se uma atualização do jogo
+tirar um deles, só o som daquele ponto some (aviso no log) e o resto do mod roda.
+
 ## 12. Balanceamento (trilha permanente, versão 0.7.0)
 
 Decisão do projeto: **em grupo, um pouco mais difícil que o solo**. Prioridade 1: toda versão passa por revisão.
@@ -893,6 +958,8 @@ filtros puros ficam em `Net/Validacao.cs` e têm casos no `tools/codectest`.
 | `ObjetoUsado` | qualquer par | `Estado = Concluido` (purificação) só do host. Aviso no log |
 | `BauAberto`, `Quebrou`, `ObjetoUsado` (`Usado`) | qualquer par | — (o host repassa) |
 | `StatusInimigos` (0.9.0) | host, de convidado compatível e com a mesma DLC | duração e intensidade finitas e `> 0`, pelo menos 1 pilha (`Validacao.StatusValido`); duração limitada a 30 s, intensidade a 1–10 e pilhas ao `MaxStacks` (sem ele, 10; status que não acumula pilhas, `CanStack` falso, 1); mais de 512 itens recusa a mensagem; status desconhecido ou que não é de controle recusado (desde a 0.9.1, modificador de atributo só se for lentidão; seção 11.4). No máximo 20 avisos por convidado na sessão |
+| `SonsAliado`, `SonsFim` (0.11.0) | qualquer par compatível no mesmo andar, com avatar | GUID não nulo de evento 3D deste jogo (não snapshot), ponto finito a até 40 m do avatar, até 40 sons/s por aliado, até 64 itens e 4 parâmetros (nome de 1–64 letras, valor finito) por som; som que dura só com Id, até 64 por aliado, parado em 20 s (seção 11.6). Aviso a cada 5 s no máximo |
+| `GolpesVistos` (0.11.0) | qualquer par compatível no mesmo andar | `EFxOnDamage` e tipos só com bits conhecidos, principal entre os presentes, vetores finitos, ponto a até 10 m do inimigo, inimigo a até 40 m do avatar, até 120/s por aliado. Aviso a cada 5 s no máximo |
 | `Golpes` (0.8.5) | host, de qualquer convidado | dano finito e `> 0` (`Validacao.DanoValido`); NaN ou infinito mataria qualquer inimigo. Valor finito grande segue aceito: o dano do convidado é confiável (seção 2). Descarte sem log (20 Hz) |
 
 **Backup.** `SaveBackup.LimparAntigos` mantém no mínimo 1 cópia, mesmo com `BackupsMantidos` 0 ou negativo no `.cfg`.

@@ -138,6 +138,26 @@ namespace HellClockCoop.Fase3
         /// <summary>Efeito de skill do jogador local rastreado aqui (o AvatarFactory não o clona: a cópia animada vem daqui).</summary>
         internal static bool EhEfeitoDoJogador(GameObject go) => go != null && Locais.ContainsKey(go);
 
+        /// <summary>Id do efeito rastreado que contém o objeto (ele ou um pai até 8 níveis acima): som preso a um efeito (etapa 8).</summary>
+        internal static bool IdDoEfeito(GameObject go, out ushort id)
+        {
+            id = 0;
+            Transform t = go != null ? go.transform : null;
+            for (int n = 0; t != null && n < 8; n++, t = t.parent)
+            {
+                if (Locais.TryGetValue(t.gameObject, out FxLocal f))
+                {
+                    id = f.Id;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>Cópia do efeito <paramref name="id"/> de quem mandou (0 = eco), ou null se ainda não carregou.</summary>
+        internal static GameObject CopiaDe(ulong chave, ushort id) =>
+            Copias.TryGetValue(chave, out var dele) && dele.TryGetValue(id, out Copia c) && c.Go != null ? c.Go : null;
+
         /// <summary>Postfix de GameplayFx.CreateFx.</summary>
         internal static void EfeitoCriado(GameplayFx fx, ISkillCaster caster, Skill skill, GameObject go)
         {
@@ -635,8 +655,22 @@ namespace HellClockCoop.Fase3
             return true;
         }
 
+        private static int _emissoresLogados;
+
         private static void LimparParaVisual(GameObject go)
         {
+            // Etapa 8: o som dos efeitos vem pela rede (SonsAliados). Se algum prefab tiver um emissor próprio do FMOD,
+            // ele é removido aqui junto com os scripts; o log diz quais, para saber se falta algum som.
+            int emissores = 0;
+            foreach (Component c in go.GetComponentsInChildren<Component>(true))
+            {
+                if (c != null && c.GetType().Name == "StudioEventEmitter") emissores++;
+            }
+            if (emissores > 0 && _emissoresLogados < 8)
+            {
+                _emissoresLogados++;
+                Plugin.Log.LogInfo($"[Fx] Cópia de '{go.name}' sem {emissores} emissor(es) de som próprios do FMOD (StudioEventEmitter).");
+            }
             for (int passada = 0; passada < 6; passada++)
             {
                 int nesta = 0;

@@ -179,6 +179,8 @@ namespace HellClockCoop.Net
             Fase3.SantuariosCompartilhados.Encerrar();
             Fase3.PortasCompartilhadas.Encerrar();
             Fase3.FxCompartilhados.Encerrar();
+            Fase3.SonsAliados.Encerrar();
+            Fase3.GolpesVisiveis.Encerrar();
             Fase3.AlvosAliados.Encerrar();
             Lobby = CSteamID.Nil;
             _ultimaAparenciaEnviada = null;
@@ -447,6 +449,10 @@ namespace HellClockCoop.Net
                 case Protocolo.TipoFxNos:
                     Fase3.FxCompartilhados.Receber(this, p, dados);
                     break;
+                case Protocolo.TipoSonsAliado:
+                case Protocolo.TipoSonsFim:
+                    Fase3.SonsAliados.Receber(this, p, dados);
+                    break;
                 case Protocolo.TipoInimigoSkill:
                     Fase3.InimigosCompartilhados.Receber(this, p, dados);
                     break;
@@ -476,6 +482,11 @@ namespace HellClockCoop.Net
             if (dados[0] == Protocolo.TipoDanosVistos)
             {
                 Fase3.DanosVisiveis.Receber(this, p, dados);
+                return;
+            }
+            if (dados[0] == Protocolo.TipoGolpesVistos)
+            {
+                Fase3.GolpesVisiveis.Receber(this, p, dados);
                 return;
             }
             if (dados[0] == Protocolo.TipoFxMovimento || dados[0] == Protocolo.TipoFxNos)

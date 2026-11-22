@@ -262,6 +262,34 @@ namespace HellClockCoop.Net
     {
         public static void Escrever(BinaryWriter w, Vector3 v) { w.Write(v.x); w.Write(v.y); w.Write(v.z); }
         public static Vector3 LerVetor(BinaryReader r) => new Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
+
+        /// <summary>
+        /// Lê um texto do BinaryWriter.Write(string) (tamanho 7-bit + UTF-8) com teto em bytes. O ReadString do mscorlib
+        /// do jogo reserva a memória pelo tamanho declarado antes de ler: um tamanho falso de 2 GB num pacote de 10 bytes
+        /// alocaria isso tudo. Aqui o tamanho é conferido antes; acima do teto, FormatException (a mensagem é recusada).
+        /// </summary>
+        public static string LerTexto(BinaryReader r, int maxBytes)
+        {
+            int n = 0, deslocamento = 0;
+            byte b;
+            do
+            {
+                if (deslocamento >= 35) throw new FormatException("Tamanho de texto inválido.");
+                b = r.ReadByte();
+                n |= (b & 0x7F) << deslocamento;
+                deslocamento += 7;
+            }
+            while ((b & 0x80) != 0);
+            if (n < 0 || n > maxBytes) throw new FormatException($"Texto de {n} bytes (máximo {maxBytes}).");
+            byte[] bytes = r.ReadBytes(n);
+            if (bytes.Length != n) throw new EndOfStreamException();
+            return System.Text.Encoding.UTF8.GetString(bytes);
+        }
+
+        // Tetos de texto por campo (bem acima do uso real).
+        public const int TextoCurto = 64;    // GUID de prefab, nome de parâmetro de som, versões
+        public const int TextoNome = 256;    // nome da Steam (até 32 caracteres)
+        public const int TextoCaminho = 512; // caminho de osso ou de nó na hierarquia
     }
 }
 

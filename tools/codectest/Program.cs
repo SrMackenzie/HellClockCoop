@@ -269,6 +269,96 @@ IdaVolta("InimigoSkill", new (string, object)[] { ("Id", (ushort)300), ("SkillHa
         && ((UnityEngine.Vector3)tn.GetField("Posicao").GetValue(n2)).Equals(new UnityEngine.Vector3(1.8f, 0.8f, 0)), $"FxNos ida e volta ({b.Length} bytes)");
 }
 
+// Etapa 8 (0.11.0): sons das skills e golpes vistos dos aliados
+{
+    var t = T("HellClockCoop.Net.SonsAliado"); var ti = T("HellClockCoop.Net.SonsAliado+Item"); var tp = T("HellClockCoop.Net.SonsAliado+Parametro");
+    object Item(ushort id, int g1, byte modo, ushort fx, UnityEngine.Vector3 pos, params (string, float)[] ps)
+    {
+        var i = Activator.CreateInstance(ti);
+        ti.GetField("Id").SetValue(i, id); ti.GetField("G1").SetValue(i, g1); ti.GetField("G2").SetValue(i, -2); ti.GetField("G3").SetValue(i, 3); ti.GetField("G4").SetValue(i, int.MinValue);
+        ti.GetField("Modo").SetValue(i, modo); ti.GetField("FxId").SetValue(i, fx); ti.GetField("Posicao").SetValue(i, pos);
+        var lp = (System.Collections.IList)ti.GetField("Parametros").GetValue(i);
+        foreach (var (n, v) in ps) { var p = Activator.CreateInstance(tp); tp.GetField("Nome").SetValue(p, n); tp.GetField("Valor").SetValue(p, v); lp.Add(p); }
+        return i;
+    }
+    object Ler(byte[] b) => t.GetMethod("Desserializar").Invoke(null, new object[] { b });
+    System.Collections.IList Itens(object o) => (System.Collections.IList)t.GetField("Itens").GetValue(o);
+    byte[] Ser(object o) => (byte[])t.GetMethod("Serializar").Invoke(o, null);
+
+    var o = Activator.CreateInstance(t);
+    Itens(o).Add(Item(0, 123456789, 0, 0, new UnityEngine.Vector3(1, 2, 3), ("Intensity", 0.5f), ("Surface", 2f)));
+    Itens(o).Add(Item(77, -5, 2, 300, new UnityEngine.Vector3(-4, 0, 9)));
+    var b = Ser(o);
+    var l2 = Itens(Ler(b));
+    var a = l2[0]; var c = l2[1];
+    var ps2 = (System.Collections.IList)ti.GetField("Parametros").GetValue(a);
+    Checar(b[0] == 55 && l2.Count == 2 && (int)ti.GetField("G1").GetValue(a) == 123456789 && (int)ti.GetField("G2").GetValue(a) == -2 && (int)ti.GetField("G4").GetValue(a) == int.MinValue
+        && ps2.Count == 2 && (string)tp.GetField("Nome").GetValue(ps2[1]) == "Surface" && (float)tp.GetField("Valor").GetValue(ps2[0]) == 0.5f
+        && (ushort)ti.GetField("Id").GetValue(c) == 77 && (byte)ti.GetField("Modo").GetValue(c) == 2 && (ushort)ti.GetField("FxId").GetValue(c) == 300
+        && ((UnityEngine.Vector3)ti.GetField("Posicao").GetValue(c)).Equals(new UnityEngine.Vector3(-4, 0, 9)), $"SonsAliado ida e volta ({b.Length} bytes)");
+
+    bool Recusa(byte[] bytes) { try { Ler(bytes); return false; } catch (TargetInvocationException e) when (e.InnerException is FormatException) { return true; } }
+    var om = Activator.CreateInstance(t); Itens(om).Add(Item(0, 1, 3, 0, UnityEngine.Vector3.zero));
+    Checar(Recusa(Ser(om)), "SonsAliado: modo de som desconhecido (3) derruba a mensagem");
+    var muitos = Activator.CreateInstance(t); for (int k = 0; k < 70; k++) Itens(muitos).Add(Item(0, k + 1, 0, 0, UnityEngine.Vector3.zero));
+    Checar(Itens(Ler(Ser(muitos))).Count == 64, "SonsAliado: Serializar corta em 64 itens");
+    Checar(Recusa(new byte[] { 55, 65 }), "SonsAliado: 65 itens no cabeçalho derrubam a mensagem");
+    var mp = Activator.CreateInstance(t); Itens(mp).Add(Item(0, 1, 0, 0, UnityEngine.Vector3.zero, ("a", 1f), ("b", 2f), ("c", 3f), ("d", 4f), ("e", 5f), ("f", 6f)));
+    Checar(((System.Collections.IList)ti.GetField("Parametros").GetValue(Itens(Ler(Ser(mp)))[0])).Count == 4, "SonsAliado: Serializar corta em 4 parâmetros");
+    // cabeçalho de 1 item com 5 parâmetros, escrito à mão: Id(2) G(16) Modo(1) FxId(2) Pos(12) nParams=5
+    var bp = new byte[1 + 1 + 2 + 16 + 1 + 2 + 12 + 1]; bp[0] = 55; bp[1] = 1; bp[bp.Length - 1] = 5;
+    Checar(Recusa(bp), "SonsAliado: 5 parâmetros num som derrubam a mensagem");
+
+    // Texto com tamanho declarado falso (2 GB num pacote de poucos bytes) é recusado antes de alocar (0.11.0, todos os codecs).
+    var bt = new byte[1 + 1 + 2 + 16 + 1 + 2 + 12 + 1 + 5]; bt[0] = 55; bt[1] = 1; bt[35] = 1;
+    bt[36] = 0xFF; bt[37] = 0xFF; bt[38] = 0xFF; bt[39] = 0xFF; bt[40] = 0x07;
+    Checar(Recusa(bt), "SonsAliado: nome de parâmetro com tamanho declarado de 2 GB recusado sem alocar");
+    var tHelloT = T("HellClockCoop.Net.Hello");
+    var hb = new byte[] { 10, 5, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0x07 };
+    bool helloRecusa; try { tHelloT.GetMethod("Desserializar").Invoke(null, new object[] { hb }); helloRecusa = false; } catch (TargetInvocationException e) when (e.InnerException is FormatException) { helloRecusa = true; }
+    Checar(helloRecusa, "Hello: versão com tamanho declarado de 2 GB recusada sem alocar");
+
+    var tf = T("HellClockCoop.Net.SonsFim"); var f = Activator.CreateInstance(tf);
+    var ids = (System.Collections.Generic.List<ushort>)tf.GetField("Ids").GetValue(f); ids.Add(1); ids.Add(65535);
+    var bf = (byte[])tf.GetMethod("Serializar").Invoke(f, null);
+    var ids2 = (System.Collections.Generic.List<ushort>)tf.GetField("Ids").GetValue(tf.GetMethod("Desserializar").Invoke(null, new object[] { bf }));
+    Checar(bf[0] == 56 && ids2.Count == 2 && ids2[0] == 1 && ids2[1] == 65535, $"SonsFim ida e volta ({bf.Length} bytes)");
+
+    var tg = T("HellClockCoop.Net.GolpesVistos"); var tgi = T("HellClockCoop.Net.GolpesVistos+Item");
+    var g = Activator.CreateInstance(tg); var gl = (System.Collections.IList)tg.GetField("Itens").GetValue(g);
+    var gi = Activator.CreateInstance(tgi);
+    tgi.GetField("Id").SetValue(gi, (ushort)42); tgi.GetField("Opcoes").SetValue(gi, (byte)7); tgi.GetField("Tipos").SetValue(gi, (byte)0b1010); tgi.GetField("Principal").SetValue(gi, (byte)3);
+    tgi.GetField("Critico").SetValue(gi, true); tgi.GetField("Direcao").SetValue(gi, new UnityEngine.Vector3(0, 0, -1)); tgi.GetField("Deslocamento").SetValue(gi, new UnityEngine.Vector3(0.2f, 1.1f, 0));
+    gl.Add(gi);
+    var bg = (byte[])tg.GetMethod("Serializar").Invoke(g, null);
+    var gi2 = ((System.Collections.IList)tg.GetField("Itens").GetValue(tg.GetMethod("Desserializar").Invoke(null, new object[] { bg })))[0];
+    Checar(bg[0] == 57 && (ushort)tgi.GetField("Id").GetValue(gi2) == 42 && (byte)tgi.GetField("Opcoes").GetValue(gi2) == 7 && (byte)tgi.GetField("Tipos").GetValue(gi2) == 0b1010
+        && (byte)tgi.GetField("Principal").GetValue(gi2) == 3 && (bool)tgi.GetField("Critico").GetValue(gi2)
+        && ((UnityEngine.Vector3)tgi.GetField("Deslocamento").GetValue(gi2)).Equals(new UnityEngine.Vector3(0.2f, 1.1f, 0)), $"GolpesVistos ida e volta ({bg.Length} bytes)");
+
+    var tv = T("HellClockCoop.Net.Validacao");
+    bool V(string m, params object[] args) => (bool)tv.GetMethod(m).Invoke(null, args);
+    Checar(V("SomValido", 1, 0, 0, 0, 39f, 0f, 0f, 0f, 0f, 0f) && V("SomValido", 0, 0, 0, -1, 10f, 10f, 10f, 10f, 10f, 10f), "Validação: som com GUID e a até 40 m do avatar aceito");
+    Checar(!V("SomValido", 0, 0, 0, 0, 0f, 0f, 0f, 0f, 0f, 0f), "Validação: som com GUID nulo recusado");
+    Checar(!V("SomValido", 1, 0, 0, 0, 40.5f, 0f, 0f, 0f, 0f, 0f) && !V("SomValido", 1, 0, 0, 0, float.NaN, 0f, 0f, 0f, 0f, 0f) && !V("SomValido", 1, 0, 0, 0, 0f, float.PositiveInfinity, 0f, 0f, 0f, 0f),
+        "Validação: som a 40,5 m do avatar, NaN ou ∞ recusado");
+    Checar(V("ParametroSomValido", "Intensity", 0.5f) && !V("ParametroSomValido", "", 1f) && !V("ParametroSomValido", null, 1f) && !V("ParametroSomValido", "x", float.NaN)
+        && !V("ParametroSomValido", new string('a', 65), 1f), "Validação: parâmetro de som com nome vazio, nome de 65 letras ou valor NaN recusado");
+    {
+        var tj = T("HellClockCoop.Net.JanelaBonus"); var j = Activator.CreateInstance(tj); tj.GetField("Inicio").SetValue(j, 0f);
+        int aceitos = 0; for (int k = 0; k < 100; k++) if (V("AceitarSomNaJanela", j, 0.5f + k * 0.001f)) aceitos++;
+        Checar(aceitos == 40, $"Validação: 100 sons em 0,1 s de um aliado → só 40 aceitos ({aceitos})");
+        Checar(V("AceitarSomNaJanela", j, 1.5f), "Validação: a janela de sons recomeça depois de 1 s");
+        var j2 = Activator.CreateInstance(tj); tj.GetField("Inicio").SetValue(j2, 0f);
+        int golpes = 0; for (int k = 0; k < 300; k++) if (V("AceitarNaJanela", j2, 0.1f, (int)tv.GetField("GolpesVistosPorJanelaMaximo").GetValue(null))) golpes++;
+        Checar(golpes == 120, $"Validação: 300 golpes vistos no mesmo instante → só 120 aceitos ({golpes})");
+    }
+    bool GV(byte op, byte tipos, byte pr, float ox = 0f, float dx = 0f) => V("GolpeVistoValido", op, tipos, pr, dx, 0f, 1f, ox, 0f, 0f);
+    Checar(GV(7, 0b1010, 3) && GV(1, 1, 0, 9.9f), "Validação: golpe visto com opções e tipos conhecidos e principal presente aceito");
+    Checar(!GV(8, 1, 0) && !GV(1, 0, 0) && !GV(1, 0b10000, 4) && !GV(1, 0b0010, 0) && !GV(1, 1, 4), "Validação: golpe visto com opção ou tipo desconhecido, sem tipo ou principal ausente recusado");
+    Checar(!GV(1, 1, 0, 10.5f) && !GV(1, 1, 0, 0f, float.NaN), "Validação: golpe visto a 10,5 m do inimigo ou com direção NaN recusado");
+}
+
 // Santuários e totens
 IdaVolta("ObjetoSpawn", new (string, object)[] { ("Id", (ushort)12), ("Andar", 3u), ("Tipo", (byte)1), ("DefinicaoHash", 777), ("Posicao", new UnityEngine.Vector3(5f, 0f, 9f)), ("Raio", 2.5f), ("Estado", (byte)2) }, 43);
 IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", (byte)1) }, 44);

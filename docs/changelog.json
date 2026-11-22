@@ -2,6 +2,25 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.11.0",
+      "data": "22/11/2026",
+      "testado": false,
+      "titulo": "Sons das skills e golpes dos aliados",
+      "itens": [
+        "As skills do aliado apareciam sem som: a cópia dos efeitos é só visual e o jogo toca o som de cada efeito num ponto por onde a cópia não passa. A skill em si, o ataque com a arma e os disparos também não tocavam nada no outro PC",
+        "Agora o som de cada skill, ataque e disparo do aliado vai pela rede (só o identificador do som) e toca no seu PC, perto dele ou preso ao efeito, junto com a animação. Sons que duram param quando param no PC dele",
+        "O golpe do aliado num inimigo passa a fazer o som de dor do tipo de dano, o sangue e a luz, como o seu; antes saía mudo nos dois sentidos",
+        "Novo no .cfg, seção [Audio]: SonsDosAliados (liga e desliga) e VolumeDosAliados (0 a 1). No modo eco (F8), o fantasma repete os seus sons para testar com um PC só",
+        "Balanceamento: só som e efeito, sem mudança de dificuldade. Protocolo 14: o coop exige a 0.11.0 nos dois PCs"
+      ],
+      "testar": [
+        "Modo eco (F8): suas skills e golpes se repetem no fantasma com 1 s de atraso",
+        "Coop: as skills, o ataque e o golpe do aliado soam perto dele, nos dois sentidos",
+        "Suas próprias skills soam uma vez só no seu PC",
+        "Skill contínua do aliado para de soar quando ele para"
+      ]
+    },
+    {
       "v": "0.10.1",
       "data": "21/11/2026",
       "testado": false,

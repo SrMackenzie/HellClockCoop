@@ -52,6 +52,7 @@ namespace HellClockCoop
             TeclaHierarquia = config.Bind("Teclas", "SalvarHierarquia", "F9", "Diagnóstico: salva a estrutura do personagem.");
             MostrarNomes = config.Bind("Interface", "MostrarNomesDosAliados", true, "Mostra o nome da Steam sobre a cabeça dos aliados.");
             Fase3.DanosVisiveis.Configurar(config);
+            Fase3.SonsAliados.Configurar(config);
             Balanceamento.Escalonamento.Configurar(config);
             Balanceamento.Envio.Configurar(config);
             Interface.Novidades.Configurar(config);
@@ -153,6 +154,9 @@ namespace HellClockCoop
                 t = Desempenho.Somar(Desempenho.Parte.Fx, t);
                 Fase3.DanosVisiveis.Atualizar();
                 t = Desempenho.Somar(Desempenho.Parte.Danos, t);
+                Fase3.SonsAliados.Atualizar();
+                Fase3.GolpesVisiveis.Atualizar();
+                t = Desempenho.Somar(Desempenho.Parte.Sons, t);
                 Balanceamento.Escalonamento.Atualizar();
                 Balanceamento.Metricas.Atualizar(jogador);
                 Balanceamento.Envio.Atualizar();

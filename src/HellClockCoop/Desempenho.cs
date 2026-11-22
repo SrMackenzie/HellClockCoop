@@ -14,13 +14,13 @@ namespace HellClockCoop
     internal static class Desempenho
     {
         /// <summary>Partes do mod que não se sobrepõem: a soma é o tempo do mod no quadro.</summary>
-        internal enum Parte { Menus, Rede, Run, Inimigos, Objetos, Santuarios, Portas, Alvos, Fx, Danos, Balanceamento, Personagem, Interface, Ganchos, Quantidade }
+        internal enum Parte { Menus, Rede, Run, Inimigos, Objetos, Santuarios, Portas, Alvos, Fx, Danos, Sons, Balanceamento, Personagem, Interface, Ganchos, Quantidade }
 
         /// <summary>Trechos suspeitos medidos por dentro das partes (não entram na soma).</summary>
         internal enum Detalhe { CriarAvatar, CarregarPrefabFx, CopiarFx, Quantidade }
 
         private static readonly string[] NomesParte =
-            { "Menus", "Rede", "Run", "Inimigos", "Objetos", "Santuários", "Portas", "Alvos", "Efeitos", "Danos", "Balanceamento", "Personagem", "Interface", "Ganchos" };
+            { "Menus", "Rede", "Run", "Inimigos", "Objetos", "Santuários", "Portas", "Alvos", "Efeitos", "Danos", "Sons", "Balanceamento", "Personagem", "Interface", "Ganchos" };
         private static readonly string[] NomesDetalhe = { "criar avatar", "carregar prefab de efeito", "copiar efeito" };
 
         private const double LimiteMinimoMs = 50.0;   // abaixo disso não é travada perceptível

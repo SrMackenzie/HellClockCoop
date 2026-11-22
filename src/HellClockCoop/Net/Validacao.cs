@@ -116,6 +116,51 @@ namespace HellClockCoop.Net
 
         public static float IntensidadeStatusLimitada(float intensidade) =>
             intensidade < IntensidadeStatusMinima ? IntensidadeStatusMinima : intensidade > IntensidadeStatusMaxima ? IntensidadeStatusMaxima : intensidade;
+
+        // Sons e golpes vistos dos aliados (0.11.0): só cosméticos, mas cada item vira uma chamada ao FMOD ou um efeito.
+        public const float JanelaSonsSegundos = 1f;
+        public const int SonsPorJanelaMaximo = 40;        // sons aceitos de um mesmo aliado por segundo
+        public const float DistanciaSomMaxima = 40f;      // do avatar de quem mandou até onde o som toca
+        public const float DuracaoSomMaxima = 20f;        // som que dura é parado aqui se o fim não chegar
+        public const int NomeParametroSomMaximo = 64;
+        public const float DeslocamentoGolpeMaximo = 10f; // ponto do golpe até o centro do inimigo
+        public const int GolpesVistosPorJanelaMaximo = 120; // golpes vistos aceitos de um mesmo aliado por segundo
+
+        /// <summary>Teto de itens por aliado numa janela fixa de 1 s (como AceitarBonusNaJanela). Recusado não conta.</summary>
+        public static bool AceitarNaJanela(JanelaBonus j, float agora, int maximo)
+        {
+            if (agora - j.Inicio >= JanelaSonsSegundos || agora < j.Inicio)
+            {
+                j.Inicio = agora;
+                j.Quantidade = 0;
+                j.Avisou = false;
+            }
+            if (j.Quantidade >= maximo) return false;
+            j.Quantidade++;
+            return true;
+        }
+
+        public static bool AceitarSomNaJanela(JanelaBonus j, float agora) => AceitarNaJanela(j, agora, SonsPorJanelaMaximo);
+
+        /// <summary>GUID do evento não nulo e ponto finito a no máximo DistanciaSomMaxima do avatar de quem mandou.</summary>
+        public static bool SomValido(int g1, int g2, int g3, int g4, float x, float y, float z, float ax, float ay, float az)
+        {
+            if ((g1 | g2 | g3 | g4) == 0 || !Finito(x) || !Finito(y) || !Finito(z)) return false;
+            float dx = x - ax, dy = y - ay, dz = z - az;
+            return dx * dx + dy * dy + dz * dz <= DistanciaSomMaxima * DistanciaSomMaxima;
+        }
+
+        public static bool ParametroSomValido(string nome, float valor) =>
+            !string.IsNullOrEmpty(nome) && nome.Length <= NomeParametroSomMaximo && Finito(valor);
+
+        /// <summary>Opções e tipos só com os bits que o jogo conhece, tipo principal entre os presentes, vetores finitos e perto do inimigo.</summary>
+        public static bool GolpeVistoValido(byte opcoes, byte tipos, byte principal, float dx, float dy, float dz, float ox, float oy, float oz)
+        {
+            if ((opcoes & ~GolpesVistos.OpcoesValidas) != 0 || tipos == 0 || (tipos & ~GolpesVistos.TiposValidos) != 0) return false;
+            if (principal > 3 || (tipos & (1 << principal)) == 0) return false;
+            if (!Finito(dx) || !Finito(dy) || !Finito(dz) || !Finito(ox) || !Finito(oy) || !Finito(oz)) return false;
+            return ox * ox + oy * oy + oz * oz <= DeslocamentoGolpeMaximo * DeslocamentoGolpeMaximo;
+        }
     }
 
     /// <summary>Estado do teto acumulado de bônus de tempo de um convidado (ver Validacao.AceitarBonusNaJanela).</summary>

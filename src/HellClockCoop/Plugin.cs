@@ -18,7 +18,7 @@ namespace HellClockCoop
     {
         public const string PluginGuid = "br.srmackenzie.hellclockcoop";
         public const string PluginName = "Hell Clock Coop";
-        public const string PluginVersion = "0.10.1";
+        public const string PluginVersion = "0.11.0";
 
         /// <summary>Versão do jogo contra a qual os patches foram mapeados (Application.version).</summary>
         public const string VersaoMapeada = "2.1.1.1";
@@ -80,6 +80,10 @@ namespace HellClockCoop
                     }
                 }
                 Log.LogInfo($"Patches das Fases 0–3: {ok} aplicados, {falhas} com falha.");
+
+                // Etapa 8: métodos das skills que tocam som (lista montada pelo IL do jogo, ver SonsAliados).
+                try { Fase3.SonsAliados.AplicarContextos(HarmonyInstance); }
+                catch (System.Exception e) { Log.LogError($"[Sons] Contextos de som não aplicados: {(e.InnerException ?? e).Message}"); }
             }
             else
             {
