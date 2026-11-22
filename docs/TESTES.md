@@ -371,6 +371,21 @@ em carregamento (sem personagem ou na troca de cena) ficam fora da conta.
   os suspeitos medidos à parte são criar avatar, carregar prefab de efeito (carga síncrona, a primeira
   vez de cada efeito do aliado) e copiar efeito.
 
+## 0.9.8 — Passos dos inimigos no convidado
+
+Responde ao achado "inimigos sem som no convidado" da sessão de 21/11. Causa achada no IL: a réplica pula o `Update` do
+personagem, então não calcula a própria velocidade. Os passos só tocam com o inimigo andando a 40% da velocidade dele ou
+mais, e o som de estado (rosnado, respiração) tem um modo parado e um andando: nos dois, a réplica ficava sempre parada.
+Golpe, ataque e morte não dependem disso. Se ainda faltar som depois desta versão, a causa é outra: anotar qual.
+
+- [ ] **Passos (convidado):** chegar perto de um grupo andando na sua direção. Esperado: barulho de passos, como no solo.
+- [ ] **Som de estado (convidado):** o rosnado ou a respiração do inimigo muda quando ele sai de parado e começa a andar.
+- [ ] **Outros sons (convidado):** golpe no inimigo, ataque dele e morte têm som. Se algum não tiver, anotar qual
+  (passo, ataque, golpe, morte, rosnado) e o nome do inimigo.
+- [ ] **Host (controle):** os inimigos do host soam como antes.
+- Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `indisponível (som de movimento da
+  réplica)`) e a lista do que falta de som.
+
 ---
 
 ## Sessão em dupla na 0.9.4 — roteiro único
@@ -488,7 +503,8 @@ Relato do autor no meio da sessão. Nada foi marcado `[x]` ainda.
   a testar).
 - Falhou: barreira de sangue da área do chefe não aparece no convidado, que passa livre (0.6.0). Corrigido na 0.9.5
   (seção 0.9.5, a testar).
-- Falhou: inimigos sem som no convidado.
+- Falhou: inimigos sem som no convidado. Causa (IL): a réplica não calcula a própria velocidade, e passos e som de
+  estado ficavam no modo parado. Corrigido na 0.9.8 (seção 0.9.8, a testar).
 - Falhou (menor): dano do convidado no boneco de treino do hub não aparece no host; nos inimigos aparece.
 - A investigar: travadinhas esporádicas. O log não tinha número de tempo; a 0.9.7 traz o medidor (seção 0.9.7, a
   testar) e a correção sai depois, com os números.

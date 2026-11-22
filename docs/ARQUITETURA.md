@@ -574,7 +574,15 @@ recebe clona a primeira irmã. Era o caso das facas da skill Reflexos girando em
 - **Chefes e agressividade:** o item de estado ganhou o bit 4 = `EnemyAIController.IsAggressive` (internal, lido por delegate
   no getter). Quando chega verdadeiro, a réplica recebe `IsAggressive.Setter(true)`: disparam os registros do jogo, entre eles
   `EnemyBossController.OnAggressive` (libera `CanTakeDamage`, `TargetController.ChangeTargetBoss` = barra do chefe, câmera)
-  e a liberação de `CanUseSkill`.
+  e a liberação de `CanUseSkill`. Também o som de estado (`EnemyAIController.SetupStateSfx`, uma vez) e o grito de aggro
+  (`PlayOnAggressive`).
+- **Som do movimento (0.9.8):** sem o `Update` do personagem, o `MovementController` da réplica não calcula a velocidade
+  (`SpeedRatio` fica 0). Os passos (`TemporaryAnimatorEventCallbacks.FootR/FootL` → `WalkSurfaceDetector.PlayWalkEffects`,
+  que só toca com `_speedRatio` ≥ 0,4, posto pelo `MovementController.Update`) e o parâmetro parado/andando do som de estado
+  (`_stateIdleWalkBlendAudioEventParameter`, posto pelo `EnemyAIController.UpdateAI`) ficavam em "parado". O convidado mede
+  quanto a réplica anda por quadro, divide por `MovementController.MovementSpeed` (suavizado) e põe nos dois. Os sons que
+  saem de eventos de animação (`CharacterAnimatorEventCallback.TriggerSfx`), skills, golpe e morte não dependem desse
+  `Update` (conferido no IL do 2.1.1.1).
 
 ### 11.4 Status do convidado valendo no host (versão 0.9.0, protocolo 10)
 

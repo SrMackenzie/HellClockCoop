@@ -83,6 +83,22 @@ namespace HellClockCoop.Fase3
         }
         private static readonly AccessTools.FieldRef<StatBasedValueController, DoubleState> VidaAtualRef = AccessTools.FieldRefAccess<StatBasedValueController, DoubleState>("_currentValue");
 
+        // Som do movimento da réplica (0.9.8). Se um campo sumir numa atualização do jogo, só esse som cai.
+        private static readonly AccessTools.FieldRef<HellClock.Navigation.MovementController, WalkSurfaceDetector> DetectorPassosRef =
+            CriarRef<HellClock.Navigation.MovementController, WalkSurfaceDetector>("_walkSurfaceDetector");
+        private static readonly AccessTools.FieldRef<HellClock.AI.Enemy.EnemyAIController, HellClock.Audio.AudioEventParameter?> ParametroAndarRef =
+            CriarRef<HellClock.AI.Enemy.EnemyAIController, HellClock.Audio.AudioEventParameter?>("_stateIdleWalkBlendAudioEventParameter");
+
+        private static AccessTools.FieldRef<T, F> CriarRef<T, F>(string campo) where T : class
+        {
+            try { return AccessTools.FieldRefAccess<T, F>(campo); }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Inimigos] {typeof(T).Name}.{campo} indisponível (som de movimento da réplica): {(e.InnerException ?? e).Message}");
+                return null;
+            }
+        }
+
         // ================= Host =================
 
         private sealed class InimigoHost
@@ -491,6 +507,7 @@ namespace HellClockCoop.Fase3
             public ActiveSkill UltimaSkill;
             public bool Agressivo;
             public bool QuerAgressivo;
+            public float RazaoVelocidade;
         }
 
         private static readonly Dictionary<ushort, Replica> Replicas = new Dictionary<ushort, Replica>();
@@ -616,11 +633,44 @@ namespace HellClockCoop.Fase3
         {
             Transform t = r.C.transform;
             Vector3 atual = t.position;
-            if ((r.Posicao - atual).sqrMagnitude > 36f) t.position = r.Posicao; // mais de 6 m: teleporta
+            bool teleporte = (r.Posicao - atual).sqrMagnitude > 36f; // mais de 6 m: teleporta
+            if (teleporte) t.position = r.Posicao;
             else t.position = Vector3.Lerp(atual, r.Posicao, 1f - Mathf.Exp(-12f * dt));
             t.rotation = Quaternion.Slerp(t.rotation, Quaternion.Euler(0f, r.Yaw, 0f), 1f - Mathf.Exp(-14f * dt));
             NavMeshAgent agente = r.C.MovementController?.Agent;
             if (agente != null && agente.enabled && agente.isOnNavMesh) agente.nextPosition = t.position;
+            if (!teleporte)
+            {
+                Vector3 passo = t.position - atual;
+                passo.y = 0f;
+                AtualizarSomDeMovimento(r, passo.magnitude, dt);
+            }
+        }
+
+        /// <summary>
+        /// Som do movimento da réplica. Sem o Update do personagem (pulado na réplica), o MovementController não
+        /// calcula a velocidade: os passos (WalkSurfaceDetector.PlayWalkEffects só toca com razão &gt;= 0,4) e o
+        /// parâmetro parado/andando do som de estado do inimigo (posto pelo EnemyAIController.UpdateAI) ficavam
+        /// sempre em "parado". Aqui a razão sai do quanto a réplica anda na tela, dividido pela velocidade de
+        /// movimento do inimigo (a mesma conta do MovementController.SpeedRatio), e vai aos mesmos dois lugares.
+        /// </summary>
+        private static void AtualizarSomDeMovimento(Replica r, float distancia, float dt)
+        {
+            HellClock.Navigation.MovementController mc = r.C.MovementController;
+            if (dt <= 0f || mc == null) return;
+            float maxima = mc.MovementSpeed;
+            float agora = maxima > 0.01f ? Mathf.Clamp(distancia / dt / maxima, 0f, 2f) : 0f;
+            r.RazaoVelocidade = Mathf.Lerp(r.RazaoVelocidade, agora, 1f - Mathf.Exp(-10f * dt));
+            if (DetectorPassosRef != null)
+            {
+                WalkSurfaceDetector passos = DetectorPassosRef(mc);
+                if (passos != null) passos.SetSpeedRatio(r.RazaoVelocidade);
+            }
+            if (ParametroAndarRef != null && r.C.EnemyAIController != null)
+            {
+                HellClock.Audio.AudioEventParameter? andar = ParametroAndarRef(r.C.EnemyAIController);
+                if (andar.HasValue) andar.Value.SetValue(r.RazaoVelocidade);
+            }
         }
 
         private static void AplicarVida(Replica r)

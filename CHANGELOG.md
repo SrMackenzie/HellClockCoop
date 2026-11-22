@@ -4,6 +4,13 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.9.8 — Passos dos inimigos no convidado 🧪
+_21/11/2026_
+
+- Inimigos sem som no convidado (sessão de 21/11): a cópia do inimigo no convidado não calculava a própria velocidade, então os passos nunca tocavam e o som de estado (rosnado, respiração) ficava sempre no modo parado
+- Agora o convidado mede quanto cada inimigo anda na tela e passa essa velocidade aos passos e ao som de estado, como o jogo faz com os inimigos dele
+- Só som: posição, dano e vida não mudam. Balanceamento: sem efeito na dificuldade. Protocolo não muda (12), mas o coop exige a mesma versão do mod nos dois PCs
+
 ## 0.9.7 — Medidor de travadas 🧪
 _21/11/2026_
 
