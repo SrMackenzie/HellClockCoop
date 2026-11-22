@@ -684,7 +684,7 @@ namespace HellClockCoop.Interface
         }
 
         /// <summary>Fica só o que desenha: imagens, textos (TMP e o RTL do jogo, que é um TMP), máscaras e CanvasGroup.</summary>
-        private static void Limpar(GameObject go)
+        internal static void Limpar(GameObject go) // também usado pelo AliadosNaTela (0.14.0)
         {
             // 1ª passada: scripts do jogo e de terceiros (dependem dos componentes da Unity); 2ª: o resto (botões, layouts, Animator).
             for (int passada = 0; passada < 2; passada++)

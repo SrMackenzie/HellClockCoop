@@ -33,6 +33,7 @@ var tF = T("HellClockCoop.Net.AnimatorFrame");
 var s = Activator.CreateInstance(tS);
 tS.GetField("Sequencia").SetValue(s, (ushort)65535); tS.GetField("Tempo").SetValue(s, 123.5f);
 tS.GetField("CenaHash").SetValue(s, 8); tS.GetField("Andar").SetValue(s, 3u); tS.GetField("Morto").SetValue(s, true);
+tS.GetField("Vida").SetValue(s, 0.375f);
 tS.GetField("Posicao").SetValue(s, new UnityEngine.Vector3(1, 2, 3));
 tS.GetField("Rotacao").SetValue(s, new UnityEngine.Quaternion(0, 0.7071f, 0, 0.7071f));
 tS.GetField("RotacaoModelo").SetValue(s, new UnityEngine.Quaternion(0, 0, 0, 1));
@@ -53,7 +54,11 @@ var ossos = (UnityEngine.Quaternion[])tS.GetField("RotacoesOssos").GetValue(s);
 ossos[0] = new UnityEngine.Quaternion(0.1f, 0.2f, 0.3f, 0.9f); ossos[2] = new UnityEngine.Quaternion(0, 0, 0.5f, 0.86f); ossos[4] = new UnityEngine.Quaternion(0, 0, 0, 1);
 var bs = (byte[])tS.GetMethod("Serializar").Invoke(s, null);
 var s2 = tS.GetMethod("Desserializar").Invoke(null, new object[] { bs });
-Checar(bs[0] == 1 && bs[1] == 3, $"Snapshot tipo=1 versão=3 ({bs.Length} bytes)");
+Checar(bs[0] == 1 && bs[1] == 4, $"Snapshot tipo=1 versão=4 ({bs.Length} bytes)");
+Checar(Math.Abs((float)tS.GetField("Vida").GetValue(s2) - 0.375f) < 1f / 65535f, "Snapshot.Vida (fração em ushort)");
+var sVida = Activator.CreateInstance(tS); tS.GetField("Vida").SetValue(sVida, 1.7f); // fora de 0..1: chega presa em 1
+var sVida2 = tS.GetMethod("Desserializar").Invoke(null, new object[] { (byte[])tS.GetMethod("Serializar").Invoke(sVida, null) });
+Checar((float)tS.GetField("Vida").GetValue(sVida2) == 1f, "Snapshot.Vida presa em 0..1");
 foreach (var f in new[] { "Sequencia", "Tempo", "CenaHash", "Andar", "Morto", "Posicao", "Rotacao", "RotacaoModelo", "MascaraOssos" })
     Checar(Equals(tS.GetField(f).GetValue(s), tS.GetField(f).GetValue(s2)), "Snapshot." + f);
 Checar(((bool[])tS.GetField("AnimatorAtivo").GetValue(s2)).SequenceEqual(new[] { true, false, true }), "Snapshot.AnimatorAtivo");

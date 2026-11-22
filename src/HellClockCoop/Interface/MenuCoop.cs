@@ -23,7 +23,7 @@ namespace HellClockCoop.Interface
     /// </summary>
     internal static class MenuCoop
     {
-        internal enum Acao { Nenhuma, CriarOuConvidar, Sair, Eco, Nomes, Dano, TamanhoDano, Sons, Volume, Novidades }
+        internal enum Acao { Nenhuma, CriarOuConvidar, Sair, Eco, Nomes, Vida, Seta, Dano, TamanhoDano, Sons, Volume, Novidades }
         internal enum Tipo { Secao, Info, Item, Interruptor, Deslizante }
         internal enum Aba { Sessao, Ajustes, Novidades }
         internal enum Enfase { Normal, Titulo, Rotulo } // cor da linha de informação (aba Novidades)
@@ -355,6 +355,12 @@ namespace HellClockCoop.Interface
                 case Acao.Nomes:
                     Inverter(CoopRuntime.MostrarNomes);
                     break;
+                case Acao.Vida:
+                    Inverter(AliadosNaTela.MostrarVida);
+                    break;
+                case Acao.Seta:
+                    Inverter(AliadosNaTela.MostrarSeta);
+                    break;
                 case Acao.Dano:
                     Inverter(Fase3.DanosVisiveis.MostrarDano);
                     break;
@@ -579,6 +585,8 @@ namespace HellClockCoop.Interface
         {
             Adicionar(Tipo.Secao, Acao.Nenhuma, "Aliados na tela", null, false);
             AdicionarInterruptor(Acao.Nomes, "Nomes dos aliados", CoopRuntime.MostrarNomes);
+            AdicionarInterruptor(Acao.Vida, "Barra de vida dos aliados", AliadosNaTela.MostrarVida);
+            AdicionarInterruptor(Acao.Seta, "Seta do aliado fora da tela", AliadosNaTela.MostrarSeta);
             AdicionarInterruptor(Acao.Dano, "Números de dano dos aliados", Fase3.DanosVisiveis.MostrarDano);
             AdicionarDeslizante(Acao.TamanhoDano, "Tamanho do dano", Fase3.DanosVisiveis.MostrarDano == null || Fase3.DanosVisiveis.MostrarDano.Value);
 

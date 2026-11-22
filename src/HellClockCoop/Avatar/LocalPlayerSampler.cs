@@ -47,6 +47,7 @@ namespace HellClockCoop.Avatar
             destino.CenaHash = CenaAtual();
             destino.Andar = AndarAtual()?.LevelIndex ?? 0;
             destino.Morto = jogador.LifeController != null && jogador.LifeController.IsDead;
+            destino.Vida = jogador.LifeController == null ? 1f : destino.Morto ? 0f : jogador.LifeController.CurrentRatio;
             destino.Posicao = pos;
             destino.Rotacao = jogador.transform.rotation;
             // Rotação do modelo relativa à raiz (identidade se o Animator estiver na própria raiz).

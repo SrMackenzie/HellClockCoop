@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "22/11/2026",
-  "versao": "0.13.1",
+  "versao": "0.14.0",
   "fases": [
     {
       "id": "B",
@@ -263,7 +263,7 @@
           "Sons das skills e dos golpes dos aliados"
         ],
         [
-          "planejado",
+          "testar",
           "Aliados na tela: barra de vida sobre o aliado e seta apontando quem está fora da tela"
         ],
         [

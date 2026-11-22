@@ -11,7 +11,7 @@ namespace HellClockCoop.Net
     internal static class Protocolo
     {
         /// <summary>Muda sempre que o formato de qualquer mensagem mudar. Pares com versões diferentes não conversam.</summary>
-        public const int Versao = 14; // 14: sons das skills (55, 56) e golpes vistos (57) dos aliados (0.11.0)
+        public const int Versao = 15; // 15: fração da vida no PlayerSnapshot (formato 4), para a barra dos aliados (0.14.0)
 
         public const int CanalConfiavel = 0;
         public const int CanalSnapshots = 1;

@@ -272,7 +272,7 @@ No fantasma, a troca de estado usa `CrossFade` curto, e o mesmo estado com mais 
 
 | Tipo | Mensagem | Conteúdo |
 |---|---|---|
-| 1 | `PlayerSnapshot` (formato 3) | sequência, tempo, andar (`HashID` da LevelDefinition e índice), morto, posição, rotações, 3 Animators (estado, tempo e peso por layer; parâmetros), 5 ossos do tronco |
+| 1 | `PlayerSnapshot` (formato 4 desde a 0.14.0) | sequência, tempo, andar (`HashID` da LevelDefinition e índice), morto, vida (fração 0..1 em 16 bits, 0.14.0), posição, rotações, 3 Animators (estado, tempo e peso por layer; parâmetros), 5 ossos do tronco |
 | 10 | `Hello` | protocolo, versão do mod e do jogo, nome, `JaTeOuvi` |
 | 11 | `Aparencia` | ativo/inativo dos nós até 2 níveis sob `Pajeu_RIG_360/Mesh` |
 | 12 | `Tchau` | saída voluntária |
@@ -871,7 +871,7 @@ Conteúdo das três abas (LB/RB, setas laterais fora de um deslizante ou clique 
 - **Sessão:** recado do atualizador desta abertura (0.13.0; antes ficava no painel do canto), estado da sessão (e, em
   jogo, o aviso de que o jogo continua rodando), ALIADOS (só leitura, `CoopRuntime.EstadoDoPar`, o mesmo texto do painel
   do canto) e COOP (criar e convidar, sair com confirmação, modo eco).
-- **Ajustes:** aliados na tela (nomes, números de dano e tamanho do dano), som (sons das skills dos aliados e volume) e
+- **Ajustes:** aliados na tela (nomes, barra de vida e seta fora da tela desde a 0.14.0, números de dano e tamanho do dano), som (sons das skills dos aliados e volume) e
   balanceamento deste `.cfg` só para leitura (`Escalonamento.LinhasDoMenu`: os multiplicadores do número de jogadores
   atual, ou de 2 fora do coop; os valores só mudam no arquivo). Na reserva (gaveta), também o item Novidades.
 - **Novidades** (0.13.0): §12.1.
@@ -929,6 +929,8 @@ S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum 
 | COOP-SAIR | "Sair do coop"; o primeiro aperto vira "Confirmar: sair do coop?" por 3 s | aba Sessão, em sessão | S (`SessaoCoop.Sair`) | — |
 | COOP-ECO | "Modo eco (teste com um PC)" LIGADO/DESLIGADO; sem personagem: "entre num save" | aba Sessão | S (`CoopRuntime.AlternarEco`, também F8) | `[Teclas] ModoEco` |
 | COOP-CFG-NOMES | "Nomes dos aliados" (caixa de marcar) | aba Ajustes | P | `[Interface] MostrarNomesDosAliados` |
+| COOP-CFG-VIDA | "Barra de vida dos aliados" (caixa de marcar) (0.14.0) | aba Ajustes | P | `[Interface] MostrarVidaDosAliados` |
+| COOP-CFG-SETA | "Seta do aliado fora da tela" (caixa de marcar) (0.14.0) | aba Ajustes | P | `[Interface] MostrarSetaDosAliados` |
 | COOP-CFG-DANO | "Números de dano dos aliados" (caixa de marcar) | aba Ajustes | P | `[Interface] MostrarDanoDosAliados` |
 | COOP-CFG-DANO-TAM | "Tamanho do dano" (barra, 30–200%; indisponível com os números desligados) | aba Ajustes | P | `[Interface] TamanhoDanoDosAliados` |
 | COOP-CFG-SOM | "Sons das skills dos aliados" (caixa de marcar) | aba Ajustes | P | `[Audio] SonsDosAliados` |
@@ -940,6 +942,31 @@ S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum 
 
 Sem efeito nos números do balanceamento nem no protocolo (10). Com o menu aberto em jogo o personagem fica parado e o
 jogo segue (em coop não há pausa), o que só deixa o jogo mais difícil para quem abre o menu no meio do combate.
+
+### 12.3 Aliados na tela: barra de vida e seta (versão 0.14.0, protocolo 15)
+
+Entrega 1 de 4 da etapa "aliados na tela e reanimação" (as próximas: jogador caído, reanimação, calibragem).
+- **Rede:** o `PlayerSnapshot` (formato 4) leva a fração da vida do remetente (`LifeController.CurrentRatio`, 0 se morto)
+  em 16 bits, logo depois de `Morto`. Não há mensagem nova: a vida vai nos 20 snapshots por segundo, no canal não
+  confiável. O `RemotePlayerAvatar` guarda a do último pacote aceito (`Vida`). `codectest`: ida e volta e o valor preso em 0..1.
+- **Visual (`Interface/AliadosNaTela`, opção A do autor: peças do jogo):** a barra é uma cópia da barra flutuante que o
+  jogo põe sobre o companheiro (`UIObjectPoolController._companionFloatingLifeView`), sem os scripts (`PainelNativo.Limpar`),
+  com nome, textos, escudo e dano atrasado apagados; ficam o preenchimento (`_fill`) e a faixa clara que alcança a vida
+  devagar (`_backgroundFill`). A seta é a imagem de seta da HUD (`SurvivalView._arrowSprite` ou `QuestTabBar._foldoutArrow`; no teste veio
+  `UI_Icon_DropDownArrow`, que aponta para baixo, em 44 unidades), girada para o aliado e presa a 56 px (em 1080p) da borda, com o nome do aliado na fonte da barra do jogo, para dentro da tela.
+  Tudo vai para `GenericHUD.LifeBars`, onde o jogo põe as barras dele, e some com a HUD. `GenericHUD.Instance` é
+  Guaranteed: HUD e pool são achados com `Resources.FindObjectsOfTypeAll`. Posição e preenchimento no `LateUpdate` do
+  `CoopRuntime`, depois dos avatares (medidor: parte Interface).
+- **Quando aparece:** barra com o corpo do aliado na tela (20 px abaixo do centro do nome; sem nome, no lugar dele);
+  seta com o corpo fora da tela ou atrás da câmera. Só aliados com avatar ativo, isto é, no mesmo andar.
+- **Reserva:** sem a HUD do jogo (menus, carregamento, até 2 s depois de trocar de cena) nada aparece, nem a reserva; com a
+  HUD mas sem a barra ou a seta do jogo, ou com erro, o
+  `OnGUI` desenha barra e seta simples até reabrir o jogo.
+- **Modo eco:** o fantasma entra como aliado "Eco". `[Teste] DistanciaDoEco` (padrão 2,5 m, limite ±60) afasta o fantasma para o lado;
+  com 30 ele fica fora da tela e a seta aparece. Longe, ele atravessa paredes e sai do mapa (é só a sua pose deslocada,
+  sem colisão) e os números de dano dele seguem no seu alvo (`DanosVisiveis` repete os seus no mesmo inimigo): serve só
+  para ver a seta.
+- **Balanceamento:** só informação na tela; dificuldade e multiplicadores iguais.
 
 ## 13. Atualizador automático (versão 0.8.0)
 

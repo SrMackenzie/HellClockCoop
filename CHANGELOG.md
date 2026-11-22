@@ -4,6 +4,16 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.14.0 — Barra de vida e seta dos aliados 🧪
+_22/11/2026_
+
+- Cada aliado ganhou uma barra de vida sob o nome, a mesma barra que o jogo põe sobre o companheiro. Quando ele perde vida, a parte perdida fica clara um instante antes de sumir
+- Aliado fora da tela: uma seta do jogo na borda aponta para ele, com o nome ao lado
+- Na aba Ajustes do menu do coop, "Barra de vida dos aliados" e "Seta do aliado fora da tela" ligam e desligam cada um (no .cfg: MostrarVidaDosAliados e MostrarSetaDosAliados)
+- No modo eco (F8) o fantasma também tem barra e seta. Para testar a seta, ponha DistanciaDoEco = 30 na seção [Teste] do .cfg: o fantasma fica fora da tela
+- Se a barra ou a seta do jogo não puderem ser montadas, aparecem num desenho simples
+- Balanceamento: sem mudança, é só informação na tela. Protocolo 15 (a vida agora vai junto da posição): exige a 0.14.0 nos dois PCs
+
 ## 0.13.1 — Esc da janela de aceite das métricas 🧪
 _22/11/2026_
 

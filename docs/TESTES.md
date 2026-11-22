@@ -402,6 +402,32 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.14.0 — Barra de vida e seta dos aliados
+
+Solo com o modo eco (F8) cobre barra e seta; o coop real (vida do outro PC chegando) fica para a sessão em dupla.
+Atualizar a partir da 0.13.1. Exige a 0.14.0 nos dois PCs (protocolo 15).
+
+Teste do autor em solo, no hub, em 22/11/2026: passaram montagem, barra, seta e Ajustes. O log mostrou
+`[Aliados] Barra de vida e seta montadas com a interface do jogo (seta: UI_Icon_DropDownArrow, 28x25)`; a seta na borda
+levou ao fantasma e o giro de 90° confere. A seta saía com ~15 px na tela (a imagem tem margem): passou a 44 unidades
+da HUD, ainda não vista no jogo. Ficam abertos a HUD escondida e a dupla.
+- [x] **Montagem:** ao entrar numa run (ou no hub) com o eco ligado, o log mostra `[Aliados] Barra de vida e seta
+  montadas com a interface do jogo (seta: …)`. Se aparecer "usando o desenho simples", anotar a linha.
+- [x] **Barra:** com o eco ligado, a barra do companheiro do jogo aparece sobre o fantasma e acompanha quando ele anda.
+  Ao tomar dano, a barra do fantasma cai 1 s depois, com a parte perdida clara por um instante. Poção ou regeneração
+  enchem a barra. Ao morrer, a barra do fantasma zera.
+- [x] **Seta:** no `.cfg`, `[Teste] DistanciaDoEco = 30`, reabrir o jogo e ligar o eco: o fantasma fica fora da tela e
+  a seta na borda aponta para ele, com "Eco" ao lado, do lado de dentro. Andando, a seta corre pela borda; trazendo o
+  fantasma para a tela, a seta some e a barra aparece. Anotar se a seta aponta para o lado errado (`GiroBaseSeta` no
+  `AliadosNaTela`). Voltar `DistanciaDoEco` para 2,5 depois. Esperado, não é falha: longe, o fantasma atravessa
+  paredes e sai do mapa (ele só repete você com a posição deslocada, sem colisão) e os números de dano dele continuam
+  aparecendo no seu alvo (o eco repete os seus números no mesmo inimigo; ver `DanosVisiveis`), como se estivesse perto.
+- [x] **Ajustes:** "Barra de vida dos aliados" e "Seta do aliado fora da tela" marcam e desmarcam na hora e continuam
+  iguais ao reabrir o jogo (`MostrarVidaDosAliados` e `MostrarSetaDosAliados`).
+- [ ] **HUD:** barra e seta somem junto com a HUD do jogo (tela preta de troca de andar, cinemática) e não ficam por
+  cima do inventário nem da pausa de forma estranha (anotar se ficarem).
+- [ ] **Dupla (sessão futura):** a barra do aliado mostra a vida dele, não a sua; com ele longe, a seta aponta para ele.
+
 ## 0.13.1 — Esc da janela de aceite das métricas
 
 Solo basta. Para a janela aparecer de novo: no `.cfg`, `[Metricas] AceitePerguntado = false` e

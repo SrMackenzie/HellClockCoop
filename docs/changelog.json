@@ -2,6 +2,26 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.14.0",
+      "data": "22/11/2026",
+      "testado": false,
+      "titulo": "Barra de vida e seta dos aliados",
+      "itens": [
+        "Cada aliado ganhou uma barra de vida sob o nome, a mesma barra que o jogo põe sobre o companheiro. Quando ele perde vida, a parte perdida fica clara um instante antes de sumir",
+        "Aliado fora da tela: uma seta do jogo na borda aponta para ele, com o nome ao lado",
+        "Na aba Ajustes do menu do coop, \"Barra de vida dos aliados\" e \"Seta do aliado fora da tela\" ligam e desligam cada um (no .cfg: MostrarVidaDosAliados e MostrarSetaDosAliados)",
+        "No modo eco (F8) o fantasma também tem barra e seta. Para testar a seta, ponha DistanciaDoEco = 30 na seção [Teste] do .cfg: o fantasma fica fora da tela",
+        "Se a barra ou a seta do jogo não puderem ser montadas, aparecem num desenho simples",
+        "Balanceamento: sem mudança, é só informação na tela. Protocolo 15 (a vida agora vai junto da posição): exige a 0.14.0 nos dois PCs"
+      ],
+      "testar": [
+        "No modo eco (F8), a barra aparece sob o fantasma e cai quando você toma dano (1 s depois)",
+        "Com DistanciaDoEco = 30 no .cfg, a seta na borda aponta o fantasma, com \"Eco\" ao lado",
+        "Os dois interruptores novos da aba Ajustes escondem e mostram a barra e a seta na hora",
+        "No log, uma linha [Aliados] dizendo que a barra e a seta foram montadas com a interface do jogo"
+      ]
+    },
+    {
       "v": "0.13.1",
       "data": "22/11/2026",
       "testado": false,

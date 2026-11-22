@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 22/11/2026 · versão 0.13.1. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 22/11/2026 · versão 0.14.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -95,7 +95,7 @@ _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio s
 | 🧪 | Revisar drops de invocações, ondas de sobrevivência e temporadas (convidado com o XP e o tesouro próprio do host; equipamento sem redução, decisão do autor) |
 | ✅ | Auditoria: o mod nunca escreve no save de outro jogador |
 
-## Fase 5 — Polimento · 35%
+## Fase 5 — Polimento · 40%
 
 _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 
@@ -109,7 +109,7 @@ _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 | 🧪 | Botão Coop na lista de botões do menu do jogo e item Coop na pausa; novidades como aba da janela do coop |
 | ⬜ | Reconexão e troca de host sem perder a run |
 | 🧪 | Sons das skills e dos golpes dos aliados |
-| ⬜ | Aliados na tela: barra de vida sobre o aliado e seta apontando quem está fora da tela |
+| 🧪 | Aliados na tela: barra de vida sobre o aliado e seta apontando quem está fora da tela |
 | ⬜ | Marcador (ping): um botão marca um ponto no chão que todos veem |
 | ⬜ | Frases rápidas: avisos curtos prontos que aparecem sobre o personagem, sem chat de texto |
 | ⬜ | Ir até o aliado: botão que leva para perto do host quem ficou para trás, com tempo de recarga |

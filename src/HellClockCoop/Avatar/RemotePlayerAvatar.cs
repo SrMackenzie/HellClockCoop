@@ -34,6 +34,9 @@ namespace HellClockCoop.Avatar
         public int Recebidos { get; private set; }
         public int ForaDeOrdem { get; private set; }
 
+        /// <summary>Fração da vida no último snapshot aceito (0..1), para a barra sobre o aliado (0.14.0).</summary>
+        public float Vida { get; private set; } = 1f;
+
         public void Inicializar(Transform modelo, Animator[] animators, Transform[] ossosTronco, Animator[] todosAnimators)
         {
             _modelo = modelo;
@@ -66,6 +69,7 @@ namespace HellClockCoop.Avatar
             _recebeuAlgum = true;
             _ultimaSequencia = s.Sequencia;
             Recebidos++;
+            Vida = s.Vida;
 
             float amostra = s.Tempo - Time.unscaledTime;
             // O menor offset visto é o mais próximo do real (o resto é atraso de rede); deriva devagar.

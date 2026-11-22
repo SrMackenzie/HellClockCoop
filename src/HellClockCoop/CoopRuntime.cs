@@ -22,12 +22,12 @@ namespace HellClockCoop
         private const float IntervaloSnapshot = 1f / 20f;
         private const float IntervaloAparencia = 1f;
         internal const float AtrasoEco = 1.0f;
-        private static readonly Vector3 DeslocamentoEco = new Vector3(2.5f, 0f, 0f);
 
         public static CoopRuntime Instancia { get; private set; }
 
         internal static ConfigEntry<string> TeclaEco, TeclaHierarquia;
         internal static ConfigEntry<bool> MostrarNomes;
+        internal static ConfigEntry<float> DistanciaEco;
 
         private readonly SessaoCoop _sessao = new SessaoCoop();
         private readonly LocalPlayerSampler _amostrador = new LocalPlayerSampler();
@@ -53,6 +53,8 @@ namespace HellClockCoop
             TeclaEco = config.Bind("Teclas", "ModoEco", "F8", "Fantasma local que repete você (teste com um PC só).");
             TeclaHierarquia = config.Bind("Teclas", "SalvarHierarquia", "F9", "Diagnóstico: salva a estrutura do personagem.");
             MostrarNomes = config.Bind("Interface", "MostrarNomesDosAliados", true, "Mostra o nome da Steam sobre a cabeça dos aliados.");
+            DistanciaEco = config.Bind("Teste", "DistanciaDoEco", 2.5f, "Distância em metros do fantasma do modo eco, para o lado. Com 30 ele fica fora da tela (teste da seta do aliado). Limite: 60 para cada lado. Longe, o fantasma ignora paredes e o fim do mapa (só repete você deslocado) e o dano dele continua aparecendo no seu alvo: use só para ver a seta.");
+            Interface.AliadosNaTela.Configurar(config);
             Fase3.DanosVisiveis.Configurar(config);
             Fase3.SonsAliados.Configurar(config);
             Balanceamento.Escalonamento.Configurar(config);
@@ -176,8 +178,10 @@ namespace HellClockCoop
             }
             finally
             {
-                Desempenho.Somar(Desempenho.Parte.Personagem, t);
+                t = Desempenho.Somar(Desempenho.Parte.Personagem, t);
             }
+            Interface.AliadosNaTela.Atualizar(_sessao, _avatarEco); // depois dos avatares: barra de vida e seta (0.14.0)
+            Desempenho.Somar(Desempenho.Parte.Interface, t);
         }
 
         private void AtualizarPersonagem(PlayerController jogador)
@@ -270,7 +274,7 @@ namespace HellClockCoop
                 double inicio = Desempenho.Agora();
                 _avatarEco = AvatarFactory.Criar(jogador, "Eco");
                 Desempenho.SomarDetalhe(Desempenho.Detalhe.CriarAvatar, inicio);
-                _avatarEco.DeslocamentoMundo = DeslocamentoEco;
+                _avatarEco.DeslocamentoMundo = new Vector3(Mathf.Clamp(DistanciaEco.Value, -60f, 60f), 0f, 0f);
                 _ecoAtivo = true;
                 _filaEco.Clear();
                 Plugin.Log.LogInfo($"[Eco] Fantasma {motivo}.");
@@ -445,6 +449,7 @@ namespace HellClockCoop
                 }
             }
 
+            Interface.AliadosNaTela.DesenharReserva(_sessao, _avatarEco, MostrarNomes.Value); // só sem as peças do jogo
             Interface.MenuCoop.Desenhar(this);
             Interface.Novidades.Desenhar();
             Balanceamento.JanelaAceite.Desenhar(); // por último: fica por cima do painel

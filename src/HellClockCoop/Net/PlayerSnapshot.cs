@@ -67,7 +67,7 @@ namespace HellClockCoop.Net
     internal sealed class PlayerSnapshot
     {
         public const byte TipoMensagem = 1;
-        public const byte VersaoFormato = 3;
+        public const byte VersaoFormato = 4; // 4: fração da vida (0.14.0)
         public const int QuantidadeAnimators = 3;
 
         /// <summary>
@@ -81,6 +81,7 @@ namespace HellClockCoop.Net
         public int CenaHash;                   // HashID da LevelDefinition atual (0 = hub Quixeramobim)
         public uint Andar;                     // índice do andar na run
         public bool Morto;
+        public float Vida = 1f;                // fração da vida máxima (0..1), para a barra sobre o aliado (0.14.0)
         public Vector3 Posicao;
         public Quaternion Rotacao;             // rotação da raiz do jogador
         public Quaternion RotacaoModelo;       // rotação local do objeto com o Animator do corpo
@@ -101,6 +102,7 @@ namespace HellClockCoop.Net
                 w.Write(CenaHash);
                 w.Write(Andar);
                 w.Write(Morto);
+                w.Write((ushort)Mathf.RoundToInt(Mathf.Clamp01(Vida) * 65535f));
                 Escrever(w, Posicao);
                 Escrever(w, Rotacao);
                 Escrever(w, RotacaoModelo);
@@ -146,6 +148,7 @@ namespace HellClockCoop.Net
                     CenaHash = r.ReadInt32(),
                     Andar = r.ReadUInt32(),
                     Morto = r.ReadBoolean(),
+                    Vida = r.ReadUInt16() / 65535f,
                     Posicao = LerVetor(r),
                     Rotacao = LerQuaternion(r),
                     RotacaoModelo = LerQuaternion(r),
