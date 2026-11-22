@@ -251,8 +251,8 @@ mover o personagem. O jogo continua rodando (no coop não pausa), então abra o 
 <summary><b>Regras do coop nesta versão</b></summary>
 
 - Portais, início e abandono de run são do host. Para sair sozinho: **Sair do coop** no menu do coop (<kbd>F7</kbd>) e depois o menu do jogo.
-- Se o **convidado** morre, a run dele acaba (resultados normais) e ele volta quando o host passar de andar.
-  Se o **host** morre, a run acaba para todos.
+- Quem morre (host ou convidado) fica **caído** e volta no próximo andar com metade da vida; a run só acaba quando
+  todos caem. Cada queda tira 10 s do Hell Clock. Com o host caído, o portal do convidado leva o grupo (0.15.0).
 - Com alguém no coop, abrir inventário, mapa ou menu **não pausa** o jogo.
 - Todos precisam ter (ou não ter) a DLC **Cursed War**. A Deluxe Edition (cosmética) não importa.
 - Ajustes em `BepInEx\config\br.srmackenzie.hellclockcoop.cfg` (nomes, vida, seta, dano, sons e volume dos aliados também pela aba Ajustes do menu do coop): teclas, nomes sobre a cabeça,

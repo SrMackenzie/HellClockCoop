@@ -41,11 +41,13 @@ namespace HellClockCoop
 
             // Fase 2 — mesma run
             new Alvo("2", "HellClock.Manager.DungeonProgressManager", "StartRunFromDungeon", "Host inicia a run; cliente segue"),
-            new Alvo("2", "HellClock.Manager.DungeonProgressManager", "AdvanceLevel", "Avanço de andar comandado pelo host"),
+            new Alvo("2", "HellClock.Manager.DungeonProgressManager", "AdvanceLevel", "Avanço de andar comandado pelo host; com o host caído, o portal do convidado vira pedido (0.15.0)"),
+            new Alvo("2", "HellClock.Player.PlayerController", "Handle_OnDie", "Jogador caído: a morte do jogador local vira queda; a run só acaba quando todos caem (0.15.0)"),
+            new Alvo("2", "HellClock.Character.StatBasedValueController", "Refill", "Subir de nível caído não devolve a vida (0.15.0)"),
             new Alvo("2", "HellClock.Level.LevelBlock", "GenerateNextLevel", "Forçar no cliente a LevelDefinition sorteada pelo host"),
             new Alvo("2", "HellClock.Level.LevelObjects", "SetupEnemies", "Cliente não gera inimigos próprios"),
             new Alvo("2", "HellClock.Level.LevelObjects", "SetupLevelObjects", "Totens, santuários e portais vêm do host"),
-            new Alvo("2", "TimerManager", "Update", "Cliente não decrementa o timer; recebe do host"),
+            new Alvo("2", "TimerManager", "Update", "Cliente não decrementa o timer; recebe do host. Host caído: o relógio continua (0.15.0)"),
             new Alvo("2", "TimerManager", "IncrementTimer", "Bônus de tempo do cliente vira pedido ao host"),
             new Alvo("2", "HellClock.Manager.TimeManager", "PauseTime", "Sem pausa de timeScale em coop"),
             new Alvo("2", "HellClock.Manager.TimeManager", "PauseGame", "Sem pausa de jogo em coop"),
@@ -55,7 +57,7 @@ namespace HellClockCoop
             new Alvo("2", "HellClock.Level.DungeonConfig", "GetLevelBlockInfoFromLevel", "Bloco do andar vem do host"),
             new Alvo("2", "HellClock.Level.AscensionDungeonConfig", "GetLevelBlockInfoFromLevel", "Bloco do andar vem do host (Ascensão)"),
             new Alvo("2", "HellClock.Level.DynamicDungeonConfig", "GetLevelBlockInfoFromLevel", "Bloco do andar vem do host (dinâmico)"),
-            new Alvo("2", "HellClock.Level.LevelObjects", "SetupPlayerSpawn", "Mesmo ponto de spawn do host"),
+            new Alvo("2", "HellClock.Level.LevelObjects", "SetupPlayerSpawn", "Mesmo ponto de spawn do host; no andar novo, o caído volta (0.15.0)"),
             new Alvo("2", "HellClock.Manager.SurvivalEventManager", "StartSurvival", "Sem ondas de sobrevivência no convidado (Fase 2)"),
 
             // Fase 3 — combate
@@ -89,7 +91,7 @@ namespace HellClockCoop
             new Alvo("3", "HellClock.Pool.LevelObjectPoolController", "SpawnShrine", "Convidado cria a cópia do santuário do host"),
             new Alvo("3", "HellClock.Pool.LevelObjectPoolController", "SpawnBlessingTotem", "Convidado cria o próprio totem no lugar do totem do host"),
             new Alvo("3", "HellClock.AI.Enemy.EnemyAIController", "get_IsAggressive", "Réplica agressiva como no host (chefe: dano, barra, câmera)"),
-            new Alvo("3", "HellClock.Manager.DungeonProgressManager", "FinishDungeon", "Fim da run (timer, morte) decidido pelo host"),
+            new Alvo("3", "HellClock.Manager.DungeonProgressManager", "FinishDungeon", "Fim da run (timer, todos caídos) decidido pelo host"),
             new Alvo("3c", "EnemyManager", "TryToGetTargetForEnemy", "Já escolhe o alvo mais próximo entre _availableTargets"),
             new Alvo("3c", "HellClock.AI.Enemy.EnemyAIController", "SetCurrentTarget", "Observar/replicar o alvo escolhido"),
             new Alvo("3c", "HellClock.Damage.DamageDealer", "PerformDamage", "Origem do dano (crit, modificadores)"),

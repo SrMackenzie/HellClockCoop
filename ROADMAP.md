@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 22/11/2026 · versão 0.14.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 22/11/2026 · versão 0.15.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -8,7 +8,7 @@
 
 Regra do projeto: uma fase só é dada como concluída depois de confirmada **rodando no jogo**.
 
-## Trilha permanente — Balanceamento · 48%
+## Trilha permanente — Balanceamento · 46%
 
 _Prioridade 1, trilha permanente: o coop deve ser um pouco mais difícil que o solo, com ajustes guiados por dados. Toda versão passa por revisão de balanceamento._
 
@@ -23,7 +23,9 @@ _Prioridade 1, trilha permanente: o coop deve ser um pouco mais difícil que o s
 | 🧪 | Teto do tempo ganho por convidado (120 s a cada 60 s) e golpe com dano inválido ignorado |
 | ⬜ | Painel de balanceamento: solo × 2, 3 e 4 jogadores, por andar e dificuldade |
 | ⬜ | Ajuste individual quando o convidado está muito abaixo ou acima do host |
-| ⬜ | Jogador caído e reanimação, em vez de a morte do host encerrar a run |
+| 🧪 | Jogador caído: a run só acaba quando todos caem; o caído volta no próximo andar com 50% da vida e cada queda tira 10 s do Hell Clock |
+| ⬜ | Reanimação do aliado caído, com as quedas e reanimações no resumo da run |
+| ⬜ | Calibragem do jogador caído com os dados da dupla |
 | ⬜ | Apagar os resumos enviados ao fechar a calibragem |
 
 ## Fase 0 — Ambiente e mapeamento · 100%
@@ -76,7 +78,7 @@ _Mesmos inimigos para todos, cada um vê as skills do outro, inimigos atacam qua
 | ✅ | 3b: números de dano dos aliados, com cor própria por aliado |
 | 🧪 | 3b: facas que giram e estacas cravadas nos inimigos |
 | 🧪 | 3c: inimigos atacam o convidado, com o dano calculado no jogo dele |
-| 🧪 | 3c: convidado que morre volta no próximo andar do host |
+| 🧪 | 3c: convidado que morre fica caído e volta no próximo andar do host (0.15.0; antes, a run dele acabava) |
 | 🧪 | Santuários e totens de bênção compartilhados |
 | 🧪 | Chefe no convidado: fase agressiva, barra de vida e dano |
 | 🧪 | Barreiras de sangue (chefe, sobrevivência, santuário amaldiçoado) iguais para todos, com o convidado levado para perto do host |

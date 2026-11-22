@@ -4,6 +4,16 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.15.0 — Jogador caído: a run só acaba quando todos caem 🧪
+_22/11/2026_
+
+- No coop, quem morre fica caído no chão, em vez de a run acabar (host) ou de voltar ao hub (convidado). A run só acaba quando todos caem
+- Quem caiu vê a tela em cinza, como na segunda chance do jogo, e uma faixa embaixo dizendo que volta no próximo andar com 50% da vida e quantos seguem de pé
+- Os aliados veem "caído" na barra de vida e a seta em cinza. Cada queda mostra "Fulano caiu" no topo da tela
+- Com o host caído, o convidado leva o grupo: o portal dele pede ao host que avance o andar. No último andar, quando o chefão morre, o host caído levanta com metade da vida para usar o portal final
+- Balanceamento: cada queda tira 10 s do Hell Clock e a dificuldade continua contando o grupo todo, para o coop seguir um pouco mais difícil que o solo. No .cfg, seção [Balanceamento]: SegundosPerdidosPorQueda (vale o do host) e VidaAoVoltarDoChao (vale o de cada PC)
+- Para testar sozinho, o fantasma do modo eco (F8) conta como aliado de pé. Desligue o eco com você caído e a run acaba. Protocolo 16: exige a 0.15.0 nos dois PCs
+
 ## 0.14.0 — Barra de vida e seta dos aliados 🧪
 _22/11/2026_
 

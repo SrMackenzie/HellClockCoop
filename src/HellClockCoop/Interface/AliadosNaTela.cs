@@ -49,18 +49,23 @@ namespace HellClockCoop.Interface
         {
             public RectTransform Barra, Seta, SetaNome;
             public Image Preenche, Atraso, SetaImagem;
-            public TMP_Text SetaTexto;
+            public TMP_Text SetaTexto, Rotulo; // Rotulo: "caído" sobre a moldura da barra (0.15.0)
             public float ValorAtraso = -1f; // < 0: barra nova, começa na vida atual (sem cair de 100%)
             public bool Visto;
         }
 
-        // Um aliado do quadro: chave (SteamID; 0 = eco), nome e avatar.
+        // Um aliado do quadro: chave (SteamID; 0 = eco), nome, avatar e se está caído (o eco nunca cai: 0.15.0).
         private struct Aliado
         {
             public ulong Chave;
             public string Nome;
             public RemotePlayerAvatar Avatar;
+            public bool Caido;
         }
+
+        /// <summary>Aliado caído (0.15.0, opção B): seta e nome em cinza, barra sem preenchimento com o rótulo "caído".</summary>
+        private static readonly Color CinzaCaido = new Color(0.62f, 0.62f, 0.62f, 0.9f);
+        private const string TextoCaido = "caído";
 
         private static readonly Dictionary<ulong, Visual> Visuais = new Dictionary<ulong, Visual>();
         private static readonly List<ulong> Apagar = new List<ulong>();
@@ -106,6 +111,10 @@ namespace HellClockCoop.Interface
             MostrarVida = config.Bind("Interface", "MostrarVidaDosAliados", true, "Mostra a barra de vida sob o nome de cada aliado.");
             MostrarSeta = config.Bind("Interface", "MostrarSetaDosAliados", true, "Mostra na borda da tela uma seta apontando o aliado que está fora dela.");
         }
+
+        /// <summary>Fonte (e material) da barra flutuante do jogo, achada ao montar a barra; nula antes disso. Usada pelo CaidoNaTela.</summary>
+        internal static TMP_FontAsset Fonte => _fonte;
+        internal static Material MaterialFonte => _materialFonte;
 
         /// <summary>True quando a barra e a seta saem com as peças do jogo (o OnGUI não desenha a reserva).</summary>
         private static bool Nativo => !_desativado && _camada != null && _modeloBarra != null;
@@ -187,7 +196,9 @@ namespace HellClockCoop.Interface
                     GUI.color = new Color(0.08f, 0.04f, 0.04f, 0.85f);
                     GUI.DrawTexture(fundo, Texture2D.whiteTexture);
                     GUI.color = new Color(0.78f, 0.12f, 0.10f);
-                    GUI.DrawTexture(new Rect(fundo.x + 1f, fundo.y + 1f, (fundo.width - 2f) * Mathf.Clamp01(a.Avatar.Vida), fundo.height - 2f), Texture2D.whiteTexture);
+                    if (!a.Caido) GUI.DrawTexture(new Rect(fundo.x + 1f, fundo.y + 1f, (fundo.width - 2f) * Mathf.Clamp01(a.Avatar.Vida), fundo.height - 2f), Texture2D.whiteTexture);
+                    GUI.color = CinzaCaido;
+                    if (a.Caido) GUI.Label(new Rect(fundo.x - 30f, fundo.y + 4f, fundo.width + 60f, 20f), TextoCaido, _estiloNomeSeta);
                     GUI.color = Color.white;
                 }
                 else if (MostrarSeta.Value)
@@ -196,10 +207,12 @@ namespace HellClockCoop.Interface
                     var centro = new Vector2(ponto.x, Screen.height - ponto.y); // OnGUI: y para baixo
                     Matrix4x4 antes = GUI.matrix;
                     GUIUtility.RotateAroundPivot(-angulo, centro);
+                    if (a.Caido) GUI.color = CinzaCaido;
                     GUI.Label(new Rect(centro.x - 20f, centro.y - 20f, 40f, 40f), "►", _estiloSeta);
                     GUI.matrix = antes;
                     Vector2 nome = centro - new Vector2(direcao.x, -direcao.y) * 46f;
                     GUI.Label(new Rect(nome.x - 80f, nome.y - 11f, 160f, 22f), a.Nome, _estiloNomeSeta);
+                    GUI.color = Color.white;
                 }
             }
         }
@@ -214,7 +227,7 @@ namespace HellClockCoop.Interface
                 foreach (Par p in sessao.Pares.Values)
                 {
                     if (p.Avatar == null || !p.Avatar.gameObject.activeInHierarchy) continue;
-                    DoQuadro.Add(new Aliado { Chave = p.Id.m_SteamID, Nome = p.Nome, Avatar = p.Avatar });
+                    DoQuadro.Add(new Aliado { Chave = p.Id.m_SteamID, Nome = p.Nome, Avatar = p.Avatar, Caido = p.Morto });
                 }
             }
             if (eco != null && eco.gameObject.activeInHierarchy) DoQuadro.Add(new Aliado { Chave = 0, Nome = "Eco", Avatar = eco });
@@ -243,11 +256,12 @@ namespace HellClockCoop.Interface
                     {
                         float baixo = comNome && a.Chave != 0 ? AbaixoDoNome : 0f; // o eco não tem nome sobre a cabeça
                         Colocar(v.Barra, new Vector2(cabeca.x, cabeca.y - baixo), camUi);
-                        float vida = Mathf.Clamp01(a.Avatar.Vida);
-                        v.ValorAtraso = vida >= v.ValorAtraso || v.ValorAtraso < 0f ? vida : Mathf.Max(vida, v.ValorAtraso - AtrasoQueda * Time.unscaledDeltaTime);
+                        float vida = a.Caido ? 0f : Mathf.Clamp01(a.Avatar.Vida);
+                        v.ValorAtraso = a.Caido ? 0f : vida >= v.ValorAtraso || v.ValorAtraso < 0f ? vida : Mathf.Max(vida, v.ValorAtraso - AtrasoQueda * Time.unscaledDeltaTime);
                         if (v.Preenche != null) v.Preenche.fillAmount = vida;
                         if (v.Atraso != null) v.Atraso.fillAmount = v.ValorAtraso;
                     }
+                    if (v.Rotulo != null && v.Rotulo.gameObject.activeSelf != (barra && a.Caido)) v.Rotulo.gameObject.SetActive(barra && a.Caido);
 
                     bool seta = MostrarSeta.Value && !naTela;
                     Ativar(v.Seta, seta);
@@ -259,6 +273,8 @@ namespace HellClockCoop.Interface
                         v.Seta.localEulerAngles = new Vector3(0f, 0f, angulo + GiroBaseSeta);
                         Colocar(v.SetaNome, ponto - direcao * (_tamanhoSeta.y + 14f) * escala, camUi);
                         if (v.SetaTexto.text != a.Nome) v.SetaTexto.text = a.Nome;
+                        v.SetaImagem.color = a.Caido ? CinzaCaido : _corSeta;
+                        v.SetaTexto.color = a.Caido ? CinzaCaido : _corNome;
                     }
                 }
             }
@@ -521,6 +537,24 @@ namespace HellClockCoop.Interface
             texto.raycastTarget = false;
             texto.richText = false; // nome da Steam com <tags> sai como texto
             v.SetaTexto = texto;
+
+            var r = new GameObject("HellClockCoop.Caido", typeof(RectTransform)); // "caído" sobre a moldura da barra
+            var rr = (RectTransform)r.transform;
+            rr.SetParent(v.Barra, false);
+            rr.anchorMin = rr.anchorMax = rr.pivot = new Vector2(0.5f, 0.5f);
+            rr.anchoredPosition = Vector2.zero;
+            rr.sizeDelta = new Vector2(200f, 24f);
+            TextMeshProUGUI rotulo = r.AddComponent<TextMeshProUGUI>();
+            if (_fonte != null) rotulo.font = _fonte;
+            if (_materialFonte != null) rotulo.fontSharedMaterial = _materialFonte;
+            rotulo.color = CinzaCaido;
+            rotulo.fontSize = 16f;
+            rotulo.alignment = TextAlignmentOptions.Center;
+            rotulo.textWrappingMode = TextWrappingModes.NoWrap;
+            rotulo.raycastTarget = false;
+            rotulo.text = TextoCaido;
+            r.SetActive(false);
+            v.Rotulo = rotulo;
 
             Visuais[chave] = v;
             return v;

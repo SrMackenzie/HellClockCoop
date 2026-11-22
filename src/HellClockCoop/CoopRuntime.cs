@@ -58,6 +58,7 @@ namespace HellClockCoop
             Fase3.DanosVisiveis.Configurar(config);
             Fase3.SonsAliados.Configurar(config);
             Balanceamento.Escalonamento.Configurar(config);
+            Fase2.JogadorCaido.Configurar(config);
             Balanceamento.Envio.Configurar(config);
             Interface.Novidades.Configurar(config);
             Interface.MenuCoop.Configurar(config);
@@ -144,6 +145,9 @@ namespace HellClockCoop
                 _sessao.Atualizar(jogador, cena);
                 t = Desempenho.Somar(Desempenho.Parte.Rede, t);
                 Fase2.RunCompartilhada.Atualizar(jogador);
+                // O fantasma conta como aliado de pé (teste). Só a chave: o fantasma é recriado na troca de cena.
+                Fase2.JogadorCaido.EcoAtivo = _ecoAtivo;
+                Fase2.JogadorCaido.Atualizar(jogador);
                 t = Desempenho.Somar(Desempenho.Parte.Run, t);
                 Fase3.InimigosCompartilhados.Atualizar();
                 t = Desempenho.Somar(Desempenho.Parte.Inimigos, t);
@@ -181,6 +185,7 @@ namespace HellClockCoop
                 t = Desempenho.Somar(Desempenho.Parte.Personagem, t);
             }
             Interface.AliadosNaTela.Atualizar(_sessao, _avatarEco); // depois dos avatares: barra de vida e seta (0.14.0)
+            Interface.CaidoNaTela.Atualizar(); // faixa do jogador caído e aviso de queda (0.15.0)
             Desempenho.Somar(Desempenho.Parte.Interface, t);
         }
 
@@ -450,6 +455,7 @@ namespace HellClockCoop
             }
 
             Interface.AliadosNaTela.DesenharReserva(_sessao, _avatarEco, MostrarNomes.Value); // só sem as peças do jogo
+            Interface.CaidoNaTela.DesenharReserva(); // só sem a fonte do jogo
             Interface.MenuCoop.Desenhar(this);
             Interface.Novidades.Desenhar();
             Balanceamento.JanelaAceite.Desenhar(); // por último: fica por cima do painel

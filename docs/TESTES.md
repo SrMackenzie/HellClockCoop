@@ -45,10 +45,10 @@ que aparecerem perto do horário do problema.
     criada`); (convidado): `[Inimigos] Skill ... da réplica N falhou`.
 - [ ] **Morte do convidado**
   - Fazer: o convidado morre de propósito; o host passa de andar.
-  - Esperado: a run do convidado acaba como no solo e ele volta para a run do host no próximo andar. A run do host
-    continua. (Se o **host** morre, a run acaba para todos: isso ainda é o esperado nesta versão.)
-  - Se falhar, mandar (convidado): `[Run] Você morreu: ...` e as linhas `[Run]` seguintes; (host): `[Run] Enviando
-    plano aos convidados` do andar seguinte.
+  - Esperado (desde a 0.15.0): o convidado fica caído e volta de pé no próximo andar do host, com metade da vida. A run
+    do host continua. Ver a seção 0.15.0.
+  - Se falhar, mandar (convidado): as linhas `[Caído]` e `[Run]`; (host): `[Run] Enviando plano aos convidados` do
+    andar seguinte.
 - [ ] **Estacas das adagas e facas que giram**
   - Fazer: usar a skill que crava estacas nos inimigos e a skill Reflexos (facas girando).
   - Esperado: no outro PC, as estacas ficam presas no mesmo inimigo e as facas giram em volta do aliado.
@@ -402,6 +402,37 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.15.0 — Jogador caído
+
+Solo com o modo eco (F8) cobre a queda, a tela do caído e o fim da run; a volta no próximo andar, o aviso de queda do
+aliado e o portal com o host caído ficam para a dupla. Exige a 0.15.0 nos dois PCs (protocolo 16). Balanceamento
+(prioridade 1): anotar se o grupo fica fácil demais ou se a perda de 10 s pesa demais.
+- [ ] **Queda (eco):** numa run, com o eco ligado, morra. Esperado: o personagem deita e não anda nem ataca; a tela fica
+  em cinza; embaixo, a faixa "VOCÊ CAIU", "Volta no próximo andar, com 50% da vida" e "1 de 2 de pé"; o Hell Clock
+  perde 10 s; os inimigos largam você; a HUD do jogo continua e a run não acaba. Log: `[Caído] Você caiu (−10 s no Hell
+  Clock); volta no próximo andar.` e `[Caído] Faixa do jogador caído montada com a fonte do jogo.` (sem essa linha, a
+  faixa sai no desenho simples: anotar).
+- [ ] **Subir de nível caído (eco):** se o XP dos aliados subir o nível, você continua no chão. Esperado, não é falha:
+  sozinho com o eco, ninguém mata inimigos, então isso só aparece na dupla.
+- [ ] **Fim da run (eco):** ainda caído, desligue o eco (F8). Esperado: a morte do jogo roda (câmera, resultados) e a
+  run acaba como no solo; no hub, o personagem de pé e com a cor normal. Log: `[Caído] Ninguém de pé: a run acaba.`
+- [ ] **Dupla, convidado cai:** o convidado morre; o host continua. Host: aviso "<testador> caiu  -10 s" no topo, a barra
+  dele com "caído" e a seta em cinza; o Hell Clock perde 10 s. O host passa de andar: o convidado volta de pé com metade
+  da vida. Log do convidado: `[Caído] Andar N: você volta com 50% da vida.`
+- [ ] **Dupla, host cai:** o host morre; o convidado limpa o andar e usa o portal. Esperado: o grupo todo avança e o
+  host volta com metade da vida. Log do convidado: `[Run] O host está caído: pedido para avançar 1 andar(es)`; do host:
+  `[Run] Você está caído: <testador> leva o grupo`.
+- [ ] **Dupla, os dois caem:** a run acaba para os dois (resultados normais). Log do host: `[Caído] Ninguém de pé: a run
+  acaba.` e `[Run] Fim da run (Defeat); avisando os convidados.` O convidado não vê "Sua run acabou...".
+- [ ] **Hell Clock com o host caído (eco):** caído, o relógio continua descendo (não para). Se zerar, a run acaba por
+  tempo e, no hub, o personagem está de pé com a vida cheia.
+- [ ] **Último andar com o host caído (dupla):** o convidado mata o chefão; o host levanta com metade da vida e usa o
+  portal final. Log do host: `[Caído] Último andar limpo: você levanta`.
+  Se o host cair depois de o último andar já estar limpo, ele levanta logo em seguida (log igual).
+- [ ] **Host em segundo plano (dupla):** com o convidado caído, o host faz alt-tab por mais de 20 s. Anotar se a run do
+  convidado acaba (log `[Caído] O host está sem sinal há mais de 20 s.`): o host minimizado pode parar de mandar posição.
+- Se falhar, mandar: o `LogOutput.log` dos dois (linhas `[Caído]` e `[Run]`) e uma captura da tela.
+
 ## 0.14.0 — Barra de vida e seta dos aliados
 
 Solo com o modo eco (F8) cobre barra e seta; o coop real (vida do outro PC chegando) fica para a sessão em dupla.
@@ -648,8 +679,8 @@ vazio no `.cfg`)
 - [ ] **Status de controle do convidado** (0.9.0 e 0.9.1): lentidão e congelamento (atordoamento/enraizamento, se houver
   skill) valem no host; enfraquecimento/óleo/marca **não** dão dano a mais no host; dano contínuo no mesmo ritmo;
   campeões sem nada estranho. Log do host: nenhum `[Inimigos] De <testador>: status ... recusado` repetido. Anote a skill.
-- [ ] **Morte do convidado** (0.5.x), num andar do meio: ele volta no próximo andar do host. Log do convidado:
-  `[Run] Você morreu: ...`; do host: `[Run] Enviando plano aos convidados` do andar seguinte.
+- [ ] **Morte do convidado** (0.15.0), num andar do meio: ele fica caído e volta no próximo andar do host. Log do
+  convidado: `[Caído] Andar N: você volta com 50% da vida.`; do host: `[Run] Enviando plano aos convidados` do andar seguinte.
 - [ ] **Inimigos mais fortes e dificuldade** (0.7.0, prioridade 1): comparando com a run solo da Parte A (mesmo andar e
   dificuldade), mais vida, um pouco mais de dano e mais inimigos a partir do andar seguinte (falhou: aviso `[Balanceamento]
   Quantidade de inimigos: ...`). Anotar se o grupo achou um pouco mais difícil que o solo, fácil ou difícil demais.
@@ -704,7 +735,7 @@ passaram (fora os de controle); depois
 | 2: entrada no meio, portal vermelho, fim por tempo | B: run 1, run 2, run 3 |
 | 3: baús e quebráveis; 4: loot próprio | B: baús e quebráveis |
 | 3b: facas e estacas | B: estacas e facas |
-| 3c: inimigos atacam o convidado; convidado volta no próximo andar | B: inimigos, morte do convidado |
+| 3c: inimigos atacam o convidado; convidado caído volta no próximo andar (0.15.0) | B: inimigos, morte do convidado; seção 0.15.0 |
 | 3: santuários e totens | B: santuários |
 | 3: chefe no convidado | B: chefe |
 | 3: status de controle do convidado | B: status de controle |

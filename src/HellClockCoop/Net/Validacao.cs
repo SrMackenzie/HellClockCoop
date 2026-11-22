@@ -27,6 +27,17 @@ namespace HellClockCoop.Net
 
         public static bool MotivoFimRunValido(int motivo) => motivo >= 0 && motivo <= MotivoFimRunMaximo;
 
+        /// <summary>Teto de andares de um pedido de avanço (portais comuns avançam 1; o jogo ainda limita pelo dele).</summary>
+        public const uint AvancoMaximo = 3;
+
+        /// <summary>
+        /// PedidoAvanco (0.15.0): só do andar em que o host está (pedido repetido ou atrasado chega com o andar velho
+        /// e é recusado), com pelo menos 1 andar (o host limita a AvancoMaximo) e nunca no último andar (lá o avanço
+        /// do jogo vira FinishDungeon(Completed), que gravaria a dungeon como concluída no save do host).
+        /// </summary>
+        public static bool PedidoAvancoValido(uint andarDoPedido, uint andares, uint andarDoHost, bool hostNoUltimoAndar) =>
+            !hostNoUltimoAndar && andarDoPedido == andarDoHost && andares >= 1;
+
         public static bool BonusTempoValido(float segundos) => Finito(segundos) && segundos > 0f && segundos <= BonusTempoMaximo;
 
         /// <summary>Janela do teto acumulado de bônus de tempo, por convidado.</summary>

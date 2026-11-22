@@ -44,6 +44,18 @@ namespace HellClockCoop.Fase2
         private static SpawnAndar _ultimoSpawn;
         private static readonly Dictionary<ulong, JanelaBonus> JanelasBonus = new Dictionary<ulong, JanelaBonus>(); // por SteamID
         private static float _proximoTimer;
+        private static float _proximoPedidoAvanco;
+        private static long _andarAvancadoPorPedido = -1; // host: andar já avançado por PedidoAvanco (-1 = nenhum)
+        private static float _proximoLogPedido;
+        private static readonly MethodInfo EhUltimoAndar = AccessTools.Method(typeof(DungeonProgressManager), "IsLastLevel");
+
+        /// <summary>Log de pedido ignorado ou recusado: no máximo um a cada 5 s (canal confiável, sem limite de envio).</summary>
+        private static void LogPedido(bool aviso, string texto)
+        {
+            if (Time.unscaledTime < _proximoLogPedido) return;
+            _proximoLogPedido = Time.unscaledTime + 5f;
+            if (aviso) Plugin.Log.LogWarning(texto); else Plugin.Log.LogInfo(texto);
+        }
 
         // Acesso a membros privados do jogo
         private static readonly MethodInfo InternalAdvanceLevel = AccessTools.Method(typeof(DungeonProgressManager), "InternalAdvanceLevel");
@@ -72,6 +84,7 @@ namespace HellClockCoop.Fase2
 
         private static DungeonProgressManager Dpm => DungeonProgressManager.Instance;
         private static uint IndiceAtual => IndiceAndarRef(Dpm).Value;
+        internal static uint AndarAtual => IndiceAtual;
 
         // ---------------- Laço ----------------
 
@@ -193,6 +206,36 @@ namespace HellClockCoop.Fase2
                     TimerManager.Instance?.IncrementTimer(b.Segundos);
                     break;
 
+                case Protocolo.TipoPedidoAvanco:
+                    if (!Host || !de.Compativel || !de.DlcOk) return; // só quem divide a run
+                    PedidoAvanco pa = PedidoAvanco.Desserializar(dados);
+                    if (!JogadorCaido.Caido || !Dpm.RunStarted.Value || Dpm.EndingExecuted.Value || Dpm.IsTransitioning ||
+                        ClassSingleton<LevelChanger>.Instance.IsChangingLevel.Value || _andarAvancadoPorPedido == IndiceAtual)
+                    {
+                        LogPedido(false, $"[Run] Pedido de avanço de {de.Nome} ignorado: você não está caído, o andar está trocando ou já foi pedido.");
+                        return;
+                    }
+                    // Último andar: a saída é o portal do fim da dungeon (não passa por aqui); um avanço nele gravaria a
+                    // dungeon como concluída no save do host.
+                    if (EhUltimoAndar == null) // jogo mudou: sem saber se é o último andar, recusa (protege o save)
+                    {
+                        LogPedido(true, "[Run] Pedido de avanço recusado: DungeonProgressManager.IsLastLevel não existe nesta versão do jogo.");
+                        return;
+                    }
+                    bool ultimo = (bool)EhUltimoAndar.Invoke(Dpm, null);
+                    if (!de.MesmoAndar || !Validacao.PedidoAvancoValido(pa.IndiceAndar, pa.Andares, IndiceAtual, ultimo))
+                    {
+                        LogPedido(true, $"[Run] Pedido de avanço de {de.Nome} recusado (andar {pa.IndiceAndar}, {pa.Andares} andar(es); você no andar {IndiceAtual}{(ultimo ? ", o último" : "")}).");
+                        return;
+                    }
+                    uint andares = Math.Min(pa.Andares, Validacao.AvancoMaximo);
+                    Plugin.Log.LogInfo($"[Run] Você está caído: {de.Nome} leva o grupo ({andares} andar(es)).");
+                    Sessao.Avisar($"{de.Nome} levou o grupo para o próximo andar.");
+                    _andarAvancadoPorPedido = IndiceAtual; // um avanço por andar (no Endless Nightmare a troca é assíncrona)
+                    JogadorCaido.AvancoPedido(); // até a troca começar, os aliados não contam como fora da run
+                    Dpm.AdvanceLevel(andares, false); // o jogo ainda limita pelo máximo dele
+                    break;
+
                 case Protocolo.TipoFimRun:
                     if (!Convidado || de != sessao.Host) return;
                     FimRun f = FimRun.Desserializar(dados);
@@ -202,6 +245,7 @@ namespace HellClockCoop.Fase2
                         return;
                     }
                     Planos.Clear(); SpawnsDoHost.Clear(); _planoPendente = null; _entradaTardia = null; SementeCena = 0;
+                    JogadorCaido.FimDaRunNoHost(); // o convidado também esquece as quedas já avisadas
                     if (!Dpm.RunStarted.Value || Dpm.EndingExecuted.Value) return;
                     Plugin.Log.LogInfo($"[Run] Host encerrou a run ({(EGameOverSource)f.Motivo}).");
                     _ordemDoHost = true;
@@ -284,6 +328,8 @@ namespace HellClockCoop.Fase2
             _ultimoPlano = null;
             _ultimoSpawn = null;
             JanelasBonus.Clear(); // não guarda pares de runs passadas
+            _andarAvancadoPorPedido = -1;
+            JogadorCaido.FimDaRunNoHost();
             if (!Host) return;
             Plugin.Log.LogInfo($"[Run] Fim da run ({motivo}); avisando os convidados.");
             Sessao.EnviarParaConvidados(new FimRun { Motivo = (int)motivo }.Serializar(), confiavel: true);
@@ -356,19 +402,48 @@ namespace HellClockCoop.Fase2
         }
 
         /// <summary>
-        /// Convidado morreu de verdade (PlayerController.PlayDeathAnimation → FinishDungeon(Defeat)): deixa a
-        /// run dele acabar como no solo (resultados, volta ao hub). Quando o host passar de andar, o plano
-        /// novo traz o convidado de volta para a run (entrada no meio da run).
+        /// Reserva: desde a 0.15.0 o convidado que morre fica caído (JogadorCaido) e a morte do jogo não roda. Se ela
+        /// rodar mesmo assim (PlayDeathAnimation → FinishDungeon(Defeat) com o jogador morto), deixa a run dele acabar
+        /// como no solo, em vez de travar; o plano do próximo andar do host o traz de volta (entrada no meio da run).
         /// </summary>
         internal static bool ConvidadoMorreu(EGameOverSource fonte)
         {
-            if (!Convidado || fonte != EGameOverSource.Defeat) return false;
+            if (!Convidado || _ordemDoHost || fonte != EGameOverSource.Defeat) return false; // fim mandado pelo host: não é esta reserva
             PlayerController local = CoopRuntime.JogadorLocal();
             if (local == null || !local.LifeController.IsDead) return false;
             SementeCena = 0; // a run dele acaba: o hub sorteia como no jogo
-            Plugin.Log.LogInfo("[Run] Você morreu: sua run acaba; você volta para a run do host quando ele passar de andar.");
-            Sessao.Avisar("Você morreu. Quando o host passar de andar, você volta para a run dele.");
+            Plugin.Log.LogWarning("[Run] A morte do jogo rodou no convidado (era para ficar caído): sua run acaba; você volta quando o host passar de andar.");
+            Sessao.Avisar("Sua run acabou. Quando o host passar de andar, você volta para a run dele.");
             return true;
+        }
+
+        /// <summary>
+        /// Convidado no portal com o host caído (0.15.0): pede ao host que avance o grupo. True = pedido enviado (o
+        /// avanço local não roda; o plano do host traz o convidado).
+        /// </summary>
+        internal static bool PedirAvancoComHostCaido(uint andares)
+        {
+            if (!Convidado || _ordemDoHost || !Dpm.RunStarted.Value) return false;
+            Par host = Sessao.Host;
+            if (host == null || !host.Morto || !host.MesmoAndar) return false;
+            if (Time.unscaledTime < _proximoPedidoAvanco) return true; // cliques repetidos no portal
+            _proximoPedidoAvanco = Time.unscaledTime + 2f;
+            Sessao.EnviarPara(host, new PedidoAvanco { IndiceAndar = IndiceAtual, Andares = andares }.Serializar());
+            Plugin.Log.LogInfo($"[Run] O host está caído: pedido para avançar {andares} andar(es) do andar {IndiceAtual}.");
+            Sessao.Avisar("O host está caído: pedido enviado para levar o grupo ao próximo andar.");
+            return true;
+        }
+
+        /// <summary>Host: tira segundos do Hell Clock (queda de um jogador). Devolve quanto tirou.</summary>
+        internal static float PerderTempo(float segundos)
+        {
+            segundos = Validacao.Finito(segundos) ? Mathf.Clamp(segundos, 0f, 60f) : 0f;
+            TimerManager tm = TimerManager.Instance;
+            if (segundos <= 0f || tm == null || !Dpm.RunStarted.Value) return 0f;
+            FloatState relogio = tm.RelaxedModeEnabled ? TimerRelaxadoRef(tm) : TimerRef(tm);
+            if (relogio.Value <= 0f) return 0f; // modo relaxado pode estar negativo: subir a 0 viraria bônus
+            relogio.Setter(Mathf.Max(0f, relogio.Value - segundos)); // zerado, o próprio jogo encerra a run por tempo
+            return segundos;
         }
 
         internal static bool BloquearAcaoDoConvidado(string acao)

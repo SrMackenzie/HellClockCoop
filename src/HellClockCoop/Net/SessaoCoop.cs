@@ -433,6 +433,7 @@ namespace HellClockCoop.Net
                 case Protocolo.TipoSpawnAndar:
                 case Protocolo.TipoTimerBonus:
                 case Protocolo.TipoFimRun:
+                case Protocolo.TipoPedidoAvanco:
                     Fase2.RunCompartilhada.Receber(this, p, dados);
                     break;
                 case Protocolo.TipoInimigoSpawn:
@@ -509,9 +510,11 @@ namespace HellClockCoop.Net
                 p.CenaRemota = s.CenaHash;
                 Plugin.Log.LogInfo($"[Sessão] {p.Nome} agora na cena {s.CenaHash} (andar {s.Andar}); você na cena {cenaLocal} → {(s.CenaHash != -1 && s.CenaHash == cenaLocal ? "visível" : "não visível")}.");
             }
+            bool caiu = s.Morto && !p.Morto && p.UltimoPacote >= 0f; // 0.15.0: aviso e −10 s (no host) a cada queda
             p.UltimoPacote = Time.unscaledTime;
             p.Morto = s.Morto;
             p.MesmoAndar = s.CenaHash != -1 && s.CenaHash == cenaLocal;
+            if (caiu && p.MesmoAndar) Fase2.JogadorCaido.AliadoCaiu(p);
 
             if (jogadorLocal == null)
             {

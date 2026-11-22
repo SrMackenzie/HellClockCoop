@@ -98,6 +98,7 @@ IdaVolta("SpawnAndar", new (string, object)[] { ("IndiceAndar", 3u), ("IndiceSpa
 IdaVolta("TimerSync", new (string, object)[] { ("Timer", 417.25f), ("TimerRelaxado", 999.5f) }, 22);
 IdaVolta("TimerBonus", new (string, object)[] { ("Segundos", 15f) }, 23);
 IdaVolta("FimRun", new (string, object)[] { ("Motivo", 3) }, 24);
+IdaVolta("PedidoAvanco", new (string, object)[] { ("IndiceAndar", 6u), ("Andares", 1u) }, 25); // 0.15.0
 try { T("HellClockCoop.Net.FimRun").GetMethod("Desserializar").Invoke(null, new object[] { new byte[] { 20, 0, 0, 0, 0 } }); Checar(false, "PlanoAndar lido como FimRun deveria falhar"); }
 catch (TargetInvocationException e) { Checar(e.InnerException is FormatException, "Tipo errado é recusado (FimRun ≠ PlanoAndar)"); }
 
@@ -391,9 +392,17 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Checar(V("MotivoFimRunValido", mot(0)) && V("MotivoFimRunValido", mot(4)), "Validação: FimRun motivo 0 e 4 aceitos");
     Checar(!V("MotivoFimRunValido", mot(5)) && !V("MotivoFimRunValido", mot(-1)) && !V("MotivoFimRunValido", mot(int.MaxValue)), "Validação: FimRun motivo 5, -1 e int.MaxValue recusados");
 
+    // PedidoAvanco (0.15.0): só do andar atual do host, pelo menos 1 andar (o host limita a 3), nunca no último andar
+    Checar(V("PedidoAvancoValido", 6u, 1u, 6u, false) && V("PedidoAvancoValido", 6u, 5u, 6u, false), "Validação: PedidoAvanco do andar do host com 1 e 5 andares aceito (o host limita a 3)");
+    Checar(!V("PedidoAvancoValido", 5u, 1u, 6u, false) && !V("PedidoAvancoValido", 7u, 1u, 6u, false), "Validação: PedidoAvanco de outro andar (atrasado ou adiantado) recusado");
+    Checar(!V("PedidoAvancoValido", 6u, 0u, 6u, false), "Validação: PedidoAvanco com 0 andares recusado");
+    Checar(!V("PedidoAvancoValido", 6u, 1u, 6u, true), "Validação: PedidoAvanco no último andar recusado (viraria dungeon concluída no save do host)");
+    Checar((uint)tv.GetField("AvancoMaximo").GetValue(null) == 3u, "Validação: teto de 3 andares por pedido");
+
     // TimerBonus: finito, > 0 e até 120 s
     float bonus(float s) => (float)Campo(Lido("TimerBonus", new (string, object)[] { ("Segundos", s) }), "Segundos");
     Checar(V("BonusTempoValido", bonus(15f)) && V("BonusTempoValido", bonus(120f)), "Validação: TimerBonus 15 s e 120 s aceitos");
+
     Checar(!V("BonusTempoValido", bonus(float.NaN)) && !V("BonusTempoValido", bonus(float.PositiveInfinity)) && !V("BonusTempoValido", bonus(0f))
         && !V("BonusTempoValido", bonus(-5f)) && !V("BonusTempoValido", bonus(120.5f)) && !V("BonusTempoValido", bonus(3.4e38f)), "Validação: TimerBonus NaN, ∞, 0, negativo, 120,5 s e 3.4e38 recusados");
 

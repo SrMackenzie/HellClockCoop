@@ -2,6 +2,26 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.15.0",
+      "data": "22/11/2026",
+      "testado": false,
+      "titulo": "Jogador caído: a run só acaba quando todos caem",
+      "itens": [
+        "No coop, quem morre fica caído no chão, em vez de a run acabar (host) ou de voltar ao hub (convidado). A run só acaba quando todos caem",
+        "Quem caiu vê a tela em cinza, como na segunda chance do jogo, e uma faixa embaixo dizendo que volta no próximo andar com 50% da vida e quantos seguem de pé",
+        "Os aliados veem \"caído\" na barra de vida e a seta em cinza. Cada queda mostra \"Fulano caiu\" no topo da tela",
+        "Com o host caído, o convidado leva o grupo: o portal dele pede ao host que avance o andar. No último andar, quando o chefão morre, o host caído levanta com metade da vida para usar o portal final",
+        "Balanceamento: cada queda tira 10 s do Hell Clock e a dificuldade continua contando o grupo todo, para o coop seguir um pouco mais difícil que o solo. No .cfg, seção [Balanceamento]: SegundosPerdidosPorQueda (vale o do host) e VidaAoVoltarDoChao (vale o de cada PC)",
+        "Para testar sozinho, o fantasma do modo eco (F8) conta como aliado de pé. Desligue o eco com você caído e a run acaba. Protocolo 16: exige a 0.15.0 nos dois PCs"
+      ],
+      "testar": [
+        "Com o modo eco ligado (F8), morra: você fica caído, a tela fica cinza, aparece a faixa \"VOCÊ CAIU\" e o Hell Clock perde 10 s",
+        "Ainda caído, desligue o eco (F8): a run acaba como no solo",
+        "Em dupla: o convidado cai e volta no próximo andar com metade da vida",
+        "Em dupla: com o host caído, o convidado usa o portal e o grupo avança"
+      ]
+    },
+    {
       "v": "0.14.0",
       "data": "22/11/2026",
       "testado": false,

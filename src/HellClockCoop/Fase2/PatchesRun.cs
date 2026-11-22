@@ -42,14 +42,20 @@ namespace HellClockCoop.Fase2
         }
     }
 
-    /// <summary>Alvo: HellClock.Level.LevelObjects.SetupPlayerSpawn (privado) — índice rotativo do ponto de spawn.</summary>
+    /// <summary>
+    /// Alvo: HellClock.Level.LevelObjects.SetupPlayerSpawn (privado) — índice rotativo do ponto de spawn; no andar novo,
+    /// o jogador caído volta (0.15.0).
+    /// </summary>
     [HarmonyPatch(typeof(LevelObjects), "SetupPlayerSpawn")]
     internal static class Run_SetupPlayerSpawn
     {
         private static void Prefix(LevelObjects __instance, LevelInfo levelInfo) => RunCompartilhada.AjustarSpawn(__instance, levelInfo);
 
-        private static void Postfix(LevelObjects __instance, LevelInfo levelInfo) =>
+        private static void Postfix(LevelObjects __instance, LevelInfo levelInfo)
+        {
             RunCompartilhada.HostUsouSpawn(levelInfo, RunCompartilhada.SpawnIndexRef(__instance));
+            JogadorCaido.NovoAndar(levelInfo);
+        }
     }
 
     /// <summary>Alvo: HellClock.Level.LevelObjects.SetupEnemies — convidado com andar vazio até a Fase 3.</summary>
@@ -122,11 +128,18 @@ namespace HellClockCoop.Fase2
         private static bool Prefix() => !RunCompartilhada.BloquearAcaoDoConvidado("inicia a run");
     }
 
-    /// <summary>Alvo: DungeonProgressManager.AdvanceLevel — portais (inclusive vermelhos) do convidado.</summary>
+    /// <summary>
+    /// Alvo: DungeonProgressManager.AdvanceLevel — portais (inclusive vermelhos) do convidado. Com o host caído
+    /// (0.15.0), o portal do convidado vira PedidoAvanco ao host.
+    /// </summary>
     [HarmonyPatch(typeof(DungeonProgressManager), nameof(DungeonProgressManager.AdvanceLevel))]
     internal static class Run_AdvanceLevel
     {
-        private static bool Prefix() => !RunCompartilhada.BloquearAcaoDoConvidado("avança de andar");
+        private static bool Prefix(uint levelsToAdvance)
+        {
+            if (RunCompartilhada.PedirAvancoComHostCaido(levelsToAdvance)) return false;
+            return !RunCompartilhada.BloquearAcaoDoConvidado("avança de andar");
+        }
     }
 
     /// <summary>Alvo: DungeonProgressManager.FinishDungeon — o fim da run é do host.</summary>
@@ -144,15 +157,34 @@ namespace HellClockCoop.Fase2
         private static void Postfix(EGameOverSource source)
         {
             Balanceamento.Metricas.Motivo(source);
+            // Caído no fim da run: libera as ações; a volta ao hub fica com o jogo. No convidado, só no fim mandado pelo
+            // host (o postfix roda mesmo com o prefixo bloqueando).
+            if (!RunCompartilhada.Convidado || RunCompartilhada.PermitidoAgora) JogadorCaido.FimDaRun();
             if (!RunCompartilhada.Convidado) RunCompartilhada.HostTerminou(source);
         }
     }
 
-    /// <summary>Alvo: TimerManager.Update — no convidado o Hell Clock não corre; mostra o do host.</summary>
+    /// <summary>
+    /// Alvo: TimerManager.Update — no convidado o Hell Clock não corre; mostra o do host. No host caído (0.15.0) o
+    /// relógio continua: o Update do jogo para quando o jogador local está morto (IsDead), e o caído fica com vida 0.
+    /// Mesmas condições do jogo (PauseTimer livre, run em andamento, sem o truque de tempo infinito, sem fim já
+    /// executado), sem o teste de morto; o próprio UpdateDefaultMode encerra a run quando o tempo zera.
+    /// </summary>
     [HarmonyPatch(typeof(TimerManager), nameof(TimerManager.Update))]
     internal static class Run_TimerUpdate
     {
-        private static bool Prefix() => !(RunCompartilhada.Convidado && DungeonProgressManager.Instance.RunStarted.Value);
+        private static readonly MethodInfo ModoPadrao = AccessTools.Method(typeof(TimerManager), "UpdateDefaultMode");
+        private static readonly MethodInfo ModoRelaxado = AccessTools.Method(typeof(TimerManager), "UpdateRelaxedMode");
+
+        private static bool Prefix(TimerManager __instance)
+        {
+            DungeonProgressManager dpm = DungeonProgressManager.Instance;
+            if (RunCompartilhada.Convidado && dpm.RunStarted.Value) return false;
+            if (!JogadorCaido.Caido) return true;
+            if (__instance.PauseTimer.Free && dpm.RunStarted.Value && !HellClock.Cheat.CheatInputs.CheatInfiniteTimer.Value && !dpm.EndingExecuted.Value)
+                (__instance.RelaxedModeEnabled ? ModoRelaxado : ModoPadrao).Invoke(__instance, null);
+            return false;
+        }
     }
 
     /// <summary>Alvo: TimerManager.IncrementTimer — tempo ganho pelo convidado vai para o Hell Clock do host.</summary>

@@ -31,8 +31,8 @@ ESTADO ATUAL (versão de teste, Fase 3)
     BepInEx\config\br.srmackenzie.hellclockcoop.cfg (MostrarDanoDosAliados, TamanhoDanoDosAliados).
   * Os inimigos perseguem e atacam quem estiver mais perto, host ou convidado. O convidado leva
     o dano no próprio jogo, com as próprias defesas.
-  * Se o CONVIDADO morre, a run dele acaba (resultados normais) e ele volta para a run do host
-    quando o host passar de andar. Se o HOST morre, a run acaba para todos.
+  * Quem morre (host ou convidado) fica CAÍDO no chão e volta no próximo andar com metade da
+    vida. A run só acaba quando todos caem. Cada queda tira 10 s do Hell Clock.
   * Teste sozinho: o modo eco (F8) também repete as suas skills e os seus números de dano,
     com o mesmo atraso do fantasma.
 - NOVO (0.6.0): SANTUÁRIOS, TOTENS E CHEFES.
@@ -162,6 +162,13 @@ ESTADO ATUAL (versão de teste, Fase 3)
   com o aliado fora da tela, uma seta na borda apontando para ele, com o nome. Na aba Ajustes:
   "Barra de vida dos aliados" e "Seta do aliado fora da tela". Só informação: a dificuldade não
   muda. Exige a 0.14.0 nos dois PCs.
+- NOVO (0.15.0): jogador caído. Quem morre fica no chão (tela em cinza e a faixa "VOCÊ CAIU")
+  e volta no próximo andar com 50% da vida; a run só acaba quando todos caem. Os aliados veem
+  "caído" na barra e a seta em cinza. Com o host caído, o portal do convidado leva o grupo; no
+  último andar, quando ele fica limpo, o host levanta com metade da vida para usar o portal final.
+  Cada queda tira 10 s do Hell Clock (no .cfg, seção [Balanceamento]: SegundosPerdidosPorQueda,
+  que vale o do host, e VidaAoVoltarDoChao, que vale o de cada PC). No modo eco (F8) o fantasma conta como aliado de
+  pé, para testar sozinho. Exige a 0.15.0 nos dois PCs.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, abra o menu do coop (F7), escolha "Sair do coop" e depois use o menu normalmente.

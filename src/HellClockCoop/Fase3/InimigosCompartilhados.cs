@@ -399,6 +399,7 @@ namespace HellClockCoop.Fase3
 
         private static void HostAndarLimpo()
         {
+            Fase2.JogadorCaido.AndarLimpo(); // último andar: o host caído levanta para usar o portal final (0.15.0)
             if (!Host || !HostEmRun || !Sessao.ComAliados) return;
             Sessao.EnviarParaConvidados(new AndarLimpo { Andar = AndarDoHost }.Serializar(), confiavel: true);
         }

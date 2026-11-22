@@ -79,6 +79,19 @@ namespace HellClockCoop.Net
         public static FimRun Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoFimRun, r => new FimRun { Motivo = r.ReadInt32() });
     }
 
+    /// <summary>
+    /// Convidado → host (0.15.0): com o host caído, o portal do convidado vira este pedido; o host avança o grupo.
+    /// IndiceAndar é o andar em que o convidado usou o portal (o host só aceita o andar atual dele).
+    /// </summary>
+    internal sealed class PedidoAvanco
+    {
+        public uint IndiceAndar;
+        public uint Andares;
+
+        public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoPedidoAvanco, w => { w.Write(IndiceAndar); w.Write(Andares); });
+        public static PedidoAvanco Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoPedidoAvanco, r => new PedidoAvanco { IndiceAndar = r.ReadUInt32(), Andares = r.ReadUInt32() });
+    }
+
     internal static class Mensagem
     {
         public static byte[] Escrever(byte tipo, Action<BinaryWriter> corpo)

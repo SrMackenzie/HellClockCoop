@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "22/11/2026",
-  "versao": "0.14.0",
+  "versao": "0.15.0",
   "fases": [
     {
       "id": "B",
@@ -45,8 +45,16 @@
           "Ajuste individual quando o convidado está muito abaixo ou acima do host"
         ],
         [
+          "testar",
+          "Jogador caído: a run só acaba quando todos caem; o caído volta no próximo andar com 50% da vida e cada queda tira 10 s do Hell Clock"
+        ],
+        [
           "planejado",
-          "Jogador caído e reanimação, em vez de a morte do host encerrar a run"
+          "Reanimação do aliado caído, com as quedas e reanimações no resumo da run"
+        ],
+        [
+          "planejado",
+          "Calibragem do jogador caído com os dados da dupla"
         ],
         [
           "planejado",
@@ -174,7 +182,7 @@
         ],
         [
           "testar",
-          "3c: convidado que morre volta no próximo andar do host"
+          "3c: convidado que morre fica caído e volta no próximo andar do host (0.15.0; antes, a run dele acabava)"
         ],
         [
           "testar",

@@ -131,7 +131,7 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
 | `LevelObjects.SetupPlayerSpawn` | Post (C) | Usar o mesmo `_currentPlayerSpawnIndex` do host, com pequeno deslocamento por jogador |
 | `TimerManager.Update` | Pre (C) | `return false`; aplicar o valor recebido do host (4 Hz e em eventos) via `_timer.Setter` |
 | `TimerManager.IncrementTimer` | Pre (C) | Virar pedido `TimerBonus{s}` ao host |
-| `TimerManager.Update` | Pre (H) | Continuar decrementando enquanto **qualquer** jogador estiver vivo (hoje para se o local morrer) |
+| `TimerManager.Update` | Pre (H) | Continuar decrementando enquanto **qualquer** jogador estiver vivo (o `Update` do jogo para com o jogador local morto; desde a 0.15.0, no host caído o `Run_TimerUpdate` chama `UpdateDefaultMode`/`UpdateRelaxedMode` com as mesmas condições, sem o teste de morto; ver §12.4) |
 | `HellClock.Manager.TimeManager.PauseTime` / `PauseGame` | Pre | No-op durante a sessão; forçar `AllowPauseToggle = false` |
 
 ### Fase 3 — Combate
@@ -359,7 +359,7 @@ Fora desses modos, todos os patches deixam o jogo seguir como sem o mod.
   - O "andar limpo" só dispara quando um inimigo morre, então nunca acontece no andar vazio.
 - **Bloqueios** (só passam quando o próprio mod executa uma ordem do host):
   - `StartRunFromDungeon(DungeonConfig)`, `StartRunFromDungeonCoroutine`, `StartRunFromSpecialLevelBlock`;
-  - `AdvanceLevel` (portais, inclusive o vermelho);
+  - `AdvanceLevel` (portais, inclusive o vermelho); com o host caído (0.15.0), o portal do convidado vira `PedidoAvanco` ao host (§12.4);
   - `FinishDungeon`.
 - **Timer:** `TimerManager.Update` não roda durante a run, e o valor vem do host. `IncrementTimer` vira `TimerBonus` para o host.
 
@@ -564,8 +564,9 @@ recebe clona a primeira irmã. Era o caso das facas da skill Reflexos girando em
   da skill), com as defesas dele. No host, o avatar não tem colisor: o golpe não acerta nada.
 - *Animação:* enquanto a réplica executa a própria skill (0,4 s, ou enquanto `IsUsing`, até 3 s), a animação do host
   não é aplicada por cima.
-- *Morte do convidado:* `FinishDungeon(Defeat)` deixa de ser bloqueado quando o jogador local do convidado está
-  morto: a run dele acaba como no solo, e o próximo PlanoAndar do host o traz de volta (entrada no meio da run).
+- *Morte do convidado:* desde a 0.15.0 ele fica caído e volta no próximo andar do host (§12.4). Reserva: se a morte do
+  jogo rodar mesmo assim, `FinishDungeon(Defeat)` com o jogador local morto deixa de ser bloqueado e a run dele acaba
+  como no solo; o próximo PlanoAndar do host o traz de volta (entrada no meio da run).
 
 ### 11.3 Santuários, totens e chefes (versão 0.6.0, protocolo 9)
 
@@ -789,7 +790,7 @@ nas regras; JSON com no máximo 16 níveis); a janela diz quantos são. Runs
 solo e coop entram igual (papel `solo` é a base de comparação). Compilação sem `EnvioConfig.local.cs` não mostra a
 janela. O aviso no fim da run (0.7.1) saiu.
 
-**Próximos passos.** Painel solo × grupo, ajuste individual por diferença de progressão e jogador caído/reanimação.
+**Próximos passos.** Painel solo × grupo, ajuste individual por diferença de progressão, reanimação do aliado caído e calibragem do jogador caído (§12.4).
 
 ### 12.1 Janela Novidades (versões 0.9.2 e 0.13.0)
 
@@ -968,6 +969,63 @@ Entrega 1 de 4 da etapa "aliados na tela e reanimação" (as próximas: jogador 
   para ver a seta.
 - **Balanceamento:** só informação na tela; dificuldade e multiplicadores iguais.
 
+### 12.4 Jogador caído (versão 0.15.0, protocolo 16)
+
+Entrega 2 de 4 da etapa "aliados na tela e reanimação" (as próximas: reanimação com métricas no resumo, calibragem com
+os dados da dupla). Decisões do autor em 22/11/2026: o caído volta no próximo andar com 50% da vida, cada queda tira
+10 s do Hell Clock, a escala continua contando o grupo todo, com o host caído o portal do convidado leva o grupo, e o
+modo eco conta como aliado de pé (só teste).
+- **Queda (`Fase2/JogadorCaido`):** prefixo em `PlayerController.Handle_OnDie` (privado) do jogador local. Em run com
+  aliados (host com convidado, convidado ou eco), a morte do jogo (`PlayDeathAnimation`: pausa, esconde a HUD, câmera de
+  morte, `FinishDungeon(Defeat)`) não roda. No lugar entra a receita da segunda chance do jogo (`SkillSecondWind`):
+  gatilho `dead`, `MovementController.StopNow`, `SkillsController.ResetSkillsExecution`, `CanPerformAction` bloqueado
+  (chave do mod), sem alvo e companheiros desligados. A vida fica em 0 (`IsDead`): os inimigos largam o alvo
+  (`AlvosAliados` no host) e a regeneração do jogo não age em quem está morto. O `PlayerController.Update` já ignora a
+  entrada de quem está morto. O Hell Clock segue correndo: o `TimerManager.Update` do jogo para com o jogador local
+  morto, então no host caído o prefixo dele chama `UpdateDefaultMode`/`UpdateRelaxedMode` (mesmas condições do jogo:
+  `PauseTimer` livre, run em andamento, sem o truque de tempo infinito, sem fim executado). As quedas não sobem
+  `cumulativeTotalDeaths` do save (a morte do jogo não roda); só a morte final conta.
+- **Subir de nível caído:** a opção do jogo "restaurar vida ao subir de nível" chama `StatBasedValueController.Refill`;
+  um prefixo recusa o `Refill` da vida do jogador local caído (o XP continua contando).
+- **Volta:** no postfix de `LevelObjects.SetupPlayerSpawn` de um andar da run (no hub, `LevelBlockInfo` é nulo):
+  `ClearDelayedDamage`, `ForceRegeneratePercentage(VidaAoVoltarDoChao)` (passa por cima do teste de morto), gatilho
+  `revive` e as ações liberadas. **Último andar** (decisão do autor): a saída é o portal do fim da dungeon, que não passa
+  por `AdvanceLevel` e só o host usa; quando o andar fica limpo (`EnemyManager.OnAllEnemiesCleared`, `HostAndarLimpo`)
+  e `IsLastLevel`, o host caído levanta com a mesma fração para usar o portal; quem cai depois de o andar estar limpo
+  levanta no `Atualizar` seguinte (o evento dispara uma vez por andar). Fim da run com alguém caído (postfix de
+  `FinishDungeon`; no convidado só no fim mandado pelo host): a vida volta cheia, sem animação, e as ações são liberadas
+  (tempo zerado ou vitória não passam pela morte do jogo).
+- **Fim da run:** quem decide é o host. Sem ninguém de pé (o último a cair é o host, ou ele está caído e o último
+  convidado cai, sai ou fica 5 s sem sinal), o host roda a morte do jogo (`Handle_OnDie` original), que termina a run e
+  manda `FimRun`. Um par conta como de pé se é compatível, tem sinal há menos de 5 s, está no andar ou carregando e não
+  está `Morto`. Durante a troca de andar do próprio PC (`IsTransitioning`, `IsChangingLevel` ou cena -1) e por 3 s depois
+  dela ou de aceitar um `PedidoAvanco`, o host não decide (os aliados aparecem em outra cena até ele chegar). O convidado
+  caído espera o host e só morre como no solo se perder a sessão ou se o host ficar 20 s sem sinal.
+- **Tempo:** o host tira `SegundosPerdidosPorQueda` (padrão 10, até 60, 0 desliga) do Hell Clock a cada queda: a dele
+  (em `Cair`) e a dos convidados (`Morto` de falso para verdadeiro no snapshot, no mesmo andar, de par compatível e com
+  a mesma DLC), no máximo uma por SteamID e por andar (snapshot fora de ordem ou forjado não cobra de novo). O valor vai direto no
+  relógio (`_timer`, ou `_relaxedTimer` no modo relaxado) sem `IncrementTimer`, para não contar como tempo ganho; relógio
+  já em 0 ou negativo (modo relaxado) não muda; zerado, o próprio jogo encerra a run por tempo.
+- **Rede (protocolo 16):** `PedidoAvanco` (tipo 25, convidado → host: andar atual e quantos andares). O prefixo de
+  `AdvanceLevel` do convidado manda o pedido quando o host (pelo snapshot) está `Morto` no mesmo andar; o host só aceita
+  caído (filtros na tabela da §14). O avanço do host gera o PlanoAndar de sempre, e todos voltam no andar novo.
+- **Visual (`Interface/CaidoNaTela` e `AliadosNaTela`, opção B "Segunda chance"):**
+  - Quem caiu: tela em cinza com `CameraPostEffectController.LerpToGrayscale` (1 em 0,5 s; volta a 0 em 0,25 s, e só
+    desfaz o que o mod aplicou; `Instance` é Guaranteed, o efeito é achado com `FindAnyObjectByType`) e faixa escura no
+    terço de baixo, numa camada própria por cima da HUD (Canvas overlay, ordem 50, escala de 1080p): "VOCÊ CAIU"
+    (vermelho), a volta com a porcentagem do `.cfg` e um ponto por jogador (âmbar cheio = de pé) com "N de M de pé".
+  - Aliado caído: barra sem preenchimento com o rótulo "caído" sobre a moldura, seta e nome da seta em cinza.
+  - Queda de um aliado: faixa no topo, ao centro, por 2,5 s: "Fulano caiu  -10 s" (o tempo só no host, que é quem
+    tira). Nada no canto de cima à esquerda.
+  - Textos na fonte da barra flutuante do jogo (`AliadosNaTela.Fonte`, achada quando a barra monta). Sem ela, ou com
+    erro, a faixa e o aviso saem no `OnGUI`, até reabrir o jogo. Nada é clicável e nada pausa o jogo.
+- **`.cfg`, seção `[Balanceamento]`:** `VidaAoVoltarDoChao` (0,05 a 1, padrão 0,5) e `SegundosPerdidosPorQueda`.
+  Vale o do host para o tempo; a vida na volta é a de cada PC.
+- **Balanceamento:** cair tira o jogador da luta até o fim do andar e custa 10 s a todos, enquanto os inimigos continuam
+  escalados para o grupo inteiro. Quem fica de pé luta sozinho contra inimigos de dupla. Comparado à 0.14.0, em que a
+  morte do host encerrava a run de todos, o grupo dura mais; o custo de tempo e a escala cheia mantêm o coop um pouco
+  mais difícil que o solo. A calibragem (entrega 4) usa os dados da dupla.
+
 ## 13. Atualizador automático (versão 0.8.0)
 
 **Onde roda.** `BepInEx\patchers\HellClockCoop.Atualizador.dll`, um preloader patcher do BepInEx 5 sem DLL alvo: só o
@@ -1031,8 +1089,9 @@ andar), `FinishRun` e `FinishDungeonRoutine` (fim da run). Nenhuma mensagem leva
 os dados dele (andar alcançado, run, ponto de constelação). O projeto aceita isso: é progressão individual, no próprio
 save, como o convidado teria se jogasse a mesma run.
 
-- **Morte e volta:** o convidado que morre termina a run dele como no solo (`ConvidadoMorreu`); ao voltar pela entrada no
-  meio da run, o jogo dele conta uma run nova.
+- **Morte e volta:** desde a 0.15.0 quem morre fica caído e segue na mesma run (§12.4): o save não registra fim de run
+  nem run nova até a run do grupo acabar. Na reserva (`ConvidadoMorreu`), a run do convidado acaba como no solo e, ao
+  voltar pela entrada no meio da run, o jogo dele conta uma run nova.
 - **Conquistas: globais (decisão do autor, 21/11/2026).** O mod não toca em conquistas (regra do projeto). O jogo
   desbloqueia pelo funil `AchievementManager.TryToUnlockAchievement` (e ressincroniza pelas flags do save em
   `SyncAllAchievements`, ao escolher o save), então em coop uma ação de um jogador pode valer para os outros:
@@ -1053,6 +1112,7 @@ filtros puros ficam em `Net/Validacao.cs` e têm casos no `tools/codectest`.
 |---|---|---|
 | `PlanoAndar` | convidado, só do host | `IndiceAndar < DungeonConfig.GetByID(DungeonHash).MaxLevelIndex` (`MaxLevelIndex` é a quantidade de andares: o jogo usa `IsLastLevel = índice + 1 >= MaxLevelIndex`); dungeon desconhecida é descartada; andar especial (sem dungeon): até 200. Aviso no log |
 | `FimRun` | convidado, só do host | `Motivo` dentro de `EGameOverSource` (0..4). Aviso no log |
+| `PedidoAvanco` (0.15.0) | host, só caído, com a run em andamento e sem troca de andar, de par compatível, com a mesma DLC e no mesmo andar | `IndiceAndar` igual ao andar atual do host (pedido repetido ou atrasado é recusado), `Andares` ≥ 1 (o host limita a 3) e nunca no último andar, onde o avanço viraria `FinishDungeon(Completed)` no save do host (`Validacao.PedidoAvancoValido`); um avanço aceito por andar (o Endless Nightmare gera o bloco seguinte de forma assíncrona); o host chama `AdvanceLevel(n, false)` e o jogo ainda limita pelo máximo dele. O convidado manda no máximo um a cada 2 s. Log de recusa no máximo a cada 5 s |
 | `TimerBonus` | host | finito, `> 0` e `<= 120 s`; desde a 0.8.5, também no máximo 120 s e 120 bônus somados por convidado (chave: SteamID, para sair e voltar ao lobby não zerar) numa janela fixa de 60 s (`Validacao.AceitarBonusNaJanela`; o recusado não conta; na virada da janela até o dobro passa em sequência, a média fica no teto). Um aviso de recusa por janela |
 | `TimerSync` | convidado, só do host | os dois campos finitos e `>= 0` (4 Hz: descarte sem log) |
 | `InimigoSpawn`, `InimigosEstado`, `InimigoMorte`, `InimigoSumiu`, `AndarLimpo`, `InimigoAjuste` | convidado, só do host | — |
