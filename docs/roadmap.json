@@ -193,7 +193,7 @@
           "Status de controle do convidado (lentidão, congelamento, atordoamento, enraizamento) valendo no host; os de dano ficam pessoais"
         ],
         [
-          "planejado",
+          "testar",
           "Boneco de DPS do hub visível para o outro"
         ]
       ]
@@ -264,7 +264,31 @@
         ],
         [
           "planejado",
-          "Dificuldade ajustada ao número de jogadores"
+          "Aliados na tela: barra de vida sobre o aliado e seta apontando quem está fora da tela"
+        ],
+        [
+          "planejado",
+          "Marcador (ping): um botão marca um ponto no chão que todos veem"
+        ],
+        [
+          "planejado",
+          "Frases rápidas: avisos curtos prontos que aparecem sobre o personagem, sem chat de texto"
+        ],
+        [
+          "planejado",
+          "Ir até o aliado: botão que leva para perto do host quem ficou para trás, com tempo de recarga"
+        ],
+        [
+          "planejado",
+          "Ver a build do aliado: aba só de leitura com as skills e o nível de cada jogador da sessão"
+        ],
+        [
+          "planejado",
+          "Resumo da run em grupo: dano, abates e tempo ganho de cada jogador no fim da run"
+        ],
+        [
+          "planejado",
+          "Correção das travadas esporádicas, com os números do medidor de travadas"
         ],
         [
           "planejado",

@@ -63,7 +63,7 @@ _O host é dono da run: todos no mesmo andar, mesmo mapa, mesmo Hell Clock._
 | ✅ | Fim da run do host encerra a de todos; sem pausa com aliados |
 | 🧪 | Entrada no meio da run, portal vermelho e fim por tempo |
 
-## Fase 3 — Combate · 77%
+## Fase 3 — Combate · 83%
 
 _Mesmos inimigos para todos, cada um vê as skills do outro, inimigos atacam qualquer jogador._
 
@@ -81,7 +81,7 @@ _Mesmos inimigos para todos, cada um vê as skills do outro, inimigos atacam qua
 | 🧪 | Chefe no convidado: fase agressiva, barra de vida e dano |
 | 🧪 | Barreiras de sangue (chefe, sobrevivência, santuário amaldiçoado) iguais para todos, com o convidado levado para perto do host |
 | 🧪 | Status de controle do convidado (lentidão, congelamento, atordoamento, enraizamento) valendo no host; os de dano ficam pessoais |
-| ⬜ | Boneco de DPS do hub visível para o outro |
+| 🧪 | Boneco de DPS do hub visível para o outro |
 
 ## Fase 4 — Loot · 90%
 
@@ -95,7 +95,7 @@ _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio s
 | 🧪 | Revisar drops de invocações, ondas de sobrevivência e temporadas (convidado com o XP e o tesouro próprio do host; equipamento sem redução, decisão do autor) |
 | ✅ | Auditoria: o mod nunca escreve no save de outro jogador |
 
-## Fase 5 — Polimento · 55%
+## Fase 5 — Polimento · 35%
 
 _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 
@@ -109,6 +109,12 @@ _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 | 🧪 | Botão Coop na lista de botões do menu do jogo e item Coop na pausa; novidades como aba da janela do coop |
 | ⬜ | Reconexão e troca de host sem perder a run |
 | 🧪 | Sons das skills e dos golpes dos aliados |
-| ⬜ | Dificuldade ajustada ao número de jogadores |
+| ⬜ | Aliados na tela: barra de vida sobre o aliado e seta apontando quem está fora da tela |
+| ⬜ | Marcador (ping): um botão marca um ponto no chão que todos veem |
+| ⬜ | Frases rápidas: avisos curtos prontos que aparecem sobre o personagem, sem chat de texto |
+| ⬜ | Ir até o aliado: botão que leva para perto do host quem ficou para trás, com tempo de recarga |
+| ⬜ | Ver a build do aliado: aba só de leitura com as skills e o nível de cada jogador da sessão |
+| ⬜ | Resumo da run em grupo: dano, abates e tempo ganho de cada jogador no fim da run |
+| ⬜ | Correção das travadas esporádicas, com os números do medidor de travadas |
 | ⬜ | Desempenho com 4 jogadores e muitos inimigos |
 | ⬜ | Tradução para inglês e instalador |
