@@ -171,6 +171,7 @@ namespace HellClockCoop.Interface
             TMP_Text titulo = Texto(cab, "TitleTextLabel");
             if (titulo != null) titulo.text = "COOP";
             _fechar = cab.Find("CloseButton") as RectTransform;
+            CaberNaJanela(cab);
 
             // Abas: o botão de aba das Opções, duas vezes.
             var abas = new GameObject("Abas");
@@ -622,6 +623,42 @@ namespace HellClockCoop.Interface
         {
             Transform f = t.Find(caminho);
             return f != null ? f.GetComponent<TMP_Text>() : null;
+        }
+
+        /// <summary>
+        /// As linhas do cabeçalho das Opções são da largura da janela do jogo, maior que a nossa, e vazavam pelos lados:
+        /// toda imagem do cabeçalho (fora o [X]) que passa da largura do painel é encurtada até caber. As contas são no
+        /// espaço do pai de cada peça, então peças espelhadas (escala negativa) e com pivô fora do centro também servem.
+        /// </summary>
+        private static void CaberNaJanela(RectTransform cab)
+        {
+            var cantos = new Vector3[4];
+            Rect lim = _painel.rect;
+            var ajustadas = new List<string>();
+            foreach (Image img in cab.GetComponentsInChildren<Image>(true))
+            {
+                RectTransform r = img.rectTransform;
+                if (r == cab || (_fechar != null && r.IsChildOf(_fechar))) continue;
+                Transform pai = r.parent;
+                float s = r.localScale.x;
+                if (pai == null || Mathf.Abs(s) < 0.001f) continue;
+                float a = pai.InverseTransformPoint(_painel.TransformPoint(new Vector3(lim.xMin, 0f, 0f))).x;
+                float b = pai.InverseTransformPoint(_painel.TransformPoint(new Vector3(lim.xMax, 0f, 0f))).x;
+                r.GetWorldCorners(cantos);
+                float c0 = pai.InverseTransformPoint(cantos[0]).x, c2 = pai.InverseTransformPoint(cantos[2]).x;
+                float min = Mathf.Min(c0, c2), max = Mathf.Max(c0, c2);
+                float novoMin = Mathf.Max(min, Mathf.Min(a, b)), novoMax = Mathf.Min(max, Mathf.Max(a, b));
+                if (novoMin - min < 0.5f && max - novoMax < 0.5f) continue; // já cabe
+                if (novoMax - novoMin < 1f) { r.gameObject.SetActive(false); ajustadas.Add(r.name + " (escondida)"); continue; }
+                // Nova largura e novo centro (no espaço do pai); a mudança de largura desloca o centro conforme o pivô.
+                float dL = (novoMax - novoMin - (max - min)) / Mathf.Abs(s);
+                float dC = (novoMin + novoMax - min - max) / 2f;
+                r.sizeDelta = new Vector2(r.sizeDelta.x + dL, r.sizeDelta.y);
+                r.anchoredPosition = new Vector2(r.anchoredPosition.x + dC - (0.5f - r.pivot.x) * dL * s, r.anchoredPosition.y);
+                ajustadas.Add($"{r.name} {max - min:0}→{novoMax - novoMin:0}");
+            }
+            if (ajustadas.Count > 0)
+                Plugin.Log.LogInfo($"[Menu] Cabeçalho cabendo na janela ({lim.width:0}): {string.Join(", ", ajustadas.ToArray())}.");
         }
 
         private static void Esconder(Transform t, string caminho)

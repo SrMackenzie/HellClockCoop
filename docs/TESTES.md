@@ -406,7 +406,9 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 
 Solo basta (o convite e a saída não mudaram desde a 0.9.3). Atualizar a partir da 0.11.0. Teclas simuladas no PC do
 autor em 22/11/2026: a janela abre com a interface do jogo e a seta para a direita troca de aba (com o painel ainda à
-direita, antes de ir para o centro); a janela central e os itens abaixo ainda não foram vistos no jogo.
+direita, antes de ir para o centro). Teste do autor no jogo, em 22/11/2026: a janela central e os itens abaixo passaram,
+menos as linhas do cabeçalho, que vazavam pelos lados (eram da largura da janela das Opções). Corrigido: o log mostra
+`[Menu] Cabeçalho cabendo na janela (720): …` com as peças encurtadas; conferir que as linhas acabam dentro da janela.
 
 - [ ] **Abrir e visual:** no menu do jogo, F7 (e o botão "Menu do coop (F7)") abre a janela **no centro** com a moldura,
   o título "COOP", o [X] e as abas das Opções do jogo; o resto da tela escurece. No log:
