@@ -774,7 +774,7 @@ autor apaga `runs/<id>-*` pelo console. Para parar, desliga o envio; apagar `ins
 **Aceite (0.8.1).** `Balanceamento/JanelaAceite.cs`: no primeiro início, sem personagem carregado (menu), uma janela
 IMGUI pergunta "Enviar resumos" / "Não enviar". A resposta grava `[Metricas] EnviarResumoAnonimo` e
 `[Metricas] AceitePerguntado = true` (o BepInEx salva o `.cfg` na hora) e a pergunta não volta; quem já tinha ligado o
-envio à mão é marcado como perguntado. Enquanto aberta, o módulo de entrada da UI (`EventSystem.currentInputModule`)
+envio à mão é marcado como perguntado. Enquanto aberta, segura a entrada do jogo pelo `BloqueioEntrada` (§12.2; desde a 0.13.1, antes só o módulo de entrada da UI, e o Esc que adiava abria "fechar o jogo?"): o módulo `EventSystem.currentInputModule`
 fica desligado (o clique e o Enter não chegam ao menu por trás) e volta ao fechar; o `EventSystem` em si fica ligado,
 porque `HellClock.GameInput.InputHandler.Update` chama `EventSystem.current.IsPointerOverGameObject()` todo quadro e
 quebra (NullReferenceException em série) se ele for nulo. O jogo lê o teclado pelo Rewired e o `Teclas` do mod cai no
@@ -823,7 +823,7 @@ ao fechar o menu depois de a aba ter aparecido (`Novidades.MarcarVista`). A aba 
 só, montada uma vez (texto fixo da DLL): seção por versão, data, título em destaque, itens e "O QUE TESTAR" nas não
 testadas; sem item selecionável, as setas e o direcional rolam (`PainelNativo.Rolar`), além da roda.
 
-### 12.2 Menu do coop e bloqueio da entrada (versões 0.9.3, 0.12.0 e 0.13.0)
+### 12.2 Menu do coop e bloqueio da entrada (versões 0.9.3, 0.12.0, 0.13.0 e 0.13.1)
 
 Desde a 0.12.0, `Interface/MenuCoop.cs` guarda o conteúdo, o foco e a entrada, e `Interface/PainelNativo.cs` desenha o
 menu com a interface do próprio jogo: uma janela no centro da tela (720 × 900 no canvas de 1080 de altura), montada na
@@ -887,7 +887,7 @@ telas abaixo de 1080p. O painel de status do canto mostra, desde a 0.13.0, só a
 modo eco e os avisos curtos de 6 s: saiu a dica "F7 abre o menu do coop" (os botões "Coop" a substituem) e o recado do
 atualizador foi para a aba Sessão.
 
-`Interface/BloqueioEntrada.cs` segura a entrada do jogo enquanto o menu do coop ou a Novidades estão abertos:
+`Interface/BloqueioEntrada.cs` segura a entrada do jogo enquanto o menu do coop, a Novidades ou (desde a 0.13.1) a janela do aceite (§12) estão abertos:
 - Semáforo do próprio jogo: `HellClock.GameInput.InputHandler.DisableInput` (`Semaphore` do K10, o mesmo que o console
   de cheats do jogo usa), travado com `BlockButDoNotIncrease(dono)` e solto com `Release(dono)`. Travado, o
   `InputHandler` responde falso em `GetActionDown/State/Up`, `GetAnyButtonDown` e nos eventos de ação
@@ -896,8 +896,8 @@ atualizador foi para a aba Sessão.
 - Os eixos não passam pelo semáforo (`GetAxisRaw`/`GetAxis` leem o `Rewired.Player` direto): o patch
   `BloqueioEntrada_InputHandler_Update` (Alvo `InputHandler.Update`, fase 5 em `PatchTargets.cs`, fora das fases ativas)
   zera `MovementDirection` e `AimDirection` depois da leitura. WASD e o analógico ficam parados.
-- Desliga também `EventSystem.currentInputModule` (o `RewiredStandaloneInputModule` da UI do jogo), como a JanelaAceite.
-- Desde a 0.13.0 desliga também o `HellClock.UI.AndroidBackButtonListener` da tela de saves (procurado uma vez por
+- Desliga também `EventSystem.currentInputModule` (o `RewiredStandaloneInputModule` da UI do jogo).
+- Desde a 0.13.0 desliga também o `HellClock.UI.AndroidBackButtonListener` da tela de saves (procurado na abertura e, desde a 0.13.1, de novo a cada 0,5 s enquanto travado, porque a janela do aceite abre antes de a cena com ele carregar; religado na liberação; antes, procurado uma vez por
   abertura, religado na liberação): ele lê o Esc direto (`Input.GetKeyDown(Escape)`, por fora do semáforo) e, no mesmo
   quadro em que o Esc fechava o menu do coop, abria "Você realmente quer fechar o jogo?".
 - O painel chama `Pedir()` a cada quadro aberto; o `Update` do runtime chama `Atualizar()` antes de tudo, que libera só

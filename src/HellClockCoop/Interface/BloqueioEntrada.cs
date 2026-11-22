@@ -9,14 +9,14 @@ using UnityEngine.EventSystems;
 namespace HellClockCoop.Interface
 {
     /// <summary>
-    /// Segura a entrada do jogo enquanto um painel do mod (menu do coop, Novidades) está aberto, para o mouse, o teclado
-    /// e o controle operarem o painel sem mexer no personagem nem abrir a pausa.
+    /// Segura a entrada do jogo enquanto um painel do mod (menu do coop, Novidades e, desde a 0.13.1, a JanelaAceite) está
+    /// aberto, para o mouse, o teclado e o controle operarem o painel sem mexer no personagem nem abrir a pausa.
     /// - Semáforo do próprio jogo: InputHandler.DisableInput (K10 Semaphore), o mesmo que o console de cheats do jogo usa.
     ///   Travado, GetActionDown/State/Up e os eventos de ação do InputHandler devolvem falso: clique de mover, skills,
     ///   poção, pausa (PauseGame), Back e as janelas do jogo.
     /// - O semáforo não segura os eixos (WASD e analógico, lidos por GetAxisRaw): o patch em InputHandler.Update zera
     ///   MovementDirection e AimDirection enquanto travado.
-    /// - Desliga o módulo de entrada da UI do jogo (EventSystem.currentInputModule), como a JanelaAceite, e o
+    /// - Desliga o módulo de entrada da UI do jogo (EventSystem.currentInputModule) e o
     ///   AndroidBackButtonListener da tela de saves, que lê o Esc por fora do semáforo (0.13.0).
     /// - O painel chama Pedir() a cada quadro em que está aberto; o runtime chama Atualizar() no começo do Update, que
     ///   libera tudo só dois quadros depois do último pedido (o Esc ou o clique que fechou não chega ao jogo).
@@ -31,7 +31,9 @@ namespace HellClockCoop.Interface
         private static global::Semaphore _travado;
         private static int _ultimoPedido = -10;
         private static FieldInfo _campoInstancia;
-        private static bool _campoProcurado, _avisouSemJogo, _ouvintesDoEscDesligados;
+        private static bool _campoProcurado, _avisouSemJogo;
+        private static float _proximaBuscaOuvintes; // 0 = procurar já (na abertura)
+        private const float IntervaloBuscaOuvintes = 0.5f;
 
         /// <summary>O semáforo do jogo está travado pelo mod: mouse, teclado e controle não chegam ao personagem.</summary>
         internal static bool SeguraOJogo => _travado != null;
@@ -48,7 +50,7 @@ namespace HellClockCoop.Interface
         {
             _ultimoPedido = Time.frameCount;
             DesligarModulo();
-            if (!_ouvintesDoEscDesligados) DesligarOuvintesDoEsc();
+            if (Time.unscaledTime >= _proximaBuscaOuvintes) DesligarOuvintesDoEsc();
             Travar();
         }
 
@@ -61,9 +63,9 @@ namespace HellClockCoop.Interface
                 Soltar();
                 Plugin.Log.LogInfo("[Entrada] Entrada do jogo liberada.");
             }
-            if (_ouvintesDoEscDesligados)
+            _proximaBuscaOuvintes = 0f; // a próxima abertura procura de novo na hora
+            if (OuvintesDoEsc.Count > 0)
             {
-                _ouvintesDoEscDesligados = false;
                 foreach (Behaviour ouvinte in OuvintesDoEsc)
                 {
                     if (ouvinte != null) ouvinte.enabled = true;
@@ -81,17 +83,21 @@ namespace HellClockCoop.Interface
         /// <summary>
         /// O AndroidBackButtonListener da tela de saves lê o Esc direto (Input.GetKeyDown(Escape), sem passar pelo semáforo) e
         /// pede "Você realmente quer fechar o jogo?": fica desligado enquanto o painel está aberto e até a liberação (0.13.0).
-        /// Procurado uma vez por abertura, não a cada quadro.
+        /// Procurado na abertura e de novo a cada 0,5 s enquanto travado (0.13.1): a janela do aceite abre nas telas de
+        /// abertura, antes de a cena com o ouvinte carregar, e uma busca só na abertura não o achava.
         /// </summary>
         private static void DesligarOuvintesDoEsc()
         {
-            _ouvintesDoEscDesligados = true;
+            _proximaBuscaOuvintes = Time.unscaledTime + IntervaloBuscaOuvintes;
+            int novos = 0;
             foreach (AndroidBackButtonListener ouvinte in Resources.FindObjectsOfTypeAll<AndroidBackButtonListener>())
             {
                 if (ouvinte == null || !ouvinte.gameObject.scene.IsValid() || !ouvinte.enabled) continue; // fora prefabs e os já desligados
                 ouvinte.enabled = false;
                 OuvintesDoEsc.Add(ouvinte);
+                novos++;
             }
+            if (novos > 0) Plugin.Log.LogInfo($"[Entrada] Ouvinte do Esc da tela de saves desligado ({novos}; {OuvintesDoEsc.Count} no total).");
         }
 
         private static void DesligarModulo()

@@ -402,6 +402,21 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.13.1 — Esc da janela de aceite das métricas
+
+Solo basta. Para a janela aparecer de novo: no `.cfg`, `[Metricas] AceitePerguntado = false` e
+`EnviarResumoAnonimo = false` (com o envio ligado o mod marca como perguntado); depois reponha os valores antigos.
+Já conferido no PC do autor em 22/11/2026 (Esc simulado com o jogo em primeiro plano): na tela de título, o Esc fechava a
+janela e abria o "fechar o jogo?" mesmo com o bloqueio, porque o ouvinte do Esc carrega depois de a janela abrir e só era
+procurado na abertura; agora o log mostra `[Entrada] Ouvinte do Esc da tela de saves desligado (1; 1 no total).` e o Esc
+fecha só a janela. Com a janela fechada, o Esc na tela de saves volta a abrir o aviso do jogo. Falta:
+- [ ] **Esc:** na tela de saves, com a janela aberta, Esc fecha só a janela (log `[Métricas] Aceite adiado`), sem o
+  "Você realmente quer fechar o jogo?".
+- [ ] **Respostas:** Enter depois de 3 s envia, N recusa, os botões respondem depois de 1,5 s; o clique não chega ao
+  menu do jogo por trás.
+- [ ] **Depois:** com a janela fechada, o Esc na tela de saves volta a abrir o "fechar o jogo?" do jogo.
+- Se falhar, mandar: o `LogOutput.log` (linhas `[Métricas]` e `[Entrada]`) e uma captura da tela.
+
 ## 0.13.0 — Botão Coop no menu e na pausa do jogo
 
 Solo basta (sem mudança de rede nem de balanceamento). Atualizar a partir da 0.12.0. Já conferido no PC do autor em

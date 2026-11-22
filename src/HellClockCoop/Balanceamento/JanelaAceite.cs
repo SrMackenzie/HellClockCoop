@@ -9,9 +9,10 @@ namespace HellClockCoop.Balanceamento
     /// Janela do aceite das métricas: aparece no menu principal até o jogador responder; a resposta vai para o .cfg
     /// ([Metricas] EnviarResumoAnonimo e AceitePerguntado) e a pergunta não volta.
     /// - Só sem personagem carregado (menu, telas de abertura), para o clique não mover o personagem.
-    /// - Aberta, desliga o módulo de entrada da UI do jogo (BaseInputModule: o clique e o Enter não chegam ao menu por
-    ///   trás) e religa ao fechar. O EventSystem fica ligado: o InputHandler do jogo chama
-    ///   EventSystem.current.IsPointerOverGameObject() todo quadro e quebra se ele for nulo.
+    /// - Aberta, segura a entrada do jogo pelo Interface.BloqueioEntrada (desde a 0.13.1, como o menu do coop): módulo de
+    ///   entrada da UI (o clique e o Enter não chegam ao menu por trás), o ouvinte do Esc da tela de saves (que abria "fechar
+    ///   o jogo?") e o semáforo do InputHandler; tudo volta dois quadros depois de fechar. O EventSystem fica ligado: o
+    ///   InputHandler do jogo chama EventSystem.current.IsPointerOverGameObject() todo quadro e quebra se ele for nulo.
     /// - Enter = "Enviar resumos" (o padrão), mas só depois de 3 s sem apertar Enter: quem aperta Enter sem parar para
     ///   pular a abertura não aceita sem ver a janela. N = "Não enviar". Esc (ou B no controle) fecha sem responder
     ///   (pergunta de novo no próximo início). Os botões só respondem 1,5 s depois de a janela abrir.
@@ -29,8 +30,6 @@ namespace HellClockCoop.Balanceamento
         private static float _enterLiberadoEm;
         private static float _cliqueLiberadoEm;
         private static int _salvos;
-        private static int _quadroFechada = -1;
-        private static readonly List<BaseInputModule> Desligados = new List<BaseInputModule>();
         private static GUIStyle _titulo, _texto, _rodape, _botao;
 
         /// <summary>A janela das Novidades espera esta fechar (as duas não abrem uma por cima da outra).</summary>
@@ -53,13 +52,9 @@ namespace HellClockCoop.Balanceamento
                 Plugin.Log.LogInfo("[Métricas] Janela do aceite aberta no menu.");
             }
 
-            EventSystem es = EventSystem.current;
-            BaseInputModule modulo = es != null ? es.currentInputModule : null;
-            if (modulo != null && modulo.enabled)
-            {
-                modulo.enabled = false;
-                Desligados.Add(modulo);
-            }
+            // Segura a entrada do jogo como o menu do coop (0.13.1): módulo de UI, ouvinte do Esc da tela de saves e semáforo,
+            // liberados dois quadros depois de fechar. Antes só desligava o módulo, e o Esc que adiava abria "fechar o jogo?".
+            Interface.BloqueioEntrada.Pedir();
 
             if (Teclas.Pressionou("Escape") || BotaoVoltarDoControle())
             {
@@ -102,21 +97,8 @@ namespace HellClockCoop.Balanceamento
                 : "Combinado: nada será enviado. Para mudar: [Metricas] EnviarResumoAnonimo = true no .cfg do mod.");
         }
 
-        private static void Fechar()
-        {
-            if (_aberta)
-            {
-                _aberta = false;
-                _quadroFechada = Time.frameCount;
-            }
-            // Religa só no quadro seguinte: o Enter ou o clique que respondeu não chega ao menu do jogo.
-            if (Desligados.Count == 0 || Time.frameCount == _quadroFechada) return;
-            foreach (BaseInputModule modulo in Desligados)
-            {
-                if (modulo != null) modulo.enabled = true;
-            }
-            Desligados.Clear();
-        }
+        /// <summary>A entrada do jogo volta sozinha dois quadros depois do último pedido (BloqueioEntrada.Atualizar).</summary>
+        private static void Fechar() => _aberta = false;
 
         /// <summary>No OnGUI do runtime, por último (por cima do painel do coop).</summary>
         internal static void Desenhar()

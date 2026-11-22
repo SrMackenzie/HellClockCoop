@@ -4,6 +4,13 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.13.1 — Esc da janela de aceite das métricas 🧪
+_22/11/2026_
+
+- Corrigido: na tela de saves, o Esc que adia a janela de aceite das métricas também abria "Você realmente quer fechar o jogo?". A janela agora segura a entrada do jogo do mesmo jeito que o menu do coop
+- O mesmo bloqueio passa a achar o ouvinte do Esc do jogo também quando ele carrega depois de a janela abrir (telas de abertura)
+- Balanceamento: sem mudança. Protocolo 14, o mesmo da 0.13.0, mas o coop continua exigindo a mesma versão do mod nos dois PCs (0.13.1)
+
 ## 0.13.0 — Botão Coop no menu e na pausa do jogo 🧪
 _22/11/2026_
 

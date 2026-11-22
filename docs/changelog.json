@@ -2,6 +2,22 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.13.1",
+      "data": "22/11/2026",
+      "testado": false,
+      "titulo": "Esc da janela de aceite das métricas",
+      "itens": [
+        "Corrigido: na tela de saves, o Esc que adia a janela de aceite das métricas também abria \"Você realmente quer fechar o jogo?\". A janela agora segura a entrada do jogo do mesmo jeito que o menu do coop",
+        "O mesmo bloqueio passa a achar o ouvinte do Esc do jogo também quando ele carrega depois de a janela abrir (telas de abertura)",
+        "Balanceamento: sem mudança. Protocolo 14, o mesmo da 0.13.0, mas o coop continua exigindo a mesma versão do mod nos dois PCs (0.13.1)"
+      ],
+      "testar": [
+        "Com a janela de aceite aberta na tela de saves, Esc fecha só a janela, sem o \"fechar o jogo?\"",
+        "Enter (depois de 3 s), N e os botões continuam respondendo a janela",
+        "Depois de fechar, o Esc na tela de saves volta a abrir o \"fechar o jogo?\" normalmente"
+      ]
+    },
+    {
       "v": "0.13.0",
       "data": "22/11/2026",
       "testado": false,
