@@ -197,11 +197,12 @@ andar ficam perto do solo (0,83 × 1,2 ≈ 1,0). O equipamento passa do solo de 
 3. Extraia **todo** o conteúdo do zip **dentro dessa pasta** (ao lado do `Hell Clock.exe`), substituindo os arquivos.
 4. Abra o jogo pela Steam. O mod roda em silêncio; para ver o registro ao vivo na janela do console do BepInEx, use
    `[Diagnostico] MostrarConsole = true` em `BepInEx\config\br.srmackenzie.hellclockcoop.cfg` (vale na próxima abertura).
-5. No canto superior esquerdo aparece **"Hell Clock Coop … F7 abre o menu do coop para jogar com amigos"**.
+5. Na tela de saves aparece o botão **"Coop"** ao lado de **"Créditos"**, no canto superior direito (desde a 0.13.0;
+   nas versões anteriores, uma dica no canto superior esquerdo).
 
 **Atualizações (a partir da 0.8.0):** ao abrir o jogo, o mod procura a versão nova na
-[página de releases](https://github.com/SrMackenzie/HellClockCoop/releases) e instala sozinho, sem perguntar; o painel do
-coop avisa quando isso acontece. Só aceita arquivos assinados pelo autor e conferidos um a um, e troca só a pasta do
+[página de releases](https://github.com/SrMackenzie/HellClockCoop/releases) e instala sozinho, sem perguntar; a aba Sessão do
+menu do coop avisa quando isso acontece. Só aceita arquivos assinados pelo autor e conferidos um a um, e troca só a pasta do
 mod e o próprio atualizador. Sem internet, ou se o GitHub demorar cerca de 5 s, o jogo abre com a versão que você já
 tem (falhas de rede ficam só no log). O GitHub vê o seu IP e a versão do mod, como em qualquer download; o mod não
 envia mais nada. Para desligar: `VerificarAoIniciar = false` na seção `[Atualizacao]` do `.cfg` do mod.
@@ -235,15 +236,15 @@ Requisito: overlay da Steam ligado (*Steam → Configurações → No jogo*).
 
 | Tecla | Ação |
 |:-:|---|
-| <kbd>F7</kbd> ou <kbd>View</kbd> no controle | **Menu do coop** (janela com a cara das Opções do jogo, abas Sessão e Ajustes): criar o coop e convidar amigos, sair do coop, modo eco; nomes, números e tamanho do dano dos aliados, sons e volume dos aliados, balanceamento (só leitura), novidades. No menu do jogo também pelo botão "Menu do coop" |
+| <kbd>F7</kbd> ou <kbd>View</kbd> no controle | **Menu do coop** (janela com a cara das Opções do jogo, abas Sessão, Ajustes e Novidades): criar o coop e convidar amigos, sair do coop, modo eco; nomes, números e tamanho do dano dos aliados, sons e volume dos aliados, balanceamento (só leitura). Também pelo botão "Coop" do menu do jogo (ao lado de "Créditos") e pelo item "Coop" da pausa (<kbd>Esc</kbd> em jogo) |
 | <kbd>F8</kbd> | **Modo eco**: um fantasma seu repete tudo com 1 s de atraso — testa o mod sem amigo (também pelo menu do coop) |
 | <kbd>F9</kbd> | Diagnóstico: salva a estrutura do personagem |
-| <kbd>F10</kbd> | **Novidades**: o que mudou nas últimas versões do mod (também pelo item Novidades do menu do coop; abre sozinha uma vez depois de cada atualização) |
+| <kbd>F10</kbd> | **Novidades**: o que mudou nas últimas versões do mod, na aba Novidades do menu do coop (abre sozinha uma vez depois de cada atualização) |
 
 **Host** (quem convida): entre num save, aperte <kbd>F7</kbd> e escolha **Criar coop e convidar amigos**. **Convidado**:
 aceite o convite na Steam (com o jogo fechado, ele abre e entra sozinho). Quando o host entra numa run, todos vão junto.
 
-Com o menu do coop (ou a janela Novidades) aberto, o jogo não recebe mouse, teclado nem controle: dá para clicar sem
+Com o menu do coop aberto, o jogo não recebe mouse, teclado nem controle: dá para clicar sem
 mover o personagem. O jogo continua rodando (no coop não pausa), então abra o menu longe dos inimigos.
 
 <details>
@@ -256,7 +257,7 @@ mover o personagem. O jogo continua rodando (no coop não pausa), então abra o 
 - Todos precisam ter (ou não ter) a DLC **Cursed War**. A Deluxe Edition (cosmética) não importa.
 - Ajustes em `BepInEx\config\br.srmackenzie.hellclockcoop.cfg` (nomes, dano, sons e volume dos aliados também pela aba Ajustes do menu do coop): teclas, nomes sobre a cabeça,
   números de dano dos aliados (`MostrarDanoDosAliados`, `TamanhoDanoDosAliados`) e a última versão cujas novidades
-  já apareceram (`[Interface] NovidadesVistas`; apague para ver a janela de novo).
+  já apareceram (`[Interface] NovidadesVistas`; apague para as novidades abrirem sozinhas de novo).
 </details>
 
 ## ⚙️ Como funciona

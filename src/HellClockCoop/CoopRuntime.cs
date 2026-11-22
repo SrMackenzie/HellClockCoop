@@ -40,8 +40,10 @@ namespace HellClockCoop
         private bool _ecoAtivo;
         private RemotePlayerAvatar _avatarEco;
         private bool _hierarquiaRegistrada;
-        private float _dicaAte = -1f;
         private string _avisoAtualizacao;
+
+        /// <summary>Recado do atualizador nesta abertura (ou nulo): mostrado no topo da aba Sessão do menu do coop (0.13.0).</summary>
+        internal string AvisoAtualizacao => _avisoAtualizacao;
         private int _bytesUltimo;
         private GUIStyle _estiloCaixa, _estiloNome;
 
@@ -108,6 +110,7 @@ namespace HellClockCoop
                 Interface.MenuCoop.Fechar("Novidades aberta"); // F10 ou o item do menu: a Novidades fica sozinha na tela
                 return; // aberta, as teclas do coop não disparam por trás
             }
+            Interface.BotoesDoJogo.Atualizar(semPersonagem); // botão "Coop" no menu do jogo e na pausa (pode abrir o menu)
             Interface.MenuCoop.Atualizar(this, semPersonagem);
             if (Interface.MenuCoop.Aberto) return;
 
@@ -191,7 +194,6 @@ namespace HellClockCoop
             // Troca de andar ou de cena destrói o fantasma junto com a cena (o personagem continua): recria.
             if (_ecoAtivo && _avatarEco == null) CriarFantasmaEco(jogador, "recriado depois da troca de cena");
             if (!_hierarquiaRegistrada) RegistrarHierarquia(forcar: false);
-            if (_dicaAte < 0f) _dicaAte = Time.unscaledTime + 20f;
 
             try
             {
@@ -334,7 +336,7 @@ namespace HellClockCoop
 
         /// <summary>
         /// Recado que o atualizador (preloader) deixou nesta abertura: versão nova instalada ou atualização recusada.
-        /// Lido uma vez e apagado; fica no painel até 20 s depois de entrar no save.
+        /// Lido uma vez e apagado; até a 0.12.0 ficava no painel do canto, desde a 0.13.0 fica no menu do coop (aba Sessão).
         /// </summary>
         private static string LerAvisoDoAtualizador()
         {
@@ -410,11 +412,8 @@ namespace HellClockCoop
             {
                 linhas.Add("Coop: conectando...");
             }
-            else if (Time.unscaledTime < _dicaAte)
-            {
-                linhas.Add($"Hell Clock Coop {Plugin.PluginVersion}: {Interface.MenuCoop.Tecla.Value} abre o menu do coop para jogar com amigos");
-            }
-            if (_avisoAtualizacao != null && (_dicaAte < 0f || Time.unscaledTime < _dicaAte)) linhas.Add("» " + _avisoAtualizacao);
+            // 0.13.0: sem a dica "F7 abre o menu" (os botões Coop do menu e da pausa a substituem); o recado do atualizador
+            // fica no menu do coop. O canto mostra só a sessão, o modo eco e os avisos curtos.
             if (_ecoAtivo) linhas.Add($"Modo eco ({TeclaEco.Value}): {_bytesUltimo} bytes por snapshot, 20/s");
             for (int i = _avisos.Count - 1; i >= 0; i--)
             {

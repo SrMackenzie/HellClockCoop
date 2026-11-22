@@ -586,6 +586,21 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Checar(F(0f, 0.05f, 0f, 1f) == 0f && F(1f, 0.05f, 0f, 1f) == 1f && F(0.42f, 0.05f, 0f, 1f) == 0.4f && F(-3f, 0.1f, 0.3f, 2f) == 0.3f
            && F(2f, 0.1f, 0.3f, 2f) == 2f && F(float.NaN, 0.1f, 0.3f, 2f) == 0.3f && F(0.5f, 0.1f, 0f, 2f) == 1f,
         "Menu: clique na barra vira valor alinhado ao passo, dentro da faixa");
+
+    // 0.13.0: aba Novidades na janela do coop (F10 e abertura automática) e espera antes de fechar
+    var resp = tM.GetMethod("RespostaNovidades", BindingFlags.Static | BindingFlags.NonPublic);
+    var liberado = tM.GetMethod("FechamentoLiberado", BindingFlags.Static | BindingFlags.NonPublic);
+    string R(bool aberto, bool nativo, bool naAba, bool auto) => resp.Invoke(null, new object[] { aberto, nativo, naAba, auto }).ToString();
+    bool Lib(float agora, float ate) => (bool)liberado.Invoke(null, new object[] { agora, ate });
+    Checar(R(false, false, false, false) == "JanelaAntiga" && R(true, false, false, true) == "JanelaAntiga",
+        "Novidades: sem a interface do jogo, usa a janela antiga (tecla e automática)");
+    Checar(R(false, true, false, false) == "Abrir" && R(false, true, false, true) == "Abrir", "Novidades: menu fechado abre na aba Novidades");
+    Checar(R(true, true, false, false) == "TrocarAba" && R(true, true, false, true) == "TrocarAba", "Novidades: menu aberto em outra aba troca para ela");
+    Checar(R(true, true, true, false) == "Fechar" && R(true, true, true, true) == "Ficar", "Novidades: na aba, a F10 fecha e a abertura automática não");
+    Checar(Lib(5f, 0f) && !Lib(5f, 6.5f) && Lib(6.5f, 6.5f), "Menu: Esc, B e [X] só fecham depois da espera da abertura automática");
+    var nomesAbas = (string[])tM.GetField("NomesDasAbas", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+    Checar(nomesAbas.Length == 3 && nomesAbas[2] == "Novidades" && Enum.GetNames(T("HellClockCoop.Interface.MenuCoop+Aba")).Length == 3,
+        "Menu: três abas (Sessão, Ajustes, Novidades) com nome para cada uma");
 }
 
 // Balanceamento: lista "2, 3, 4" do .cfg e XP/ouro/Soulstones/moedas em coop (cada um × fator, arredondamento sorteado)

@@ -791,7 +791,7 @@ janela. O aviso no fim da run (0.7.1) saiu.
 
 **Próximos passos.** Painel solo × grupo, ajuste individual por diferença de progressão e jogador caído/reanimação.
 
-### 12.1 Janela Novidades (versão 0.9.2)
+### 12.1 Janela Novidades (versões 0.9.2 e 0.13.0)
 
 `Interface/Novidades.cs` mostra, em IMGUI, a versão atual do mod e as 3 anteriores, com abas por versão e, nas que
 têm `testado: false`, a seção "O que testar" (campo opcional `testar` do `docs/changelog.json`). O texto vem de
@@ -804,7 +804,7 @@ Abre sozinha uma vez, no menu (sem personagem), quando `[Interface] NovidadesVis
 na primeira instalação), e só com a janela do aceite (12) fechada; ao fechar, grava a versão atual ali. Como a
 exibição automática é única e abre já nas telas de abertura, Esc, B e o botão "Fechar" só respondem 1,5 s depois
 (quem aperta Esc para pular a abertura não a perde sem ver); a F10 fecha sempre. Depois, abre
-pelo item "Novidades" do menu do coop (§12.2; na 0.9.2, um botão abaixo do painel do coop) ou pela tecla
+pelo item "Novidades" do menu do coop (§12.2; desde a 0.13.0, só na reserva; na 0.9.2, um botão abaixo do painel do coop) ou pela tecla
 `[Teclas] Novidades` (F10, também em jogo). Desde a 0.9.3, aberta, segura a entrada do jogo pelo `BloqueioEntrada`
 (§12.2) e responde ao mouse também em jogo; enquanto aberta, o `Update` do runtime não lê o menu do coop nem as teclas
 F8/F9. Setas esquerda/direita ou LB/RB (`JoystickButton4/5` no Input legado) trocam de versão; setas
@@ -813,13 +813,23 @@ cima/baixo ou o direcional rolam; Esc, F10 ou B (`JoystickButton1`) fecham. Se o
 F10 (Esc, B e o mouse chegariam ao jogo), corpo recortado com `GUI.BeginGroup` e rolagem só pelas setas. Com mouse usa
 `GUI.BeginScrollView`, que só existe na sobrecarga de 5 parâmetros no jogo (stripping). Sem efeito no balanceamento nem no protocolo.
 
-### 12.2 Menu do coop e bloqueio da entrada (versões 0.9.3 e 0.12.0)
+**Desde a 0.13.0** as novidades são a terceira aba da janela do coop (§12.2) e esta janela vira reserva, só quando a
+interface do jogo não pode ser montada. A F10 chama `MenuCoop.MostrarNovidades`: com o menu fechado, abre na aba
+Novidades; aberto em outra aba, troca para ela; já nela, fecha (regra pura `RespostaNovidades`, testada no codectest).
+A abertura automática espera a janela das Opções do jogo existir (`PainelNativo.EsperandoJanela`, no máximo 60 s; depois, a janela antiga; o painel é montado
+quando o botão "Coop" entra no menu do jogo, com nova tentativa a cada 2 s), abre o menu na aba Novidades e, como antes, só deixa Esc, B e o [X]
+fecharem depois de 1,5 s (`FechamentoLiberado`; F7, View e F10 fecham sempre). `[Interface] NovidadesVistas` é gravado
+ao fechar o menu depois de a aba ter aparecido (`Novidades.MarcarVista`). A aba lista as 4 versões embutidas numa lista
+só, montada uma vez (texto fixo da DLL): seção por versão, data, título em destaque, itens e "O QUE TESTAR" nas não
+testadas; sem item selecionável, as setas e o direcional rolam (`PainelNativo.Rolar`), além da roda.
+
+### 12.2 Menu do coop e bloqueio da entrada (versões 0.9.3, 0.12.0 e 0.13.0)
 
 Desde a 0.12.0, `Interface/MenuCoop.cs` guarda o conteúdo, o foco e a entrada, e `Interface/PainelNativo.cs` desenha o
 menu com a interface do próprio jogo: uma janela no centro da tela (720 × 900 no canvas de 1080 de altura), montada na
-primeira exibição do botão "Menu do coop" no menu do jogo (nova tentativa a cada 2 s) ou na primeira abertura, com cópias, em tempo de execução, das peças da `HellClock.UI.Options.OptionsWindow` de PC (a de
+entrada do botão "Coop" na lista do menu do jogo (`BotoesDoJogo`, 0.13.0; até a 0.12.0, na primeira exibição do botão "Menu do coop"), na abertura automática da aba Novidades ou na primeira abertura, com cópias, em tempo de execução, das peças da `HellClock.UI.Options.OptionsWindow` de PC (a de
 celular, `OptionsScreenMobile`, fica de fora): fundo `Container/MiddleLeftAnchor/Background`, cabeçalho `Header` (linhas,
-título "COOP" e o [X]), botão de aba `SwitchButtons/GameplayButton` (duas cópias: Sessão e Ajustes), fundo do conteúdo
+título "COOP" e o [X]), botão de aba `SwitchButtons/GameplayButton` (uma cópia por aba: Sessão, Ajustes e, desde a 0.13.0, Novidades), fundo do conteúdo
 `Content/Bg`, título de seção `TitleGameplay`, a primeira linha `ToggleWithLabel` (caixa de marcar) e a primeira
 `SliderWithLabel` (barra). Fontes (Avara, Avrile), sprites e cores são os do jogo; nada é extraído para o repositório
 nem para o pacote.
@@ -831,8 +841,20 @@ nem para o pacote.
 - Canvas próprio em sobreposição (ordem 900, abaixo do aviso de save do jogo), escala do jogo (1920 × 1080 pela altura:
   em ultrawide a janela não estica). Sem `GraphicRaycaster`: o mouse é lido pelo `MenuCoop` (Input System, legado de
   reserva) e testado nos retângulos do painel (`AcaoSob`, que devolve a ação desenhada e não o índice; `AbaSob`, `FecharSob`, `NaBarra`, `FracaoNoDeslizante`).
-- Botão "Menu do coop (F7)" do canto do menu: outra cópia do botão de aba, num segundo canvas (`HellClockCoop.BotaoDoMenu`,
-  ordem 890). O `MenuCoop.DesenharBotaoMenu` (OnGUI) chama `PainelNativo.BotaoDoMenu`, que o põe nos pixels do OnGUI
+- Botão "Coop" nas listas de botões do jogo (0.13.0, `Interface/BotoesDoJogo.cs`, sem patch Harmony). Na tela de saves,
+  cópia do botão "Créditos" (`SaveSelectionScreen._creditsButton`) em `ButtonsContainer`, à esquerda dele (a lista do
+  canto superior direito: Créditos, engrenagem, X). Há duas `SaveSelectionScreen` na cena; vale só a ativa, então o
+  botão nasce quando a tela de saves aparece. Na pausa, cópia do item "Opções" (`PauseHUD.OptionsButton`) logo abaixo dele
+  na coluna `BottomAnchor` (`VerticalLayoutGroup` de altura fixa, encostada no título), que cresce uma linha para baixo.
+  As cópias são feitas num depósito inativo (`HellClockCoop.DepositoDeBotoes`) e só perdem o `TextMeshLocalizer` (trocaria
+  "Coop" pelo texto original) e o atalho do controle (`JoystickFocusPoint._hasShortcut` falso, `ButtonHotkey` apagado);
+  ficam `Button` (com `ButtonClickedEvent` novo), `BaseButtonBehaviour` (destaque), `UIElementSounds`, `ButtonHitZone`,
+  `CanvasGroup` (espelha o do original a cada quadro) e `JoystickFocusPoint`. O clique só marca o pedido; o `Update` do
+  runtime abre o menu (na pausa, antes chama `PauseHUD.Unpause`, como o "Continuar"). Busca a cada 2 s enquanto a cópia da
+  tela atual não existe (troca de cena recria). Falha na cópia do menu: volta o botão do canto descrito abaixo; na pausa,
+  fica só a F7/View.
+- Reserva do botão do menu (desde a 0.13.0, só com a cópia acima falhando): "Menu do coop (F7)" abaixo do painel do
+  canto, outra cópia do botão de aba, num segundo canvas (`HellClockCoop.BotaoDoMenu`, ordem 890). O `MenuCoop.DesenharBotaoMenu` (OnGUI) chama `PainelNativo.BotaoDoMenu`, que o põe nos pixels do OnGUI
   divididos por `Screen.height / 1080` e acende o destaque com o mouse em cima; um `GUI.Button` invisível na mesma área
   recebe o clique. O `EsconderBotaoParado`, no começo do `AtualizarMenus` (antes da saída com a Novidades aberta), apaga o
   canvas quando o OnGUI deixa de pedir o botão (menu aberto, run, Novidades, aceite). Nas telas de abertura, antes de a
@@ -845,12 +867,14 @@ nem para o pacote.
   desenho falham, o painel nativo fica desligado até reabrir o jogo. O log diz qual abriu
   (`[Menu] Menu do coop aberto (...; interface do jogo|menu simples)`).
 
-Conteúdo das duas abas (LB/RB, setas laterais fora de um deslizante ou clique na aba):
-- **Sessão:** estado da sessão (e, em jogo, o aviso de que o jogo continua rodando), ALIADOS (só leitura,
-  `CoopRuntime.EstadoDoPar`, o mesmo texto do painel do canto) e COOP (criar e convidar, sair com confirmação, modo eco).
-- **Ajustes:** aliados na tela (nomes, números de dano e tamanho do dano), som (sons das skills dos aliados e volume),
+Conteúdo das três abas (LB/RB, setas laterais fora de um deslizante ou clique na aba):
+- **Sessão:** recado do atualizador desta abertura (0.13.0; antes ficava no painel do canto), estado da sessão (e, em
+  jogo, o aviso de que o jogo continua rodando), ALIADOS (só leitura, `CoopRuntime.EstadoDoPar`, o mesmo texto do painel
+  do canto) e COOP (criar e convidar, sair com confirmação, modo eco).
+- **Ajustes:** aliados na tela (nomes, números de dano e tamanho do dano), som (sons das skills dos aliados e volume) e
   balanceamento deste `.cfg` só para leitura (`Escalonamento.LinhasDoMenu`: os multiplicadores do número de jogadores
-  atual, ou de 2 fora do coop; os valores só mudam no arquivo) e Novidades.
+  atual, ou de 2 fora do coop; os valores só mudam no arquivo). Na reserva (gaveta), também o item Novidades.
+- **Novidades** (0.13.0): §12.1.
 - Deslizantes: esquerda/direita andam um passo (tamanho 0,3–2 em passos de 0,1, a mesma faixa que `DanosVisiveis`
   aplica; volume 0–1 em passos de 0,05); clique ou arrasto na barra escolhe o valor (o clique no rótulo só foca). Regras puras testadas no codectest:
   `ProximaAba`, `AjustarNumero`, `NumeroPelaFracao`.
@@ -859,7 +883,9 @@ No menu do jogo escurece o resto da tela; em jogo não escurece nem pausa (o jog
 parado). O foco é guardado pela ação, não pelo índice, porque a lista muda (ex.: "Sair do coop" some ao sair); a regra
 de navegação (`ProximoFoco`, pula cabeçalhos, informação e item indisponível, gira nas pontas) e a da confirmação de
 saída (`ConfirmaSaida`) são puras e testadas no codectest. Altura mínima das linhas: 48 no canvas e 44 px reais em
-telas abaixo de 1080p. O painel de status do canto continua como antes (as linhas citam a tecla do menu).
+telas abaixo de 1080p. O painel de status do canto mostra, desde a 0.13.0, só a sessão (aliados e balanceamento), o
+modo eco e os avisos curtos de 6 s: saiu a dica "F7 abre o menu do coop" (os botões "Coop" a substituem) e o recado do
+atualizador foi para a aba Sessão.
 
 `Interface/BloqueioEntrada.cs` segura a entrada do jogo enquanto o menu do coop ou a Novidades estão abertos:
 - Semáforo do próprio jogo: `HellClock.GameInput.InputHandler.DisableInput` (`Semaphore` do K10, o mesmo que o console
@@ -871,6 +897,9 @@ telas abaixo de 1080p. O painel de status do canto continua como antes (as linha
   `BloqueioEntrada_InputHandler_Update` (Alvo `InputHandler.Update`, fase 5 em `PatchTargets.cs`, fora das fases ativas)
   zera `MovementDirection` e `AimDirection` depois da leitura. WASD e o analógico ficam parados.
 - Desliga também `EventSystem.currentInputModule` (o `RewiredStandaloneInputModule` da UI do jogo), como a JanelaAceite.
+- Desde a 0.13.0 desliga também o `HellClock.UI.AndroidBackButtonListener` da tela de saves (procurado uma vez por
+  abertura, religado na liberação): ele lê o Esc direto (`Input.GetKeyDown(Escape)`, por fora do semáforo) e, no mesmo
+  quadro em que o Esc fechava o menu do coop, abria "Você realmente quer fechar o jogo?".
 - O painel chama `Pedir()` a cada quadro aberto; o `Update` do runtime chama `Atualizar()` antes de tudo, que libera só
   dois quadros depois do último pedido (`DeveLiberar`, testada): o Esc ou o clique que fechou não chega ao jogo.
 - Nunca usa `InputHandler.Instance`: o getter cria um `InputHandler` se não houver (como o `PlayerController.Instance`).
@@ -887,10 +916,14 @@ S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum 
 |---|---|---|---|---|
 | COOP-MENU-TECLA | F7 abre e fecha o menu do coop | menu e jogo | R | `[Teclas] MenuDoCoop` (a antiga `CriarOuConvidar` fica sem uso; `SairDoCoop`, a F6, saiu) |
 | COOP-MENU-VIEW | View/Select do controle (`selectButton`, `JoystickButton6` no legado) abre e fecha | menu e jogo | R | — |
-| COOP-MENU-ABRIR | Botão "Menu do coop (F7)" abaixo do painel do canto (0.12.0: peça de aba das Opções do jogo, destaque ao passar o mouse; na reserva, o botão simples do OnGUI) | só no menu (sem personagem) | R | — |
+| COOP-MENU-ABRIR | Botão "Coop" na lista do canto superior direito da tela de saves, à esquerda de "Créditos" (0.13.0: cópia do botão do jogo, com destaque, som e foco do controle). Reserva, se a cópia falhar: "Menu do coop (F7)" abaixo do painel do canto (peça de aba das Opções; sem ela, o botão simples do OnGUI) | só no menu (sem personagem) | R | — |
+| COOP-MENU-PAUSA | Item "Coop" na pausa do jogo (Esc em jogo), abaixo de "Opções" (0.13.0: cópia do item do jogo): tira a pausa e abre o menu do coop | jogo, com a pausa aberta | R | — |
 | COOP-MENU-FECHAR | [X] no cabeçalho; Esc, B, F7 ou View | menu aberto | R (libera a entrada 2 quadros depois) | — |
-| COOP-ABA-SESSAO / COOP-ABA-AJUSTES | Abas "Sessão" e "Ajustes" (botão de aba das Opções do jogo); LB/RB, setas laterais fora de um deslizante ou clique | janela (0.12.0); na reserva, uma lista só | R | — |
+| COOP-ABA-SESSAO / COOP-ABA-AJUSTES / COOP-ABA-NOVIDADES | Abas "Sessão", "Ajustes" e "Novidades" (0.13.0) (botão de aba das Opções do jogo); LB/RB, setas laterais fora de um deslizante ou clique | janela (0.12.0); na reserva, Sessão e Ajustes numa lista só | R | — |
+| COOP-NOVIDADES-LISTA | Aba Novidades: versão atual e as 3 anteriores, com "O que testar" nas não testadas; setas, direcional e roda rolam | aba Novidades | ∅ | `[Interface] NovidadesVistas` (gravado ao fechar) |
+| COOP-NOVIDADES-TECLA | F10 abre o menu na aba Novidades, troca para ela ou, já nela, fecha; abre sozinha uma vez por versão (Esc, B e [X] só depois de 1,5 s) | menu e jogo | R | `[Teclas] Novidades` |
 | COOP-ALIADO | Linha por aliado: nome e estado | aba Sessão, em sessão | ∅ | — |
+| COOP-AVISO-ATUALIZACAO | Recado do atualizador desta abertura (versão nova instalada ou atualização recusada), no topo da lista (0.13.0; antes no painel do canto) | aba Sessão, quando houver | ∅ | `[Atualizacao]` |
 | COOP-CRIAR | "Criar coop e convidar amigos" (sem sessão); "Esperando o Steam..." e "Conectando..." indisponíveis | aba Sessão | S (`SessaoCoop.HospedarOuConvidar`) | — |
 | COOP-CONVIDAR | "Convidar amigos (Steam)" | aba Sessão, em sessão | S (reabre o overlay de convite) | — |
 | COOP-SAIR | "Sair do coop"; o primeiro aperto vira "Confirmar: sair do coop?" por 3 s | aba Sessão, em sessão | S (`SessaoCoop.Sair`) | — |
@@ -901,7 +934,7 @@ S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum 
 | COOP-CFG-SOM | "Sons das skills dos aliados" (caixa de marcar) | aba Ajustes | P | `[Audio] SonsDosAliados` |
 | COOP-CFG-VOL | "Volume dos sons" (barra, 0–100%; indisponível com os sons desligados) | aba Ajustes | P | `[Audio] VolumeDosAliados` |
 | COOP-BAL-LEITURA | Multiplicadores do balanceamento deste `.cfg` | aba Ajustes | ∅ (só muda no arquivo) | `[Balanceamento]` |
-| COOP-NOVIDADES | "Novidades da <versão>": fecha o menu e abre a janela (§12.1) | aba Ajustes | R | `[Teclas] Novidades` (F10) |
+| COOP-NOVIDADES | "Novidades da <versão>": fecha o menu e abre a janela antiga (§12.1) | só na reserva (gaveta); no painel nativo virou a aba Novidades (0.13.0) | R | `[Teclas] Novidades` (F10) |
 | COOP-NAV | Setas ou direcional movem o foco; esquerda/direita ajustam a barra focada; Enter ou A executam; mouse: passar por cima foca, clique executa, clique ou arrasto na barra escolhe o valor, roda rola | menu aberto | R | — |
 | COOP-ECO-TECLA / COOP-DIAG-TECLA | F8 (modo eco) e F9 (diagnóstico) | jogo, com o menu do coop e a Novidades fechados | S | `[Teclas] ModoEco`, `SalvarHierarquia` |
 

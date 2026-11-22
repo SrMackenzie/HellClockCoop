@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 22/11/2026 · versão 0.12.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 22/11/2026 · versão 0.13.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -95,7 +95,7 @@ _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio s
 | 🧪 | Revisar drops de invocações, ondas de sobrevivência e temporadas (convidado com o XP e o tesouro próprio do host; equipamento sem redução, decisão do autor) |
 | ✅ | Auditoria: o mod nunca escreve no save de outro jogador |
 
-## Fase 5 — Polimento · 50%
+## Fase 5 — Polimento · 55%
 
 _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 
@@ -105,7 +105,8 @@ _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 | 🧪 | Janela de novidades dentro do jogo: abre sozinha depois de cada atualização, com o que testar |
 | 🧪 | Modo silencioso: console do BepInEx desligado por padrão, com opção no .cfg para ligar |
 | ✅ | Menu de coop dentro do jogo (no lugar das teclas F6/F7): gaveta com F7 ou View/Select, que segura a entrada do jogo enquanto aberta |
-| 🧪 | Menu do coop com a interface do jogo: janela com as abas Sessão e Ajustes, nas fontes e cores das Opções, e os ajustes do mod (nomes, dano, sons e volume dos aliados) gravados no .cfg |
+| ✅ | Menu do coop com a interface do jogo: janela com as abas Sessão e Ajustes, nas fontes e cores das Opções, e os ajustes do mod (nomes, dano, sons e volume dos aliados) gravados no .cfg |
+| 🧪 | Botão Coop na lista de botões do menu do jogo e item Coop na pausa; novidades como aba da janela do coop |
 | ⬜ | Reconexão e troca de host sem perder a run |
 | 🧪 | Sons das skills e dos golpes dos aliados |
 | ⬜ | Dificuldade ajustada ao número de jogadores |

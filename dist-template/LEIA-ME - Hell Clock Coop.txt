@@ -75,8 +75,8 @@ ESTADO ATUAL (versão de teste, Fase 3)
     uma issue no GitHub do projeto com o conteúdo do seu instalacao.txt.
 - NOVO (0.8.0): ATUALIZAÇÃO AUTOMÁTICA.
   * Ao abrir o jogo, o mod procura a versão nova no GitHub do projeto e instala sozinho, sem
-    perguntar. Quando isso acontece, o painel do coop (canto superior esquerdo) avisa por uns
-    20 segundos depois de você entrar no save.
+    perguntar. Quando isso acontece, a aba Sessão do menu do coop avisa (até a 0.12.0, o painel
+    do canto superior esquerdo).
   * Só aceita arquivos assinados pelo autor e conferidos um a um, e troca só a pasta do mod e o
     próprio atualizador (BepInEx\patchers). Os arquivos substituídos ficam guardados em
     BepInEx\HellClockCoop\atualizador\anterior (só a última atualização); se a instalação não
@@ -153,6 +153,10 @@ ESTADO ATUAL (versão de teste, Fase 3)
   criar e convidar, sair, modo eco) e Ajustes (nomes, números e tamanho do dano dos aliados,
   sons e volume dos aliados, o balanceamento do .cfg só para leitura e as Novidades). Os
   ajustes vão para o .cfg do mod, nunca para as opções do jogo. Exige a 0.12.0 nos dois PCs.
+- NOVO (0.13.0): botão "Coop" no menu do jogo (tela de saves, ao lado de "Créditos") e item
+  "Coop" na pausa (Esc em jogo, abaixo de "Opções"), com o visual dos botões do jogo. As
+  novidades viraram a terceira aba do menu do coop (F10 abre direto nela). Saiu a dica do canto
+  superior esquerdo; o recado do atualizador fica na aba Sessão. Exige a 0.13.0 nos dois PCs.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, abra o menu do coop (F7), escolha "Sair do coop" e depois use o menu normalmente.
@@ -171,8 +175,8 @@ INSTALAÇÃO (uma vez, cada jogador)
    Para ver o registro ao vivo numa janela preta (console do BepInEx): no .cfg do mod, seção
    [Diagnostico], troque MostrarConsole = false por true. Vale a partir da próxima abertura do
    jogo. Com ou sem a janela, o registro fica em BepInEx\LogOutput.log.
-4. No canto superior esquerdo do jogo aparece "Hell Clock Coop {VERSAO}: F7 abre o menu do coop
-   para jogar com amigos".
+4. Na tela de saves do jogo aparece o botão "Coop" ao lado de "Créditos", no canto superior
+   direito.
 
 
 COMO JOGAR JUNTO
@@ -193,12 +197,13 @@ Depois, entre num save. Quando os dois estiverem no mesmo lugar, um aparece para
 com o nome da Steam em cima da cabeça.
 
 Teclas (dá para trocar em BepInEx\config\br.srmackenzie.hellclockcoop.cfg):
-  F7  menu do coop (no controle: View/Select): abas Sessão (criar, convidar, sair, modo eco) e Ajustes
+  F7  menu do coop (no controle: View/Select; também o botão "Coop" do menu do jogo e da pausa):
+      abas Sessão (criar, convidar, sair, modo eco), Ajustes e Novidades
       No menu: setas ou direcional escolhem, LB/RB trocam de aba, setas laterais trocam de aba
       ou mexem na barra focada, Enter ou A confirma, Esc, B ou F7 fecham.
   F8  modo eco: um "fantasma" seu repete o que você faz (teste sem amigos)
   F9  diagnóstico: salva a estrutura do personagem
-  F10 novidades: o que mudou nas últimas versões do mod
+  F10 novidades: o que mudou nas últimas versões do mod (aba Novidades do menu do coop)
 
 
 SEGURANÇA DO SAVE
@@ -220,7 +225,7 @@ DESATIVAR OU REMOVER
 
 PROBLEMAS COMUNS
 ----------------
-- O texto do mod não aparece no canto do jogo: o winhttp.dll não está ao lado do
+- O botão "Coop" não aparece na tela de saves (e a F7 não abre nada): o winhttp.dll não está ao lado do
   Hell Clock.exe (extraiu numa subpasta?) ou o antivírus bloqueou o winhttp.dll.
 - O jogo fica no "Carregando..." para sempre: falta a pasta BepInEx\unstripped_corlib
   ou o doorstop_config.ini não veio deste zip. Extraia o zip de novo, substituindo tudo.

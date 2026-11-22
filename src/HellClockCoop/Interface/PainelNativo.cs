@@ -19,9 +19,10 @@ namespace HellClockCoop.Interface
     ///   trocado pela localização. Quem posiciona, foca e grava (no .cfg do mod) é o MenuCoop.
     /// - Canvas próprio (sobreposição, ordem 900), escala do jogo (1920x1080, pela altura). Sem GraphicRaycaster: o
     ///   EventSystem fica desligado pelo BloqueioEntrada e o mouse é lido pelo MenuCoop (AcaoSob, AbaSob, FecharSob, NaBarra).
-    /// - Montado na primeira vez que o botão "Menu do coop" aparece no menu do jogo (o BotaoDoMenu tenta a cada 2 s) ou na
-    ///   primeira abertura. O botão usa a peça de aba num segundo canvas (HellClockCoop.BotaoDoMenu, ordem 890), posto nos
-    ///   pixels do OnGUI divididos por Screen.height/1080; o EsconderBotaoParado o apaga no Update quando o OnGUI deixa de pedi-lo.
+    /// - Montado quando o botão "Coop" entra na lista do menu do jogo (BotoesDoJogo, 0.13.0), na abertura automática da aba
+    ///   Novidades ou na primeira abertura. Reserva do botão do menu (só se a cópia do BotoesDoJogo falhou): a peça de aba num
+    ///   segundo canvas (HellClockCoop.BotaoDoMenu, ordem 890), posta nos pixels do OnGUI divididos por Screen.height/1080 (o
+    ///   BotaoDoMenu tenta montar a cada 2 s); o EsconderBotaoParado o apaga no Update quando o OnGUI deixa de pedi-lo.
     /// - Qualquer peça ausente ou erro: o MenuCoop volta à gaveta desenhada no OnGUI.
     /// </summary>
     internal static class PainelNativo
@@ -43,6 +44,8 @@ namespace HellClockCoop.Interface
             public RectTransform Rt, Preenche, Alca, Barra;
             public TMP_Text Texto, Valor;
             public GameObject Destaque, Caixa, Marca;
+            public string Medido; // informação: texto e largura da última medida (a altura só é recalculada quando mudam)
+            public float LarguraMedida, AlturaMedida;
         }
 
         private sealed class Aba
@@ -181,14 +184,15 @@ namespace HellClockCoop.Interface
             _fechar = cab.Find("CloseButton") as RectTransform;
             CaberNaJanela(cab);
 
-            // Abas: o botão de aba das Opções, duas vezes.
+            // Abas: o botão de aba das Opções, uma cópia por aba (Sessão, Ajustes, Novidades).
             var abas = new GameObject("Abas");
             RectTransform rtAbas = abas.AddComponent<RectTransform>();
             rtAbas.SetParent(_painel, false);
             rtAbas.anchorMin = rtAbas.anchorMax = new Vector2(0.5f, 1f);
             rtAbas.pivot = new Vector2(0.5f, 0.5f);
             rtAbas.anchoredPosition = new Vector2(0f, TopoAbas);
-            rtAbas.sizeDelta = new Vector2(2f * LarguraAba + 16f, AlturaAba);
+            int nAbas = MenuCoop.NomesDasAbas.Length;
+            rtAbas.sizeDelta = new Vector2(nAbas * LarguraAba + (nAbas - 1) * 16f, AlturaAba);
             Abas.Clear();
             for (int i = 0; i < MenuCoop.NomesDasAbas.Length; i++)
             {
@@ -462,7 +466,14 @@ namespace HellClockCoop.Interface
                 else if (l.Tipo == MenuCoop.Tipo.Info)
                 {
                     v.Texto.text = l.Texto;
-                    altura = Mathf.Max(30f, v.Texto.GetPreferredValues(l.Texto, largura - 4f, 0f).y + 8f);
+                    v.Texto.color = l.Enfase == MenuCoop.Enfase.Titulo ? CorFoco : l.Enfase == MenuCoop.Enfase.Rotulo ? CorValor : CorInfo;
+                    if (!ReferenceEquals(v.Medido, l.Texto) || !Mathf.Approximately(v.LarguraMedida, largura))
+                    {
+                        v.Medido = l.Texto;
+                        v.LarguraMedida = largura;
+                        v.AlturaMedida = Mathf.Max(30f, v.Texto.GetPreferredValues(l.Texto, largura - 4f, 0f).y + 8f);
+                    }
+                    altura = v.AlturaMedida;
                 }
                 else
                 {

@@ -22,11 +22,14 @@ namespace HellClockCoop.Interface
     }
 
     /// <summary>
-    /// Janela "Novidades": o que mudou na versão atual do mod e nas 3 anteriores, com "O que testar" nas versões ainda
+    /// Novidades: o que mudou na versão atual do mod e nas 3 anteriores, com "O que testar" nas versões ainda
     /// não testadas no jogo. O texto vem de NovidadesTexto (gerado do docs/changelog.json; sem JSON nem rede em runtime).
+    /// Desde a 0.13.0 é a aba Novidades da janela do coop (MenuCoop.MostrarNovidades); esta janela desenhada no OnGUI só
+    /// aparece quando a interface do jogo não pode ser montada (reserva, no visual antigo).
     /// - Abre sozinha uma vez, no menu (sem personagem), quando a versão do mod difere de [Interface] NovidadesVistas;
-    ///   ao fechar, grava a versão atual ali. Espera a janela do aceite das métricas fechar antes.
-    /// - Abre pela tecla ([Teclas] Novidades, F10) ou pelo item "Novidades" do menu do coop, no menu e em jogo.
+    ///   ao fechar, grava a versão atual ali. Espera a janela do aceite das métricas fechar antes e, desde a 0.13.0, a
+    ///   janela das Opções do jogo existir (o painel do coop é montado com ela).
+    /// - Abre pela tecla ([Teclas] Novidades, F10) no menu e em jogo; na reserva do menu do coop, pelo item "Novidades".
     /// - Aberta, segura a entrada do jogo (BloqueioEntrada: semáforo do jogo e módulo de UI); abas e "Fechar" respondem
     ///   ao mouse. Em jogo, se o semáforo do jogo não travar, volta ao modo só teclado/controle da 0.9.2 (o clique numa
     ///   aba moveria o personagem) e o rodapé indica só a F10.
@@ -48,6 +51,8 @@ namespace HellClockCoop.Interface
         private static Vector2 _rolagem;
         private static float _fecharLiberadoEm; // abertura automática: Esc/B/clique para pular a abertura do jogo não fecham
         private const float EsperaFechar = 1.5f;
+        private const float EsperaMaximaPainel = 60f; // abertura automática: espera pela interface do jogo no menu, no máximo isto
+        private static float _esperaDesde = -1f;
         private static GUIStyle _titulo, _cabVersao, _tituloVersao, _item, _rotuloTestar, _itemTestar, _aba0, _rodape, _botao, _invisivel;
 
         internal static bool Aberta => _aberta;
@@ -83,11 +88,24 @@ namespace HellClockCoop.Interface
             if (!_aberta)
             {
                 if (Balanceamento.JanelaAceite.Aberta) return;
-                if (Teclas.Pressionou(Tecla.Value)) Abrir("tecla " + Tecla.Value);
+                if (Teclas.Pressionou(Tecla.Value))
+                {
+                    // 0.13.0: a aba Novidades da janela do coop; sem a interface do jogo, esta janela.
+                    if (!MenuCoop.MostrarNovidades("tecla " + Tecla.Value, false)) Abrir("tecla " + Tecla.Value);
+                }
                 else if (!_automaticaFeita && semPersonagem && DeveAbrirSozinha(_vista.Value, VersaoAtual))
                 {
+                    // Espera a janela das Opções do jogo existir (o painel do coop é montado com ela); se ela vier e a
+                    // montagem falhar, ou se o botão do menu do jogo falhou, a janela antiga.
+                    if (PainelNativo.EsperandoJanela && !BotoesDoJogo.MenuFalhou)
+                    {
+                        if (_esperaDesde < 0f) _esperaDesde = Time.unscaledTime;
+                        if (Time.unscaledTime - _esperaDesde < EsperaMaximaPainel) return; // depois disso, a janela antiga
+                    }
                     _automaticaFeita = true;
-                    Abrir("primeira abertura da " + Plugin.PluginVersion);
+                    string motivo = "primeira abertura da " + Plugin.PluginVersion;
+                    if (MenuCoop.MostrarNovidades(motivo, true)) return;
+                    Abrir(motivo);
                     _fecharLiberadoEm = Time.unscaledTime + EsperaFechar; // a exibição é única: não gastar sem ver
                 }
                 return;
@@ -133,8 +151,15 @@ namespace HellClockCoop.Interface
         {
             if (!_aberta) return;
             _aberta = false; // a entrada do jogo volta dois quadros depois (BloqueioEntrada)
-            if (_vista.Value != Plugin.PluginVersion) _vista.Value = Plugin.PluginVersion; // o BepInEx grava o .cfg
+            MarcarVista();
             Plugin.Log.LogInfo("[Novidades] Janela fechada.");
+        }
+
+        /// <summary>As novidades desta versão já apareceram (esta janela ou a aba do menu do coop): não abrem sozinhas de novo.</summary>
+        internal static void MarcarVista()
+        {
+            _automaticaFeita = true; // aberta pela tecla antes da automática: conta como vista
+            if (_vista.Value != Plugin.PluginVersion) _vista.Value = Plugin.PluginVersion; // o BepInEx grava o .cfg
         }
 
         // ---------- Desenho (no OnGUI do runtime) ----------

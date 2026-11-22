@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using HellClock.GameInput;
+using HellClock.UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -15,7 +16,8 @@ namespace HellClockCoop.Interface
     ///   poção, pausa (PauseGame), Back e as janelas do jogo.
     /// - O semáforo não segura os eixos (WASD e analógico, lidos por GetAxisRaw): o patch em InputHandler.Update zera
     ///   MovementDirection e AimDirection enquanto travado.
-    /// - Desliga o módulo de entrada da UI do jogo (EventSystem.currentInputModule), como a JanelaAceite.
+    /// - Desliga o módulo de entrada da UI do jogo (EventSystem.currentInputModule), como a JanelaAceite, e o
+    ///   AndroidBackButtonListener da tela de saves, que lê o Esc por fora do semáforo (0.13.0).
     /// - O painel chama Pedir() a cada quadro em que está aberto; o runtime chama Atualizar() no começo do Update, que
     ///   libera tudo só dois quadros depois do último pedido (o Esc ou o clique que fechou não chega ao jogo).
     /// - Nunca usa InputHandler.Instance: o getter cria um InputHandler se não houver (como o PlayerController.Instance);
@@ -25,10 +27,11 @@ namespace HellClockCoop.Interface
     {
         private static readonly object Dono = new object(); // chave do mod no semáforo do jogo
         private static readonly List<BaseInputModule> Desligados = new List<BaseInputModule>();
+        private static readonly List<Behaviour> OuvintesDoEsc = new List<Behaviour>();
         private static global::Semaphore _travado;
         private static int _ultimoPedido = -10;
         private static FieldInfo _campoInstancia;
-        private static bool _campoProcurado, _avisouSemJogo;
+        private static bool _campoProcurado, _avisouSemJogo, _ouvintesDoEscDesligados;
 
         /// <summary>O semáforo do jogo está travado pelo mod: mouse, teclado e controle não chegam ao personagem.</summary>
         internal static bool SeguraOJogo => _travado != null;
@@ -45,6 +48,7 @@ namespace HellClockCoop.Interface
         {
             _ultimoPedido = Time.frameCount;
             DesligarModulo();
+            if (!_ouvintesDoEscDesligados) DesligarOuvintesDoEsc();
             Travar();
         }
 
@@ -57,12 +61,37 @@ namespace HellClockCoop.Interface
                 Soltar();
                 Plugin.Log.LogInfo("[Entrada] Entrada do jogo liberada.");
             }
+            if (_ouvintesDoEscDesligados)
+            {
+                _ouvintesDoEscDesligados = false;
+                foreach (Behaviour ouvinte in OuvintesDoEsc)
+                {
+                    if (ouvinte != null) ouvinte.enabled = true;
+                }
+                OuvintesDoEsc.Clear();
+            }
             if (Desligados.Count == 0) return;
             foreach (BaseInputModule modulo in Desligados)
             {
                 if (modulo != null) modulo.enabled = true;
             }
             Desligados.Clear();
+        }
+
+        /// <summary>
+        /// O AndroidBackButtonListener da tela de saves lê o Esc direto (Input.GetKeyDown(Escape), sem passar pelo semáforo) e
+        /// pede "Você realmente quer fechar o jogo?": fica desligado enquanto o painel está aberto e até a liberação (0.13.0).
+        /// Procurado uma vez por abertura, não a cada quadro.
+        /// </summary>
+        private static void DesligarOuvintesDoEsc()
+        {
+            _ouvintesDoEscDesligados = true;
+            foreach (AndroidBackButtonListener ouvinte in Resources.FindObjectsOfTypeAll<AndroidBackButtonListener>())
+            {
+                if (ouvinte == null || !ouvinte.gameObject.scene.IsValid() || !ouvinte.enabled) continue; // fora prefabs e os já desligados
+                ouvinte.enabled = false;
+                OuvintesDoEsc.Add(ouvinte);
+            }
         }
 
         private static void DesligarModulo()

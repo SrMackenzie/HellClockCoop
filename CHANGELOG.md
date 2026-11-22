@@ -4,7 +4,17 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
-## 0.12.0 — Menu do coop com a cara do jogo 🧪
+## 0.13.0 — Botão Coop no menu e na pausa do jogo 🧪
+_22/11/2026_
+
+- O menu do jogo (tela de saves) ganhou um botão "Coop" na lista de botões do canto superior direito, ao lado de "Créditos", com o mesmo visual e o mesmo som dos botões do jogo. Ele substitui o botão que ficava abaixo do painel do canto
+- A pausa do jogo (Esc em jogo) ganhou o item "Coop", logo abaixo de "Opções": tira a pausa e abre o menu do coop
+- As novidades viraram a terceira aba da janela do coop, com a mesma moldura e as mesmas fontes. A F10 abre direto nela, e ela abre sozinha uma vez depois de cada atualização, já com a tela de saves carregada
+- O texto do canto superior esquerdo ficou mais limpo: saiu a dica "F7 abre o menu do coop" e o recado do atualizador foi para a aba Sessão. No canto ficam só a sessão, o modo eco e os avisos curtos
+- Se a interface do jogo não puder ser montada, tudo volta ao visual antigo: o botão abaixo do painel do canto, a gaveta do menu e a janela separada das novidades
+- Balanceamento: só interface, sem mudança de dificuldade. Protocolo 14, o mesmo da 0.12.0, mas o coop continua exigindo a mesma versão do mod nos dois PCs (0.13.0)
+
+## 0.12.0 — Menu do coop com a cara do jogo ✅
 _22/11/2026_
 
 - O menu do coop (F7 ou View/Select) virou uma janela no centro da tela feita com as peças das Opções do próprio jogo: moldura, fontes, cores, abas, caixas de marcar e barras. O botão "Menu do coop" no canto do menu do jogo também ganhou esse visual

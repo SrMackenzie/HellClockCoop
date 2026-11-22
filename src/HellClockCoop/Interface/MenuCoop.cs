@@ -9,13 +9,14 @@ namespace HellClockCoop.Interface
 {
     /// <summary>
     /// Menu do coop. Desde a 0.12.0 é desenhado com a interface do próprio jogo (PainelNativo: janela central com as peças das Opções
-    /// do jogo, com as abas Sessão e Ajustes); se a skin do jogo não puder ser montada, volta à gaveta
-    /// desenhada no OnGUI (lista única, como na 0.9.3).
-    /// - Abre e fecha pela tecla [Teclas] MenuDoCoop (F7), pelo botão View/Select do controle ou pelo botão
-    ///   "Menu do coop" abaixo do painel do canto (só no menu); fecha também por Esc, B e pelo [X].
-    /// - Sessão: estado, ALIADOS (só leitura), COOP (criar e convidar, sair com confirmação, modo eco).
+    /// do jogo, com as abas Sessão, Ajustes e, desde a 0.13.0, Novidades); se a skin do jogo não puder ser montada, volta à gaveta
+    /// desenhada no OnGUI (lista única, como na 0.9.3) e a Novidades à janela própria.
+    /// - Abre e fecha pela tecla [Teclas] MenuDoCoop (F7), pelo botão View/Select do controle ou pelo botão "Coop" do menu do
+    ///   jogo e da pausa (BotoesDoJogo, 0.13.0); fecha também por Esc, B e pelo [X]. A tecla da Novidades (F10) abre na aba
+    ///   Novidades; aberta sozinha depois de atualizar, Esc, B e o [X] só fecham depois de 1,5 s.
+    /// - Sessão: recado do atualizador, estado, ALIADOS (só leitura), COOP (criar e convidar, sair com confirmação, modo eco).
     ///   Ajustes: nomes, números e tamanho do dano dos aliados, sons e volume dos aliados (gravados no .cfg do mod,
-    ///   nunca nas opções do jogo), balanceamento deste .cfg só para leitura e Novidades.
+    ///   nunca nas opções do jogo) e balanceamento deste .cfg só para leitura. Novidades: a versão atual e as 3 anteriores.
     /// - Aberto, segura a entrada do jogo (BloqueioEntrada): mouse, teclado e controle operam o menu sem mexer no
     ///   personagem nem abrir a pausa. Em jogo não escurece a tela nem pausa: o jogo continua rodando.
     /// - Se o semáforo do jogo não travar, em jogo o menu responde só a teclado e controle (o clique moveria o personagem).
@@ -24,7 +25,8 @@ namespace HellClockCoop.Interface
     {
         internal enum Acao { Nenhuma, CriarOuConvidar, Sair, Eco, Nomes, Dano, TamanhoDano, Sons, Volume, Novidades }
         internal enum Tipo { Secao, Info, Item, Interruptor, Deslizante }
-        internal enum Aba { Sessao, Ajustes }
+        internal enum Aba { Sessao, Ajustes, Novidades }
+        internal enum Enfase { Normal, Titulo, Rotulo } // cor da linha de informação (aba Novidades)
 
         internal struct Linha
         {
@@ -33,9 +35,10 @@ namespace HellClockCoop.Interface
             public string Texto, Valor;
             public bool Habilitada, Ligado;
             public float Fracao; // deslizante: posição 0..1
+            public Enfase Enfase;
         }
 
-        internal static readonly string[] NomesDasAbas = { "Sessão", "Ajustes" };
+        internal static readonly string[] NomesDasAbas = { "Sessão", "Ajustes", "Novidades" };
 
         private const float LarguraMin = 380f, LarguraMax = 460f;
         private const float Margem = 20f, AlturaItem = 48f, AlturaSecao = 34f, LadoBotao = 44f, LarguraValor = 120f;
@@ -47,10 +50,13 @@ namespace HellClockCoop.Interface
 
         internal static ConfigEntry<string> Tecla;
 
-        private static bool _aberto, _semPersonagem, _controle, _rolarParaFoco, _nativo, _mouseIniciado;
+        private const float EsperaFecharAutomatica = 1.5f; // Novidades aberta sozinha: Esc/B/[X] de quem pula a abertura não a fecham
+
+        private static bool _aberto, _semPersonagem, _controle, _rolarParaFoco, _nativo, _mouseIniciado, _novidadesVistas;
         private static Aba _aba;
         private static Acao _foco, _arrastando;
-        private static float _rolagem, _confirmarSairAte = -1f;
+        private static float _rolagem, _confirmarSairAte = -1f, _fecharLiberadoEm;
+        private static List<Linha> _linhasNovidades; // texto fixo da DLL: montado uma vez
         private static float _alturaItem = AlturaItem, _ladoX = LadoBotao; // em 1080p; crescem em tela menor (alvo real ≥ 44 px)
         private static Vector2 _mouseAntes, _mouseAntesNativo;
         private static readonly List<Linha> Linhas = new List<Linha>();
@@ -136,8 +142,9 @@ namespace HellClockCoop.Interface
                 Fechar("janela do aceite");
                 return;
             }
-            bool esc = Teclas.Pressionou("Escape");
-            bool b = Teclas.Controle(c => c.buttonEast, KeyCode.JoystickButton1);
+            bool liberado = FechamentoLiberado(Time.unscaledTime, _fecharLiberadoEm); // F7 e View fecham sempre
+            bool esc = liberado && Teclas.Pressionou("Escape");
+            bool b = liberado && Teclas.Controle(c => c.buttonEast, KeyCode.JoystickButton1);
             if (tecla || view || esc || b)
             {
                 Fechar(view || b ? "controle" : "teclado");
@@ -179,24 +186,28 @@ namespace HellClockCoop.Interface
                 Plugin.Log.LogWarning($"[Menu] Painel com a interface do jogo falhou; volta ao menu simples: {e}");
                 PainelNativo.Desativar();
                 _nativo = false;
+                if (_aba == Aba.Novidades) _aba = Aba.Sessao; // a gaveta não tem a aba (nem o rodapé dela)
             }
         }
 
-        private static void Abrir(string motivo, bool peloControle)
+        private static void Abrir(string motivo, bool peloControle, Aba aba = Aba.Sessao)
         {
             _aberto = true;
             _controle = peloControle;
-            _aba = Aba.Sessao;
+            _aba = aba;
             _foco = Acao.Nenhuma; // o Montar escolhe o primeiro item disponível
             _arrastando = Acao.Nenhuma;
             _rolagem = 0f;
-            PainelNativo.ZerarRolagem(); // reabre do topo, na aba Sessão
+            PainelNativo.ZerarRolagem(); // reabre do topo
             _confirmarSairAte = -1f;
+            _fecharLiberadoEm = 0f;
+            _novidadesVistas = false;
             _mouseAntes = Vector2.zero; // ao reabrir, o mouse parado não puxa o foco
             _mouseIniciado = false;
             _nativo = PainelNativo.Preparar();
+            if (!_nativo && _aba == Aba.Novidades) _aba = Aba.Sessao; // a reserva não tem a aba (quem chama confere antes)
             BloqueioEntrada.Pedir(); // já no quadro em que abre (pelo botão, no OnGUI, o Update só viria no seguinte)
-            Plugin.Log.LogInfo($"[Menu] Menu do coop aberto ({motivo}; {(_nativo ? "interface do jogo" : "menu simples")}).");
+            Plugin.Log.LogInfo($"[Menu] Menu do coop aberto ({motivo}; {(_nativo ? "interface do jogo" : "menu simples")}; aba {NomesDasAbas[(int)_aba]}).");
         }
 
         internal static void Fechar(string motivo)
@@ -205,8 +216,63 @@ namespace HellClockCoop.Interface
             _aberto = false; // a entrada do jogo volta dois quadros depois (BloqueioEntrada)
             _arrastando = Acao.Nenhuma;
             PainelNativo.Esconder();
+            if (_novidadesVistas) Novidades.MarcarVista(); // a aba Novidades apareceu: não abre sozinha de novo nesta versão
             Plugin.Log.LogInfo($"[Menu] Menu do coop fechado ({motivo}).");
         }
+
+        /// <summary>Botão "Coop" do menu do jogo ou da pausa (BotoesDoJogo), no Update do runtime.</summary>
+        internal static void AbrirPeloJogo(string motivo)
+        {
+            if (_aberto || Balanceamento.JanelaAceite.Aberta || Novidades.Aberta) return;
+            Abrir(motivo, false);
+        }
+
+        /// <summary>
+        /// Tecla da Novidades (F10) ou abertura automática, com o painel nativo: abre o menu na aba Novidades, troca para ela ou,
+        /// já nela, fecha (só pela tecla). Falso: sem o painel com a interface do jogo, a Novidades usa a janela antiga.
+        /// </summary>
+        internal static bool MostrarNovidades(string motivo, bool automatica)
+        {
+            switch (RespostaNovidades(_aberto, _aberto ? _nativo : PainelNativo.Preparar(), _aba == Aba.Novidades, automatica))
+            {
+                case RespostaDaNovidade.Abrir:
+                    Abrir(motivo, false, Aba.Novidades);
+                    if (!_nativo)
+                    {
+                        Fechar("painel indisponível; Novidades na janela antiga"); // a montagem falhou agora: a janela antiga
+                        return false;
+                    }
+                    if (automatica) _fecharLiberadoEm = Time.unscaledTime + EsperaFecharAutomatica;
+                    return true;
+                case RespostaDaNovidade.TrocarAba:
+                    DefinirAba(Aba.Novidades);
+                    return true;
+                case RespostaDaNovidade.Fechar:
+                    Fechar("tecla " + Novidades.Tecla.Value);
+                    return true;
+                case RespostaDaNovidade.Ficar:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        internal enum RespostaDaNovidade { Abrir, TrocarAba, Fechar, Ficar, JanelaAntiga }
+
+        /// <summary>
+        /// O que a tecla da Novidades (ou a abertura automática) faz com o menu do coop. Sem o painel nativo (reserva): a janela
+        /// antiga. Fechado: abre na aba. Aberto em outra aba: troca. Já na aba: a tecla fecha; a abertura automática não.
+        /// </summary>
+        internal static RespostaDaNovidade RespostaNovidades(bool aberto, bool nativo, bool naAbaNovidades, bool automatica)
+        {
+            if (!nativo) return RespostaDaNovidade.JanelaAntiga;
+            if (!aberto) return RespostaDaNovidade.Abrir;
+            if (!naAbaNovidades) return RespostaDaNovidade.TrocarAba;
+            return automatica ? RespostaDaNovidade.Ficar : RespostaDaNovidade.Fechar;
+        }
+
+        /// <summary>Esc, B e o [X] só fecham depois da espera da abertura automática (liberadoEm 0 = sem espera).</summary>
+        internal static bool FechamentoLiberado(float agora, float liberadoEm) => agora >= liberadoEm;
 
         private static void Mover(int delta, bool peloControle)
         {
@@ -220,6 +286,7 @@ namespace HellClockCoop.Interface
             }
             int proximo = ProximoFoco(atual, delta, selecionavel);
             if (proximo >= 0) _foco = Linhas[proximo].Acao;
+            else if (_nativo) PainelNativo.Rolar(delta < 0 ? -PassoRoda : PassoRoda); // aba só de leitura (Novidades): as setas rolam
             _rolarParaFoco = true;
         }
 
@@ -388,7 +455,7 @@ namespace HellClockCoop.Interface
             }
             if (!apertou) return;
             _controle = false;
-            if (PainelNativo.FecharSob(pos))
+            if (PainelNativo.FecharSob(pos) && FechamentoLiberado(Time.unscaledTime, _fecharLiberadoEm))
             {
                 Fechar("botão X");
                 return;
@@ -457,9 +524,14 @@ namespace HellClockCoop.Interface
         private static void Montar(CoopRuntime rt)
         {
             Linhas.Clear();
-            // A reserva (OnGUI) mostra as duas abas numa lista só; o painel nativo, só a aba escolhida.
+            // A reserva (OnGUI) mostra Sessão e Ajustes numa lista só (a Novidades fica na janela antiga); o painel nativo, só a aba escolhida.
             if (!_nativo || _aba == Aba.Sessao) MontarSessao(rt);
             if (!_nativo || _aba == Aba.Ajustes) MontarAjustes();
+            if (_nativo && _aba == Aba.Novidades)
+            {
+                Linhas.AddRange(LinhasNovidades());
+                _novidadesVistas = true;
+            }
 
             // Foco num item que sumiu ou ficou indisponível (ex.: saiu do coop): vai para o primeiro disponível.
             if (IndiceDoFoco() >= 0) return;
@@ -474,6 +546,7 @@ namespace HellClockCoop.Interface
             SessaoCoop s = rt.Sessao;
             bool conectando = s.EstadoAtual == SessaoCoop.Estado.CriandoLobby || s.EstadoAtual == SessaoCoop.Estado.EntrandoLobby;
 
+            if (rt.AvisoAtualizacao != null) Adicionar(Tipo.Info, Acao.Nenhuma, rt.AvisoAtualizacao, null, false, Enfase.Rotulo);
             Adicionar(Tipo.Info, Acao.Nenhuma, Status(s), null, false);
             if (!_semPersonagem)
             {
@@ -516,12 +589,38 @@ namespace HellClockCoop.Interface
             Adicionar(Tipo.Secao, Acao.Nenhuma, "Balanceamento", null, false);
             foreach (string linha in Balanceamento.Escalonamento.LinhasDoMenu()) Adicionar(Tipo.Info, Acao.Nenhuma, linha, null, false);
 
+            if (_nativo) return; // no painel nativo, as novidades são a terceira aba
             Adicionar(Tipo.Secao, Acao.Nenhuma, "Mod", null, false);
             Adicionar(Tipo.Item, Acao.Novidades, "Novidades da " + Plugin.PluginVersion, null, true);
         }
 
-        private static void Adicionar(Tipo tipo, Acao acao, string texto, string valor, bool habilitada) =>
-            Linhas.Add(new Linha { Tipo = tipo, Acao = acao, Texto = texto, Valor = valor, Habilitada = habilitada });
+        /// <summary>
+        /// Aba Novidades: a versão atual e as 3 anteriores numa lista que rola (roda, setas ou direcional), com "O que testar" nas
+        /// versões ainda não testadas no jogo. Texto fixo da DLL (NovidadesTexto): montado uma vez só.
+        /// </summary>
+        private static List<Linha> LinhasNovidades()
+        {
+            if (_linhasNovidades != null) return _linhasNovidades;
+            var l = new List<Linha>();
+            VersaoNovidade[] versoes = NovidadesTexto.Versoes;
+            for (int i = 0; i < versoes.Length; i++)
+            {
+                VersaoNovidade v = versoes[i];
+                l.Add(new Linha { Tipo = Tipo.Secao, Texto = "v" + v.V + (i == 0 ? "  ·  nova" : "") });
+                l.Add(new Linha { Tipo = Tipo.Info, Texto = v.Data + (v.Testado ? "" : "  ·  ainda não testada no jogo") });
+                l.Add(new Linha { Tipo = Tipo.Info, Texto = v.Titulo, Enfase = Enfase.Titulo });
+                foreach (string item in v.Itens) l.Add(new Linha { Tipo = Tipo.Info, Texto = "•  " + item });
+                if (!Novidades.MostraTestar(v)) continue;
+                l.Add(new Linha { Tipo = Tipo.Info, Texto = "O QUE TESTAR", Enfase = Enfase.Rotulo });
+                foreach (string t in v.Testar) l.Add(new Linha { Tipo = Tipo.Info, Texto = "›  " + t });
+            }
+            if (l.Count == 0) l.Add(new Linha { Tipo = Tipo.Info, Texto = "Sem novidades embutidas nesta versão." });
+            _linhasNovidades = l;
+            return l;
+        }
+
+        private static void Adicionar(Tipo tipo, Acao acao, string texto, string valor, bool habilitada, Enfase enfase = Enfase.Normal) =>
+            Linhas.Add(new Linha { Tipo = tipo, Acao = acao, Texto = texto, Valor = valor, Habilitada = habilitada, Enfase = enfase });
 
         private static void AdicionarInterruptor(Acao acao, string texto, ConfigEntry<bool> entrada) =>
             Linhas.Add(new Linha
@@ -548,18 +647,27 @@ namespace HellClockCoop.Interface
             return "Convidado de " + (host != null ? host.Nome : "host") + "  -  " + jogadores + (s.ModoConvidado ? "  -  acompanhando a run do host" : "");
         }
 
-        private static string Rodape() => _controle
-            ? "LB/RB: aba   Direcional: escolher e ajustar   A: confirmar   B ou View: fechar"
-            : $"Setas: escolher, ajustar e trocar de aba   Enter: confirmar   Esc ou {Tecla.Value}: fechar";
+        private static string Rodape()
+        {
+            if (_aba == Aba.Novidades)
+                return _controle
+                    ? "LB/RB: aba   Direcional: rolar   B ou View: fechar"
+                    : $"Setas ou roda: rolar   Setas laterais: aba   Esc, {Tecla.Value} ou {Novidades.Tecla.Value}: fechar";
+            return _controle
+                ? "LB/RB: aba   Direcional: escolher e ajustar   A: confirmar   B ou View: fechar"
+                : $"Setas: escolher, ajustar e trocar de aba   Enter: confirmar   Esc ou {Tecla.Value}: fechar";
+        }
 
         // ---------- Reserva: desenho no OnGUI do runtime ----------
 
         /// <summary>
-        /// Botão "Menu do coop" abaixo do painel do canto: só no menu (sem personagem) e sem outra janela aberta. Desenhado
-        /// com a peça de aba do jogo (PainelNativo) e um botão invisível por cima para o clique; sem ela, o botão simples.
+        /// Reserva do botão "Coop" do menu do jogo (BotoesDoJogo): desde a 0.13.0 só aparece se a cópia na lista de botões do
+        /// jogo falhou. Botão "Menu do coop" abaixo do painel do canto: só no menu (sem personagem) e sem outra janela aberta.
+        /// Desenhado com a peça de aba do jogo (PainelNativo) e um botão invisível por cima para o clique; sem ela, o botão simples.
         /// </summary>
         internal static void DesenharBotaoMenu(float y)
         {
+            if (!BotoesDoJogo.MenuFalhou) return;
             if (_aberto || !_semPersonagem || Balanceamento.JanelaAceite.Aberta || Novidades.Aberta) return;
             Estilos();
             string texto = $"Menu do coop ({Tecla.Value})";

@@ -402,7 +402,28 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.13.0 — Botão Coop no menu e na pausa do jogo
+
+Solo basta (sem mudança de rede nem de balanceamento). Atualizar a partir da 0.12.0. Já conferido no PC do autor em
+22/11/2026, com teclas e cliques simulados (só com o jogo em primeiro plano) e capturas: botão "COOP" à esquerda de
+"CRÉDITOS" na tela de saves, clique abre o menu; aba Novidades aberta sozinha na primeira abertura da 0.13.0 (grava
+`NovidadesVistas = 0.13.0`); F10 abre e fecha na aba, setas rolam; Esc fecha o menu na tela de saves sem o "Você
+realmente quer fechar o jogo?" (antes aparecia: o `AndroidBackButtonListener` do jogo lia o Esc por fora do bloqueio);
+em jogo, sem texto no canto superior esquerdo; Esc abre a pausa com CONTINUAR, OPÇÕES, COOP e SAIR, o "COOP" tira a
+pausa e abre o menu, e o Esc fecha sem reabrir a pausa; ao voltar ao menu pelo "Sair", o botão "COOP" volta. Falta:
+- [ ] **Controle na pausa:** com o controle, o direcional chega ao "Coop" da pausa e o A abre o menu; o atalho de botão do
+  "Opções" continua abrindo só as Opções (a cópia não herda o atalho).
+- [ ] **Controle no menu do jogo:** o direcional chega ao "Coop" ao lado de "Créditos" e o A abre o menu.
+- [ ] **Som e destaque:** passar o mouse e clicar no "Coop" (menu e pausa) faz o mesmo destaque e o mesmo som dos botões
+  vizinhos.
+- [ ] **Animação da tela de saves:** ao escolher um save e ao voltar dele, o "Coop" some e volta junto com "Créditos".
+- [ ] **Recado do atualizador:** depois de uma atualização automática, o recado aparece no topo da aba Sessão (e não mais
+  no canto).
+- Se falhar, mandar: o `LogOutput.log` (linhas `[Menu]` e `[Entrada]`) e uma captura da tela.
+
 ## 0.12.0 — Menu do coop com a interface do jogo
+
+Testado pelo autor em solo (22/11/2026): passou; `testado: true` no changelog desde a 0.13.0.
 
 Solo basta (o convite e a saída não mudaram desde a 0.9.3). Atualizar a partir da 0.11.0. Teclas simuladas no PC do
 autor em 22/11/2026: a janela abre com a interface do jogo e a seta para a direita troca de aba (com o painel ainda à
