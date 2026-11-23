@@ -221,6 +221,12 @@ ESTADO ATUAL (versão de teste, Fase 3)
   sair no meio, quem herdar a sala não comanda a sua run. Quem o host expulsa deixa de falar com
   todos do coop. Baús, vasos e santuários só valem do host; inimigos, chefes e baús têm teto por
   andar, e valores fora do jogo são recusados. Exige a 0.21.1 em todos os PCs.
+- NOVO (0.23.0): bloquear jogador. Na aba Sessão (aliado) ou na aba Salas (host da sala), aperte
+  X no controle, Delete ou clique direito, duas vezes. As salas dele somem da sua lista; se você
+  é o host, ele é expulso sempre que entrar. Quem você bloqueou na Steam também conta. Desbloqueie
+  em Ajustes > Bloqueados. A lista fica só no seu PC (BepInEx\HellClockCoop\bloqueados.txt) e
+  nunca é enviada. Para dar para bloquear pela lista, a sua sala pública mostra o seu ID da Steam
+  a quem busca salas com o mod (sala privada não aparece). Exige a 0.23.0 em todos os PCs.
 - A Deluxe Edition (cosmética) não importa.
 
 
@@ -259,10 +265,11 @@ com o nome da Steam em cima da cabeça.
 
 Teclas (dá para trocar em BepInEx\config\br.srmackenzie.hellclockcoop.cfg):
   F7  menu do coop (no controle: View/Select; também o botão "Coop" do menu do jogo e da pausa):
-      abas Sessão (sala pública, criar, convidar, expulsar, sair, modo eco), Salas (salas
-      públicas para entrar), Ajustes e Novidades
+      abas Sessão (sala pública, criar, convidar, expulsar, bloquear, sair, modo eco), Salas
+      (salas públicas para entrar), Ajustes (com a lista de Bloqueados) e Novidades
       No menu: setas ou direcional escolhem, LB/RB trocam de aba, setas laterais trocam de aba
-      ou mexem na barra focada, Enter ou A confirma, Esc, B ou F7 fecham.
+      ou mexem na barra focada, Enter ou A confirma, Esc, B ou F7 fecham. Na linha de um aliado
+      ou de uma sala, X, Delete ou clique direito bloqueiam (duas vezes).
   F8  modo eco: um "fantasma" seu repete o que você faz (teste sem amigos)
   F9  diagnóstico: salva a estrutura do personagem
   F10 novidades: o que mudou nas últimas versões do mod (aba Novidades do menu do coop)

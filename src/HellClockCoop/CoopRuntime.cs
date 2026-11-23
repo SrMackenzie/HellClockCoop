@@ -369,7 +369,7 @@ namespace HellClockCoop
             }
         }
 
-        /// <summary>Estado de um aliado em poucas palavras (painel do canto e menu do coop).</summary>
+        /// <summary>Estado de um aliado em poucas palavras (menu do coop; desde a 0.23.0 o canto não mostra os aliados).</summary>
         internal static string EstadoDoPar(Par p)
         {
             if (!p.HelloRecebido) return "conectando...";
@@ -412,20 +412,9 @@ namespace HellClockCoop
             }
 
             var linhas = new List<string>();
-            if (_sessao.EmSessao)
-            {
-                string run = _sessao.ModoConvidado ? " · acompanhando a run do host" : _sessao.ModoHost ? " · a run é sua" : "";
-                linhas.Add($"Coop — {(_sessao.SouHost ? "você é o host" : "convidado")}{run} · {_sessao.Pares.Count + 1}/{SessaoCoop.MaximoJogadores} jogadores · {Interface.MenuCoop.Tecla.Value}: menu do coop");
-                foreach (Par p in _sessao.Pares.Values) linhas.Add($"  • {p.Nome}: {EstadoDoPar(p)}");
-                string bal = Balanceamento.Escalonamento.Resumo();
-                if (bal != null) linhas.Add("  " + bal);
-            }
-            else if (_sessao.EstadoAtual == SessaoCoop.Estado.CriandoLobby || _sessao.EstadoAtual == SessaoCoop.Estado.EntrandoLobby)
-            {
-                linhas.Add("Coop: conectando...");
-            }
             // 0.13.0: sem a dica "F7 abre o menu" (os botões Coop do menu e da pausa a substituem); o recado do atualizador
-            // fica no menu do coop. O canto mostra só a sessão, o modo eco e os avisos curtos.
+            // fica no menu do coop. 0.23.0: sem o estado da sessão, os aliados e o balanceamento (estão nas abas Sessão e
+            // Ajustes); o canto mostra só o modo eco e os avisos curtos, que somem sozinhos.
             if (_ecoAtivo) linhas.Add($"Modo eco ({TeclaEco.Value}): {_bytesUltimo} bytes por snapshot, 20/s");
             for (int i = _avisos.Count - 1; i >= 0; i--)
             {

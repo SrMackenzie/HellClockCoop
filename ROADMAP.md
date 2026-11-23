@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 23/11/2026 · versão 0.22.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 23/11/2026 · versão 0.23.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -100,7 +100,7 @@ _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio s
 | 🧪 | Revisar drops de invocações, ondas de sobrevivência e temporadas (convidado com o XP e o tesouro próprio do host; equipamento sem redução, decisão do autor) |
 | ✅ | Auditoria: o mod nunca escreve no save de outro jogador |
 
-## Fase 5 — Polimento · 47%
+## Fase 5 — Polimento · 48%
 
 _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 
@@ -121,7 +121,8 @@ _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 | 🧪 | Lista de salas (3/3, parte 1): coop mais seguro com desconhecidos: o host não conclui a masmorra nem avança a run de outra masmorra no save do convidado, valores de inimigos e santuários fora do jogo são recusados, par sem versão compatível não manda nada além do aperto de mão, e com quem não é amigo na Steam a conexão passa só pelo relay (sem IP) |
 | 🧪 | Salas com e sem a DLC Cursed War: os atos 1 a 3 e a Ascensão são para todos, o Ato 4 só para quem tem a DLC (sala indisponível na lista e convidado no hub); o menu do coop abre na aba Salas, numa janela maior, com cada sala em 2 linhas |
 | 🧪 | Lista de salas (3/3, parte 2): o host da run fica fixo até ela acabar (quem herda o lobby no meio não comanda a sua run), o expulso é cortado por todos, baús, quebráveis e santuários só valem do host (ou, no host, de quem está no mesmo andar), tetos de inimigos, chefes e baús por andar, andar limpo repetido só com inimigos novos, bônus de tempo só de quem divide a run, atalhos só os dois do jogo e valores fora do jogo recusados nos snapshots |
-| ⬜ | Lista de salas (3/3, restante): bloquear jogador e filtros na lista |
+| 🧪 | Lista de salas (3/3, parte 3): bloquear jogador pela aba Sessão ou Salas (X, Delete ou clique direito), salas do bloqueado escondidas, host expulsa o bloqueado sempre que ele entra, bloqueio da Steam também conta, lista só local com Desbloquear em Ajustes |
+| ⬜ | Lista de salas (3/3, restante): filtros na lista |
 | ⬜ | Troca de host: se o host sair ou cair, quem herdar a sala vira o host de verdade (a run em andamento termina e o grupo segue junto a partir do hub; assumir a run no meio não é viável, porque inimigos, chão e tempo só existem no host) |
 | ⬜ | Frases rápidas: avisos curtos prontos que aparecem sobre o personagem, sem chat de texto |
 | ⬜ | Ir até o aliado: botão que leva para perto do host quem ficou para trás, com tempo de recarga |

@@ -935,10 +935,12 @@ S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum 
 | COOP-NOVIDADES-TECLA | F10 abre o menu na aba Novidades, troca para ela ou, já nela, fecha; abre sozinha uma vez por versão (Esc, B e [X] só depois de 1,5 s) | menu e jogo | R | `[Teclas] Novidades` |
 | COOP-ALIADO | Linha por aliado: nome e estado | aba Sessão, em sessão | ∅ | — |
 | COOP-EXPULSAR | "Expulsar <nome>" abaixo de cada aliado; o primeiro aperto vira "Confirmar: expulsar <nome>?" por 3 s (0.18.0, §12.7) | aba Sessão, só o host | S (`SessaoCoop.Expulsar`) | — |
+| COOP-BLOQUEAR-ALIADO | Ação secundária da linha do aliado (0.23.0, §12.12): X no controle, Delete ou clique direito (no painel nativo e na reserva); o primeiro aperto vira "Confirmar (X de novo): bloquear <nome>?" por 3 s. Como convidado a linha é "Bloquear <nome>" e o Enter/A também bloqueia. O rodapé mostra "X: bloquear" com o foco na linha | aba Sessão, em sessão | S + P (`SessaoCoop.Bloquear`; host também expulsa) | `bloqueados.txt` |
 | COOP-SALA-PUBLICA | "Sala pública (aparece na aba Salas)" (caixa de marcar); vale para o próximo coop e, como host, muda a sala na hora; convidado não muda (0.18.0) | aba Sessão (sem sessão ou como host) | P + S (`SessaoCoop.AlternarSalaPublica`, `SetLobbyType`) | `[Coop] SalaPublica` |
 | COOP-ABA-SALAS | Aba "Salas" (0.18.0), entre Sessão e Ajustes; abas de 160 para caber 4. Desde a 0.21.0 o menu abre nela (F7, View, botão Coop) | janela; na reserva, na lista única depois da Sessão | R | — |
 | COOP-SALAS-ATUALIZAR | "Atualizar lista" com a idade da lista ("há 12 s"); "Buscando salas..." indisponível. Busca sozinha com a aba à vista quando nunca buscou ou a lista tem mais de 30 s; no máximo 1 busca a cada 3 s; sem resposta em 15 s, libera nova busca | aba Salas | S (`SessaoCoop.BuscarSalas`) | — |
 | COOP-SALAS-SALA | Um item por sala pública compatível. Desde a 0.21.0 em 2 linhas: "Host  ·  Cursed War" e "Nv 34  2/4" em cima, o lugar ("Ato 2, andar 5") embaixo; desabilitada ao conectar; no Ato 4 sem a DLC (§12.10) ou numa run aonde o save não chegou (§12.8), indisponível: à direita "indisponível", o motivo na linha de baixo e uma linha de explicação abaixo da lista. Até a 0.20.0, uma linha "Host  -  lugar" | aba Salas | S (`SessaoCoop.EntrarNaSala`; já num coop, o primeiro aperto vira "Confirmar: sair do seu coop e entrar?" por 3 s) | — |
+| COOP-SALAS-BLOQUEAR-HOST | Ação secundária da linha da sala (0.23.0, §12.12): X, Delete ou clique direito, dois apertos ("Confirmar (X de novo): bloquear <host>?"); a sala some da lista. Sala indisponível não recebe foco (não dá para bloquear por ela); sala sem `hcc_dono` válido só avisa | aba Salas | S + P (`SessaoCoop.Bloquear`) | `bloqueados.txt` |
 | COOP-AVISO-ATUALIZACAO | Recado do atualizador desta abertura (versão nova instalada ou atualização recusada), no topo da lista (0.13.0; antes no painel do canto) | aba Sessão, quando houver | ∅ | `[Atualizacao]` |
 | COOP-CRIAR | "Criar coop e convidar amigos" (sem sessão); "Esperando o Steam..." e "Conectando..." indisponíveis | aba Sessão | S (`SessaoCoop.HospedarOuConvidar`) | — |
 | COOP-CONVIDAR | "Convidar amigos (Steam)" | aba Sessão, em sessão | S (reabre o overlay de convite) | — |
@@ -952,6 +954,7 @@ S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum 
 | COOP-CFG-SOM | "Sons das skills dos aliados" (caixa de marcar) | aba Ajustes | P | `[Audio] SonsDosAliados` |
 | COOP-CFG-VOL | "Volume dos sons" (barra, 0–100%; indisponível com os sons desligados) | aba Ajustes | P | `[Audio] VolumeDosAliados` |
 | COOP-BAL-LEITURA | Multiplicadores do balanceamento, todos fixos do autor (XP e ouro desde a 0.16.3; vida, chefes, dano, quantidade e tempo desde a 0.22.0) | aba Ajustes | ∅ (só leitura; ninguém muda) | `Escalonamento.VidaGrupo`/`VidaChefeGrupo`/`DanoGrupo`/`QuantidadeGrupo`/`TempoGrupo`/`XpGrupo`/`OuroGrupo` |
+| COOP-CFG-BLOQUEADOS | Seção "Bloqueados (n)" (0.23.0, §12.12): um item por bloqueado (nome, "Desbloquear" à direita; Enter/A/clique, dois apertos: "Confirmar: desbloquear <nome>?" por 3 s), até 50 e uma linha "E mais N no arquivo"; vazia: "Nenhum bloqueado." e a dica de onde bloquear; sempre a linha do bloqueio da Steam | aba Ajustes | P (`SessaoCoop.Desbloquear`) | `bloqueados.txt` |
 | COOP-NOVIDADES | "Novidades da <versão>": fecha o menu e abre a janela antiga (§12.1) | só na reserva (gaveta); no painel nativo virou a aba Novidades (0.13.0) | R | `[Teclas] Novidades` (F10) |
 | COOP-NAV | Setas ou direcional movem o foco; esquerda/direita ajustam a barra focada; Enter ou A executam; mouse: passar por cima foca, clique executa, clique ou arrasto na barra escolhe o valor, roda rola | menu aberto | R | — |
 | COOP-ECO-TECLA / COOP-DIAG-TECLA | F8 (modo eco) e F9 (diagnóstico) | jogo, com o menu do coop e a Novidades fechados | S | `[Teclas] ModoEco`, `SalvarHierarquia` |
@@ -1174,6 +1177,7 @@ existe só no host; quem herda o lobby hoje vira "host" sem estado).
 - **Busca:** `RequestLobbyList` com `k_ELobbyDistanceFilterWorldwide` (sem ele a Steam só olha a região), filtros de
   igualdade em `hcc_proto` e `hcc_mod` (até a 0.20.0 também `hcc_dlc`), com vaga e até 50. Cada resultado passa de novo por
   `Salas.SalaVisivel` (versões, vaga, não é a nossa nem uma de onde fomos expulsos). Desde a 0.21.0 `hcc_dlc` só marca a sala (§12.10).
+  Desde a 0.23.0 some também a sala cujo `hcc_dono` é um jogador bloqueado (§12.12).
 - **Dados não confiáveis:** tudo do lobby vem de qualquer jogador. Nome sem `<`, `>`, controles e formatação invisível
   (U+202E, U+200B), até 32 caracteres sem partir emoji (`Salas.LimparNome`; desde a 0.18.0 vale também para o nome do
   `Hello` e os nomes da Steam do par e do dono do lobby); números fora da faixa viram 0
@@ -1431,6 +1435,46 @@ aos expulsos que ainda estão nele.
 **Protocolo 21** (mensagem nova). codectest: ida e volta do `ExpulsoAviso`, `AvisoExpulsaoValido`, `Expulso` do novo dono
 recusado com a run aberta, `HostEfetivo`, atalhos, spawn, tetos de inimigos/chefes/baús, `AndarLimpo` (repetido só com inimigos novos), ordens de objeto,
 bônus de tempo e snapshots com NaN/infinito.
+
+### 12.12 Lista de salas, etapa 3/3 parte 3: bloquear jogador (versão 0.23.0, protocolo 21)
+
+Decisões do autor (23/11/2026): bloquear pela aba Sessão (aliado) e pela aba Salas (host da sala); o bloqueio esconde as
+salas, o host expulsa o bloqueado sempre que ele entra e o convidado só recebe aviso (não expulsa nem sai sozinho); lista em
+arquivo próprio, com Desbloquear na aba Ajustes; o bloqueio da própria Steam também conta; dois apertos, sem janela.
+
+- **Lista (`Net/Bloqueados.cs`):** `BepInEx/HellClockCoop/bloqueados.txt`, uma linha `SteamID64<TAB>último nome`, com
+  cabeçalho de comentário; até 500 (`Bloqueados.Maximo`). Lida uma vez, na primeira consulta; gravada num `.tmp` e trocada.
+  `Ler` ignora comentário, linha ruim, repetida e id que não é de conta individual (`IdValido`: universo 1, tipo 1, conta
+  ≠ 0). Só local: nunca vai para métricas, rede nem log (o log cita só o nome). Auditoria da 0.23.0: leitura que falha
+  (arquivo travado por outro programa) ou arquivo acima de 64 KB deixa a lista sem gravar nesta sessão, para não
+  sobrescrever o que está no disco; troca interrompida (sobrou só o `.tmp`) é recuperada ao ler.
+- **Bloqueio da Steam:** `SessaoCoop.EstaBloqueado` = lista ou `GetFriendRelationship` Ignored/IgnoredFriend. Não entra
+  no arquivo nem na aba Ajustes (desbloqueia-se pela Steam).
+- **Aba Salas:** o dono do lobby grava `hcc_dono` (SteamID64) ao criar e a cada 2 s com os outros dados (quem herda o lobby
+  grava o dele). `Salas.LerSteamId` só aceita id de jogador; a sala de dono bloqueado não entra na lista (o log conta quantas
+  foram escondidas). A chave é declarada pelo host (não confiável): um host bloqueado pode apagá-la e aparecer, mas ao
+  entrar a conferência é pelo membro real do lobby (abaixo). Diferente da expulsão (§12.7), que esconde a sala só até
+  fechar o jogo, o bloqueio dura entre aberturas. Privacidade: a sala pública passa a mostrar o SteamID64 do host a quem
+  busca salas com o mod (quem entra já o via como dono do lobby; sala privada não aparece na busca); dito no LEIA-ME. Um
+  lobby que forje `hcc_dono` com o id de outro faria quem bloqueia pela lista bloquear esse outro: o nome gravado é o da
+  Steam para o id (quando ela o conhece), para a aba Ajustes mostrar quem foi bloqueado de fato.
+- **Entrada:** em `AtualizarMembros`, membro novo bloqueado: o host chama `Expulsar` sem `Hello` (o `Expulso` e o
+  `ExpulsoAviso` da §12.11 fazem o resto; ele fica em `_expulsos` até sair, e a cada reentrada é expulso de novo); o
+  convidado recebe "<nome>, que você bloqueou, está neste coop." e segue o coop normalmente. Quem herda o lobby (troca de
+  dono) não expulsa um bloqueado que já estava dentro, só quem entra depois (aceito: troca de host é só roadmap).
+- **Bloquear agora:** `SessaoCoop.Bloquear` grava, tira da lista atual as salas do bloqueado e, sendo host com ele na sala,
+  o expulsa. `Desbloquear` só tira do arquivo (a sala volta na próxima busca).
+- **Menu (visual B):** ação secundária na mesma linha (X no controle, Delete, clique direito), armada pelo SteamID por 3 s,
+  zerada ao trocar de aba e ao reabrir; o rodapé mostra a tecla com o foco numa linha de aliado ou de sala. Mapa: §12.2
+  (COOP-BLOQUEAR-ALIADO, COOP-SALAS-BLOQUEAR-HOST, COOP-CFG-BLOQUEADOS).
+- **Faixa de foco:** desde a 0.21.0 a janela é mais larga que a linha da tela de Opções de onde a peça é copiada, e a faixa
+  escura de foco ficava com a largura antiga. `PainelNativo.Destaque` estica na horizontal tudo dentro do `highlight` e solta
+  `preserveAspect`/`AspectRatioFitter`/`LayoutElement` (a confirmar no jogo).
+- **Caixa do canto (pedido do autor):** `CoopRuntime.DesenharInterface` deixa de mostrar o estado da sessão, os aliados,
+  o resumo do balanceamento e "Conectando..." (estão na aba Sessão e em Ajustes); ficam só o modo eco e os avisos curtos.
+
+**Protocolo 21, sem mudança** (nenhuma mensagem nova; `hcc_dono` é dado do lobby). codectest: `IdValido`, `Ler` (linhas
+ruins, repetidas, teto), ida e volta `Formatar`/`Ler` com nome limpo, `LerSteamId`.
 
 ## 13. Atualizador automático (versão 0.8.0)
 

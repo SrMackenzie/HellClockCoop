@@ -828,6 +828,20 @@ namespace HellClockCoop.Interface
             Transform d = linha.Find("highlight");
             if (d == null) return;
             Esticar((RectTransform)d, -12f, -5f, 12f, 5f);
+            // 0.23.0: a faixa de foco ficava com a largura da linha da tela de Opções (mais estreita que a janela larga da
+            // 0.21.0): o que desenha a faixa pode ser um filho com largura fixa ou uma imagem que guarda a proporção. Estica
+            // na horizontal tudo dentro do highlight e solta a proporção; a altura de cada peça fica como o jogo fez.
+            foreach (RectTransform f in d.GetComponentsInChildren<RectTransform>(true))
+            {
+                if (f == d) continue;
+                f.anchorMin = new Vector2(0f, f.anchorMin.y);
+                f.anchorMax = new Vector2(1f, f.anchorMax.y);
+                f.offsetMin = new Vector2(0f, f.offsetMin.y);
+                f.offsetMax = new Vector2(0f, f.offsetMax.y);
+            }
+            foreach (Image img in d.GetComponentsInChildren<Image>(true)) img.preserveAspect = false;
+            foreach (AspectRatioFitter a in d.GetComponentsInChildren<AspectRatioFitter>(true)) a.enabled = false;
+            foreach (LayoutElement e in d.GetComponentsInChildren<LayoutElement>(true)) e.ignoreLayout = true;
             d.gameObject.SetActive(false);
         }
 

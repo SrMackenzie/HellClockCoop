@@ -32,7 +32,7 @@ namespace HellClockCoop.Interface
         internal enum Acao
         {
             Nenhuma, CriarOuConvidar, Sair, Eco, Nomes, Vida, Seta, Dano, TamanhoDano, Sons, Volume, Novidades,
-            SalaPublica, AtualizarSalas, Sala0 = 100, Expulsar0 = 200,
+            SalaPublica, AtualizarSalas, Sala0 = 100, Expulsar0 = 200, Desbloquear0 = 300,
         }
         internal enum Tipo { Secao, Info, Item, Interruptor, Deslizante }
         internal enum Aba { Sessao, Salas, Ajustes, Novidades }
@@ -50,7 +50,7 @@ namespace HellClockCoop.Interface
         }
 
         internal static readonly string[] NomesDasAbas = { "Sessão", "Salas", "Ajustes", "Novidades" };
-        private const int SalasNoMenu = 50, AliadosNoMenu = SessaoCoop.MaximoJogadores - 1;
+        private const int SalasNoMenu = 50, AliadosNoMenu = SessaoCoop.MaximoJogadores - 1, BloqueadosNoMenu = 50;
 
         /// <summary>Índice da faixa (Sala0 + i, Expulsar0 + i) ou -1 se a ação não é dela.</summary>
         internal static int IndiceNaFaixa(Acao acao, Acao inicio, int tamanho)
@@ -87,6 +87,13 @@ namespace HellClockCoop.Interface
         private static ulong _expulsarAlvo; // Expulsar pede dois apertos, como o Sair; armado pelo SteamID (não pelo lugar na lista)
         private static readonly List<SalaListada> SalasMostradas = new List<SalaListada>(); // Sala0 + i → a sala desenhada, não a da busca nova
         private static float _confirmarExpulsarAte = -1f;
+        // 0.23.0: Bloquear é a ação secundária (X, Delete ou clique direito) da linha do aliado e da sala; dois apertos, armado
+        // pelo SteamID. _teclaBloquear é o que o jogador usou, para o texto do segundo aperto.
+        private static ulong _bloquearAlvo;
+        private static float _confirmarBloquearAte = -1f;
+        private static string _teclaBloquear = "X";
+        private static ulong _desbloquearAlvo; // Desbloquear (aba Ajustes): dois apertos, armado pelo SteamID
+        private static float _confirmarDesbloquearAte = -1f;
         private static GUIStyle _titulo, _secao, _info, _item, _valor, _detalhe, _rodape, _botao, _invisivel;
 
         internal static bool Aberto => _aberto;
@@ -199,6 +206,16 @@ namespace HellClockCoop.Interface
                 _controle = true;
                 Executar(rt, _foco);
             }
+            else if (Teclas.Pressionou("Delete"))
+            {
+                _controle = false;
+                Secundaria(rt, _foco, "Delete");
+            }
+            else if (Teclas.Controle(c => c.buttonWest, KeyCode.JoystickButton2))
+            {
+                _controle = true;
+                Secundaria(rt, _foco, "X");
+            }
             if (!_aberto || !_nativo) return; // a reserva (OnGUI) lê o mouse no Desenhar
 
             try
@@ -228,6 +245,8 @@ namespace HellClockCoop.Interface
             PainelNativo.ZerarRolagem(); // reabre do topo
             _confirmarSairAte = -1f;
             _confirmarExpulsarAte = -1f;
+            _confirmarBloquearAte = -1f;
+            _confirmarDesbloquearAte = -1f;
             _confirmarEntrarAte = -1f;
             _fecharLiberadoEm = 0f;
             _novidadesVistas = false;
@@ -344,6 +363,8 @@ namespace HellClockCoop.Interface
             _rolagem = 0f;
             _confirmarSairAte = -1f;
             _confirmarExpulsarAte = -1f;
+            _confirmarBloquearAte = -1f;
+            _confirmarDesbloquearAte = -1f;
             _confirmarEntrarAte = -1f;
             PainelNativo.ZerarRolagem();
         }
@@ -359,7 +380,7 @@ namespace HellClockCoop.Interface
             return -1;
         }
 
-        private static void Executar(CoopRuntime rt, Acao acao)
+        private static void Executar(CoopRuntime rt, Acao acao, string tecla = null) // tecla: só para o texto do 2º aperto
         {
             bool habilitada = false;
             foreach (Linha l in Linhas)
@@ -369,9 +390,36 @@ namespace HellClockCoop.Interface
             if (!habilitada) return;
             int sala = IndiceNaFaixa(acao, Acao.Sala0, SalasNoMenu);
             int aliado = IndiceNaFaixa(acao, Acao.Expulsar0, AliadosNoMenu);
+            int bloqueado = IndiceNaFaixa(acao, Acao.Desbloquear0, BloqueadosNoMenu);
+            if (aliado >= 0 && !rt.Sessao.SouHost) // convidado não expulsa: na linha do aliado, o Enter também bloqueia
+            {
+                Secundaria(rt, acao, tecla ?? (_controle ? "A" : "Enter"));
+                return;
+            }
+            _confirmarBloquearAte = -1f;
             if (aliado < 0) _confirmarExpulsarAte = -1f;
             if (sala < 0) _confirmarEntrarAte = -1f;
-            if (sala >= 0)
+            if (bloqueado < 0) _confirmarDesbloquearAte = -1f;
+            if (bloqueado >= 0)
+            {
+                if (bloqueado < Bloqueados.Quantidade)
+                {
+                    // Dois apertos, armados pelo SteamID: depois de desbloquear, o foco cai no próximo da lista, e o hábito
+                    // do segundo aperto (Sair, Expulsar, Bloquear) não pode desbloquear outra pessoa.
+                    KeyValuePair<ulong, string> b = Bloqueados.Item(bloqueado);
+                    if (_desbloquearAlvo == b.Key && ConfirmaSaida(Time.unscaledTime, _confirmarDesbloquearAte))
+                    {
+                        _confirmarDesbloquearAte = -1f;
+                        rt.Sessao.Desbloquear(b.Key, b.Value);
+                    }
+                    else
+                    {
+                        _desbloquearAlvo = b.Key;
+                        _confirmarDesbloquearAte = Time.unscaledTime + EsperaConfirmarSaida;
+                    }
+                }
+            }
+            else if (sala >= 0)
             {
                 if (sala < SalasMostradas.Count)
                 {
@@ -448,6 +496,57 @@ namespace HellClockCoop.Interface
             if (acao != Acao.Sair) _confirmarSairAte = -1f;
         }
 
+        /// <summary>
+        /// Ação secundária (0.23.0): bloquear o aliado da linha ou o host da sala, com dois apertos (armado pelo SteamID).
+        /// Em qualquer outra linha não faz nada.
+        /// </summary>
+        private static void Secundaria(CoopRuntime rt, Acao acao, string tecla)
+        {
+            if (!AlvoDoBloqueio(acao, out ulong id, out string nome)) return;
+            _confirmarSairAte = _confirmarExpulsarAte = _confirmarEntrarAte = -1f;
+            if (id == 0)
+            {
+                rt.Sessao.Avisar("Essa sala não informa quem é o host: não dá para bloquear por aqui.");
+                return;
+            }
+            if (_bloquearAlvo == id && ConfirmaSaida(Time.unscaledTime, _confirmarBloquearAte))
+            {
+                _confirmarBloquearAte = -1f;
+                rt.Sessao.Bloquear(id, nome);
+                return;
+            }
+            _bloquearAlvo = id;
+            _teclaBloquear = tecla;
+            _confirmarBloquearAte = Time.unscaledTime + EsperaConfirmarSaida;
+        }
+
+        /// <summary>Quem a linha bloqueia: o aliado (nome da Steam) ou o dono anunciado da sala (id 0 = desconhecido).</summary>
+        private static bool AlvoDoBloqueio(Acao acao, out ulong id, out string nome)
+        {
+            id = 0;
+            nome = null;
+            if (IndiceDe(acao) < 0 || !Selecionavel(Linhas[IndiceDe(acao)])) return false;
+            int sala = IndiceNaFaixa(acao, Acao.Sala0, SalasNoMenu);
+            if (sala >= 0 && sala < SalasMostradas.Count)
+            {
+                id = SalasMostradas[sala].Dono;
+                nome = SalasMostradas[sala].Host;
+                return true;
+            }
+            int aliado = IndiceNaFaixa(acao, Acao.Expulsar0, AliadosNoMenu);
+            if (aliado >= 0 && AliadosMostrados != null && aliado < AliadosMostrados.Count)
+            {
+                id = AliadosMostrados[aliado].Id.m_SteamID;
+                nome = Steamworks.SteamFriends.GetFriendPersonaName(AliadosMostrados[aliado].Id);
+                return true;
+            }
+            return false;
+        }
+
+        private static bool BloqueioArmado(ulong id) => id != 0 && _bloquearAlvo == id && ConfirmaSaida(Time.unscaledTime, _confirmarBloquearAte);
+
+        private static string TextoConfirmarBloqueio(string nome) => $"Confirmar ({_teclaBloquear} de novo): bloquear {nome}?";
+
         private static void Inverter(ConfigEntry<bool> entrada)
         {
             if (entrada == null) return;
@@ -504,7 +603,7 @@ namespace HellClockCoop.Interface
         private static void MouseNativo(CoopRuntime rt)
         {
             bool mouse = _semPersonagem || BloqueioEntrada.SeguraOJogo; // em jogo, só com o jogo travado (o clique vazaria)
-            if (!mouse || !LerMouse(out Vector2 pos, out bool apertou, out bool segurando, out float roda))
+            if (!mouse || !LerMouse(out Vector2 pos, out bool apertou, out bool segurando, out float roda, out bool direito))
             {
                 _arrastando = Acao.Nenhuma;
                 return;
@@ -532,6 +631,13 @@ namespace HellClockCoop.Interface
                 else if (PainelNativo.FracaoNoDeslizante(_arrastando, pos, out float f)) AjustarPelaFracao(_arrastando, f);
                 return;
             }
+            if (direito && sobValida) // 0.23.0: clique direito = ação secundária (bloquear)
+            {
+                _foco = sob;
+                _controle = false;
+                Secundaria(rt, sob, "clique direito");
+                return;
+            }
             if (!apertou) return;
             _controle = false;
             if (PainelNativo.FecharSob(pos) && FechamentoLiberado(Time.unscaledTime, _fecharLiberadoEm))
@@ -547,7 +653,7 @@ namespace HellClockCoop.Interface
             }
             if (!sobValida) return;
             _foco = sob;
-            if (Linhas[iSob].Tipo != Tipo.Deslizante) Executar(rt, _foco);
+            if (Linhas[iSob].Tipo != Tipo.Deslizante) Executar(rt, _foco, "clique");
             else if (PainelNativo.NaBarra(sob, pos) && PainelNativo.FracaoNoDeslizante(sob, pos, out float f))
             {
                 _arrastando = sob; // só o clique na barra muda o valor; no rótulo, só foca
@@ -563,7 +669,7 @@ namespace HellClockCoop.Interface
         }
 
         /// <summary>Mouse pelo Input System (o jogo usa), com o legado de reserva. Posição em pixels, origem embaixo à esquerda.</summary>
-        private static bool LerMouse(out Vector2 pos, out bool apertou, out bool segurando, out float roda)
+        private static bool LerMouse(out Vector2 pos, out bool apertou, out bool segurando, out float roda, out bool direito)
         {
             try
             {
@@ -572,6 +678,7 @@ namespace HellClockCoop.Interface
                 {
                     pos = m.position.ReadValue();
                     apertou = m.leftButton.wasPressedThisFrame;
+                    direito = m.rightButton.wasPressedThisFrame;
                     segurando = m.leftButton.isPressed;
                     roda = m.scroll.ReadValue().y;
                     return true;
@@ -585,6 +692,7 @@ namespace HellClockCoop.Interface
             {
                 pos = Input.mousePosition;
                 apertou = Input.GetMouseButtonDown(0);
+                direito = Input.GetMouseButtonDown(1);
                 segurando = Input.GetMouseButton(0);
                 roda = Input.mouseScrollDelta.y;
                 return true;
@@ -592,7 +700,7 @@ namespace HellClockCoop.Interface
             catch (InvalidOperationException)
             {
                 pos = Vector2.zero;
-                apertou = segurando = false;
+                apertou = segurando = direito = false;
                 roda = 0f;
                 return false;
             }
@@ -643,13 +751,16 @@ namespace HellClockCoop.Interface
                 foreach (Par p in s.Pares.Values)
                 {
                     Adicionar(Tipo.Info, Acao.Nenhuma, p.Nome + "  -  " + CoopRuntime.EstadoDoPar(p), null, false);
-                    if (!s.SouHost || AliadosMostrados.Count >= AliadosNoMenu) continue;
+                    if (AliadosMostrados.Count >= AliadosNoMenu) continue;
                     var acao = (Acao)((int)Acao.Expulsar0 + AliadosMostrados.Count);
                     AliadosMostrados.Add(p);
                     bool armado = _expulsarAlvo == p.Id.m_SteamID && ConfirmaSaida(Time.unscaledTime, _confirmarExpulsarAte);
                     // O nome do Hello é escolhido pelo par: no botão, o nome da Steam ligado ao SteamID (ninguém se passa por outro).
                     string nome = Salas.LimparNome(Steamworks.SteamFriends.GetFriendPersonaName(p.Id));
-                    Adicionar(Tipo.Item, acao, armado ? $"Confirmar: expulsar {nome}?" : $"Expulsar {nome}", null, true);
+                    // 0.23.0: host — Enter expulsa e a secundária bloqueia; convidado — a linha só bloqueia.
+                    string texto = BloqueioArmado(p.Id.m_SteamID) ? TextoConfirmarBloqueio(nome)
+                        : !s.SouHost ? $"Bloquear {nome}" : armado ? $"Confirmar: expulsar {nome}?" : $"Expulsar {nome}";
+                    Adicionar(Tipo.Item, acao, texto, null, true);
                 }
             }
 
@@ -710,7 +821,8 @@ namespace HellClockCoop.Interface
                 Linhas.Add(new Linha
                 {
                     Tipo = Tipo.Item, Acao = (Acao)((int)Acao.Sala0 + i), Habilitada = !conectando && !travada,
-                    Texto = armada ? "Confirmar: sair do seu coop e entrar?" : Salas.TextoSala(sala),
+                    Texto = BloqueioArmado(sala.Dono) ? TextoConfirmarBloqueio(sala.Host)
+                        : armada ? "Confirmar: sair do seu coop e entrar?" : Salas.TextoSala(sala),
                     Valor = Salas.ValorSala(sala), Detalhe = Salas.DetalheSala(sala),
                 });
             }
@@ -736,6 +848,24 @@ namespace HellClockCoop.Interface
 
             Adicionar(Tipo.Secao, Acao.Nenhuma, "Balanceamento", null, false);
             foreach (string linha in Balanceamento.Escalonamento.LinhasDoMenu()) Adicionar(Tipo.Info, Acao.Nenhuma, linha, null, false);
+
+            // 0.23.0: bloqueados deste PC (bloqueados.txt), na ordem em que foram bloqueados; Enter desbloqueia.
+            int total = Bloqueados.Quantidade;
+            Adicionar(Tipo.Secao, Acao.Nenhuma, total > 0 ? $"Bloqueados ({total})" : "Bloqueados", null, false);
+            if (total == 0)
+            {
+                Adicionar(Tipo.Info, Acao.Nenhuma, "Nenhum bloqueado.", null, false);
+                Adicionar(Tipo.Info, Acao.Nenhuma, "Bloqueie nas abas Sessão e Salas: X no controle, Delete ou clique direito, duas vezes.", null, false);
+            }
+            for (int i = 0; i < total && i < BloqueadosNoMenu; i++)
+            {
+                KeyValuePair<ulong, string> b = Bloqueados.Item(i);
+                bool armado = _desbloquearAlvo == b.Key && ConfirmaSaida(Time.unscaledTime, _confirmarDesbloquearAte);
+                Adicionar(Tipo.Item, (Acao)((int)Acao.Desbloquear0 + i), armado ? $"Confirmar: desbloquear {b.Value}?" : b.Value, armado ? null : "Desbloquear", true);
+            }
+            if (total > BloqueadosNoMenu)
+                Adicionar(Tipo.Info, Acao.Nenhuma, $"E mais {total - BloqueadosNoMenu} no arquivo BepInEx/HellClockCoop/bloqueados.txt.", null, false);
+            Adicionar(Tipo.Info, Acao.Nenhuma, "Quem você bloqueou na Steam também fica de fora (desbloqueie pela Steam).", null, false);
 
             if (_nativo) return; // no painel nativo, as novidades são a terceira aba
             Adicionar(Tipo.Secao, Acao.Nenhuma, "Mod", null, false);
@@ -801,6 +931,12 @@ namespace HellClockCoop.Interface
                 return _controle
                     ? "LB/RB: aba   Direcional: rolar   B ou View: fechar"
                     : $"Setas ou roda: rolar   Setas laterais: aba   Esc, {Tecla.Value} ou {Novidades.Tecla.Value}: fechar";
+            // 0.23.0: na linha do aliado ou da sala, o rodapé ensina a ação secundária (bloquear).
+            bool bloqueia = IndiceNaFaixa(_foco, Acao.Sala0, SalasNoMenu) >= 0 || IndiceNaFaixa(_foco, Acao.Expulsar0, AliadosNoMenu) >= 0;
+            if (bloqueia)
+                return _controle
+                    ? "LB/RB: aba   A: confirmar   X: bloquear   B ou View: fechar"
+                    : $"Enter: confirmar   Delete ou clique direito: bloquear   Esc ou {Tecla.Value}: fechar";
             return _controle
                 ? "LB/RB: aba   Direcional: escolher e ajustar   A: confirmar   B ou View: fechar"
                 : $"Setas: escolher, ajustar e trocar de aba   Enter: confirmar   Esc ou {Tecla.Value}: fechar";
@@ -900,7 +1036,7 @@ namespace HellClockCoop.Interface
             }
             _rolagem = Mathf.Clamp(_rolagem, 0f, Mathf.Max(0f, aCorpo - area.height));
 
-            Acao clicada = Acao.Nenhuma;
+            Acao clicada = Acao.Nenhuma, clicadaDireito = Acao.Nenhuma;
             int ladoClicado = 0;
             GUI.BeginGroup(area, GUIContent.none, GUIStyle.none); // sobrecarga que existe no jogo (stripping)
             float yl = -_rolagem;
@@ -941,6 +1077,7 @@ namespace HellClockCoop.Interface
                             _foco = l.Acao;
                             _controle = false;
                             if (l.Tipo == Tipo.Deslizante) ladoClicado = ev.mousePosition.x < interna / 2f ? -1 : 1; // metade esquerda diminui
+                            else if (ev.button == 1) clicadaDireito = l.Acao; // o GUI.Button também dispara no direito
                             else clicada = l.Acao;
                         }
                     }
@@ -951,7 +1088,8 @@ namespace HellClockCoop.Interface
 
             GUI.color = corAntes;
             GUI.matrix = matrizAntes;
-            if (clicada != Acao.Nenhuma) Executar(rt, clicada);
+            if (clicada != Acao.Nenhuma) Executar(rt, clicada, "clique");
+            if (clicadaDireito != Acao.Nenhuma) Secundaria(rt, clicadaDireito, "clique direito"); // 0.23.0
             if (ladoClicado != 0) Ajustar(_foco, ladoClicado);
             if (fechar) Fechar("botão X");
         }

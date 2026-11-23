@@ -2,6 +2,27 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.23.0",
+      "data": "23/11/2026",
+      "testado": false,
+      "titulo": "Bloquear jogador e faixa de foco na largura da janela",
+      "itens": [
+        "Bloqueie um aliado na aba Sessão ou o host de uma sala na aba Salas: X no controle, Delete ou clique direito, duas vezes",
+        "As salas de quem você bloqueou somem da lista; se você é o host, ele é expulso na hora e sempre que tentar entrar; como convidado, você recebe um aviso",
+        "Quem você bloqueou na própria Steam também fica de fora",
+        "Nova seção Bloqueados na aba Ajustes, com Desbloquear; a lista fica só no seu PC (BepInEx/HellClockCoop/bloqueados.txt) e nunca é enviada",
+        "Corrige a faixa escura de foco do menu, que não acompanhava a largura da janela desde a 0.21.0",
+        "O canto superior esquerdo não mostra mais o estado do coop, os aliados e o balanceamento (estão nas abas Sessão e Ajustes): só os avisos curtos e o modo eco",
+        "Exige a 0.23.0 em todos os PCs (protocolo 21, sem mudança)"
+      ],
+      "testar": [
+        "Passe o mouse e as setas pelos itens do menu: a faixa escura ocupa a largura toda da lista; em coop, o canto superior esquerdo só mostra avisos",
+        "Como host, bloqueie o aliado (X ou Delete duas vezes): ele sai da sala e, se tentar voltar, é expulso de novo",
+        "Na aba Salas, bloqueie o host de uma sala: ela some e aparece em Ajustes > Bloqueados; Desbloquear a traz de volta na próxima busca",
+        "Feche e abra o jogo: a lista de bloqueados continua lá"
+      ]
+    },
+    {
       "v": "0.22.0",
       "data": "23/11/2026",
       "testado": false,

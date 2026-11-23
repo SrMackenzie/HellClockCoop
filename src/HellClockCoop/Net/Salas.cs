@@ -15,6 +15,7 @@ namespace HellClockCoop.Net
         public long Recorde = -1;       // nosso recorde de andar nessa masmorra (maxFloorReached); -1 = sem save carregado
         public bool CursedWar;          // 0.21.0: o host anuncia a DLC Cursed War (hcc_dlc); só marca na lista
         public bool SemDlc;             // 0.21.0: sala no Ato 4 e este PC sem a Cursed War (SessaoCoop.AtualizarTrava)
+        public ulong Dono;              // 0.23.0: SteamID64 que o host anuncia (hcc_dono), para bloquear pela lista; 0 = desconhecido
     }
 
     /// <summary>
@@ -98,6 +99,10 @@ namespace HellClockCoop.Net
         /// <summary>À direita: "Nv 34  2/4", ou "indisponível" (o motivo vai na linha 2).</summary>
         public static string ValorSala(SalaListada s) =>
             SalaIndisponivel(s) ? "indisponível" : (s.Nivel > 0 ? "Nv " + s.Nivel + "  " : "") + s.Jogadores + "/" + s.Vagas;
+
+        /// <summary>SteamID do dono anunciado no lobby (0.23.0): só conta de jogador (Bloqueados.IdValido); o resto vira 0.</summary>
+        public static ulong LerSteamId(string s) =>
+            !string.IsNullOrEmpty(s) && s.Length <= 20 && ulong.TryParse(s, out ulong v) && Bloqueados.IdValido(v) ? v : 0ul;
 
         /// <summary>Hash do DungeonConfig vindo do lobby: qualquer int (pode ser negativo); lixo ou vazio vira 0.</summary>
         public static int LerHash(string s) => !string.IsNullOrEmpty(s) && s.Length <= 11 && int.TryParse(s, out int v) ? v : 0;

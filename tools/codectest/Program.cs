@@ -1,4 +1,4 @@
-using System; using System.Reflection; using System.Linq;
+using System; using System.Collections.Generic; using System.Reflection; using System.Linq;
 // Testa os codecs por reflexão (as classes são internal).
 var asm = Assembly.LoadFrom(args.Length > 0 ? args[0] : "../../build/HellClockCoop.dll");
 Type T(string n) => asm.GetType(n, true);
@@ -823,6 +823,28 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
            && !(bool)Sm("ExpulsaoValida", 0ul, 0ul, 9ul), "Salas: Expulso só vale do dono do lobby, nunca de nós mesmos nem de id 0");
     Checar((bool)Sm("PodeBuscar", 10f, -1f) && !(bool)Sm("PodeBuscar", 10f, 8f) && (bool)Sm("PodeBuscar", 11f, 8f),
         "Salas: nova busca só 3 s depois da anterior");
+
+    // 0.23.0: bloquear jogador (bloqueados.txt e o dono anunciado no lobby).
+    var tb = T("HellClockCoop.Net.Bloqueados");
+    object Sb(string m, params object[] a) => tb.GetMethod(m, BindingFlags.Static | BindingFlags.Public).Invoke(null, a);
+    const ulong idA = 76561197960287930ul, idB = 76561198000000001ul;
+    Checar((bool)Sb("IdValido", idA) && !(bool)Sb("IdValido", 0ul) && !(bool)Sb("IdValido", 12345ul)
+           && !(bool)Sb("IdValido", 103582791429521408ul /* grupo: tipo 7 */) && !(bool)Sb("IdValido", 76561197960265728ul /* conta 0 */),
+        "Bloqueio: só SteamID64 de conta individual conta como jogador");
+    var lidos = (List<KeyValuePair<ulong, string>>)Sb("Ler",
+        "# comentário\r\n" + idA + "\tAna\r\n\r\nlixo\tX\n" + idA + "\tAna de novo\n" + idB + "\n12345\tCurto\n" + idB + "0\tGrande\n");
+    Checar(lidos.Count == 2 && lidos[0].Key == idA && lidos[0].Value == "Ana" && lidos[1].Key == idB && lidos[1].Value == "?",
+        "Bloqueio: Ler ignora comentário, linha ruim, repetida e id inválido; sem nome vira ?");
+    var ida = new List<KeyValuePair<ulong, string>> { new KeyValuePair<ulong, string>(idA, "An\ta\n<b>"), new KeyValuePair<ulong, string>(idB, "Bia") };
+    var volta = (List<KeyValuePair<ulong, string>>)Sb("Ler", (string)Sb("Formatar", ida));
+    Checar(volta.Count == 2 && volta[0].Key == idA && volta[0].Value == "Anab" && volta[1].Value == "Bia",
+        "Bloqueio: Formatar e Ler vão e voltam, com o nome limpo (sem TAB, quebra nem rich text)");
+    var muitos = new System.Text.StringBuilder();
+    for (int k = 1; k <= 600; k++) muitos.Append(76561197960265728ul + (ulong)k).Append('\n');
+    Checar(((List<KeyValuePair<ulong, string>>)Sb("Ler", muitos.ToString())).Count == 500, "Bloqueio: Ler para no teto de 500");
+    Checar((ulong)Sm("LerSteamId", idA.ToString()) == idA && (ulong)Sm("LerSteamId", "") == 0ul && (ulong)Sm("LerSteamId", "abc") == 0ul
+           && (ulong)Sm("LerSteamId", "12345") == 0ul && (ulong)Sm("LerSteamId", "-1") == 0ul && (ulong)Sm("LerSteamId", idA + "000") == 0ul,
+        "Salas: dono do lobby (hcc_dono) só vale se for SteamID de jogador");
     var tp = T("HellClockCoop.Net.Protocolo");
     Checar((int)tp.GetField("Versao").GetValue(null) == 21 && (byte)tp.GetField("TipoExpulso").GetValue(null) == 13
            && (byte)tp.GetField("TipoExpulsoAviso").GetValue(null) == 14 && (byte)tp.GetField("TipoForaDaRun").GetValue(null) == 29,

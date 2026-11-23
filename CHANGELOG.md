@@ -4,6 +4,17 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.23.0 — Bloquear jogador e faixa de foco na largura da janela 🧪
+_23/11/2026_
+
+- Bloqueie um aliado na aba Sessão ou o host de uma sala na aba Salas: X no controle, Delete ou clique direito, duas vezes
+- As salas de quem você bloqueou somem da lista; se você é o host, ele é expulso na hora e sempre que tentar entrar; como convidado, você recebe um aviso
+- Quem você bloqueou na própria Steam também fica de fora
+- Nova seção Bloqueados na aba Ajustes, com Desbloquear; a lista fica só no seu PC (BepInEx/HellClockCoop/bloqueados.txt) e nunca é enviada
+- Corrige a faixa escura de foco do menu, que não acompanhava a largura da janela desde a 0.21.0
+- O canto superior esquerdo não mostra mais o estado do coop, os aliados e o balanceamento (estão nas abas Sessão e Ajustes): só os avisos curtos e o modo eco
+- Exige a 0.23.0 em todos os PCs (protocolo 21, sem mudança)
+
 ## 0.22.0 — Balanceamento só do autor e teto de inimigos pelo andar 🧪
 _23/11/2026_
 

@@ -78,6 +78,9 @@ namespace HellClockCoop.Net
         public const string ChaveLobbyAndar = "hcc_andar";  // 1 = primeiro andar; 0 fora da run
         public const string ChaveLobbyDungeon = "hcc_dungeon"; // DungeonConfig.HashID da run do host; 0 fora da run ou em atalho especial (0.19.0)
         public const string ChaveLobbyNivel = "hcc_nivel";  // nível do personagem do host; 0 sem personagem
+        // 0.23.0: SteamID64 do dono, para quem lista bloquear o host pela aba Salas. Declarado (não confiável): só esconde a
+        // sala; a conferência de verdade é a de cada membro real do lobby ao entrar (SessaoCoop.AtualizarMembros).
+        public const string ChaveLobbyDono = "hcc_dono";
     }
 
     /// <summary>Apresentação: cada par manda ao entrar no lobby e quando alguém novo entra.</summary>

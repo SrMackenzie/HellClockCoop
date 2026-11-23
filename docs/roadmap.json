@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "23/11/2026",
-  "versao": "0.22.0",
+  "versao": "0.23.0",
   "fases": [
     {
       "id": "B",
@@ -311,8 +311,12 @@
           "Lista de salas (3/3, parte 2): o host da run fica fixo até ela acabar (quem herda o lobby no meio não comanda a sua run), o expulso é cortado por todos, baús, quebráveis e santuários só valem do host (ou, no host, de quem está no mesmo andar), tetos de inimigos, chefes e baús por andar, andar limpo repetido só com inimigos novos, bônus de tempo só de quem divide a run, atalhos só os dois do jogo e valores fora do jogo recusados nos snapshots"
         ],
         [
+          "testar",
+          "Lista de salas (3/3, parte 3): bloquear jogador pela aba Sessão ou Salas (X, Delete ou clique direito), salas do bloqueado escondidas, host expulsa o bloqueado sempre que ele entra, bloqueio da Steam também conta, lista só local com Desbloquear em Ajustes"
+        ],
+        [
           "planejado",
-          "Lista de salas (3/3, restante): bloquear jogador e filtros na lista"
+          "Lista de salas (3/3, restante): filtros na lista"
         ],
         [
           "planejado",

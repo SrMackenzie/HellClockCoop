@@ -359,6 +359,7 @@ namespace HellClockCoop.Net
             SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyProtocolo, Protocolo.Versao.ToString());
             SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyJogo, Application.version);
             SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyNome, SteamFriends.GetPersonaName());
+            SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyDono, Eu.m_SteamID.ToString()); // 0.23.0: bloquear pela aba Salas
             SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyDlc, MinhaCursedWar ? "1" : "0");
             Plugin.Log.LogInfo($"[Sessão] Coop criado (lobby {r.m_ulSteamIDLobby}, sala {(TipoDaSala() == ELobbyType.k_ELobbyTypePublic ? "pública" : "privada")}).");
             // O LobbyEnter_t também chega para quem cria; lá o estado vira NoLobby.
@@ -377,6 +378,7 @@ namespace HellClockCoop.Net
             }
             FalhaNaBusca = false; // resposta depois do tempo limite: a lista vale
             string proto = Protocolo.Versao.ToString();
+            int ocultas = 0;
             for (int i = 0; i < r.m_nLobbiesMatching; i++)
             {
                 CSteamID l = SteamMatchmaking.GetLobbyByIndex(i);
@@ -384,9 +386,16 @@ namespace HellClockCoop.Net
                 int vagas = Math.Min(SteamMatchmaking.GetLobbyMemberLimit(l), MaximoJogadores);
                 if (!Salas.SalaVisivel(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyMod), SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyProtocolo),
                         Plugin.PluginVersion, proto, jogadores, vagas, l == Lobby, _salasQueMeExpulsaram.Contains(l.m_SteamID))) continue;
+                ulong dono = Salas.LerSteamId(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyDono));
+                if (dono != 0 && EstaBloqueado(dono)) // 0.23.0: a sala de quem você bloqueou some da lista
+                {
+                    ocultas++;
+                    continue;
+                }
                 SalasListadas.Add(new SalaListada
                 {
                     Lobby = l.m_SteamID,
+                    Dono = dono,
                     CursedWar = SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyDlc) == "1", // 0.21.0: só marca; a trava é o Ato 4
                     Host = Salas.LimparNome(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyNome)),
                     Lugar = Salas.LerLugar(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyLugar)),
@@ -397,7 +406,54 @@ namespace HellClockCoop.Net
                     Jogadores = jogadores, Vagas = vagas,
                 });
             }
-            Plugin.Log.LogInfo($"[Sessão] Salas: {r.m_nLobbiesMatching} da Steam, {SalasListadas.Count} na lista.");
+            Plugin.Log.LogInfo($"[Sessão] Salas: {r.m_nLobbiesMatching} da Steam, {SalasListadas.Count} na lista" +
+                (ocultas > 0 ? $", {ocultas} de bloqueado(s) escondida(s)." : "."));
+        }
+
+        // ---------- Bloqueio (0.23.0) ----------
+
+        /// <summary>Na lista deste PC (bloqueados.txt) ou bloqueado na própria Steam (Ignorado).</summary>
+        public static bool EstaBloqueado(ulong id)
+        {
+            if (Bloqueados.Contem(id)) return true;
+            try
+            {
+                EFriendRelationship r = SteamFriends.GetFriendRelationship(new CSteamID(id));
+                return r == EFriendRelationship.k_EFriendRelationshipIgnored || r == EFriendRelationship.k_EFriendRelationshipIgnoredFriend;
+            }
+            catch (InvalidOperationException)
+            {
+                return false; // Steam ainda não iniciada
+            }
+        }
+
+        /// <summary>
+        /// Bloqueia o jogador: grava na lista, esconde as salas dele e, sendo host, o expulsa agora. Convidado não expulsa.
+        /// </summary>
+        public void Bloquear(ulong id, string nome)
+        {
+            if (id == Eu.m_SteamID) return;
+            // O nome da sala é declarado pelo host: se a Steam conhece o id, vale o nome dela (a aba Ajustes mostra quem foi
+            // bloqueado de fato, mesmo que o lobby tenha forjado hcc_dono e hcc_host).
+            string daSteam = SteamFriends.GetFriendPersonaName(new CSteamID(id));
+            if (!string.IsNullOrEmpty(daSteam) && daSteam != "[unknown]") nome = daSteam;
+            nome = Salas.LimparNome(nome);
+            if (!Bloqueados.Bloquear(id, nome))
+            {
+                Avisar(Bloqueados.IdValido(id) ? $"A lista de bloqueados está cheia ({Bloqueados.Maximo})." : "Não deu para bloquear esse jogador.");
+                return;
+            }
+            SalasListadas.RemoveAll(s => s.Dono == id);
+            Plugin.Log.LogInfo($"[Bloqueio] {nome} foi bloqueado.");
+            if (SouHost && Pares.TryGetValue(id, out Par p)) Expulsar(p); // o Expulsar já avisa "foi expulso da sala"
+            Avisar($"{nome} foi bloqueado. As salas dele somem da lista.");
+        }
+
+        public void Desbloquear(ulong id, string nome)
+        {
+            if (!Bloqueados.Desbloquear(id)) return;
+            Plugin.Log.LogInfo($"[Bloqueio] {Salas.LimparNome(nome)} foi desbloqueado.");
+            Avisar($"{Salas.LimparNome(nome)} foi desbloqueado.");
         }
 
         private void OnConviteAceito(GameLobbyJoinRequested_t c)
@@ -499,6 +555,17 @@ namespace HellClockCoop.Net
                 {
                     var par = new Par { Id = id, Nome = Salas.LimparNome(SteamFriends.GetFriendPersonaName(id)) };
                     Pares[id.m_SteamID] = par;
+                    if (EstaBloqueado(id.m_SteamID))
+                    {
+                        // 0.23.0: o host tira quem ele bloqueou (sem Hello); o convidado não expulsa, só fica sabendo.
+                        if (SouHost)
+                        {
+                            Plugin.Log.LogInfo($"[Bloqueio] {par.Nome} está bloqueado e foi expulso ao entrar.");
+                            Expulsar(par);
+                            continue;
+                        }
+                        Avisar($"{par.Nome}, que você bloqueou, está neste coop.");
+                    }
                     Plugin.Log.LogInfo($"[Sessão] {par.Nome} está no coop.");
                     Avisar($"{par.Nome} entrou no coop.");
                     EnviarHello(par);
@@ -548,6 +615,7 @@ namespace HellClockCoop.Net
             GravarDado(Protocolo.ChaveLobbyDungeon, dungeonHash.ToString()); // 0.19.0: trava de progresso de quem entra
             GravarDado(Protocolo.ChaveLobbyNivel, nivel.ToString());
             GravarDado(Protocolo.ChaveLobbyNome, SteamFriends.GetPersonaName());
+            GravarDado(Protocolo.ChaveLobbyDono, Eu.m_SteamID.ToString()); // quem herda o lobby anuncia o próprio SteamID
         }
 
         private void GravarDado(string chave, string valor)
