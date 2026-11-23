@@ -81,6 +81,8 @@ namespace HellClockCoop.Net
         // 0.23.0: SteamID64 do dono, para quem lista bloquear o host pela aba Salas. Declarado (não confiável): só esconde a
         // sala; a conferência de verdade é a de cada membro real do lobby ao entrar (SessaoCoop.AtualizarMembros).
         public const string ChaveLobbyDono = "hcc_dono";
+        // 0.25.0: nome da sala ("Sala de <host>" por padrão; o host renomeia só a sala atual). Lido pelo Salas.NomeDaSalaListada.
+        public const string ChaveLobbySala = "hcc_sala";
     }
 
     /// <summary>Apresentação: cada par manda ao entrar no lobby e quando alguém novo entra.</summary>

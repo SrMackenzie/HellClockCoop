@@ -230,6 +230,10 @@ ESTADO ATUAL (versão de teste, Fase 3)
 - NOVO (0.24.0): o menu do coop fica na lateral direita, na altura toda da tela (as Opções do
   jogo ficam à esquerda), e entra e sai deslizando com a mesma animação delas. No menu do jogo
   escurece só o lado direito. Exige a 0.24.0 em todos os PCs.
+- NOVO (0.25.0): nome da sala. Toda sala começa como "Sala de [seu nome na Steam]"; o host
+  troca na aba Sessão > Nome da sala (Enter, digite, Enter; no controle, o teclado da Steam no
+  Big Picture ou no Steam Deck). O nome vale só para a sala atual. A aba Salas mostra no topo
+  a sala em que você está. Exige a 0.25.0 em todos os PCs.
 - A Deluxe Edition (cosmética) não importa.
 
 

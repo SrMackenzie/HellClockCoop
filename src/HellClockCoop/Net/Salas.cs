@@ -8,7 +8,8 @@ namespace HellClockCoop.Net
     {
         public ulong Lobby;
         public string Host;
-        public string Lugar;            // LugarMenu, LugarHub ou LugarRun
+        public string Nome;             // 0.25.0: nome da sala (hcc_sala), já limpo; padrão "Sala de <host>"
+        public string Lugar;           // LugarMenu, LugarHub ou LugarRun
         public int Ato, Andar, Nivel;   // 0 = desconhecido
         public int Jogadores, Vagas;
         public int Dungeon;             // DungeonConfig.HashID da run do host (0.19.0); 0 = fora da run ou desconhecido
@@ -39,18 +40,51 @@ namespace HellClockCoop.Net
         /// </summary>
         public static string LimparNome(string s)
         {
-            if (string.IsNullOrEmpty(s)) return "?";
+            string r = LimparTexto(s);
+            return r.Length == 0 ? "?" : r;
+        }
+
+        /// <summary>
+        /// Caractere que pode ir para a tela num nome: fora controle, formatação invisível, &lt; &gt; (rich text), \ (o
+        /// TextMeshPro lê "\n" e "‮" escritos como texto) e os separadores U+2028/U+2029 (quebram linha no TMP).
+        /// 0.25.0: o \ e os separadores entraram (forjavam uma linha "Host ..." falsa); vale também para a digitação.
+        /// </summary>
+        public static bool CaractereAceito(char c)
+        {
+            if (char.IsControl(c) || c == '<' || c == '>' || c == '\\') return false;
+            UnicodeCategory cat = char.GetUnicodeCategory(c);
+            return cat != UnicodeCategory.Format && cat != UnicodeCategory.LineSeparator && cat != UnicodeCategory.ParagraphSeparator;
+        }
+
+        /// <summary>A limpeza do LimparNome, mas vazio continua vazio (nome da sala: vazio = padrão).</summary>
+        public static string LimparTexto(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
             var sb = new StringBuilder(s.Length);
             foreach (char c in s)
             {
-                if (char.IsControl(c) || c == '<' || c == '>' || char.GetUnicodeCategory(c) == UnicodeCategory.Format) continue;
+                if (!CaractereAceito(c)) continue;
                 sb.Append(c);
                 if (sb.Length >= NomeMaximo) break;
             }
             if (sb.Length > 0 && char.IsHighSurrogate(sb[sb.Length - 1])) sb.Length--; // corte no meio de um par substituto
-            string r = sb.ToString().Trim();
-            return r.Length == 0 ? "?" : r;
+            return sb.ToString().Trim();
         }
+
+        // ---------- Nome da sala (0.25.0) ----------
+
+        /// <summary>"Sala de &lt;nome na Steam&gt;", limpo e no limite de 32.</summary>
+        public static string NomePadrao(string persona) => LimparNome("Sala de " + LimparNome(persona));
+
+        /// <summary>Nome digitado pelo host: limpo; vazio (ou só lixo) vira null, que quer dizer "use o padrão".</summary>
+        public static string NomeDigitado(string s)
+        {
+            string r = LimparTexto(s);
+            return r.Length == 0 ? null : r;
+        }
+
+        /// <summary>Nome da sala lido do lobby (não confiável): limpo; vazio cai no padrão com o nome do host.</summary>
+        public static string NomeDaSalaListada(string doLobby, string host) => NomeDigitado(doLobby) ?? NomePadrao(host);
 
         /// <summary>Inteiro do lobby dentro da faixa; qualquer outra coisa vira 0 (desconhecido).</summary>
         public static int LerInteiro(string s, int max)
@@ -85,13 +119,17 @@ namespace HellClockCoop.Net
             }
         }
 
-        /// <summary>Linha 1 da sala (0.21.0, visual A da janela larga): o host e a marca da Cursed War.</summary>
-        public static string TextoSala(SalaListada s) => s.CursedWar ? s.Host + "  ·  Cursed War" : s.Host;
+        /// <summary>Linha 1 da sala: o nome da sala (0.25.0; antes, o host) e a marca da Cursed War.</summary>
+        public static string TextoSala(SalaListada s)
+        {
+            string nome = s.Nome ?? NomePadrao(s.Host);
+            return s.CursedWar ? nome + "  ·  Cursed War" : nome;
+        }
 
-        /// <summary>Linha 2 da sala: o lugar e, se indisponível, o motivo (DLC antes do recorde).</summary>
+        /// <summary>Linha 2 da sala: o host (0.25.0), o lugar e, se indisponível, o motivo (DLC antes do recorde).</summary>
         public static string DetalheSala(SalaListada s)
         {
-            string lugar = TextoLugar(s.Lugar, s.Ato, s.Andar);
+            string lugar = "Host " + s.Host + "  ·  " + TextoLugar(s.Lugar, s.Ato, s.Andar);
             if (s.SemDlc) return lugar + "  ·  " + TextoSemDlc;
             return SalaTravada(s) ? lugar + "  ·  " + TextoRecorde(s.Recorde) : lugar;
         }

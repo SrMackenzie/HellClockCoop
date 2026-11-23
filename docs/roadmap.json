@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "23/11/2026",
-  "versao": "0.24.0",
+  "versao": "0.25.0",
   "fases": [
     {
       "id": "B",
@@ -277,6 +277,10 @@
         [
           "testar",
           "Menu do coop colado à direita, na altura toda, com a animação de abertura das Opções do jogo (0.24.0)"
+        ],
+        [
+          "testar",
+          "Nome da sala (padrão \"Sala de <host>\", o host renomeia na aba Sessão) e a sua sala no topo da aba Salas (0.25.0)"
         ],
         [
           "planejado",

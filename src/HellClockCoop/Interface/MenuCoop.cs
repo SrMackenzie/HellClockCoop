@@ -32,7 +32,7 @@ namespace HellClockCoop.Interface
         internal enum Acao
         {
             Nenhuma, CriarOuConvidar, Sair, Eco, Nomes, Vida, Seta, Dano, TamanhoDano, Sons, Volume, Novidades,
-            SalaPublica, AtualizarSalas, Sala0 = 100, Expulsar0 = 200, Desbloquear0 = 300,
+            SalaPublica, AtualizarSalas, NomeSala, Sala0 = 100, Expulsar0 = 200, Desbloquear0 = 300,
         }
         internal enum Tipo { Secao, Info, Item, Interruptor, Deslizante }
         internal enum Aba { Sessao, Salas, Ajustes, Novidades }
@@ -176,7 +176,9 @@ namespace HellClockCoop.Interface
                 Fechar("janela do aceite");
                 return;
             }
-            bool liberado = FechamentoLiberado(Time.unscaledTime, _fecharLiberadoEm); // F7 e View fecham sempre
+            bool editando = _editandoNome; // 0.25.0: as teclas vão para o campo do nome (Esc cancela a edição, não fecha)
+            if (editando) tecla = false; // a tecla do menu pode ser uma letra no .cfg: digitada, não fecha; o View fecha
+            bool liberado = !editando && FechamentoLiberado(Time.unscaledTime, _fecharLiberadoEm); // F7 e View fecham sempre
             bool esc = liberado && Teclas.Pressionou("Escape");
             bool b = liberado && Teclas.Controle(c => c.buttonEast, KeyCode.JoystickButton1);
             if (tecla || view || esc || b)
@@ -185,36 +187,40 @@ namespace HellClockCoop.Interface
                 return;
             }
 
+            if (editando) EditarNome(rt);
             Montar(rt);
-            if (Teclas.Pressionou("UpArrow")) Mover(-1, false);
-            if (Teclas.Pressionou("DownArrow")) Mover(1, false);
-            if (Teclas.Controle(c => c.dpad.up, null)) Mover(-1, true);
-            if (Teclas.Controle(c => c.dpad.down, null)) Mover(1, true);
-            if (Teclas.Pressionou("LeftArrow")) Lado(-1, false);
-            if (Teclas.Pressionou("RightArrow")) Lado(1, false);
-            if (Teclas.Controle(c => c.dpad.left, null)) Lado(-1, true);
-            if (Teclas.Controle(c => c.dpad.right, null)) Lado(1, true);
-            if (Teclas.Controle(c => c.leftShoulder, KeyCode.JoystickButton4)) TrocarAba(-1, true);
-            if (Teclas.Controle(c => c.rightShoulder, KeyCode.JoystickButton5)) TrocarAba(1, true);
-            if (Teclas.Pressionou("Enter") || Teclas.Pressionou("NumpadEnter"))
+            if (!editando) // sem navegação nem ações enquanto edita
             {
-                _controle = false;
-                Executar(rt, _foco);
-            }
-            else if (Teclas.Controle(c => c.buttonSouth, KeyCode.JoystickButton0))
-            {
-                _controle = true;
-                Executar(rt, _foco);
-            }
-            else if (Teclas.Pressionou("Delete"))
-            {
-                _controle = false;
-                Secundaria(rt, _foco, "Delete");
-            }
-            else if (Teclas.Controle(c => c.buttonWest, KeyCode.JoystickButton2))
-            {
-                _controle = true;
-                Secundaria(rt, _foco, "X");
+                if (Teclas.Pressionou("UpArrow")) Mover(-1, false);
+                if (Teclas.Pressionou("DownArrow")) Mover(1, false);
+                if (Teclas.Controle(c => c.dpad.up, null)) Mover(-1, true);
+                if (Teclas.Controle(c => c.dpad.down, null)) Mover(1, true);
+                if (Teclas.Pressionou("LeftArrow")) Lado(-1, false);
+                if (Teclas.Pressionou("RightArrow")) Lado(1, false);
+                if (Teclas.Controle(c => c.dpad.left, null)) Lado(-1, true);
+                if (Teclas.Controle(c => c.dpad.right, null)) Lado(1, true);
+                if (Teclas.Controle(c => c.leftShoulder, KeyCode.JoystickButton4)) TrocarAba(-1, true);
+                if (Teclas.Controle(c => c.rightShoulder, KeyCode.JoystickButton5)) TrocarAba(1, true);
+                if (Teclas.Pressionou("Enter") || Teclas.Pressionou("NumpadEnter"))
+                {
+                    _controle = false;
+                    Executar(rt, _foco);
+                }
+                else if (Teclas.Controle(c => c.buttonSouth, KeyCode.JoystickButton0))
+                {
+                    _controle = true;
+                    Executar(rt, _foco);
+                }
+                else if (Teclas.Pressionou("Delete"))
+                {
+                    _controle = false;
+                    Secundaria(rt, _foco, "Delete");
+                }
+                else if (Teclas.Controle(c => c.buttonWest, KeyCode.JoystickButton2))
+                {
+                    _controle = true;
+                    Secundaria(rt, _foco, "X");
+                }
             }
             if (!_aberto || !_nativo) return; // a reserva (OnGUI) lê o mouse no Desenhar
 
@@ -263,6 +269,7 @@ namespace HellClockCoop.Interface
             if (!_aberto) return;
             _aberto = false; // a entrada do jogo volta dois quadros depois (BloqueioEntrada)
             _arrastando = Acao.Nenhuma;
+            PararEdicaoDoNome();
             PainelNativo.Esconder();
             if (_novidadesVistas) Novidades.MarcarVista(); // a aba Novidades apareceu: não abre sozinha de novo nesta versão
             Plugin.Log.LogInfo($"[Menu] Menu do coop fechado ({motivo}).");
@@ -354,9 +361,105 @@ namespace HellClockCoop.Interface
             DefinirAba((Aba)ProximaAba((int)_aba, delta, NomesDasAbas.Length));
         }
 
+        // ---------- Nome da sala (0.25.0): edição na linha ----------
+
+        private static bool _editandoNome;
+        private static string _textoNome = "";
+        private static Keyboard _tecladoOuvido; // onde o OnTexto está inscrito (o teclado pode trocar)
+
+        /// <summary>Host: Enter ou clique na linha "Nome da sala". No controle, tenta o teclado de tela da Steam antes.</summary>
+        private static void ComecarEdicaoDoNome(CoopRuntime rt)
+        {
+            if (_editandoNome || !rt.Sessao.SouHost) return;
+            if (_controle)
+            {
+                if (rt.Sessao.PedirNomeNoTecladoDaSteam()) return; // o nome chega pelo callback da Steam
+                rt.Sessao.Avisar("O teclado de tela da Steam só abre no Big Picture ou no Steam Deck: digite o nome no teclado.");
+            }
+            _textoNome = rt.Sessao.NomeDaSalaAtual() ?? "";
+            _editandoNome = true;
+            try
+            {
+                _tecladoOuvido = Keyboard.current;
+                if (_tecladoOuvido != null) _tecladoOuvido.onTextInput += OnTexto;
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Menu] Sem leitura de texto do teclado: {e.Message}");
+            }
+        }
+
+        /// <summary>Sai da edição sem salvar (o Enter salva antes de chamar). Também ao fechar, trocar de aba ou perder a sala.</summary>
+        private static void PararEdicaoDoNome()
+        {
+            if (!_editandoNome) return;
+            _editandoNome = false;
+            _textoNome = "";
+            try { if (_tecladoOuvido != null) _tecladoOuvido.onTextInput -= OnTexto; }
+            catch (Exception) { /* teclado desconectado */ }
+            _tecladoOuvido = null;
+        }
+
+        /// <summary>Caracteres digitados (Input System). Fora o que o Salas.LimparTexto tiraria; o Enter salva já limpo.</summary>
+        private static void OnTexto(char c)
+        {
+            if (!_editandoNome || _textoNome.Length >= Salas.NomeMaximo) return;
+            if (!Salas.CaractereAceito(c)) return;
+            // Emoji chega em duas metades: sem lugar para as duas, nenhuma entra; metade de baixo solta é descartada.
+            if (char.IsHighSurrogate(c) && _textoNome.Length >= Salas.NomeMaximo - 1) return;
+            if (char.IsLowSurrogate(c) && (_textoNome.Length == 0 || !char.IsHighSurrogate(_textoNome[_textoNome.Length - 1]))) return;
+            _textoNome += c;
+        }
+
+        /// <summary>No Update, editando: Enter salva, Esc ou B cancela, Backspace apaga (sem partir emoji).</summary>
+        private static void EditarNome(CoopRuntime rt)
+        {
+            if (!rt.Sessao.SouHost)
+            {
+                PararEdicaoDoNome(); // saiu do coop ou deixou de ser o host
+                return;
+            }
+            if (Teclas.Pressionou("Enter") || Teclas.Pressionou("NumpadEnter"))
+            {
+                rt.Sessao.RenomearSala(_textoNome);
+                PararEdicaoDoNome();
+            }
+            else if (Teclas.Pressionou("Escape") || Teclas.Controle(c => c.buttonEast, KeyCode.JoystickButton1)) PararEdicaoDoNome();
+            else if (Teclas.Pressionou("Backspace") && _textoNome.Length > 0)
+            {
+                int corte = _textoNome.Length - 1;
+                if (corte > 0 && char.IsLowSurrogate(_textoNome[corte]) && char.IsHighSurrogate(_textoNome[corte - 1])) corte--;
+                _textoNome = _textoNome.Substring(0, corte);
+            }
+        }
+
+        /// <summary>Linha "Nome da sala" da aba Sessão (em coop). Convidado vê o nome, sem editar.</summary>
+        private static void AdicionarNomeDaSala(SessaoCoop s)
+        {
+            if (!s.EmSessao) return;
+            if (_editandoNome)
+            {
+                bool cursor = Time.unscaledTime % 1f < 0.5f;
+                Linhas.Add(new Linha
+                {
+                    Tipo = Tipo.Item, Acao = Acao.NomeSala, Habilitada = true,
+                    Texto = "Nome da sala:  " + _textoNome + (cursor ? "_" : " "),
+                    Valor = _textoNome.Length + "/" + Salas.NomeMaximo,
+                    Detalhe = "Enter salva  ·  Esc cancela  ·  vazio volta a \"" + Salas.NomePadrao(Steamworks.SteamFriends.GetPersonaName()) + "\"",
+                });
+                return;
+            }
+            Linhas.Add(new Linha
+            {
+                Tipo = Tipo.Item, Acao = Acao.NomeSala, Habilitada = s.SouHost,
+                Texto = "Nome da sala:  " + s.NomeDaSalaAtual(), Valor = s.SouHost ? "Renomear" : "só o host muda",
+            });
+        }
+
         private static void DefinirAba(Aba aba)
         {
             if (aba == _aba) return;
+            PararEdicaoDoNome();
             _aba = aba;
             _foco = Acao.Nenhuma; // o Montar escolhe o primeiro item da aba
             _arrastando = Acao.Nenhuma;
@@ -458,6 +561,9 @@ namespace HellClockCoop.Interface
                     break;
                 case Acao.AtualizarSalas:
                     rt.Sessao.BuscarSalas();
+                    break;
+                case Acao.NomeSala:
+                    ComecarEdicaoDoNome(rt);
                     break;
                 case Acao.CriarOuConvidar:
                     rt.Sessao.HospedarOuConvidar();
@@ -640,6 +746,7 @@ namespace HellClockCoop.Interface
             }
             if (!apertou) return;
             _controle = false;
+            if (_editandoNome && sob != Acao.NomeSala) PararEdicaoDoNome(); // clique fora do campo cancela
             if (PainelNativo.FecharSob(pos) && FechamentoLiberado(Time.unscaledTime, _fecharLiberadoEm))
             {
                 Fechar("botão X");
@@ -773,6 +880,7 @@ namespace HellClockCoop.Interface
                 Habilitada = SessaoCoop.SalaPublica != null && podeMudarSala,
                 Ligado = SessaoCoop.SalaPublica != null && SessaoCoop.SalaPublica.Value, Valor = Estado(SessaoCoop.SalaPublica),
             });
+            AdicionarNomeDaSala(s); // 0.25.0
             if (s.EmSessao) Adicionar(Tipo.Item, Acao.CriarOuConvidar, "Convidar amigos (Steam)", null, true);
             else if (conectando) Adicionar(Tipo.Item, Acao.CriarOuConvidar, "Conectando...", null, false);
             else if (s.EstadoAtual == SessaoCoop.Estado.AguardandoSteam) Adicionar(Tipo.Item, Acao.CriarOuConvidar, "Esperando o Steam...", null, false);
@@ -797,6 +905,16 @@ namespace HellClockCoop.Interface
             bool steam = s.EstadoAtual != SessaoCoop.Estado.AguardandoSteam;
             bool conectando = s.EstadoAtual == SessaoCoop.Estado.CriandoLobby || s.EstadoAtual == SessaoCoop.Estado.EntrandoLobby;
             if (steam && (s.UltimaBusca < 0f || Time.unscaledTime - s.UltimaBusca > Salas.ListaVelhaApos)) s.BuscarSalas();
+
+            // 0.25.0: a sala em que você está (host ou convidado), sempre no topo, também privada ou cheia; sem ação de entrar.
+            // Vem do estado da sessão: a busca da Steam só traz salas públicas com vaga, e a nossa fica de fora (SalaVisivel).
+            if (s.EmSessao)
+            {
+                Adicionar(Tipo.Secao, Acao.Nenhuma, "Sua sala", null, false);
+                Adicionar(Tipo.Info, Acao.Nenhuma, s.NomeDaSalaAtual() + "  ·  você está aqui", null, false, Enfase.Titulo);
+                string tipo = !s.SouHost ? "" : SessaoCoop.SalaPublica == null || SessaoCoop.SalaPublica.Value ? "  ·  pública" : "  ·  privada (só amigos)";
+                Adicionar(Tipo.Info, Acao.Nenhuma, $"Host {s.HostDaSalaAtual()}  ·  {s.JogadoresNaSala}/{SessaoCoop.MaximoJogadores} jogadores{tipo}", null, false);
+            }
 
             Adicionar(Tipo.Secao, Acao.Nenhuma, s.UltimaBusca < 0f || s.BuscandoSalas ? "Salas públicas" : $"Salas públicas  ·  {s.SalasListadas.Count} encontrada(s)", null, false);
             string idade = s.UltimaBusca < 0f ? null : "há " + Mathf.FloorToInt(Time.unscaledTime - s.UltimaBusca) + " s";
@@ -927,6 +1045,7 @@ namespace HellClockCoop.Interface
 
         private static string Rodape()
         {
+            if (_editandoNome) return "Digite o nome   Enter: salvar   Backspace: apagar   Esc: cancelar";
             if (_aba == Aba.Novidades)
                 return _controle
                     ? "LB/RB: aba   Direcional: rolar   B ou View: fechar"
@@ -1088,6 +1207,7 @@ namespace HellClockCoop.Interface
 
             GUI.color = corAntes;
             GUI.matrix = matrizAntes;
+            if (clicada != Acao.Nenhuma && _editandoNome && clicada != Acao.NomeSala) PararEdicaoDoNome(); // clique fora cancela
             if (clicada != Acao.Nenhuma) Executar(rt, clicada, "clique");
             if (clicadaDireito != Acao.Nenhuma) Secundaria(rt, clicadaDireito, "clique direito"); // 0.23.0
             if (ladoClicado != 0) Ajustar(_foco, ladoClicado);

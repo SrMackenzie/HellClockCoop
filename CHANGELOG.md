@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.25.0 — Nome da sala e a sua sala na lista 🧪
+_23/11/2026_
+
+- Toda sala tem nome: começa como "Sala de [seu nome na Steam]" e o host troca na aba Sessão > Nome da sala (vale só para a sala atual)
+- Na lista, a linha de cima mostra o nome da sala e a de baixo, o host e onde ele está
+- A aba Salas mostra no topo a sala em que você está (host ou convidado), também privada ou cheia
+- No controle, o A abre o teclado de tela da Steam (Big Picture e Steam Deck)
+- Exige a 0.25.0 em todos os PCs (protocolo 21, sem mudança)
+
 ## 0.24.0 — Menu do coop na lateral direita 🧪
 _23/11/2026_
 

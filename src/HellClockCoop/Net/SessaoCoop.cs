@@ -130,6 +130,7 @@ namespace HellClockCoop.Net
         private Callback<LobbyChatUpdate_t> _cbMembros;
         private Callback<SteamNetworkingMessagesSessionRequest_t> _cbPedidoSessao;
         private Callback<SteamNetworkingMessagesSessionFailed_t> _cbFalhaSessao;
+        private Callback<GamepadTextInputDismissed_t> _cbTecladoDaSteam; // 0.25.0: nome da sala pelo controle
         private CallResult<LobbyCreated_t> _crLobbyCriado;
         private CallResult<LobbyMatchList_t> _crListaSalas;
 
@@ -162,6 +163,7 @@ namespace HellClockCoop.Net
             _cbMembros = Callback<LobbyChatUpdate_t>.Create(OnMembrosMudaram);
             _cbPedidoSessao = Callback<SteamNetworkingMessagesSessionRequest_t>.Create(OnPedidoDeSessao);
             _cbFalhaSessao = Callback<SteamNetworkingMessagesSessionFailed_t>.Create(OnFalhaDeSessao);
+            _cbTecladoDaSteam = Callback<GamepadTextInputDismissed_t>.Create(OnTecladoDaSteamFechou);
             _crLobbyCriado = CallResult<LobbyCreated_t>.Create(OnLobbyCriado);
             _crListaSalas = CallResult<LobbyMatchList_t>.Create(OnListaDeSalas);
             SteamNetworkingUtils.InitRelayNetworkAccess(); // adianta a conexão com os relays da Steam
@@ -230,6 +232,66 @@ namespace HellClockCoop.Net
             Plugin.Log.LogInfo($"[Sessão] Sala {(SalaPublica.Value ? "pública" : "privada (só amigos)")}.");
             if (SouHost && !SteamMatchmaking.SetLobbyType(Lobby, TipoDaSala()))
                 Plugin.Log.LogWarning("[Sessão] A Steam recusou mudar o tipo da sala.");
+        }
+
+        // ---------- Nome da sala (0.25.0) ----------
+
+        private string _nomeSala; // dado pelo host a esta sala; null = "Sala de <nome na Steam>". Não fica guardado (pedido do autor).
+
+        /// <summary>Nome da sala atual, limpo: o que este PC deu (host) ou o que o lobby anuncia (convidado). Null fora do coop.</summary>
+        public string NomeDaSalaAtual()
+        {
+            if (!EmSessao) return null;
+            if (SouHost) return _nomeSala ?? Salas.NomePadrao(SteamFriends.GetPersonaName());
+            return Salas.NomeDaSalaListada(SteamMatchmaking.GetLobbyData(Lobby, Protocolo.ChaveLobbySala), HostDaSalaAtual());
+        }
+
+        /// <summary>Nome na Steam do dono do lobby (o host agora), limpo. Null fora do coop.</summary>
+        public string HostDaSalaAtual() =>
+            EmSessao ? Salas.LimparNome(SteamFriends.GetFriendPersonaName(SteamMatchmaking.GetLobbyOwner(Lobby))) : null;
+
+        public int JogadoresNaSala => EmSessao ? SteamMatchmaking.GetNumLobbyMembers(Lobby) : 0;
+
+        /// <summary>Host renomeia a sala atual (limpo, até 32; vazio volta ao padrão). Vale até a sala fechar.</summary>
+        public void RenomearSala(string digitado)
+        {
+            if (!SouHost) return;
+            _nomeSala = Salas.NomeDigitado(digitado);
+            string nome = NomeDaSalaAtual();
+            GravarDado(Protocolo.ChaveLobbySala, nome);
+            Plugin.Log.LogInfo($"[Sessão] Sala renomeada: {nome}{(_nomeSala == null ? " (padrão)" : "")}.");
+            Avisar($"Sala renomeada: {nome}.");
+        }
+
+        private bool _tecladoDaSteamAberto;
+
+        /// <summary>
+        /// Controle: abre o teclado de tela da Steam com o nome atual. Falso quando a Steam não mostra (fora do Big Picture e
+        /// do Steam Deck): aí o menu edita na linha, pelo teclado.
+        /// </summary>
+        public bool PedirNomeNoTecladoDaSteam()
+        {
+            if (!SouHost) return false;
+            try
+            {
+                _tecladoDaSteamAberto = SteamUtils.ShowGamepadTextInput(EGamepadTextInputMode.k_EGamepadTextInputModeNormal,
+                    EGamepadTextInputLineMode.k_EGamepadTextInputLineModeSingleLine, "Nome da sala", Salas.NomeMaximo, NomeDaSalaAtual() ?? "");
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Sessão] Teclado de tela da Steam indisponível: {e.Message}");
+                _tecladoDaSteamAberto = false;
+            }
+            return _tecladoDaSteamAberto;
+        }
+
+        private void OnTecladoDaSteamFechou(GamepadTextInputDismissed_t r)
+        {
+            if (!_tecladoDaSteamAberto) return; // aberto por outro (o jogo não usa, mas não é nosso)
+            _tecladoDaSteamAberto = false;
+            if (!r.m_bSubmitted) return; // cancelado
+            uint tamanho = Math.Min(SteamUtils.GetEnteredGamepadTextLength(), 1024u) + 1u;
+            if (SteamUtils.GetEnteredGamepadTextInput(out string texto, tamanho)) RenomearSala(texto);
         }
 
         /// <summary>Busca as salas públicas compatíveis no mundo inteiro (sem o filtro Worldwide a Steam só olha a região).</summary>
@@ -330,6 +392,8 @@ namespace HellClockCoop.Net
             _hostDaRun = 0;
             _avisouDonoExpulso = false;
             _dadosGravados.Clear();
+            _nomeSala = null; // o nome dado vale só para a sala que fechou
+            _tecladoDaSteamAberto = false; // um fechamento atrasado do teclado não renomeia a próxima sala
             if (EstadoAtual != Estado.AguardandoSteam) EstadoAtual = Estado.Livre;
             Plugin.Log.LogInfo($"[Sessão] Saiu do coop ({motivo}).");
             Avisar($"Você saiu do coop ({motivo}).");
@@ -361,6 +425,8 @@ namespace HellClockCoop.Net
             SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyNome, SteamFriends.GetPersonaName());
             SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyDono, Eu.m_SteamID.ToString()); // 0.23.0: bloquear pela aba Salas
             SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyDlc, MinhaCursedWar ? "1" : "0");
+            _nomeSala = null; // sala nova começa com o padrão
+            SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbySala, Salas.NomePadrao(SteamFriends.GetPersonaName())); // 0.25.0
             Plugin.Log.LogInfo($"[Sessão] Coop criado (lobby {r.m_ulSteamIDLobby}, sala {(TipoDaSala() == ELobbyType.k_ELobbyTypePublic ? "pública" : "privada")}).");
             // O LobbyEnter_t também chega para quem cria; lá o estado vira NoLobby.
             SteamFriends.ActivateGameOverlayInviteDialog(lobby);
@@ -398,6 +464,8 @@ namespace HellClockCoop.Net
                     Dono = dono,
                     CursedWar = SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyDlc) == "1", // 0.21.0: só marca; a trava é o Ato 4
                     Host = Salas.LimparNome(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyNome)),
+                    Nome = Salas.NomeDaSalaListada(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbySala),
+                        Salas.LimparNome(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyNome))), // 0.25.0
                     Lugar = Salas.LerLugar(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyLugar)),
                     Ato = Salas.LerInteiro(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyAto), Salas.AtoMaximo),
                     Andar = Salas.LerInteiro(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyAndar), Salas.AndarMaximo),
@@ -616,6 +684,7 @@ namespace HellClockCoop.Net
             GravarDado(Protocolo.ChaveLobbyNivel, nivel.ToString());
             GravarDado(Protocolo.ChaveLobbyNome, SteamFriends.GetPersonaName());
             GravarDado(Protocolo.ChaveLobbyDono, Eu.m_SteamID.ToString()); // quem herda o lobby anuncia o próprio SteamID
+            GravarDado(Protocolo.ChaveLobbySala, NomeDaSalaAtual()); // 0.25.0: quem herda anuncia "Sala de <ele>"
         }
 
         private void GravarDado(string chave, string valor)

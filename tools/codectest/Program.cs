@@ -763,6 +763,20 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Checar(((string)Sm("LimparNome", new string('x', 200))).Length == 32, "Salas: nome cortado em 32 caracteres");
     Checar((string)Sm("LimparNome", "ab" + (char)0x202E + "cd" + (char)0x200B + "e") == "abcde", "Salas: nome sem formatação invisível (U+202E, U+200B)");
     Checar((string)Sm("LimparNome", new string('x', 31) + "\U0001F600") == new string('x', 31), "Salas: corte em 32 não parte emoji (par substituto)");
+    // 0.25.0: nome da sala
+    Checar((string)Sm("LimparNome", "a\\nHost Fulano") == "anHost Fulano" && (string)Sm("LimparNome", "a" + (char)0x2028 + "b" + (char)0x2029 + "c") == "abc"
+           && !(bool)Sm("CaractereAceito", '\\') && !(bool)Sm("CaractereAceito", (char)0x2028) && (bool)Sm("CaractereAceito", 'é'),
+        "Salas: nome sem \\ (escape do TextMeshPro) nem U+2028/U+2029 (quebra de linha): não forja uma linha \"Host ...\"");
+    Checar((string)Sm("NomePadrao", "Igor") == "Sala de Igor" && (string)Sm("NomePadrao", "<b>") == "Sala de b"
+           && (string)Sm("NomePadrao", (object)null) == "Sala de ?" && ((string)Sm("NomePadrao", new string('x', 40))).Length == 32,
+        "Sala: nome padrão \"Sala de <nome>\", limpo e no limite de 32");
+    Checar((string)Sm("NomeDigitado", "  Os Malditos ") == "Os Malditos" && Sm("NomeDigitado", "   ") == null && Sm("NomeDigitado", "<>\n") == null
+           && Sm("NomeDigitado", (object)null) == null && ((string)Sm("NomeDigitado", new string('y', 50))).Length == 32
+           && (string)Sm("NomeDigitado", "a" + (char)0x202E + "b") == "ab",
+        "Sala: nome digitado limpo; vazio ou só lixo vira null (padrão)");
+    Checar((string)Sm("NomeDaSalaListada", "Os <i>Malditos", "Fulano") == "Os iMalditos" && (string)Sm("NomeDaSalaListada", "", "Fulano") == "Sala de Fulano"
+           && (string)Sm("NomeDaSalaListada", (object)null, "Fulano") == "Sala de Fulano",
+        "Sala: nome do lobby limpo; sem nome (ou lixo) cai em \"Sala de <host>\"");
     Checar((int)Sm("LerInteiro", "34", 999) == 34 && (int)Sm("LerInteiro", "1000", 999) == 0 && (int)Sm("LerInteiro", "-3", 999) == 0
            && (int)Sm("LerInteiro", "abc", 999) == 0 && (int)Sm("LerInteiro", "", 999) == 0 && (int)Sm("LerInteiro", (object)null, 999) == 0
            && (int)Sm("LerInteiro", "99999999999", 999) == 0,
@@ -780,10 +794,12 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     var tSala = T("HellClockCoop.Net.SalaListada"); var sl = Activator.CreateInstance(tSala);
     foreach (var (c, v) in new (string, object)[] { ("Host", "Fulano"), ("Lugar", "run"), ("Ato", 2), ("Andar", 5), ("Nivel", 34), ("Jogadores", 2), ("Vagas", 4) })
         tSala.GetField(c).SetValue(sl, v);
-    Checar((string)Sm("TextoSala", sl) == "Fulano" && (string)Sm("DetalheSala", sl) == "Ato 2, andar 5" && (string)Sm("ValorSala", sl) == "Nv 34  2/4",
-        "Salas: sala em 2 linhas, host em cima e lugar embaixo (visual A da 0.21.0)");
+    Checar((string)Sm("TextoSala", sl) == "Sala de Fulano" && (string)Sm("DetalheSala", sl) == "Host Fulano  ·  Ato 2, andar 5" && (string)Sm("ValorSala", sl) == "Nv 34  2/4",
+        "Salas: sala em 2 linhas, nome da sala em cima (sem nome no lobby, \"Sala de <host>\") e host e lugar embaixo (0.25.0)");
+    tSala.GetField("Nome").SetValue(sl, "Os Malditos");
+    Checar((string)Sm("TextoSala", sl) == "Os Malditos", "Salas: nome da sala dado pelo host vai na linha 1");
     tSala.GetField("CursedWar").SetValue(sl, true);
-    Checar((string)Sm("TextoSala", sl) == "Fulano  ·  Cursed War", "Salas: host com a Cursed War ganha a marca na linha 1");
+    Checar((string)Sm("TextoSala", sl) == "Os Malditos  ·  Cursed War", "Salas: sala com a Cursed War ganha a marca na linha 1");
     tSala.GetField("CursedWar").SetValue(sl, false);
     tSala.GetField("Nivel").SetValue(sl, 0);
     Checar((string)Sm("ValorSala", sl) == "2/4", "Salas: sem nível (host no menu) mostra só as vagas");
@@ -806,10 +822,10 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
                  ("Vagas", 4), ("Dungeon", 88), ("Recorde", 0L), ("CursedWar", true), ("SemDlc", true) })
         tSala.GetField(c).SetValue(sd, v);
     Checar((bool)Sm("SalaIndisponivel", sd) && (string)Sm("ValorSala", sd) == "indisponível"
-           && (string)Sm("DetalheSala", sd) == "Ato 4, andar 2  ·  precisa da DLC Cursed War",
+           && (string)Sm("DetalheSala", sd) == "Host Beltrano  ·  Ato 4, andar 2  ·  precisa da DLC Cursed War",
         "DLC: sala do Ato 4 sem a DLC fica indisponível e o motivo da DLC vem antes do recorde");
     tSala.GetField("SemDlc").SetValue(sd, false); tSala.GetField("Recorde").SetValue(sd, 9L);
-    Checar(!(bool)Sm("SalaIndisponivel", sd) && (string)Sm("ValorSala", sd) == "Nv 61  1/4" && (string)Sm("DetalheSala", sd) == "Ato 4, andar 2",
+    Checar(!(bool)Sm("SalaIndisponivel", sd) && (string)Sm("ValorSala", sd) == "Nv 61  1/4" && (string)Sm("DetalheSala", sd) == "Host Beltrano  ·  Ato 4, andar 2",
         "DLC: com a DLC e o save no andar, a sala do Ato 4 fica disponível");
     Checar((string)Sm("TextoForaDaRunDlc", 4, 2) == "O host foi para uma run da DLC Cursed War (Ato 4, andar 2), que você não tem. Você fica no hub e acompanha a próxima run do jogo base.",
         "DLC: aviso do convidado sem a DLC quando o host vai ao Ato 4");
@@ -863,7 +879,7 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     {
         tSala.GetField("Lugar").SetValue(st, lugar); tSala.GetField("Dungeon").SetValue(st, dungeon);
         tSala.GetField("Andar").SetValue(st, andar); tSala.GetField("Recorde").SetValue(st, recorde);
-        tSala.GetField("Jogadores").SetValue(st, 1); tSala.GetField("Vagas").SetValue(st, 4);
+        tSala.GetField("Jogadores").SetValue(st, 1); tSala.GetField("Vagas").SetValue(st, 4); tSala.GetField("Host").SetValue(st, "Fulano");
     }
     bool Trav() => (bool)Sm("SalaTravada", st);
     Ps("run", 77, 5, 2); bool t1 = Trav(); string v1 = (string)Sm("ValorSala", st);
@@ -875,8 +891,8 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Checar(t1 && !t2 && !t3 && !t4 && !t5, "Trava: sala na run além do recorde trava; recorde alcançado, sem save, atalho especial (sem masmorra) e hub não");
     Ps("run", 77, 5, 2); string d1 = (string)Sm("DetalheSala", st);
     Ps("run", 77, 5, 0); string d0 = (string)Sm("DetalheSala", st);
-    Checar(v1 == "indisponível" && v0 == "indisponível" && v5 == "1/4" && d1 == "em run, andar 5  ·  você chegou ao andar 2"
-           && d0 == "em run, andar 5  ·  você não começou essa masmorra",
+    Checar(v1 == "indisponível" && v0 == "indisponível" && v5 == "1/4" && d1 == "Host Fulano  ·  em run, andar 5  ·  você chegou ao andar 2"
+           && d0 == "Host Fulano  ·  em run, andar 5  ·  você não começou essa masmorra",
         "Trava: sala travada fica indisponível à direita e mostra o recorde na linha 2 (0.21.0)");
     Checar((string)Sm("TextoForaDaRun", 3, 5, 2L) == "O seu save não chegou aonde o host está (Ato 3, andar 5; você chegou ao andar 2). Você fica no hub e acompanha a próxima run liberada.",
         "Trava: aviso do convidado que não acompanha");

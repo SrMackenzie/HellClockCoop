@@ -2,6 +2,25 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.25.0",
+      "data": "23/11/2026",
+      "testado": false,
+      "titulo": "Nome da sala e a sua sala na lista",
+      "itens": [
+        "Toda sala tem nome: começa como \"Sala de [seu nome na Steam]\" e o host troca na aba Sessão > Nome da sala (vale só para a sala atual)",
+        "Na lista, a linha de cima mostra o nome da sala e a de baixo, o host e onde ele está",
+        "A aba Salas mostra no topo a sala em que você está (host ou convidado), também privada ou cheia",
+        "No controle, o A abre o teclado de tela da Steam (Big Picture e Steam Deck)",
+        "Exige a 0.25.0 em todos os PCs (protocolo 21, sem mudança)"
+      ],
+      "testar": [
+        "Crie um coop: no outro PC, a sala aparece como \"Sala de <host>\" com o host na linha de baixo",
+        "Host: aba Sessão > Nome da sala > Enter, digite e Enter; Atualizar no outro PC mostra o nome novo; vazio volta ao padrão e Esc cancela",
+        "Em coop, como host e como convidado, a aba Salas começa por \"Sua sala\" com \"você está aqui\", mesmo com a sala privada",
+        "Digitar o nome com o menu aberto em jogo não abre janelas do jogo nem mexe o personagem"
+      ]
+    },
+    {
       "v": "0.24.0",
       "data": "23/11/2026",
       "testado": false,

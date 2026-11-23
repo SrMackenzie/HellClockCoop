@@ -428,6 +428,12 @@ Precisa de dois PCs com contas Steam diferentes (a lista não mostra a própria 
 - [ ] **Expulsar:** host, aba Sessão > "Expulsar <nome>" duas vezes. Esperado: o convidado sai com o aviso "expulso pelo
   host" e a sala some da lista dele; no host, o aliado some e a escala volta a solo.
 - [ ] **Privada:** host desliga "Sala pública" com o coop aberto; no outro PC, Atualizar. Esperado: a sala some.
+- [ ] **Nome da sala (0.25.0):** host cria o coop; no outro PC a sala aparece como "Sala de <host>", com "Host <host>  ·
+  no hub" embaixo. Host, aba Sessão > "Nome da sala" > Enter, digita "Os Malditos", Enter: aviso "Sala renomeada";
+  Atualizar no outro PC mostra "Os Malditos". Apagar tudo e Enter volta ao padrão; Esc cancela sem mudar; com `<b>` o
+  `<` e o `>` não entram. No controle, A abre o teclado de tela da Steam (Big Picture) ou avisa e deixa digitar.
+- [ ] **Sua sala (0.25.0):** em coop, como host e como convidado, a aba Salas começa por "Sua sala" com o nome e "você
+  está aqui", também com a sala privada ou cheia; a sua sala não aparece de novo na lista de baixo.
 - Se falhar, mandar: o `LogOutput.log` dos dois PCs (linhas `[Sessão]`, sobretudo `Salas: N da Steam, M na lista`).
 
 ## 0.17.0 — Marcador no chão (ping)

@@ -938,9 +938,11 @@ S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum 
 | COOP-EXPULSAR | "Expulsar <nome>" abaixo de cada aliado; o primeiro aperto vira "Confirmar: expulsar <nome>?" por 3 s (0.18.0, §12.7) | aba Sessão, só o host | S (`SessaoCoop.Expulsar`) | — |
 | COOP-BLOQUEAR-ALIADO | Ação secundária da linha do aliado (0.23.0, §12.12): X no controle, Delete ou clique direito (no painel nativo e na reserva); o primeiro aperto vira "Confirmar (X de novo): bloquear <nome>?" por 3 s. Como convidado a linha é "Bloquear <nome>" e o Enter/A também bloqueia. O rodapé mostra "X: bloquear" com o foco na linha | aba Sessão, em sessão | S + P (`SessaoCoop.Bloquear`; host também expulsa) | `bloqueados.txt` |
 | COOP-SALA-PUBLICA | "Sala pública (aparece na aba Salas)" (caixa de marcar); vale para o próximo coop e, como host, muda a sala na hora; convidado não muda (0.18.0) | aba Sessão (sem sessão ou como host) | P + S (`SessaoCoop.AlternarSalaPublica`, `SetLobbyType`) | `[Coop] SalaPublica` |
+| COOP-NOME-SALA | "Nome da sala:  <nome>" com "Renomear" à direita (0.25.0, §12.14). Enter ou clique: a linha vira campo ("_" piscando, "17/32", embaixo "Enter salva · Esc cancela · vazio volta a "Sala de <você>""); Backspace apaga; clique fora, trocar de aba ou fechar cancela. No controle, o A abre o teclado de tela da Steam (Big Picture e Steam Deck; fora deles, aviso e edição pelo teclado). Convidado vê o nome com "só o host muda" | aba Sessão (em coop) | S (`SessaoCoop.RenomearSala`, `hcc_sala`) | — (só a sala atual) |
 | COOP-ABA-SALAS | Aba "Salas" (0.18.0), entre Sessão e Ajustes; abas de 160 para caber 4. Desde a 0.21.0 o menu abre nela (F7, View, botão Coop) | janela; na reserva, na lista única depois da Sessão | R | — |
 | COOP-SALAS-ATUALIZAR | "Atualizar lista" com a idade da lista ("há 12 s"); "Buscando salas..." indisponível. Busca sozinha com a aba à vista quando nunca buscou ou a lista tem mais de 30 s; no máximo 1 busca a cada 3 s; sem resposta em 15 s, libera nova busca | aba Salas | S (`SessaoCoop.BuscarSalas`) | — |
-| COOP-SALAS-SALA | Um item por sala pública compatível. Desde a 0.21.0 em 2 linhas: "Host  ·  Cursed War" e "Nv 34  2/4" em cima, o lugar ("Ato 2, andar 5") embaixo; desabilitada ao conectar; no Ato 4 sem a DLC (§12.10) ou numa run aonde o save não chegou (§12.8), indisponível: à direita "indisponível", o motivo na linha de baixo e uma linha de explicação abaixo da lista. Até a 0.20.0, uma linha "Host  -  lugar" | aba Salas | S (`SessaoCoop.EntrarNaSala`; já num coop, o primeiro aperto vira "Confirmar: sair do seu coop e entrar?" por 3 s) | — |
+| COOP-SALAS-SUA-SALA | Seção "Sua sala" no topo (0.25.0, §12.14), só em coop, como host ou convidado, também privada ou cheia: "<nome da sala>  ·  você está aqui" e "Host <nome>  ·  2/4 jogadores  ·  pública" (o tipo só para o host). Só informação, sem foco nem ação | aba Salas | ∅ | — |
+| COOP-SALAS-SALA | Um item por sala pública compatível. Desde a 0.25.0 a linha de cima traz o nome da sala (`hcc_sala`; sem ele, "Sala de <host>") e a de baixo começa por "Host <nome>  ·  ". Desde a 0.21.0 em 2 linhas: "Host  ·  Cursed War" e "Nv 34  2/4" em cima, o lugar ("Ato 2, andar 5") embaixo; desabilitada ao conectar; no Ato 4 sem a DLC (§12.10) ou numa run aonde o save não chegou (§12.8), indisponível: à direita "indisponível", o motivo na linha de baixo e uma linha de explicação abaixo da lista. Até a 0.20.0, uma linha "Host  -  lugar" | aba Salas | S (`SessaoCoop.EntrarNaSala`; já num coop, o primeiro aperto vira "Confirmar: sair do seu coop e entrar?" por 3 s) | — |
 | COOP-SALAS-BLOQUEAR-HOST | Ação secundária da linha da sala (0.23.0, §12.12): X, Delete ou clique direito, dois apertos ("Confirmar (X de novo): bloquear <host>?"); a sala some da lista. Sala indisponível não recebe foco (não dá para bloquear por ela); sala sem `hcc_dono` válido só avisa | aba Salas | S + P (`SessaoCoop.Bloquear`) | `bloqueados.txt` |
 | COOP-AVISO-ATUALIZACAO | Recado do atualizador desta abertura (versão nova instalada ou atualização recusada), no topo da lista (0.13.0; antes no painel do canto) | aba Sessão, quando houver | ∅ | `[Atualizacao]` |
 | COOP-CRIAR | "Criar coop e convidar amigos" (sem sessão); "Esperando o Steam..." e "Conectando..." indisponíveis | aba Sessão | S (`SessaoCoop.HospedarOuConvidar`) | — |
@@ -1500,6 +1502,33 @@ Visual B (escolhido entre 3): coluna larga na altura toda.
   ela. Um `CanvasGroup` acompanha o deslize (alfa = fração da coluna na tela).
 
 **Protocolo 21, sem mudança.** Sem patch Harmony novo.
+
+### 12.14 Nome da sala e a sua sala na lista (versão 0.25.0, protocolo 21)
+
+Pedido do autor: mostrar a própria sala na lista e deixar nomear a sala, com o padrão "Sala de [nome na Steam]".
+Decisões do autor: a sua sala sempre no topo em coop (host ou convidado); renomear na aba Sessão, com edição na linha; o
+nome vale só para a sala atual (não vai para o `.cfg`).
+
+- **Dado do lobby `hcc_sala`** (`Protocolo.ChaveLobbySala`): o host grava ao criar (`Salas.NomePadrao`) e no
+  `AtualizarDadosDaSala` (a cada 2 s, só o que mudou), então quem herda o lobby anuncia "Sala de <ele>". O nome dado fica em
+  `SessaoCoop._nomeSala` (null = padrão), zerado ao sair e ao criar sala. Não é mensagem: o protocolo não muda.
+- **Não confiável:** quem lista lê pelo `Salas.NomeDaSalaListada` (mesma limpeza do `LimparNome`, pelo `Salas.CaractereAceito`: sem controle, sem `\` (escape do TMP), sem U+2028/U+2029, sem
+  formatação invisível, sem `<` `>`, até 32, sem partir emoji); vazio ou só lixo cai no padrão com o `hcc_host`. A linha
+  de cima da sala passa a ser o nome; o host vai para a linha de baixo ("Host <nome>  ·  lugar"). O nome do host continua
+  vindo do `hcc_host`; bloquear pela lista segue pelo `hcc_dono` (§12.12).
+- **Renomear** (`MenuCoop.ComecarEdicaoDoNome`/`EditarNome`, `SessaoCoop.RenomearSala`): só o dono do lobby. O texto chega
+  pelo `Keyboard.onTextInput` do Input System, sem controle nem `<` `>` e com no máximo 32 caracteres; Enter grava (limpo
+  pelo `Salas.NomeDigitado`; vazio volta ao padrão), Esc ou B cancelam, Backspace apaga sem partir emoji. Enquanto edita, o
+  Esc não fecha o menu e as setas não navegam; a tecla do menu não fecha (pode ser uma letra no .cfg) e o View fecha (cancela). A entrada do jogo já fica travada pelo
+  semáforo do `InputHandler` (o mesmo do console de cheats do jogo), então as letras não abrem janelas do jogo.
+  No controle, `SteamUtils.ShowGamepadTextInput` (até 32) e o callback `GamepadTextInputDismissed_t`; quando a Steam não
+  mostra o teclado (fora do Big Picture e do Steam Deck), aviso e edição pelo teclado.
+- **A sua sala na lista** (`MenuCoop.MontarSalas`): vem do estado da sessão, não da busca (a Steam só devolve salas
+  públicas com vaga, e o `SalaVisivel` tira a nossa). Duas linhas de informação, sem foco: nome e "você está aqui"; host,
+  jogadores e, para o host, pública ou privada.
+
+**Protocolo 21, sem mudança** (dado do lobby novo, como o `hcc_dono`). codectest: `NomePadrao`, `NomeDigitado`,
+`NomeDaSalaListada` e as linhas da sala com o nome.
 
 ## 13. Atualizador automático (versão 0.8.0)
 
