@@ -945,6 +945,7 @@ S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum 
 | COOP-NOVIDADES | "Novidades da <versão>": fecha o menu e abre a janela antiga (§12.1) | só na reserva (gaveta); no painel nativo virou a aba Novidades (0.13.0) | R | `[Teclas] Novidades` (F10) |
 | COOP-NAV | Setas ou direcional movem o foco; esquerda/direita ajustam a barra focada; Enter ou A executam; mouse: passar por cima foca, clique executa, clique ou arrasto na barra escolhe o valor, roda rola | menu aberto | R | — |
 | COOP-ECO-TECLA / COOP-DIAG-TECLA | F8 (modo eco) e F9 (diagnóstico) | jogo, com o menu do coop e a Novidades fechados | S | `[Teclas] ModoEco`, `SalvarHierarquia` |
+| COOP-MARCADOR-TECLA | Botão do meio do mouse (marca o chão sob o cursor) ou R3 no controle (4 m à frente) (0.17.0, §12.6) | jogo, com o menu do coop e a Novidades fechados, sem pausa, com alguém no mesmo andar ou o eco ligado | S (`Marcadores.LerTecla`; recarga de 1 s) | `[Teclas] Marcador` (o R3 é fixo) |
 
 Sem efeito nos números do balanceamento nem no protocolo (10). Com o menu aberto em jogo o personagem fica parado e o
 jogo segue (em coop não há pausa), o que só deixa o jogo mais difícil para quem abre o menu no meio do combate.
@@ -1117,6 +1118,37 @@ queda; visual da opção B ("barra do aliado").
   volta mais fraco (30%) que na volta do próximo andar (50%). A queda segue custando 10 s, também na repetida. O grupo
   dura mais que na 0.15.0; a calibragem (entrega 4) confere com os dados.
 
+### 12.6 Marcador (ping) no chão (versão 0.17.0, protocolo 18)
+
+Trilha 5 (comunicação sem chat). Decisões do autor em 22/11/2026: botão do meio do mouse e R3 no controle; o marcador
+dura 5 s; 1 ativo por jogador (marcar de novo move o antigo), recarga de 1 s; nome de quem marcou na cor do aliado;
+visual da opção A ("seta no chão", só peças do jogo).
+- **Tecla (`Interface/Marcadores.LerTecla`, no `Update`, com os menus do coop e a Novidades fechados e o jogo sem
+  pausa):** `[Teclas] Marcador` (padrão `Mouse2`; `Teclas.Pressionou` passou a aceitar `Mouse0`..`Mouse4`, além das
+  teclas) marca o chão sob o cursor: raio da câmera contra o plano horizontal na altura do personagem, limitado a
+  `Validacao.AlcanceMarcadorMetros` (30 m; além disso, na borda do alcance, na direção do cursor). Com o cursor sobre a
+  interface do jogo (inventário, mapa: `EventSystem.IsPointerOverGameObject`) não marca. O R3 (`rightStickButton`,
+  `JoystickButton9` no legado) marca 4 m à frente do modelo do personagem. Só com alguém da sessão no mesmo andar ou
+  com o modo eco ligado (sozinho não há quem veja). Caído também marca (pedir ajuda).
+- **Rede:** `Marcador` (tipo 28, confiável, todos → mesmo andar): cena (`LevelDefinition.HashID`), índice do andar
+  (4294967295 fora da run, no hub) e o ponto. Quem recebe confere cena, andar, ponto finito e a distância entre o ponto
+  e o avatar de quem marcou (30 m + 10 m de folga no chão, até 10 m de desnível, `Validacao.MarcadorValido`); um
+  segundo marcador do mesmo par em menos de 0,5 s é ignorado (sem linha no log padrão: só `LogDebug`). Não confere a
+  DLC (como o resto do que vai pelo `EnviarParaMesmoAndar`): com DLC diferente vocês se veem, e o marcador é só visual.
+  Filtros na tabela da §14.
+- **Vida do marcador:** 5 s (`Marcadores.Duracao`) desde a marcação; some antes na troca de cena ou de andar, quando o
+  par sai da sessão e, o do eco, quando o eco desliga.
+- **Visual (opção A, `Marcadores` com as peças do `AliadosNaTela`):** a seta da HUD do jogo (a mesma da seta dos
+  aliados, que aponta para baixo sem giro) 1,2 m acima do ponto, com contorno preto 60% (a mesma seta 18% maior por
+  trás) e uma sombra elíptica 40x14 no chão (textura feita por código, sem arte nova). Entra caindo 0,8 m com escala
+  1,4 → 1 em 0,25 s e quica uma vez; pulsa ±8%; nos últimos 0,6 s some subindo 0,3 m. Cor: a dos números de dano do
+  aliado (`DanosVisiveis.CorDoAliado`; o eco, verde); o seu, na cor da seta do jogo e sem nome. Nome acima da seta, na
+  fonte da barra flutuante do jogo. Fora da tela: a seta vai para a borda (`AliadosNaTela.Borda`) apontando o ponto,
+  com "Nome 18 m" (o seu, só a distância). Peças na `GenericHUD.LifeBars` (somem com a HUD). Sem as peças, reserva no
+  `OnGUI` ("▼" e "►" na cor do aliado), só com a HUD na tela.
+- **Modo eco:** o fantasma repete o seu marcador 1 s depois, deslocado como ele (`DistanciaDoEco`), como aliado "Eco".
+- **Balanceamento:** só informação, sem efeito no jogo, no dano nem no tempo; não muda a dificuldade do grupo.
+
 ## 13. Atualizador automático (versão 0.8.0)
 
 **Onde roda.** `BepInEx\patchers\HellClockCoop.Atualizador.dll`, um preloader patcher do BepInEx 5 sem DLL alvo: só o
@@ -1206,6 +1238,7 @@ filtros puros ficam em `Net/Validacao.cs` e têm casos no `tools/codectest`.
 | `PedidoAvanco` (0.15.0) | host, só caído, com a run em andamento e sem troca de andar, de par compatível, com a mesma DLC e no mesmo andar | `IndiceAndar` igual ao andar atual do host (pedido repetido ou atrasado é recusado), `Andares` ≥ 1 (o host limita a 3) e nunca no último andar, onde o avanço viraria `FinishDungeon(Completed)` no save do host (`Validacao.PedidoAvancoValido`); um avanço aceito por andar (o Endless Nightmare gera o bloco seguinte de forma assíncrona); o host chama `AdvanceLevel(n, false)` e o jogo ainda limita pelo máximo dele. O convidado manda no máximo um a cada 2 s. Log de recusa no máximo a cada 5 s |
 | `Reanimando` (0.16.0) | todos, de par compatível, com a mesma DLC, no mesmo andar e de pé, com a run em andamento | andar igual ao seu, estado 0 a 2 e fração finita de 0 a 1 (`Validacao.ReanimandoValido`); o alvo é você caído ou um aliado caído na run (outro alvo é descartado, para não ocupar memória). Só aparece na tela; não muda nada do jogo |
 | `Reanimou` (0.16.0) | todos, com os mesmos filtros do `Reanimando` | andar igual ao seu e alvo diferente de quem mandou (ninguém se levanta sozinho). A conta do andar fica com o maior `Ordem` visto, subindo no máximo um (`Validacao.OrdemReanimacao`). Com o alvo na run (caído ou já de pé), todos esquecem a queda já vista dele (a próxima avisa de novo e o host volta a cobrar). Para o caído: ele precisa estar caído e quem mandou a até 2 m + 2 m de folga (atraso do snapshot), pela posição do avatar (`Validacao.ReanimouValido`); sem avatar, recusa. Para os outros: o alvo precisa jogar a run. Efeito: o caído levanta com `VidaAoReanimar` e todos contam a reanimação do andar |
+| `Marcador` (0.17.0) | todos, de par compatível, no mesmo andar (pela cena do snapshot), com o seu personagem no mundo | cena conhecida e igual à sua, mesmo índice de andar (fora da run, 4294967295 dos dois lados), coordenadas finitas até 100 000 e o ponto a até 30 m + 10 m de folga do avatar de quem marcou no chão e até 10 m de desnível (`Validacao.MarcadorValido`; sem avatar, recusa). Do mesmo par, um marcador a cada 0,5 s no máximo, e só 1 guardado por par. Só aparece na tela; não muda nada do jogo |
 | `TimerBonus` | host | finito, `> 0` e `<= 120 s`; desde a 0.8.5, também no máximo 120 s e 120 bônus somados por convidado (chave: SteamID, para sair e voltar ao lobby não zerar) numa janela fixa de 60 s (`Validacao.AceitarBonusNaJanela`; o recusado não conta; na virada da janela até o dobro passa em sequência, a média fica no teto). Um aviso de recusa por janela |
 | `TimerSync` | convidado, só do host | os dois campos finitos e `>= 0` (4 Hz: descarte sem log) |
 | `InimigoSpawn`, `InimigosEstado`, `InimigoMorte`, `InimigoSumiu`, `AndarLimpo`, `InimigoAjuste` | convidado, só do host | — |

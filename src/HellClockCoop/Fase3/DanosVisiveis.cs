@@ -76,6 +76,9 @@ namespace HellClockCoop.Fase3
             return i;
         }
 
+        /// <summary>Cor (a normal dos números de dano) do aliado; o eco usa a chave 0. Usada pelo Marcador (0.17.0).</summary>
+        internal static Color CorDoAliado(ulong chave) => Paleta[CorDe(chave), 0];
+
         internal static void NumeroCriado(Collider colisor, Transform alvo, DamageInstance dano)
         {
             if (_reproduzindo || dano == null || dano.HideFromUI || dano.Ignored || alvo == null) return;

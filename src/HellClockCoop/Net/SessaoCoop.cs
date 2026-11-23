@@ -440,6 +440,9 @@ namespace HellClockCoop.Net
                 case Protocolo.TipoReanimou:
                     Fase2.Reanimacao.Receber(this, p, dados);
                     break;
+                case Protocolo.TipoMarcador: // 0.17.0
+                    Interface.Marcadores.Receber(this, p, dados);
+                    break;
                 case Protocolo.TipoInimigoSpawn:
                 case Protocolo.TipoInimigoMorte:
                 case Protocolo.TipoInimigoSumiu:

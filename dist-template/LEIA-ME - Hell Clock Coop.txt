@@ -185,6 +185,10 @@ ESTADO ATUAL (versão de teste, Fase 3)
   (0,83 / 0,71 / 0,63). VidaAoVoltarDoChao, SegundosPerdidosPorQueda, XpGanho e OuroGanho não
   são mais lidos (podem ficar no .cfg, sem efeito). Vida, dano, quantidade de inimigos e tempo
   ganho continuam no .cfg. Exige a 0.16.3 em todos os PCs.
+- NOVO (0.17.0): marcador no chão (ping). O botão do meio do mouse marca o chão sob o cursor (no
+  controle, o R3 marca à sua frente). Todos do grupo veem a seta no ponto por 5 s, com o nome de
+  quem marcou na cor dele; fora da tela, a seta fica na borda com a distância. Cada um tem 1
+  marcador (marcar de novo move o antigo). Exige a 0.17.0 em todos os PCs.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, abra o menu do coop (F7), escolha "Sair do coop" e depois use o menu normalmente.
@@ -233,6 +237,8 @@ Teclas (dá para trocar em BepInEx\config\br.srmackenzie.hellclockcoop.cfg):
   F8  modo eco: um "fantasma" seu repete o que você faz (teste sem amigos)
   F9  diagnóstico: salva a estrutura do personagem
   F10 novidades: o que mudou nas últimas versões do mod (aba Novidades do menu do coop)
+  Botão do meio do mouse  marcador no chão sob o cursor (no controle: R3); a tecla fica em
+      [Teclas] Marcador (Mouse2 = meio, Mouse3/Mouse4 = laterais, ou uma tecla como G)
 
 
 SEGURANÇA DO SAVE

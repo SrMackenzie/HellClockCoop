@@ -75,7 +75,7 @@ namespace HellClockCoop.Fase2
         /// <summary>Duração da próxima reanimação neste andar (3, 6, 9 s…).</summary>
         internal static float DuracaoAtual => SegundosBase * (_noAndar + 1);
 
-        private static bool EmRun => Dpm != null && Dpm.RunStarted.Value && !Dpm.EndingExecuted.Value;
+        internal static bool EmRun => Dpm != null && Dpm.RunStarted.Value && !Dpm.EndingExecuted.Value;
 
         // ---------------- Laço (CoopRuntime, depois do JogadorCaido) ----------------
 

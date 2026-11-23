@@ -2,6 +2,25 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.17.0",
+      "data": "22/11/2026",
+      "testado": false,
+      "titulo": "Marcador no chão (ping)",
+      "itens": [
+        "O botão do meio do mouse marca o chão sob o cursor; no controle, o R3 (apertar o analógico direito) marca alguns metros à sua frente",
+        "Todos do grupo veem o marcador por 5 s: a seta do jogo apontando o chão, com o nome de quem marcou na cor dele (a mesma dos números de dano)",
+        "Fora da tela, a seta fica na borda apontando o ponto, com o nome e a distância",
+        "Cada jogador tem 1 marcador: marcar de novo move o antigo (no máximo 1 por segundo). A tecla muda no .cfg, em [Teclas] Marcador",
+        "Só informação: não muda o jogo nem a dificuldade. Exige a 0.17.0 em todos os PCs (protocolo 18)"
+      ],
+      "testar": [
+        "Ligue o eco (F8) e aperte o botão do meio do mouse: a sua seta cai no ponto e, 1 s depois, a do Eco aparece verde ao lado, com o nome",
+        "Marque longe e ande até o ponto sair da tela: a seta vai para a borda com a distância em metros",
+        "No controle, aperte o R3: a marca sai à frente do personagem",
+        "Marque duas vezes seguidas: o marcador anterior some e o novo aparece no ponto novo"
+      ]
+    },
+    {
       "v": "0.16.3",
       "data": "22/11/2026",
       "testado": false,

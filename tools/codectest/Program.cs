@@ -101,6 +101,7 @@ IdaVolta("FimRun", new (string, object)[] { ("Motivo", 3) }, 24);
 IdaVolta("PedidoAvanco", new (string, object)[] { ("IndiceAndar", 6u), ("Andares", 1u) }, 25); // 0.15.0
 IdaVolta("Reanimando", new (string, object)[] { ("Alvo", 76561198000000123UL), ("IndiceAndar", 4u), ("Estado", (byte)1), ("Fracao", 0.375f) }, 26); // 0.16.0
 IdaVolta("Reanimou", new (string, object)[] { ("Alvo", 76561198000000123UL), ("IndiceAndar", 4u), ("Ordem", (byte)2) }, 27); // 0.16.0
+IdaVolta("Marcador", new (string, object)[] { ("Cena", -123456789), ("IndiceAndar", 4294967295u), ("X", 12.5f), ("Y", -0.25f), ("Z", 99999.5f) }, 28); // 0.17.0
 try { T("HellClockCoop.Net.FimRun").GetMethod("Desserializar").Invoke(null, new object[] { new byte[] { 20, 0, 0, 0, 0 } }); Checar(false, "PlanoAndar lido como FimRun deveria falhar"); }
 catch (TargetInvocationException e) { Checar(e.InnerException is FormatException, "Tipo errado é recusado (FimRun ≠ PlanoAndar)"); }
 
@@ -418,6 +419,21 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Checar(ordem(1, 0) == 1 && ordem(3, 2) == 3, "Validação: Reanimou com a ordem seguinte sobe a conta do andar");
     Checar(ordem(1, 1) == 1 && ordem(1, 3) == 3 && ordem(0, 2) == 2, "Validação: Reanimou repetido, atrasado ou com ordem 0 não muda a conta");
     Checar(ordem(255, 0) == 1 && ordem(9, 2) == 3, "Validação: Reanimou com ordem forjada alta sobe só um");
+
+    // Marcador (0.17.0): mesma cena e andar, ponto finito, até alcance + folga (30 + 10 m) de quem marcou e até 10 m de desnível
+    bool mvd(int cena, uint andar, float x, float y, float z, int cenaLocal, uint andarLocal, float d, float dy) => V("MarcadorValido", cena, andar, x, y, z, cenaLocal, andarLocal, d, dy);
+    bool mv(int cena, uint andar, float x, float y, float z, int cenaLocal, uint andarLocal, float d) => mvd(cena, andar, x, y, z, cenaLocal, andarLocal, d, 0.5f);
+    Checar(mvd(77, 3u, 1f, 0f, 1f, 77, 3u, 1f, 0f) && mvd(77, 3u, 1f, 0f, 1f, 77, 3u, 1f, 10f), "Validação: Marcador com desnível de 0 e 10 m aceito");
+    Checar(!mvd(77, 3u, 1f, 0f, 1f, 77, 3u, 1f, 10.5f) && !mvd(77, 3u, 1f, 0f, 1f, 77, 3u, 1f, 3.4e38f) && !mvd(77, 3u, 1f, 0f, 1f, 77, 3u, 1f, float.NaN) && !mvd(77, 3u, 1f, 0f, 1f, 77, 3u, 1f, -1f),
+        "Validação: Marcador no alto (10,5 m acima), sem posição de quem marcou, com desnível NaN ou negativo recusado");
+    Checar(mv(77, 3u, 10f, 0.5f, -20f, 77, 3u, 0f) && mv(77, 3u, 0f, 0f, 0f, 77, 3u, 40f) && mv(77, 4294967295u, 1f, 0f, 1f, 77, 4294967295u, 5f),
+        "Validação: Marcador da mesma cena e andar (também fora da run) a 0, 5 e 40 m de quem marcou aceito");
+    Checar(!mv(77, 3u, 1f, 0f, 1f, 78, 3u, 1f) && !mv(77, 3u, 1f, 0f, 1f, 77, 4u, 1f) && !mv(-1, 3u, 1f, 0f, 1f, -1, 3u, 1f),
+        "Validação: Marcador de outra cena, de outro andar ou com cena desconhecida (-1) recusado");
+    Checar(!mv(77, 3u, float.NaN, 0f, 1f, 77, 3u, 1f) && !mv(77, 3u, 1f, float.PositiveInfinity, 1f, 77, 3u, 1f) && !mv(77, 3u, 1f, 0f, 100001f, 77, 3u, 1f),
+        "Validação: Marcador com coordenada NaN, ∞ ou acima de 100 000 recusado");
+    Checar(!mv(77, 3u, 1f, 0f, 1f, 77, 3u, 40.5f) && !mv(77, 3u, 1f, 0f, 1f, 77, 3u, 3.4e38f) && !mv(77, 3u, 1f, 0f, 1f, 77, 3u, float.NaN) && !mv(77, 3u, 1f, 0f, 1f, 77, 3u, -1f),
+        "Validação: Marcador longe de quem marcou (40,5 m), sem posição dele, com distância NaN ou negativa recusado");
 
     // Sequência do snapshot para Morto (0.16.0): atrasado até 64 é ignorado; recomeço da contagem vale
     bool atr(ushort s, int u) => (bool)tv.GetMethod("SequenciaAtrasada").Invoke(null, new object[] { s, u });

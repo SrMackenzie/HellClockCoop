@@ -49,6 +49,30 @@ namespace HellClockCoop.Net
         public static bool ReanimouValido(uint andarDaMensagem, uint andarLocal, float distancia, float raio) =>
             andarDaMensagem == andarLocal && Finito(distancia) && distancia >= 0f && distancia <= raio + FolgaReanimarMetros;
 
+        /// <summary>Marcador (0.17.0): alcance a partir de quem marca (o cursor além disso marca na borda do alcance).</summary>
+        public const float AlcanceMarcadorMetros = 30f;
+
+        /// <summary>Folga sobre o alcance para o atraso da rede (quem marcou andou depois do último snapshot).</summary>
+        public const float FolgaMarcadorMetros = 10f;
+
+        /// <summary>Teto de sanidade de cada coordenada do ponto marcado.</summary>
+        public const float CoordenadaMaximaMarcador = 100000f;
+
+        /// <summary>Desnível máximo entre o ponto e quem marcou (o ponto fica no plano dos pés de quem marca).</summary>
+        public const float DesnivelMaximoMarcadorMetros = 10f;
+
+        /// <summary>
+        /// Marcador (0.17.0): só no mesmo andar (cena conhecida e índice iguais), com ponto finito e perto de quem
+        /// marcou (pela posição do último snapshot: distância no chão e desnível): ponto forjado longe, no alto ou de
+        /// outro andar não aparece.
+        /// </summary>
+        public static bool MarcadorValido(int cena, uint andar, float x, float y, float z, int cenaLocal, uint andarLocal, float distancia, float desnivel) =>
+            cena != -1 && cena == cenaLocal && andar == andarLocal
+            && Finito(x) && Finito(y) && Finito(z)
+            && System.Math.Abs(x) <= CoordenadaMaximaMarcador && System.Math.Abs(y) <= CoordenadaMaximaMarcador && System.Math.Abs(z) <= CoordenadaMaximaMarcador
+            && Finito(distancia) && distancia >= 0f && distancia <= AlcanceMarcadorMetros + FolgaMarcadorMetros
+            && Finito(desnivel) && desnivel >= 0f && desnivel <= DesnivelMaximoMarcadorMetros;
+
         /// <summary>
         /// Reanimou (0.16.0): nova conta das reanimações do andar a partir da Ordem recebida. Fica o maior valor, sem
         /// pular mais de um de uma vez (Ordem forjada alta não infla a duração das próximas); 0 não muda nada.

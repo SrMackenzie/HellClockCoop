@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.17.0 — Marcador no chão (ping) 🧪
+_22/11/2026_
+
+- O botão do meio do mouse marca o chão sob o cursor; no controle, o R3 (apertar o analógico direito) marca alguns metros à sua frente
+- Todos do grupo veem o marcador por 5 s: a seta do jogo apontando o chão, com o nome de quem marcou na cor dele (a mesma dos números de dano)
+- Fora da tela, a seta fica na borda apontando o ponto, com o nome e a distância
+- Cada jogador tem 1 marcador: marcar de novo move o antigo (no máximo 1 por segundo). A tecla muda no .cfg, em [Teclas] Marcador
+- Só informação: não muda o jogo nem a dificuldade. Exige a 0.17.0 em todos os PCs (protocolo 18)
+
 ## 0.16.3 — Valores de balanceamento do autor fixos no mod 🧪
 _22/11/2026_
 

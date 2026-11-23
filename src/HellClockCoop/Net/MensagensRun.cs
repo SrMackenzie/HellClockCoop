@@ -122,6 +122,20 @@ namespace HellClockCoop.Net
         public static Reanimou Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoReanimou, r => new Reanimou { Alvo = r.ReadUInt64(), IndiceAndar = r.ReadUInt32(), Ordem = r.ReadByte() });
     }
 
+    /// <summary>
+    /// Todos → todos no mesmo andar (0.17.0): marcador (ping) no ponto do chão, por Interface.Marcadores.Duracao. Cena
+    /// (LevelDefinition.HashID) e IndiceAndar (4294967295 fora da run) amarram o ponto ao andar de quem marcou.
+    /// </summary>
+    internal sealed class Marcador
+    {
+        public int Cena;
+        public uint IndiceAndar;
+        public float X, Y, Z;
+
+        public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoMarcador, w => { w.Write(Cena); w.Write(IndiceAndar); w.Write(X); w.Write(Y); w.Write(Z); });
+        public static Marcador Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoMarcador, r => new Marcador { Cena = r.ReadInt32(), IndiceAndar = r.ReadUInt32(), X = r.ReadSingle(), Y = r.ReadSingle(), Z = r.ReadSingle() });
+    }
+
     internal static class Mensagem
     {
         public static byte[] Escrever(byte tipo, Action<BinaryWriter> corpo)

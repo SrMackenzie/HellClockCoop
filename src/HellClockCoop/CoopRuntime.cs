@@ -55,6 +55,7 @@ namespace HellClockCoop
             MostrarNomes = config.Bind("Interface", "MostrarNomesDosAliados", true, "Mostra o nome da Steam sobre a cabeça dos aliados.");
             DistanciaEco = config.Bind("Teste", "DistanciaDoEco", 2.5f, "Distância em metros do fantasma do modo eco, para o lado. Com 30 ele fica fora da tela (teste da seta do aliado). Limite: 60 para cada lado. Longe, o fantasma ignora paredes e o fim do mapa (só repete você deslocado) e o dano dele continua aparecendo no seu alvo: use só para ver a seta.");
             Interface.AliadosNaTela.Configurar(config);
+            Interface.Marcadores.Configurar(config);
             Fase3.DanosVisiveis.Configurar(config);
             Fase3.SonsAliados.Configurar(config);
             Balanceamento.Escalonamento.Configurar(config);
@@ -118,6 +119,7 @@ namespace HellClockCoop
 
             if (Teclas.Pressionou(TeclaEco.Value)) AlternarEco();
             if (Teclas.Pressionou(TeclaHierarquia.Value)) RegistrarHierarquia(forcar: true);
+            Interface.Marcadores.LerTecla(semPersonagem ? null : JogadorLocal(), _ecoAtivo); // 0.17.0: ping no chão
         }
 
         private void LateUpdate()
@@ -185,6 +187,7 @@ namespace HellClockCoop
                 t = Desempenho.Somar(Desempenho.Parte.Personagem, t);
             }
             Interface.AliadosNaTela.Atualizar(_sessao, _avatarEco); // depois dos avatares: barra de vida e seta (0.14.0)
+            Interface.Marcadores.Atualizar(_sessao, _avatarEco); // marcador no chão (0.17.0), com as peças do AliadosNaTela
             Interface.CaidoNaTela.Atualizar(); // faixa do jogador caído e aviso de queda (0.15.0)
             Desempenho.Somar(Desempenho.Parte.Interface, t);
         }
@@ -455,6 +458,7 @@ namespace HellClockCoop
             }
 
             Interface.AliadosNaTela.DesenharReserva(_sessao, _avatarEco, MostrarNomes.Value); // só sem as peças do jogo
+            Interface.Marcadores.DesenharReserva(); // idem
             Interface.CaidoNaTela.DesenharReserva(); // só sem a fonte do jogo
             Interface.MenuCoop.Desenhar(this);
             Interface.Novidades.Desenhar();
@@ -487,9 +491,57 @@ namespace HellClockCoop
             Plugin.Log.LogInfo(caminho == 1 ? "[Teclas] Teclado lido pelo Input System." : "[Teclas] Teclado lido pelo Input legado.");
         }
 
+        /// <summary>Mouse0..Mouse4 (esquerdo, direito, meio, voltar, avançar): índice do botão; -1 = não é botão do mouse.</summary>
+        private static int BotaoMouse(string nome) =>
+            nome.Length == 6 && nome.StartsWith("Mouse", StringComparison.OrdinalIgnoreCase) && nome[5] >= '0' && nome[5] <= '4' ? nome[5] - '0' : -1;
+
+        private static bool MousePressionou(int botao)
+        {
+            try
+            {
+                Mouse mouse = Mouse.current;
+                if (mouse != null)
+                {
+                    UnityEngine.InputSystem.Controls.ButtonControl b = botao == 0 ? mouse.leftButton : botao == 1 ? mouse.rightButton
+                        : botao == 2 ? mouse.middleButton : botao == 3 ? mouse.backButton : mouse.forwardButton;
+                    return b.wasPressedThisFrame;
+                }
+            }
+            catch (Exception) { }
+            if (_legadoIndisponivel) return false;
+            try { return Input.GetKeyDown(KeyCode.Mouse0 + botao); }
+            catch (Exception) { return false; }
+        }
+
+        /// <summary>Posição do cursor em pixels (y para cima), pelo Input System ou pelo legado.</summary>
+        public static bool PosicaoMouse(out Vector2 posicao)
+        {
+            posicao = default;
+            try
+            {
+                Mouse mouse = Mouse.current;
+                if (mouse != null)
+                {
+                    posicao = mouse.position.ReadValue();
+                    return true;
+                }
+            }
+            catch (Exception) { }
+            if (_legadoIndisponivel) return false;
+            try
+            {
+                Vector3 p = Input.mousePosition;
+                posicao = new Vector2(p.x, p.y);
+                return true;
+            }
+            catch (Exception) { return false; }
+        }
+
         public static bool Pressionou(string nome)
         {
             if (string.IsNullOrEmpty(nome)) return false;
+            int botao = BotaoMouse(nome);
+            if (botao >= 0) return MousePressionou(botao); // 0.17.0: o marcador usa o botão do meio
             try
             {
                 Keyboard teclado = Keyboard.current;

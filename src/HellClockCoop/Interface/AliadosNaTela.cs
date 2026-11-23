@@ -136,6 +136,38 @@ namespace HellClockCoop.Interface
         /// <summary>True quando a barra e a seta saem com as peças do jogo (o OnGUI não desenha a reserva).</summary>
         private static bool Nativo => !_desativado && _camada != null && _modeloBarra != null;
 
+        // ---------- Peças para o Marcador (0.17.0) ----------
+
+        /// <summary>Cor da seta da HUD do jogo (o seu marcador sai nela).</summary>
+        internal static Color CorSeta => _corSeta;
+
+        /// <summary>Giro que leva a seta do jogo a apontar para a direita (ver GiroBaseSeta).</summary>
+        internal const float GiroSeta = GiroBaseSeta;
+
+        /// <summary>A HUD do jogo está na tela (sem cinemática nem tela preta): a reserva do marcador só desenha com ela.</summary>
+        internal static bool HudVisivel => _camada != null && _camada.gameObject.activeInHierarchy;
+
+        /// <summary>
+        /// Camada, câmera da interface e seta do jogo para o Marcador; monta as peças se ainda não montou (mesma busca
+        /// espaçada da barra e da seta dos aliados). False: o marcador usa a reserva no OnGUI.
+        /// </summary>
+        internal static bool PecasDoMarcador(out RectTransform camada, out Camera camUi, out Sprite seta, out Vector2 tamanhoSeta)
+        {
+            camada = null;
+            camUi = null;
+            seta = null;
+            tamanhoSeta = default;
+            if (!Nativo && !Preparar()) return false;
+            tamanhoSeta = _tamanhoSeta; // depois do Preparar: a seta achada agora já vale neste quadro
+            camada = _camada;
+            camUi = _canvas != null && _canvas.renderMode != RenderMode.ScreenSpaceOverlay ? _canvas.worldCamera : null;
+            seta = _spriteSeta;
+            return seta != null;
+        }
+
+        /// <summary>Põe o centro da peça no ponto da tela (pixels, y para cima), na camada de barras do jogo.</summary>
+        internal static void ColocarNaCamada(RectTransform rt, Vector2 tela, Camera camUi) => Colocar(rt, tela, camUi);
+
         /// <summary>LateUpdate do CoopRuntime (depois dos avatares): monta, posiciona e preenche as peças do jogo.</summary>
         internal static void Atualizar(SessaoCoop sessao, RemotePlayerAvatar eco)
         {

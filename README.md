@@ -240,6 +240,7 @@ Requisito: overlay da Steam ligado (*Steam → Configurações → No jogo*).
 | <kbd>F8</kbd> | **Modo eco**: um fantasma seu repete tudo com 1 s de atraso — testa o mod sem amigo (também pelo menu do coop) |
 | <kbd>F9</kbd> | Diagnóstico: salva a estrutura do personagem |
 | <kbd>F10</kbd> | **Novidades**: o que mudou nas últimas versões do mod, na aba Novidades do menu do coop (abre sozinha uma vez depois de cada atualização) |
+| Botão do meio do mouse ou <kbd>R3</kbd> no controle | **Marcador** (0.17.0): marca um ponto no chão (sob o cursor; no controle, à sua frente) que todo o grupo vê por 5 s, com o seu nome na sua cor |
 
 **Host** (quem convida): entre num save, aperte <kbd>F7</kbd> e escolha **Criar coop e convidar amigos**. **Convidado**:
 aceite o convite na Steam (com o jogo fechado, ele abre e entra sozinho). Quando o host entra numa run, todos vão junto.

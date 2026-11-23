@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "22/11/2026",
-  "versao": "0.16.3",
+  "versao": "0.17.0",
   "fases": [
     {
       "id": "B",
@@ -283,8 +283,8 @@
           "Aliados na tela: barra de vida sobre o aliado e seta apontando quem está fora da tela"
         ],
         [
-          "planejado",
-          "Marcador (ping): um botão marca um ponto no chão que todos veem"
+          "testar",
+          "Marcador (ping): o botão do meio do mouse (R3 no controle) marca um ponto no chão que todos veem por 5 s, com o nome na cor do aliado"
         ],
         [
           "planejado",
