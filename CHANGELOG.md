@@ -4,6 +4,12 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.26.1 — Lista de salas só quando você pede 🧪
+_23/11/2026_
+
+- A aba Salas busca a lista uma vez ao entrar nela; depois, só pelo "Atualizar lista" (antes, também a cada 30 s com a aba à vista)
+- Exige a 0.26.1 em todos os PCs (protocolo sem mudança)
+
 ## 0.26.0 — Nome da sala digitável, menu mais leve e opacidade do dano 🧪
 _23/11/2026_
 

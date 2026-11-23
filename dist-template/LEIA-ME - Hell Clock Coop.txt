@@ -238,6 +238,8 @@ ESTADO ATUAL (versão de teste, Fase 3)
   chegavam). O menu do coop volta a abrir na aba Sessão, com "Criar coop e convidar amigos"
   em primeiro, e não pesa mais em jogo com ele aberto. Em Ajustes, "Opacidade dos danos dos
   aliados" (padrão 50%; OpacidadeDanoDosAliados no .cfg). Exige a 0.26.0 em todos os PCs.
+- (0.26.1): a aba Salas busca a lista uma vez ao entrar nela; depois, só no "Atualizar lista".
+  Exige a 0.26.1 em todos os PCs.
 - A Deluxe Edition (cosmética) não importa.
 
 

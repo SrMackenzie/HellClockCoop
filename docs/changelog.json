@@ -2,6 +2,21 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.26.1",
+      "data": "23/11/2026",
+      "testado": false,
+      "titulo": "Lista de salas só quando você pede",
+      "itens": [
+        "A aba Salas busca a lista uma vez ao entrar nela; depois, só pelo \"Atualizar lista\" (antes, também a cada 30 s com a aba à vista)",
+        "Exige a 0.26.1 em todos os PCs (protocolo sem mudança)"
+      ],
+      "testar": [
+        "Entre na aba Salas: \"Buscando salas...\" uma vez e a lista aparece",
+        "Fique 1 min na aba: \"há N s\" só cresce, sem nova busca (sem \"Buscando salas públicas\" novo no log)",
+        "Atualizar lista busca de novo; sair para outra aba e voltar busca uma vez"
+      ]
+    },
+    {
       "v": "0.26.0",
       "data": "23/11/2026",
       "testado": false,

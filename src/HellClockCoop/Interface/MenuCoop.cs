@@ -256,6 +256,7 @@ namespace HellClockCoop.Interface
             _confirmarEntrarAte = -1f;
             _fecharLiberadoEm = 0f;
             _novidadesVistas = false;
+            _buscarSalasAoEntrar = true; // vale quando a aba Salas aparecer (na reserva, a lista única já a mostra)
             _mouseAntes = Vector2.zero; // ao reabrir, o mouse parado não puxa o foco
             _mouseIniciado = false;
             _nativo = PainelNativo.Preparar();
@@ -486,11 +487,15 @@ namespace HellClockCoop.Interface
             });
         }
 
+        /// <summary>0.26.1: a lista de salas é buscada uma vez ao entrar na aba Salas; depois, só pelo "Atualizar lista".</summary>
+        private static bool _buscarSalasAoEntrar;
+
         private static void DefinirAba(Aba aba)
         {
             if (aba == _aba) return;
             PararEdicaoDoNome();
             _aba = aba;
+            if (aba == Aba.Salas) _buscarSalasAoEntrar = true;
             _foco = Acao.Nenhuma; // o Montar escolhe o primeiro item da aba
             _arrastando = Acao.Nenhuma;
             _rolagem = 0f;
@@ -934,14 +939,18 @@ namespace HellClockCoop.Interface
         /// <summary>
         /// Aba Salas (0.18.0; 0.21.0 visual A da janela larga): botão de atualizar com a idade da lista e um item de 2 linhas
         /// por sala ("Host  ·  Cursed War" | "Nv 34  2/4"; embaixo o lugar e o motivo de indisponível). Busca sozinha ao
-        /// abrir e a cada 30 s com a aba à vista.
+        /// entrar na aba; depois, só pelo "Atualizar lista" (0.26.1; até a 0.26.0, também a cada 30 s com a aba à vista).
         /// </summary>
         private static void MontarSalas(CoopRuntime rt)
         {
             SessaoCoop s = rt.Sessao;
             bool steam = s.EstadoAtual != SessaoCoop.Estado.AguardandoSteam;
             bool conectando = s.EstadoAtual == SessaoCoop.Estado.CriandoLobby || s.EstadoAtual == SessaoCoop.Estado.EntrandoLobby;
-            if (steam && (s.UltimaBusca < 0f || Time.unscaledTime - s.UltimaBusca > Salas.ListaVelhaApos)) s.BuscarSalas();
+            if (_buscarSalasAoEntrar && steam) // com o Steam ainda carregando, espera e busca quando ficar pronto
+            {
+                _buscarSalasAoEntrar = false;
+                s.BuscarSalas(); // dentro de 3 s da última busca, não repete (Salas.EsperaEntreBuscas)
+            }
 
             // 0.25.0: a sala em que você está (host ou convidado), sempre no topo, também privada ou cheia; sem ação de entrar.
             // Vem do estado da sessão: a busca da Steam só traz salas públicas com vaga, e a nossa fica de fora (SalaVisivel).

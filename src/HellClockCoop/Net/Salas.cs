@@ -30,10 +30,6 @@ namespace HellClockCoop.Net
 
         /// <summary>Intervalo mínimo entre duas buscas (o botão "Atualizar lista" não martela a Steam).</summary>
         public const float EsperaEntreBuscas = 3f;
-
-        /// <summary>Lista mais velha que isto é buscada de novo ao abrir a aba.</summary>
-        public const float ListaVelhaApos = 30f;
-
         /// <summary>
         /// Nome vindo da Steam ou do lobby: sem caracteres de controle, sem formatação invisível (U+202E inverte o texto,
         /// U+200B...), sem &lt; &gt; (rich text) e cortado sem partir emoji.
