@@ -933,7 +933,7 @@ S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum 
 | COOP-SALA-PUBLICA | "Sala pública (aparece na aba Salas)" (caixa de marcar); vale para o próximo coop e, como host, muda a sala na hora; convidado não muda (0.18.0) | aba Sessão (sem sessão ou como host) | P + S (`SessaoCoop.AlternarSalaPublica`, `SetLobbyType`) | `[Coop] SalaPublica` |
 | COOP-ABA-SALAS | Aba "Salas" (0.18.0), entre Sessão e Ajustes; abas de 160 para caber 4 | janela; na reserva, na lista única depois da Sessão | R | — |
 | COOP-SALAS-ATUALIZAR | "Atualizar lista" com a idade da lista ("há 12 s"); "Buscando salas..." indisponível. Busca sozinha com a aba à vista quando nunca buscou ou a lista tem mais de 30 s; no máximo 1 busca a cada 3 s; sem resposta em 15 s, libera nova busca | aba Salas | S (`SessaoCoop.BuscarSalas`) | — |
-| COOP-SALAS-SALA | Uma linha por sala pública compatível: "Host  -  Ato 2, andar 5" e "Nv 34  2/4"; indisponível conectando | aba Salas | S (`SessaoCoop.EntrarNaSala`; já num coop, o primeiro aperto vira "Confirmar: sair do seu coop e entrar?" por 3 s) | — |
+| COOP-SALAS-SALA | Uma linha por sala pública compatível: "Host  -  Ato 2, andar 5" e "Nv 34  2/4"; indisponível conectando ou, desde a 0.19.0, numa run aonde o save não chegou (à direita, "você chegou ao andar 4", e uma linha de explicação abaixo da lista; §12.8) | aba Salas | S (`SessaoCoop.EntrarNaSala`; já num coop, o primeiro aperto vira "Confirmar: sair do seu coop e entrar?" por 3 s) | — |
 | COOP-AVISO-ATUALIZACAO | Recado do atualizador desta abertura (versão nova instalada ou atualização recusada), no topo da lista (0.13.0; antes no painel do canto) | aba Sessão, quando houver | ∅ | `[Atualizacao]` |
 | COOP-CRIAR | "Criar coop e convidar amigos" (sem sessão); "Esperando o Steam..." e "Conectando..." indisponíveis | aba Sessão | S (`SessaoCoop.HospedarOuConvidar`) | — |
 | COOP-CONVIDAR | "Convidar amigos (Steam)" | aba Sessão, em sessão | S (reabre o overlay de convite) | — |
@@ -1188,6 +1188,45 @@ existe só no host; quem herda o lobby hoje vira "host" sem estado).
   que levam a progresso salvo (`PlanoAndar`, `FimRun`, inimigos e baús do host; `TimerBonus`, `Golpes` e objetos do
   convidado) precisam de teto ou validação contra desconhecidos.
 - **Balanceamento:** sem efeito nos números. Expulsar reduz o grupo e a escala acompanha (`Pares`), como quem sai.
+
+### 12.8 Lista de salas, etapa 2/3: trava pelo progresso (versão 0.19.0, protocolo 20)
+
+Decisões do autor (23/11/2026): o coop não dá progresso de campanha. Regra pela masmorra exata e pelo andar; a sala
+aparece travada na lista (não escondida); pelo convite, ou com o host indo mais longe, o convidado fica no coop sem
+acompanhar, o host é avisado e a escala deixa de contar esse convidado.
+
+- **Fatos do IL (2.1.1.1):** `PlayerDungeonData.maxFloorReached` recebe `_currentLevelIndex + 1` em
+  `PlayerSaveManager.CurrentLevelChanged`, ou seja, já conta a partir de 1, como o `hcc_andar` (0 = nunca entrou). O
+  recorde é por `DungeonConfig.HashID`, e cada ato tem um `DungeonConfig` por tier (`WorldTierConfig.GetDungeonConfig`:
+  Normal, Abyss, Oblivion, Void). Sobrevivência (`DynamicDungeonConfig`) e Ascensão (`AscensionDungeonConfig`) são
+  `DungeonConfig` com recorde próprio. `PlayerData.GetDungeonDataByID` devolve um objeto novo com 0 quando não há
+  registro, sem gravar. A liberação de um ato fica em condições dos assets (`HasCompletedDungeonCondition`), que o mod
+  não replica. Por isso, o andar 1 de um ato nunca começado conta como não alcançado.
+- **Regra (`Salas.Liberado`):** recorde do save na masmorra do host ≥ andar do host. A leitura falha (-1) trava. Hub,
+  menu e atalhos especiais (`ESpecialFloor`, sem `DungeonConfig`) não travam.
+- **Lobby:** o host grava `hcc_dungeon` (`HashID` da masmorra; 0 fora da run ou em atalho especial). Lido com
+  `Salas.LerHash` (qualquer int; lixo vira 0).
+- **Aba Salas:** o recorde é lido do save carregado a cada montagem da lista (`RunCompartilhada.RecordeNoSave`, só com
+  personagem). A sala travada (`Salas.SalaTravada`) fica indisponível e mostra o recorde no lugar do nível e das vagas.
+  Sem save carregado (menu), a sala aparece normal. `EntrarNaSala` confere de novo.
+- **Convidado (`RunCompartilhada.AtualizarConvidado`):** ao ir iniciar a run do host (também entrando no meio),
+  confere a regra. Se não chegou lá: não inicia, avisa (`Salas.TextoForaDaRun`), manda `ForaDaRun { Fora = true }`
+  (tipo 29, 1 byte) a todos os pares (quem entra depois recebe ao chegar, depois do `Hello`:
+  `RunCompartilhada.AoNovoPar`) e ignora os planos seguintes desta run. Run nova do host (`Primeiro`) confere de
+  novo, e `FimRun` libera. Ao voltar a acompanhar, manda `Fora = false`. A trava vale só na entrada: quem já acompanha
+  (`_seguindoHost`, a run foi iniciada por ordem do host) segue o host para andares novos. Quem entra no coop com uma
+  run própria aberta também passa pela trava antes de ser avançado até o andar do host, e não acompanha se a masmorra
+  for outra.
+- **Todos os PCs:** `Par.SemLiberar` (aceito de qualquer par compatível, porque cada um só fala de si) tira o par de
+  `Escalonamento.Jogadores` (inimigos, tempo, XP, ouro e réplicas), a não ser que esteja no mesmo andar
+  (`Escalonamento.ForaDaEscala`). No host, os `Golpes` e `StatusInimigos` de quem está fora da escala são ignorados.
+  Assim, um `ForaDaRun` falso com cena falsa não tira da escala quem ainda bate. O aviso e o log ficam só no host, no
+  máximo 1 a cada 30 s por par. Como está no hub, o `JogadorCaido` já não o contava (`MesmoAndar`). Limite: entre o
+  plano do primeiro andar e a chegada do `ForaDaRun`, os inimigos que nascem já usam a escala com ele, o que só deixa
+  o andar mais difícil.
+- **Dados não confiáveis:** a trava roda no PC de quem entra. Um cliente alterado pode pular a trava, mas só ganha
+  progresso no próprio save (o host não grava nada do convidado). O `hcc_dungeon` falso de um host só trava ou libera
+  a linha na lista: a checagem da entrada usa o `DungeonHash` do `PlanoAndar`. Fica para a etapa 3 junto do resto.
 
 ## 13. Atualizador automático (versão 0.8.0)
 

@@ -11,6 +11,8 @@ namespace HellClockCoop.Net
         public string Lugar;            // LugarMenu, LugarHub ou LugarRun
         public int Ato, Andar, Nivel;   // 0 = desconhecido
         public int Jogadores, Vagas;
+        public int Dungeon;             // DungeonConfig.HashID da run do host (0.19.0); 0 = fora da run ou desconhecido
+        public long Recorde = -1;       // nosso recorde de andar nessa masmorra (maxFloorReached); -1 = sem save carregado
     }
 
     /// <summary>
@@ -84,7 +86,27 @@ namespace HellClockCoop.Net
         public static string TextoSala(SalaListada s) => s.Host + "  -  " + TextoLugar(s.Lugar, s.Ato, s.Andar);
 
         public static string ValorSala(SalaListada s) =>
-            (s.Nivel > 0 ? "Nv " + s.Nivel + "  " : "") + s.Jogadores + "/" + s.Vagas;
+            SalaTravada(s) ? TextoRecorde(s.Recorde) : (s.Nivel > 0 ? "Nv " + s.Nivel + "  " : "") + s.Jogadores + "/" + s.Vagas;
+
+        /// <summary>Hash do DungeonConfig vindo do lobby: qualquer int (pode ser negativo); lixo ou vazio vira 0.</summary>
+        public static int LerHash(string s) => !string.IsNullOrEmpty(s) && s.Length <= 11 && int.TryParse(s, out int v) ? v : 0;
+
+        /// <summary>
+        /// Trava de progresso (0.19.0): o recorde do nosso save na masmorra do host (maxFloorReached, que o jogo conta a partir
+        /// de 1, como o andar do lobby) alcança o andar dele. Andar 0 (fora da run) não trava; recorde -1 (sem leitura) trava.
+        /// </summary>
+        public static bool Liberado(int andarDoHost, long recorde) => andarDoHost <= 0 || recorde >= andarDoHost;
+
+        /// <summary>A sala está numa run aonde o nosso save não chegou. Sem save carregado (menu) ou sem masmorra, não trava.</summary>
+        public static bool SalaTravada(SalaListada s) =>
+            s != null && s.Lugar == LugarRun && s.Dungeon != 0 && s.Recorde >= 0 && !Liberado(s.Andar, s.Recorde);
+
+        public static string TextoRecorde(long recorde) => recorde <= 0 ? "você não começou essa masmorra" : "você chegou ao andar " + recorde;
+
+        /// <summary>Aviso do convidado que não acompanha a run do host.</summary>
+        public static string TextoForaDaRun(int ato, int andar, long recorde) =>
+            $"O seu save não chegou aonde o host está ({TextoLugar(LugarRun, ato, andar)}; {TextoRecorde(recorde)}). " +
+            "Você fica no hub e acompanha a próxima run liberada.";
 
         /// <summary>
         /// A sala aparece na lista: mesma versão do mod e do protocolo, mesma DLC Cursed War (a run só é dividida assim),

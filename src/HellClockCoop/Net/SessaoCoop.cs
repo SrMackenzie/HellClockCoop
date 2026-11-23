@@ -25,6 +25,8 @@ namespace HellClockCoop.Net
         public int SequenciaMorto = -1; // sequência do último snapshot que decidiu Morto (0.16.0; -1 = nenhum)
         public bool Deluxe, CursedWar;
         public bool DlcOk;              // mesma Cursed War (decide se o convidado acompanha a run)
+        public bool SemLiberar;         // 0.19.0: o save do convidado não chegou à run (ForaDaRun); fora da escala
+        public float ProximoAvisoFora;  // 0.19.0, no host: limite do aviso de ForaDaRun (1 a cada 30 s)
         public int CenaRemota = -2;   // -2 = ainda não visto (int.MinValue foi removido do mscorlib do jogo)
         public Aparencia Aparencia;
         public RemotePlayerAvatar Avatar;
@@ -228,6 +230,12 @@ namespace HellClockCoop.Net
                 Avisar("Você foi expulso dessa sala.");
                 return;
             }
+            sala.Recorde = sala.Dungeon != 0 ? Fase2.RunCompartilhada.RecordeNoSave(sala.Dungeon) : -1;
+            if (Salas.SalaTravada(sala)) // 0.19.0: o menu já mostra indisponível; aqui confere de novo
+            {
+                Avisar($"O seu save ainda não chegou aonde essa sala está ({Salas.TextoRecorde(sala.Recorde)}).");
+                return;
+            }
             Plugin.Log.LogInfo($"[Sessão] Entrando na sala de {sala.Host} pela lista.");
             Entrar(new CSteamID(sala.Lobby));
         }
@@ -337,6 +345,7 @@ namespace HellClockCoop.Net
                     Ato = Salas.LerInteiro(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyAto), Salas.AtoMaximo),
                     Andar = Salas.LerInteiro(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyAndar), Salas.AndarMaximo),
                     Nivel = Salas.LerInteiro(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyNivel), Salas.NivelMaximo),
+                    Dungeon = Salas.LerHash(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyDungeon)),
                     Jogadores = jogadores, Vagas = vagas,
                 });
             }
@@ -471,11 +480,11 @@ namespace HellClockCoop.Net
             if (!SouHost || Time.unscaledTime < _proximosDadosSala) return;
             _proximosDadosSala = Time.unscaledTime + 2f;
             string lugar = Salas.LugarMenu;
-            int ato = 0, andar = 0, nivel = 0;
+            int ato = 0, andar = 0, nivel = 0, dungeonHash = 0;
             if (jogadorLocal != null)
             {
                 lugar = Salas.LugarHub;
-                if (Fase2.RunCompartilhada.LugarDaRun(out string dungeon, out andar))
+                if (Fase2.RunCompartilhada.LugarDaRun(out string dungeon, out dungeonHash, out andar))
                 {
                     lugar = Salas.LugarRun;
                     ato = Salas.AtoDoNome(dungeon);
@@ -487,6 +496,7 @@ namespace HellClockCoop.Net
             GravarDado(Protocolo.ChaveLobbyLugar, lugar);
             GravarDado(Protocolo.ChaveLobbyAto, ato.ToString());
             GravarDado(Protocolo.ChaveLobbyAndar, andar.ToString());
+            GravarDado(Protocolo.ChaveLobbyDungeon, dungeonHash.ToString()); // 0.19.0: trava de progresso de quem entra
             GravarDado(Protocolo.ChaveLobbyNivel, nivel.ToString());
             GravarDado(Protocolo.ChaveLobbyNome, SteamFriends.GetPersonaName());
         }
@@ -596,6 +606,7 @@ namespace HellClockCoop.Net
                         Fase3.ObjetosCompartilhados.AoNovoConvidado(this, p);
                         Fase3.SantuariosCompartilhados.AoNovoConvidado(this, p);
                     }
+                    if (p.Compativel && p.DlcOk) Fase2.RunCompartilhada.AoNovoPar(this, p); // 0.19.0: ForaDaRun a quem chegou depois
                     if (p.Compativel && jogadorLocal != null)
                     {
                         // Manda a aparência atual direto para quem acabou de chegar.
@@ -620,6 +631,7 @@ namespace HellClockCoop.Net
                 case Protocolo.TipoTimerBonus:
                 case Protocolo.TipoFimRun:
                 case Protocolo.TipoPedidoAvanco:
+                case Protocolo.TipoForaDaRun:
                     Fase2.RunCompartilhada.Receber(this, p, dados);
                     break;
                 case Protocolo.TipoReanimou:

@@ -1114,10 +1114,10 @@ namespace HellClockCoop.Fase3
                         else if (Pendentes.TryGetValue(aj.Id, out InimigoSpawn pa)) aj.JuntarEm(pa);
                         break;
                     case Protocolo.TipoGolpes:
-                        if (Host && HostEmRun) HostAplicarGolpes(de, Golpes.Desserializar(dados));
+                        if (Host && HostEmRun && !Balanceamento.Escalonamento.ForaDaEscala(de)) HostAplicarGolpes(de, Golpes.Desserializar(dados));
                         break;
                     case Protocolo.TipoStatusInimigos:
-                        if (Host && HostEmRun && de.Compativel && de.DlcOk) HostAplicarStatus(de, StatusInimigos.Desserializar(dados));
+                        if (Host && HostEmRun && de.Compativel && de.DlcOk && !Balanceamento.Escalonamento.ForaDaEscala(de)) HostAplicarStatus(de, StatusInimigos.Desserializar(dados));
                         break;
                 }
             }

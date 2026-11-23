@@ -102,6 +102,8 @@ IdaVolta("PedidoAvanco", new (string, object)[] { ("IndiceAndar", 6u), ("Andares
 IdaVolta("Reanimando", new (string, object)[] { ("Alvo", 76561198000000123UL), ("IndiceAndar", 4u), ("Estado", (byte)1), ("Fracao", 0.375f) }, 26); // 0.16.0
 IdaVolta("Reanimou", new (string, object)[] { ("Alvo", 76561198000000123UL), ("IndiceAndar", 4u), ("Ordem", (byte)2) }, 27); // 0.16.0
 IdaVolta("Marcador", new (string, object)[] { ("Cena", -123456789), ("IndiceAndar", 4294967295u), ("X", 12.5f), ("Y", -0.25f), ("Z", 99999.5f) }, 28); // 0.17.0
+IdaVolta("ForaDaRun", new (string, object)[] { ("Fora", true) }, 29); // 0.19.0
+IdaVolta("ForaDaRun", new (string, object)[] { ("Fora", false) }, 29);
 try { T("HellClockCoop.Net.FimRun").GetMethod("Desserializar").Invoke(null, new object[] { new byte[] { 20, 0, 0, 0, 0 } }); Checar(false, "PlanoAndar lido como FimRun deveria falhar"); }
 catch (TargetInvocationException e) { Checar(e.InnerException is FormatException, "Tipo errado é recusado (FimRun ≠ PlanoAndar)"); }
 
@@ -720,8 +722,36 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Checar((bool)Sm("PodeBuscar", 10f, -1f) && !(bool)Sm("PodeBuscar", 10f, 8f) && (bool)Sm("PodeBuscar", 11f, 8f),
         "Salas: nova busca só 3 s depois da anterior");
     var tp = T("HellClockCoop.Net.Protocolo");
-    Checar((int)tp.GetField("Versao").GetValue(null) == 19 && (byte)tp.GetField("TipoExpulso").GetValue(null) == 13,
-        "Protocolo 19 com Expulso tipo=13 (mensagem de 1 byte)");
+    Checar((int)tp.GetField("Versao").GetValue(null) == 20 && (byte)tp.GetField("TipoExpulso").GetValue(null) == 13
+           && (byte)tp.GetField("TipoForaDaRun").GetValue(null) == 29,
+        "Protocolo 20 com Expulso tipo=13 (1 byte) e ForaDaRun tipo=29 (0.19.0)");
+
+    // 0.19.0: trava pelo progresso (maxFloorReached conta a partir de 1, como o andar do lobby)
+    Checar((int)Sm("LerHash", "-123456789") == -123456789 && (int)Sm("LerHash", "2147483647") == 2147483647
+           && (int)Sm("LerHash", "abc") == 0 && (int)Sm("LerHash", "") == 0 && (int)Sm("LerHash", (object)null) == 0
+           && (int)Sm("LerHash", "99999999999") == 0 && (int)Sm("LerHash", "123456789012") == 0,
+        "Salas: hash da masmorra aceita qualquer int (até negativo); lixo, vazio ou fora do int vira 0");
+    Checar((bool)Sm("Liberado", 5, 5L) && (bool)Sm("Liberado", 5, 9L) && !(bool)Sm("Liberado", 5, 4L) && !(bool)Sm("Liberado", 1, 0L)
+           && !(bool)Sm("Liberado", 1, -1L) && (bool)Sm("Liberado", 0, -1L),
+        "Trava: recorde ≥ andar do host libera; andar 1 de masmorra nunca começada e leitura falha travam; fora da run não trava");
+    var st = Activator.CreateInstance(tSala);
+    void Ps(string lugar, int dungeon, int andar, long recorde)
+    {
+        tSala.GetField("Lugar").SetValue(st, lugar); tSala.GetField("Dungeon").SetValue(st, dungeon);
+        tSala.GetField("Andar").SetValue(st, andar); tSala.GetField("Recorde").SetValue(st, recorde);
+        tSala.GetField("Jogadores").SetValue(st, 1); tSala.GetField("Vagas").SetValue(st, 4);
+    }
+    bool Trav() => (bool)Sm("SalaTravada", st);
+    Ps("run", 77, 5, 2); bool t1 = Trav(); string v1 = (string)Sm("ValorSala", st);
+    Ps("run", 77, 5, 0); string v0 = (string)Sm("ValorSala", st);
+    Ps("run", 77, 5, 5); bool t2 = Trav();
+    Ps("run", 77, 5, -1); bool t3 = Trav();
+    Ps("run", 0, 5, 2); bool t4 = Trav();
+    Ps("hub", 77, 0, 0); bool t5 = Trav(); string v5 = (string)Sm("ValorSala", st);
+    Checar(t1 && !t2 && !t3 && !t4 && !t5, "Trava: sala na run além do recorde trava; recorde alcançado, sem save, atalho especial (sem masmorra) e hub não");
+    Checar(v1 == "você chegou ao andar 2" && v0 == "você não começou essa masmorra" && v5 == "1/4", "Trava: sala travada mostra o recorde no lugar do nível e das vagas");
+    Checar((string)Sm("TextoForaDaRun", 3, 5, 2L) == "O seu save não chegou aonde o host está (Ato 3, andar 5; você chegou ao andar 2). Você fica no hub e acompanha a próxima run liberada.",
+        "Trava: aviso do convidado que não acompanha");
 }
 
 // Balanceamento: lista "2, 3, 4" do .cfg e XP/ouro/Soulstones/moedas em coop (cada um × fator, arredondamento sorteado)

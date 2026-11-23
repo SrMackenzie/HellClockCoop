@@ -2,6 +2,26 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.19.0",
+      "data": "23/11/2026",
+      "testado": false,
+      "titulo": "Lista de salas (2/3): trava pelo progresso",
+      "itens": [
+        "O coop não adianta a campanha de ninguém: só acompanha a run do host quem já chegou àquela masmorra (mesmo ato e mesmo tier: Normal, Abyss, Oblivion ou Void; Sobrevivência e Ascensão também) e àquele andar no próprio save",
+        "Na aba Salas, a sala numa run aonde o seu save não chegou aparece indisponível, com o seu recorde no lugar das vagas (\"você chegou ao andar 4\")",
+        "Convite de amigo e host que vai mais longe: quem não chegou lá fica no coop, no hub, com um aviso, e acompanha a próxima run liberada. O host é avisado, e esse jogador sai da escala do grupo (inimigos, tempo, XP e ouro) enquanto não acompanha",
+        "Hub, menu e atalhos especiais não têm trava. O andar 1 de um ato que você nunca começou conta como não alcançado",
+        "Exige a 0.19.0 em todos os PCs (protocolo 20)"
+      ],
+      "testar": [
+        "Com um save mais atrasado no convidado, entre numa run do host além do recorde dele: a sala aparece indisponível na aba Salas",
+        "Pelo convite, com o host nessa run: o convidado fica no hub com o aviso, e o host recebe \"ainda não chegou aqui na campanha\"",
+        "Com o convidado fora, a aba Ajustes do host deixa de dizer \"Agora, com 2 jogadores\" (ele saiu da escala)",
+        "Quando o host termina a run e começa uma liberada, o convidado acompanha normalmente",
+        "Com 3 PCs, quem está fora também sai da escala no outro convidado (a aba Ajustes dele mostra 2 jogadores)"
+      ]
+    },
+    {
       "v": "0.18.0",
       "data": "22/11/2026",
       "testado": false,

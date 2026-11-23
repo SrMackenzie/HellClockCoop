@@ -11,7 +11,7 @@ namespace HellClockCoop.Net
     internal static class Protocolo
     {
         /// <summary>Muda sempre que o formato de qualquer mensagem mudar. Pares com versões diferentes não conversam.</summary>
-        public const int Versao = 19; // 19: Expulso (host tira alguém da sala, 0.18.0)
+        public const int Versao = 20; // 20: ForaDaRun (convidado sem progresso para o lugar do host, 0.19.0)
 
         public const int CanalConfiavel = 0;
         public const int CanalSnapshots = 1;
@@ -32,6 +32,7 @@ namespace HellClockCoop.Net
         public const byte TipoReanimando = 26;   // todos → todos no mesmo andar, canal não confiável (0.16.0)
         public const byte TipoReanimou = 27;     // todos → todos no mesmo andar (0.16.0)
         public const byte TipoMarcador = 28;     // todos → todos no mesmo andar (ping, 0.17.0)
+        public const byte TipoForaDaRun = 29;    // convidado → todos os pares: não acompanha a run, o save dele não chegou lá (0.19.0)
 
         // Fase 3a — inimigos do host (host → convidados, salvo Golpes)
         public const byte TipoInimigoSpawn = 30;
@@ -74,6 +75,7 @@ namespace HellClockCoop.Net
         public const string ChaveLobbyLugar = "hcc_lugar";  // Salas.LugarMenu/LugarHub/LugarRun
         public const string ChaveLobbyAto = "hcc_ato";      // 0 = desconhecido
         public const string ChaveLobbyAndar = "hcc_andar";  // 1 = primeiro andar; 0 fora da run
+        public const string ChaveLobbyDungeon = "hcc_dungeon"; // DungeonConfig.HashID da run do host; 0 fora da run ou em atalho especial (0.19.0)
         public const string ChaveLobbyNivel = "hcc_nivel";  // nível do personagem do host; 0 sem personagem
     }
 

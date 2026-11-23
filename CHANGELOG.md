@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.19.0 — Lista de salas (2/3): trava pelo progresso 🧪
+_23/11/2026_
+
+- O coop não adianta a campanha de ninguém: só acompanha a run do host quem já chegou àquela masmorra (mesmo ato e mesmo tier: Normal, Abyss, Oblivion ou Void; Sobrevivência e Ascensão também) e àquele andar no próprio save
+- Na aba Salas, a sala numa run aonde o seu save não chegou aparece indisponível, com o seu recorde no lugar das vagas ("você chegou ao andar 4")
+- Convite de amigo e host que vai mais longe: quem não chegou lá fica no coop, no hub, com um aviso, e acompanha a próxima run liberada. O host é avisado, e esse jogador sai da escala do grupo (inimigos, tempo, XP e ouro) enquanto não acompanha
+- Hub, menu e atalhos especiais não têm trava. O andar 1 de um ato que você nunca começou conta como não alcançado
+- Exige a 0.19.0 em todos os PCs (protocolo 20)
+
 ## 0.18.0 — Lista de salas (1/3): salas públicas 🧪
 _22/11/2026_
 

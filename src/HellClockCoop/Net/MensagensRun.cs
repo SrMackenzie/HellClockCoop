@@ -136,6 +136,18 @@ namespace HellClockCoop.Net
         public static Marcador Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoMarcador, r => new Marcador { Cena = r.ReadInt32(), IndiceAndar = r.ReadUInt32(), X = r.ReadSingle(), Y = r.ReadSingle(), Z = r.ReadSingle() });
     }
 
+    /// <summary>
+    /// Convidado → todos os pares (0.19.0): Fora = o save do convidado não chegou à masmorra e ao andar da run do host; ele fica no
+    /// hub, não acompanha e sai da escala do grupo. Fora = false quando volta a acompanhar (fim da run ou run liberada).
+    /// </summary>
+    internal sealed class ForaDaRun
+    {
+        public bool Fora;
+
+        public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoForaDaRun, w => w.Write(Fora));
+        public static ForaDaRun Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoForaDaRun, r => new ForaDaRun { Fora = r.ReadBoolean() });
+    }
+
     internal static class Mensagem
     {
         public static byte[] Escrever(byte tipo, Action<BinaryWriter> corpo)

@@ -39,6 +39,9 @@ namespace HellClockCoop.Fase2
         private static bool _ordemDoHost;            // libera as entradas de run bloqueadas
         private static bool _avisouBloqueio;
         private static ulong _abandonouHost;         // SteamID do host cuja run você abandonou caído (0 = nenhum)
+        private static bool _semLiberar;             // 0.19.0: o save não chegou à run do host; espera a próxima
+        private static bool _hostSabeQueEstouFora;   // 0.19.0: já mandou ForaDaRun { Fora = true } aos pares
+        private static bool _seguindoHost;           // 0.19.0: a run aberta foi iniciada por ordem do host (até o FimRun)
 
         // Estado do host
         private static PlanoAndar _ultimoPlano;
@@ -89,17 +92,22 @@ namespace HellClockCoop.Fase2
 
         /// <summary>
         /// Lugar deste PC para a lista de salas (0.18.0): falso fora da run (hub). Na run, o nome do DungeonConfig (o ato sai
-        /// dele: Salas.AtoDoNome) e o andar contado a partir de 1.
+        /// dele: Salas.AtoDoNome) e o andar contado a partir de 1. Desde a 0.19.0 também o HashID da masmorra (trava de
+        /// progresso de quem entra); 0 num atalho especial (ESpecialFloor), que não tem trava.
         /// </summary>
-        internal static bool LugarDaRun(out string dungeon, out int andar)
+        internal static bool LugarDaRun(out string dungeon, out int dungeonHash, out int andar)
         {
             dungeon = "";
+            dungeonHash = 0;
             andar = 0;
             try
             {
                 DungeonProgressManager dpm = Dpm;
                 if (dpm == null || !dpm.RunStarted.Value) return false;
-                dungeon = dpm.CurrentDungeonConfig != null ? dpm.CurrentDungeonConfig.name : "";
+                DungeonConfig d = dpm.CurrentDungeonConfig;
+                dungeon = d != null ? d.name : "";
+                bool especial = dpm.CurrentESpecialFloor != ESpecialFloor.None; // a run especial não grava _currentDungeonConfig
+                dungeonHash = d != null && !especial ? d.HashID : 0;
                 andar = (int)Math.Min(IndiceAtual + 1u, (uint)Salas.AndarMaximo);
                 return true;
             }
@@ -109,11 +117,38 @@ namespace HellClockCoop.Fase2
             }
         }
 
+        /// <summary>
+        /// Recorde de andar do save carregado na masmorra (PlayerDungeonData.maxFloorReached, contado a partir de 1;
+        /// 0 = nunca entrou). -1 sem personagem (menu) ou se a leitura falhar. Só lê: GetDungeonDataByID não grava
+        /// registro novo (conferido no IL da 2.1.1.1).
+        /// </summary>
+        internal static long RecordeNoSave(int dungeonHash)
+        {
+            // Esta guarda não sai: CurrentPlayerData passa por PlayerSaveManager.Instance, que cria o singleton se não
+            // existir. Com personagem carregado, o jogo já o criou.
+            if (CoopRuntime.JogadorLocal() == null) return -1;
+            try
+            {
+                PlayerDungeonData dd = PlayerSaveManager.CurrentPlayerData?.GetDungeonDataByID(dungeonHash);
+                return dd != null ? dd.maxFloorReached : -1;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
         // ---------------- Laço ----------------
 
         public static void Atualizar(PlayerController jogador)
         {
-            if (!Convidado) _abandonouHost = 0; // fora da sessão (saiu ou caiu): ao voltar, acompanha a run do host
+            if (!Convidado)
+            {
+                _abandonouHost = 0; // fora da sessão (saiu ou caiu): ao voltar, acompanha a run do host
+                _semLiberar = false;
+                _hostSabeQueEstouFora = false; // o host esquece o par que saiu (o Par é outro na volta)
+                _seguindoHost = false;
+            }
             if (Sessao == null) return;
             if (Host) AtualizarHost();
             if (Convidado) AtualizarConvidado(jogador);
@@ -140,6 +175,24 @@ namespace HellClockCoop.Fase2
 
             if (!Dpm.RunStarted.Value)
             {
+                // 0.19.0: só acompanha se o próprio save já chegou a esta masmorra e a este andar (decisão do autor: o coop
+                // não dá progresso de campanha). Atalho especial não tem DungeonConfig nem trava.
+                if (p.AndarEspecial == (int)ESpecialFloor.None)
+                {
+                    long recorde = RecordeNoSave(p.DungeonHash);
+                    int andar = (int)Math.Min(p.IndiceAndar + 1u, (uint)Salas.AndarMaximo);
+                    if (!Salas.Liberado(andar, recorde))
+                    {
+                        DungeonConfig dc = DungeonConfig.GetByID(p.DungeonHash);
+                        _semLiberar = true;
+                        _entradaTardia = null;
+                        Plugin.Log.LogInfo($"[Run] Não acompanha a run do host: {p} (recorde do save nessa masmorra: {recorde}).");
+                        Sessao.Avisar(Salas.TextoForaDaRun(Salas.AtoDoNome(dc != null ? dc.name : ""), andar, recorde));
+                        AvisarHostForaDaRun(true);
+                        return;
+                    }
+                }
+                AvisarHostForaDaRun(false);
                 _entradaTardia = p.Primeiro && p.IndiceAndar == 0 ? null : p;
                 Plugin.Log.LogInfo($"[Run] Acompanhando a run do host: {p}{(_entradaTardia != null ? " (entrando no meio)" : "")}.");
                 Sessao.Avisar("Indo para a run do host...");
@@ -156,14 +209,35 @@ namespace HellClockCoop.Fase2
                         if (d == null) { Plugin.Log.LogError($"[Run] Dungeon {p.DungeonHash} do host não existe neste jogo."); return; }
                         Dpm.StartRunFromDungeon(d);
                     }
+                    _seguindoHost = true; // a run é a do host: os avanços seguintes não passam pela trava
                 }
                 finally { _ordemDoHost = false; }
                 return;
             }
 
             uint atual = IndiceAtual;
+            // 0.19.0: run própria aberta ao entrar no coop (não foi o host quem a iniciou): avançar até o andar do host
+            // também é entrada e passa pela trava, inclusive se a masmorra for outra.
+            if (p.IndiceAndar > atual && !_seguindoHost && p.AndarEspecial == (int)ESpecialFloor.None)
+            {
+                DungeonConfig minha = Dpm.CurrentDungeonConfig;
+                long recorde = RecordeNoSave(p.DungeonHash);
+                int andar = (int)Math.Min(p.IndiceAndar + 1u, (uint)Salas.AndarMaximo);
+                if (minha == null || minha.HashID != p.DungeonHash || !Salas.Liberado(andar, recorde))
+                {
+                    DungeonConfig dc = DungeonConfig.GetByID(p.DungeonHash);
+                    _semLiberar = true;
+                    Plugin.Log.LogInfo($"[Run] Não acompanha a run do host (run própria aberta): {p} (recorde do save nessa masmorra: {recorde}).");
+                    Sessao.Avisar(minha != null && minha.HashID != p.DungeonHash
+                        ? "Você está numa run sua, em outra masmorra. Termine-a para acompanhar o host."
+                        : Salas.TextoForaDaRun(Salas.AtoDoNome(dc != null ? dc.name : ""), andar, recorde));
+                    AvisarHostForaDaRun(true);
+                    return;
+                }
+            }
             if (p.IndiceAndar > atual)
             {
+                _seguindoHost = true;
                 Plugin.Log.LogInfo($"[Run] Host avançou: {p} (você estava no andar {atual}).");
                 _ordemDoHost = true;
                 try { InternalAdvanceLevel.Invoke(Dpm, new object[] { p.IndiceAndar - atual }); }
@@ -173,6 +247,19 @@ namespace HellClockCoop.Fase2
             {
                 Sessao.Avisar("O host começou uma run nova, mas você ainda está na anterior. Termine-a para acompanhar.");
             }
+        }
+
+        /// <summary>
+        /// Convidado (0.19.0): conta a todos os pares (o host e os outros convidados, que também escalam XP, ouro e
+        /// réplicas pelo número de jogadores) que não acompanha a run (Fora) ou que voltou a acompanhar. "Voltou" só vai
+        /// depois de um "fora" já mandado.
+        /// </summary>
+        private static void AvisarHostForaDaRun(bool fora)
+        {
+            if (!fora && !_hostSabeQueEstouFora) return;
+            if (Sessao == null || !Sessao.EmSessao) return;
+            Sessao.EnviarParaConvidados(new ForaDaRun { Fora = fora }.Serializar(), confiavel: true);
+            _hostSabeQueEstouFora = fora;
         }
 
         // ---------------- Mensagens ----------------
@@ -185,8 +272,9 @@ namespace HellClockCoop.Fase2
                     if (!Convidado || de != sessao.Host) return;
                     PlanoAndar plano = PlanoAndar.Desserializar(dados);
                     if (!PlanoValido(plano)) return;
-                    if (plano.Primeiro) _abandonouHost = 0; // run nova do host: você volta a acompanhar
+                    if (plano.Primeiro) { _abandonouHost = 0; _semLiberar = false; } // run nova do host: confere de novo
                     else if (_abandonouHost != 0 && _abandonouHost == de.Id.m_SteamID) return; // você saiu desta run
+                    else if (_semLiberar) return; // 0.19.0: o save não chegou a esta run; espera a próxima
                     if (plano.Primeiro) { Planos.Clear(); SpawnsDoHost.Clear(); }
                     Planos[plano.IndiceAndar] = plano;
                     _planoPendente = plano;
@@ -262,6 +350,17 @@ namespace HellClockCoop.Fase2
                     Dpm.AdvanceLevel(andares, false); // o jogo ainda limita pelo máximo dele
                     break;
 
+                case Protocolo.TipoForaDaRun: // 0.19.0: cada par só fala de si; todos tiram da escala quem está fora
+                    if (!de.Compativel || !de.DlcOk) return;
+                    bool fora = ForaDaRun.Desserializar(dados).Fora;
+                    if (de.SemLiberar == fora) return;
+                    de.SemLiberar = fora;
+                    if (!Host || Time.unscaledTime < de.ProximoAvisoFora) return; // aviso e log: só no host, 1 a cada 30 s por par
+                    de.ProximoAvisoFora = Time.unscaledTime + 30f;
+                    Plugin.Log.LogInfo($"[Run] {de.Nome} {(fora ? "não acompanha a run (o save dele não chegou aqui); fora da escala do grupo" : "voltou a acompanhar")}.");
+                    if (fora) Sessao.Avisar($"{de.Nome} ainda não chegou aqui na campanha: fica no hub, fora da escala do grupo.");
+                    break;
+
                 case Protocolo.TipoFimRun:
                     if (!Convidado || de != sessao.Host) return;
                     FimRun f = FimRun.Desserializar(dados);
@@ -272,6 +371,9 @@ namespace HellClockCoop.Fase2
                     }
                     Planos.Clear(); SpawnsDoHost.Clear(); _planoPendente = null; _entradaTardia = null; SementeCena = 0;
                     _abandonouHost = 0; // a run que você abandonou acabou
+                    _semLiberar = false; // 0.19.0: a run que você não acompanhou acabou; volta a contar na escala
+                    _seguindoHost = false;
+                    AvisarHostForaDaRun(false);
                     JogadorCaido.FimDaRunNoHost(); // o convidado também esquece as quedas já avisadas
                     if (!Dpm.RunStarted.Value || Dpm.EndingExecuted.Value) return;
                     Plugin.Log.LogInfo($"[Run] Host encerrou a run ({(EGameOverSource)f.Motivo}).");
@@ -304,6 +406,12 @@ namespace HellClockCoop.Fase2
                 ? $"[Run] Plano do host ignorado: andar {p.IndiceAndar} além do fim da dungeon ({max} andares, índices 0 a {max - 1})."
                 : $"[Run] Plano do host ignorado: andar especial {p.IndiceAndar} acima do teto de sanidade ({Validacao.AndarMaximoSemDungeon}).");
             return false;
+        }
+
+        /// <summary>Convidado fora da run (0.19.0): conta a quem chegou depois (o aviso só foi a quem já estava).</summary>
+        public static void AoNovoPar(SessaoCoop sessao, Par p)
+        {
+            if (Convidado && _hostSabeQueEstouFora) sessao.EnviarPara(p, new ForaDaRun { Fora = true }.Serializar());
         }
 
         /// <summary>Host: manda o andar atual para quem acabou de chegar (entrada no meio da run).</summary>

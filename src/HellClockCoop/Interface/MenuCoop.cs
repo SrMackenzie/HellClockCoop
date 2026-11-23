@@ -696,14 +696,21 @@ namespace HellClockCoop.Interface
                 Adicionar(Tipo.Info, Acao.Nenhuma, $"Nenhuma sala pública aberta com o mod {Plugin.PluginVersion} {(s.MinhaCursedWar ? "e a DLC Cursed War" : "sem a DLC Cursed War")}. Crie a sua na aba Sessão.", null, false);
 
             SalasMostradas.Clear();
+            bool algumaTravada = false;
             for (int i = 0; i < s.SalasListadas.Count && i < SalasNoMenu; i++)
             {
                 SalaListada sala = s.SalasListadas[i];
                 SalasMostradas.Add(sala);
-                bool armada = _entrarAlvo == sala.Lobby && ConfirmaSaida(Time.unscaledTime, _confirmarEntrarAte);
+                // 0.19.0: recorde do save carregado agora (pode ter trocado de save desde a busca); travada fica indisponível
+                sala.Recorde = sala.Dungeon != 0 ? Fase2.RunCompartilhada.RecordeNoSave(sala.Dungeon) : -1;
+                bool travada = Salas.SalaTravada(sala);
+                if (travada) algumaTravada = true;
+                bool armada = !travada && _entrarAlvo == sala.Lobby && ConfirmaSaida(Time.unscaledTime, _confirmarEntrarAte);
                 Adicionar(Tipo.Item, (Acao)((int)Acao.Sala0 + i), armada ? "Confirmar: sair do seu coop e entrar?" : Salas.TextoSala(sala),
-                    Salas.ValorSala(sala), !conectando);
+                    Salas.ValorSala(sala), !conectando && !travada);
             }
+
+            if (algumaTravada) Adicionar(Tipo.Info, Acao.Nenhuma, "Salas indisponíveis estão numa run aonde o seu save ainda não chegou (mesma masmorra e andar).", null, false);
 
             if (s.EmSessao && s.SalasListadas.Count > 0) Adicionar(Tipo.Info, Acao.Nenhuma, "Entrar numa sala tira você do coop atual (pede confirmação).", null, false);
             Adicionar(Tipo.Info, Acao.Nenhuma, "Só aparecem salas com vaga, a mesma versão do mod e a mesma DLC. Dá para entrar com a run em andamento.", null, false);
