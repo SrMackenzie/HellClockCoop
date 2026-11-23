@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "23/11/2026",
-  "versao": "0.19.0",
+  "versao": "0.20.0",
   "fases": [
     {
       "id": "B",
@@ -295,8 +295,12 @@
           "Lista de salas (2/3): só acompanha a run quem já chegou àquela masmorra (ato e tier) e andar no próprio save; a sala aparece travada na lista, e quem não chegou fica no hub, fora da escala do grupo"
         ],
         [
+          "testar",
+          "Lista de salas (3/3, parte 1): coop mais seguro com desconhecidos: o host não conclui a masmorra nem avança a run de outra masmorra no save do convidado, valores de inimigos e santuários fora do jogo são recusados, par sem versão compatível não manda nada além do aperto de mão, e com quem não é amigo na Steam a conexão passa só pelo relay (sem IP)"
+        ],
+        [
           "planejado",
-          "Lista de salas (3/3): coop seguro com desconhecidos (revisão das mensagens que hoje confiam no par, bloquear jogador) e filtros na lista"
+          "Lista de salas (3/3, restante): mais revisões das mensagens (host fixo da run, baús e bônus de tempo), bloquear jogador e filtros na lista"
         ],
         [
           "planejado",

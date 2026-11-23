@@ -237,11 +237,37 @@ namespace HellClockCoop.Fase2
             }
             if (p.IndiceAndar > atual)
             {
+                // 0.20.0: com a run aberta, o plano só avança a mesma run (o PlanoValido conferiu o índice contra a masmorra
+                // do plano, não contra a sua) e no máximo SaltoPlanoMaximo andares por vez.
+                DungeonConfig aberta = Dpm.CurrentDungeonConfig;
+                if (!Validacao.PlanoDaRunAberta(p.DungeonHash, p.AndarEspecial, aberta != null ? aberta.HashID : 0, (int)Dpm.CurrentESpecialFloor))
+                {
+                    Plugin.Log.LogWarning($"[Run] Plano do host de outra run ignorado com a sua aberta: {p}.");
+                    if (p.Primeiro) Sessao.Avisar("O host começou uma run nova, mas você ainda está na anterior. Termine-a para acompanhar.");
+                    return;
+                }
+                uint salto = Validacao.SaltoPlano(p.IndiceAndar, atual);
+                if (salto < p.IndiceAndar - atual)
+                    Plugin.Log.LogWarning($"[Run] Plano do host {p.IndiceAndar - atual} andares à frente; avança só {salto} agora (o resto no próximo andar do host).");
                 _seguindoHost = true;
                 Plugin.Log.LogInfo($"[Run] Host avançou: {p} (você estava no andar {atual}).");
                 _ordemDoHost = true;
-                try { InternalAdvanceLevel.Invoke(Dpm, new object[] { p.IndiceAndar - atual }); }
+                try { InternalAdvanceLevel.Invoke(Dpm, new object[] { salto }); }
                 finally { _ordemDoHost = false; }
+            }
+            else if (!_seguindoHost && p.IndiceAndar == atual)
+            {
+                // 0.20.0: reconexão com a run aberta no mesmo andar do host (a queda da sessão zera _seguindoHost): volta a
+                // acompanhar se é a mesma run e o save já chegou aqui, senão o Completed do host não concluiria a sua.
+                DungeonConfig aberta = Dpm.CurrentDungeonConfig;
+                bool mesma = Validacao.PlanoDaRunAberta(p.DungeonHash, p.AndarEspecial, aberta != null ? aberta.HashID : 0, (int)Dpm.CurrentESpecialFloor);
+                bool liberado = p.AndarEspecial != (int)ESpecialFloor.None
+                                || Salas.Liberado((int)Math.Min(p.IndiceAndar + 1u, (uint)Salas.AndarMaximo), RecordeNoSave(p.DungeonHash));
+                if (Validacao.RetomaRunDoHost(p.IndiceAndar, atual, mesma, liberado))
+                {
+                    _seguindoHost = true;
+                    Plugin.Log.LogInfo($"[Run] Voltou a acompanhar a run do host no mesmo andar: {p}.");
+                }
             }
             else if (p.Primeiro && p.IndiceAndar < atual)
             {
@@ -369,6 +395,7 @@ namespace HellClockCoop.Fase2
                         Plugin.Log.LogWarning($"[Run] Fim de run com motivo desconhecido ({f.Motivo}); ignorado.");
                         return;
                     }
+                    bool seguia = _seguindoHost;
                     Planos.Clear(); SpawnsDoHost.Clear(); _planoPendente = null; _entradaTardia = null; SementeCena = 0;
                     _abandonouHost = 0; // a run que você abandonou acabou
                     _semLiberar = false; // 0.19.0: a run que você não acompanhou acabou; volta a contar na escala
@@ -376,9 +403,18 @@ namespace HellClockCoop.Fase2
                     AvisarHostForaDaRun(false);
                     JogadorCaido.FimDaRunNoHost(); // o convidado também esquece as quedas já avisadas
                     if (!Dpm.RunStarted.Value || Dpm.EndingExecuted.Value) return;
-                    Plugin.Log.LogInfo($"[Run] Host encerrou a run ({(EGameOverSource)f.Motivo}).");
+                    // 0.20.0: Completed (dungeon concluída no save) só no último andar de uma run que acompanha o host.
+                    bool ultimoAndar = false;
+                    if (f.Motivo == Validacao.MotivoCompleted && EhUltimoAndar != null)
+                    {
+                        try { ultimoAndar = (bool)EhUltimoAndar.Invoke(Dpm, null); }
+                        catch (Exception) { } // sem saber, não conclui (encerra sem concluir)
+                    }
+                    int motivo = Validacao.MotivoFimRunAplicado(f.Motivo, ultimoAndar, seguia);
+                    if (motivo != f.Motivo) Plugin.Log.LogWarning($"[Run] Host mandou {(EGameOverSource)f.Motivo}, mas você não está no último andar de uma run que acompanha; a sua encerra como {(EGameOverSource)motivo}.");
+                    Plugin.Log.LogInfo($"[Run] Host encerrou a run ({(EGameOverSource)motivo}).");
                     _ordemDoHost = true;
-                    try { Dpm.FinishDungeon((EGameOverSource)f.Motivo); }
+                    try { Dpm.FinishDungeon((EGameOverSource)motivo); }
                     finally { _ordemDoHost = false; }
                     break;
             }

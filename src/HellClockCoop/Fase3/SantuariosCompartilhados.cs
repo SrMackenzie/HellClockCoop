@@ -47,6 +47,8 @@ namespace HellClockCoop.Fase3
         private static readonly Dictionary<ushort, ObjetoSpawn> DoHost = new Dictionary<ushort, ObjetoSpawn>();
         private static readonly Dictionary<ushort, ObjetoSpawn> Pendentes = new Dictionary<ushort, ObjetoSpawn>();
         private static readonly Dictionary<ushort, float> RecebidoEm = new Dictionary<ushort, float>();
+        private static readonly HashSet<ushort> Usados = new HashSet<ushort>(); // convidado (0.20.0): santuários já ativados aqui
+        private static int _objetosNoAndar, _amaldicoadosNoAndar;               // convidado (0.20.0): criados por ordem do host neste andar
         private static ushort _proximoId = 1;
         private static long _andar = -1;
         private static float _proximaVarredura;
@@ -76,6 +78,8 @@ namespace HellClockCoop.Fase3
                 PorId.Clear();
                 IdDe.Clear();
                 DoHost.Clear();
+                Usados.Clear();
+                _objetosNoAndar = _amaldicoadosNoAndar = 0;
                 _proximaVarredura = 0f;
             }
             if (Convidado && Pendentes.Count > 0) CriarPendentes(andar);
@@ -159,11 +163,13 @@ namespace HellClockCoop.Fase3
             {
                 GameObject go;
                 Interactable obj;
+                bool amaldicoado = false;
                 if (s.Tipo == ObjetoSpawn.Totem)
                 {
                     // Totem é progressão do save: só aparece para quem já liberou (sorteio de bênçãos próprio).
                     bool liberado = TotemLiberado == null || (bool)TotemLiberado.GetValue(null, null);
                     if (!liberado) { Plugin.Log.LogInfo("[Objetos] Totem do host ignorado: você ainda não liberou os totens de bênção."); return; }
+                    if (!PodeCriar(s, false)) return;
                     go = LevelObjectPoolController.Instance.SpawnBlessingTotem(s.Posicao);
                     obj = go != null ? go.GetComponentInChildren<BlessingTotemInteractable>() : null;
                 }
@@ -171,11 +177,19 @@ namespace HellClockCoop.Fase3
                 {
                     ShrineDefinition def = global::HellClock.Constants.Collections.SHRINE_DEFINITION_COLLECTION.Reference.GetElement(s.DefinicaoHash);
                     if (def == null) return;
+                    amaldicoado = def is CursedShrineDefinition;
+                    if (!PodeCriar(s, amaldicoado)) return;
                     go = LevelObjectPoolController.Instance.SpawnShrine(s.Posicao, def, s.Raio);
                     obj = go != null ? go.GetComponentInChildren<ShrineInteractable>() : null;
-                    if (obj != null && s.Estado != ObjetoSpawn.Livre) MarcarUsado((ShrineInteractable)obj);
+                    if (obj != null && s.Estado != ObjetoSpawn.Livre)
+                    {
+                        MarcarUsado((ShrineInteractable)obj);
+                        if (s.Estado == ObjetoSpawn.Usado) Usados.Add(s.Id); // entrou com a sobrevivência em andamento: a purificação vale
+                    }
                 }
                 if (obj == null) return;
+                _objetosNoAndar++;
+                if (amaldicoado) _amaldicoadosNoAndar++;
                 PorId[s.Id] = obj;
                 IdDe[obj] = s.Id;
                 andar.LevelObjects?.LevelObjectsList?.Add(go);
@@ -185,6 +199,15 @@ namespace HellClockCoop.Fase3
             {
                 Plugin.Log.LogWarning($"[Objetos] Falha ao criar o objeto {s.Id}: {(e.InnerException ?? e).Message}");
             }
+        }
+
+        /// <summary>Teto por andar (0.20.0) do que o host manda criar: host malicioso não enche o andar de santuários amaldiçoados.</summary>
+        private static bool PodeCriar(ObjetoSpawn s, bool amaldicoado)
+        {
+            if (Validacao.ObjetoCabeNoAndar(_objetosNoAndar, _amaldicoadosNoAndar, amaldicoado)) return true;
+            Plugin.Log.LogWarning($"[Objetos] {(amaldicoado ? "Santuário amaldiçoado" : "Objeto")} {s.Id} do host além do teto do andar " +
+                                  $"({_objetosNoAndar} objetos, {_amaldicoadosNoAndar} amaldiçoados); ignorado.");
+            return false;
         }
 
         /// <summary>Quem entra depois que o santuário já foi usado: só desliga (sem efeito, ele já foi dado na hora).</summary>
@@ -223,6 +246,7 @@ namespace HellClockCoop.Fase3
         internal static void UsouSantuario(ShrineInteractable s)
         {
             if (OrdemRemota || Sessao == null || !Sessao.ComAliados || !s.CanBeInteractedWith || !IdDe.TryGetValue(s, out ushort id)) return;
+            Usados.Add(id);
             byte[] m = new ObjetoUsado { Id = id, Estado = ObjetoSpawn.Usado }.Serializar();
             if (Host) Sessao.EnviarParaConvidados(m, confiavel: true);
             else if (Convidado && Sessao.Host != null) Sessao.EnviarPara(Sessao.Host, m);
@@ -232,6 +256,7 @@ namespace HellClockCoop.Fase3
         {
             if (Pendentes.TryGetValue(u.Id, out ObjetoSpawn p)) { p.Estado = u.Estado; return; }
             if (!PorId.TryGetValue(u.Id, out Interactable o) || !(o is ShrineInteractable s) || s == null) return;
+            if (u.Estado == ObjetoSpawn.Usado) Usados.Add(u.Id); // ativado (mesmo que aqui já não esteja interativo): a purificação vale
             OrdemRemota = true;
             try
             {
@@ -266,14 +291,24 @@ namespace HellClockCoop.Fase3
                     case Protocolo.TipoObjetoSpawn:
                         if (!Convidado || de != sessao.Host) return;
                         ObjetoSpawn s = ObjetoSpawn.Desserializar(dados);
+                        if (!Validacao.ObjetoSpawnValido(s.Tipo, s.Raio, s.Posicao.x, s.Posicao.y, s.Posicao.z))
+                        {
+                            Plugin.Log.LogWarning($"[Objetos] Objeto {s.Id} do host com tipo {s.Tipo}, raio {s.Raio} ou posição fora do jogo; ignorado.");
+                            return;
+                        }
                         if (!PorId.ContainsKey(s.Id)) { Pendentes[s.Id] = s; RecebidoEm[s.Id] = Time.unscaledTime; }
                         break;
                     case Protocolo.TipoObjetoUsado:
                         ObjetoUsado u = ObjetoUsado.Desserializar(dados);
                         // Purificação (Concluido) dá ponto de constelação no save de quem recebe: só o host decide.
-                        if (!Validacao.ObjetoUsadoAceito(u.Estado, de == sessao.Host))
+                        // 0.20.0: e só depois que o santuário foi ativado aqui. Ainda pendente (não criado), a purificação só o
+                        // marca como usado na criação, sem ponto.
+                        bool usadoAntes = Usados.Contains(u.Id) || !PorId.ContainsKey(u.Id);
+                        if (!Validacao.ObjetoUsadoAceito(u.Estado, de == sessao.Host, usadoAntes))
                         {
-                            Plugin.Log.LogWarning($"[Objetos] Purificação do santuário {u.Id} vinda de {de.Nome} (não é o host); ignorada.");
+                            Plugin.Log.LogWarning(de == sessao.Host
+                                ? $"[Objetos] Purificação do santuário {u.Id} antes de ele ser ativado; ignorada."
+                                : $"[Objetos] Purificação do santuário {u.Id} vinda de {de.Nome} (não é o host); ignorada.");
                             return;
                         }
                         UsarPorOrdem(u, de);
@@ -297,6 +332,8 @@ namespace HellClockCoop.Fase3
             DoHost.Clear();
             Pendentes.Clear();
             RecebidoEm.Clear();
+            Usados.Clear();
+            _objetosNoAndar = _amaldicoadosNoAndar = 0;
             _andar = -1;
         }
     }

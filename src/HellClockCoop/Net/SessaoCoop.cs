@@ -138,6 +138,7 @@ namespace HellClockCoop.Net
             _crLobbyCriado = CallResult<LobbyCreated_t>.Create(OnLobbyCriado);
             _crListaSalas = CallResult<LobbyMatchList_t>.Create(OnListaDeSalas);
             SteamNetworkingUtils.InitRelayNetworkAccess(); // adianta a conexão com os relays da Steam
+            SteamTransporte.Preparar(); // 0.20.0: global sem ICE desde já; só a 1ª sessão com um amigo abre com o padrão do usuário
 
             try
             {
@@ -269,6 +270,7 @@ namespace HellClockCoop.Net
                 DestruirAvatar(p);
                 SteamTransporte.Fechar(p.Id);
             }
+            SteamTransporte.Esquecer(); // 0.20.0: recusados fora do relay voltam a ser conferidos no próximo coop
             Pares.Clear();
             Fase3.InimigosCompartilhados.Encerrar();
             Fase3.ObjetosCompartilhados.Encerrar();
@@ -579,6 +581,8 @@ namespace HellClockCoop.Net
         private void TratarConfiavel(CSteamID de, byte[] dados, PlayerController jogadorLocal)
         {
             if (dados.Length == 0 || !Pares.TryGetValue(de.m_SteamID, out Par p)) return;
+            // 0.20.0: sem Hello compatível, só Hello, Tchau e Expulso passam (desconhecido do lobby não manda plano nem inimigo).
+            if (!Validacao.PortaDeEntrada(dados[0], p.HelloRecebido, p.Compativel)) return;
             switch (dados[0])
             {
                 case Protocolo.TipoHello:
@@ -589,6 +593,13 @@ namespace HellClockCoop.Net
                     if (!h.JaTeOuvi) EnviarHello(p);   // responde na hora: "também te ouvi"
                     if (!primeiroHello) break;
                     p.Nome = string.IsNullOrEmpty(h.Nome) ? p.Nome : Salas.LimparNome(h.Nome); // 0.18.0: com sala pública, o nome vem de desconhecidos
+                    if (!SteamTransporte.ConferirCaminho(p.Id)) // 0.20.0: quem não é amigo só fica se a conexão é pelo relay
+                    {
+                        p.Compativel = false; // fora da escala e da porta de entrada
+                        p.Incompatibilidade = "conexão fora do relay da Steam";
+                        Avisar($"{p.Nome} foi desconectado: a conexão não passou pelo relay da Steam e o seu IP chegaria a ele.");
+                        break;
+                    }
                     p.Compativel = h.Protocolo == Protocolo.Versao && h.VersaoMod == Plugin.PluginVersion;
                     p.Incompatibilidade = p.Compativel ? null : $"mod {h.VersaoMod} (você {Plugin.PluginVersion})";
                     p.Deluxe = h.Deluxe;

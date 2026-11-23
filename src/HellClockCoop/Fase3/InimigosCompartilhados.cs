@@ -434,14 +434,14 @@ namespace HellClockCoop.Fase3
         /// </summary>
         private static void HostAplicarStatus(Par de, StatusInimigos m)
         {
-            if (m.Itens.Count > Validacao.ItensStatusPorMensagemMaximo) { AvisarStatus(de, $"mensagem com {m.Itens.Count} status recusada inteira"); return; }
+            if (m.Itens.Count > Validacao.ItensStatusPorMensagemMaximo) { AvisarRecusa(de, $"mensagem com {m.Itens.Count} status recusada inteira"); return; }
             foreach (StatusInimigos.Item i in m.Itens)
             {
                 if (!HostPorId.TryGetValue(i.Id, out InimigoHost h) || h.C == null || h.C.LifeController.IsDead) continue;
-                if (!Validacao.StatusValido(i.Duracao, i.Intensidade, i.Pilhas)) { AvisarStatus(de, $"status {i.StatusHash} com duração, intensidade ou pilhas inválidas recusado"); continue; }
+                if (!Validacao.StatusValido(i.Duracao, i.Intensidade, i.Pilhas)) { AvisarRecusa(de, $"status {i.StatusHash} com duração, intensidade ou pilhas inválidas recusado"); continue; }
                 StatusDefinition def = DefinicaoStatus(i.StatusHash);
-                if (def == null) { AvisarStatus(de, $"status desconhecido {i.StatusHash} recusado"); continue; }
-                if (!StatusDeControle(def)) { AvisarStatus(de, $"status {def.name} recusado (não é de controle)"); continue; }
+                if (def == null) { AvisarRecusa(de, $"status desconhecido {i.StatusHash} recusado"); continue; }
+                if (!StatusDeControle(def)) { AvisarRecusa(de, $"status {def.name} recusado (não é de controle)"); continue; }
                 try
                 {
                     IDamageable alvo = h.C;
@@ -450,21 +450,21 @@ namespace HellClockCoop.Fase3
                 }
                 catch (Exception e)
                 {
-                    AvisarStatus(de, $"status {def.name} no inimigo {i.Id} falhou: {(e.InnerException ?? e).Message}");
+                    AvisarRecusa(de, $"status {def.name} no inimigo {i.Id} falhou: {(e.InnerException ?? e).Message}");
                 }
             }
         }
 
         /// <summary>Avisos de status já dados por convidado (SteamID) na sessão. A chave não vem do convidado.</summary>
-        private static readonly Dictionary<ulong, int> AvisosStatus = new Dictionary<ulong, int>();
+        private static readonly Dictionary<ulong, int> AvisosRecusa = new Dictionary<ulong, int>();
 
-        /// <summary>No máximo Validacao.AvisosStatusPorConvidado linhas por convidado na sessão, para o log não encher.</summary>
-        private static void AvisarStatus(Par de, string texto)
+        /// <summary>Recusas de status, golpes e inimigos: no máximo Validacao.AvisosStatusPorConvidado linhas por par na sessão, para o log não encher.</summary>
+        private static void AvisarRecusa(Par de, string texto)
         {
-            AvisosStatus.TryGetValue(de.Id.m_SteamID, out int n);
+            AvisosRecusa.TryGetValue(de.Id.m_SteamID, out int n);
             if (n >= Validacao.AvisosStatusPorConvidado) return;
-            AvisosStatus[de.Id.m_SteamID] = ++n;
-            string fim = n == Validacao.AvisosStatusPorConvidado ? " (últimos avisos de status deste convidado na sessão)" : "";
+            AvisosRecusa[de.Id.m_SteamID] = ++n;
+            string fim = n == Validacao.AvisosStatusPorConvidado ? " (últimos avisos de recusa deste par na sessão)" : "";
             Plugin.Log.LogWarning($"[Inimigos] De {de.Nome}: {texto}.{fim}");
         }
 
@@ -1071,6 +1071,12 @@ namespace HellClockCoop.Fase3
                     case Protocolo.TipoInimigoSpawn:
                         if (!Convidado || de != sessao.Host) return;
                         InimigoSpawn s = InimigoSpawn.Desserializar(dados);
+                        if (!Validacao.InimigoSpawnValido(s.Tipo, s.Afixos.Length, s.Ajustes, s.MultiplicadorXp, s.Vida, s.AtrasoSpawn, s.Yaw,
+                                s.Posicao.x, s.Posicao.y, s.Posicao.z, s.OrigemSpawn.x, s.OrigemSpawn.y, s.OrigemSpawn.z))
+                        {
+                            AvisarRecusa(de, $"inimigo {s.Id} com valores fora do jogo (tipo {s.Tipo}, {s.Afixos.Length} afixos, XP x{s.MultiplicadorXp}, vida {s.Vida})");
+                            return;
+                        }
                         if (!Replicas.ContainsKey(s.Id)) { Pendentes[s.Id] = s; RecebidoEm[s.Id] = Time.unscaledTime; }
                         break;
                     case Protocolo.TipoInimigosEstado:
@@ -1110,11 +1116,24 @@ namespace HellClockCoop.Fase3
                     case Protocolo.TipoInimigoAjuste:
                         if (!Convidado || de != sessao.Host) return;
                         InimigoAjuste aj = InimigoAjuste.Desserializar(dados);
+                        if (!Validacao.AjusteValido(aj.Ajuste, aj.MultiplicadorXp))
+                        {
+                            AvisarRecusa(de, $"ajuste {aj.Ajuste} do inimigo {aj.Id} com XP x{aj.MultiplicadorXp}");
+                            return;
+                        }
                         if (Replicas.TryGetValue(aj.Id, out Replica ra) && ra.C != null) AplicarAjustes(ra.C, aj.Ajuste, aj.MultiplicadorXp, aj.TesouroHash);
                         else if (Pendentes.TryGetValue(aj.Id, out InimigoSpawn pa)) aj.JuntarEm(pa);
                         break;
                     case Protocolo.TipoGolpes:
-                        if (Host && HostEmRun && !Balanceamento.Escalonamento.ForaDaEscala(de)) HostAplicarGolpes(de, Golpes.Desserializar(dados));
+                        if (!Host || !HostEmRun || Balanceamento.Escalonamento.ForaDaEscala(de)) return;
+                        Golpes g = Golpes.Desserializar(dados);
+                        // 0.20.0: só de convidado compatível, com a mesma DLC, no mesmo andar e até o teto de itens (sem teto de dano).
+                        if (!Validacao.GolpesAceitos(g.Itens.Count, de.Compativel, de.DlcOk, de.MesmoAndar))
+                        {
+                            if (g.Itens.Count > Validacao.ItensGolpesPorMensagemMaximo) AvisarRecusa(de, $"mensagem com {g.Itens.Count} golpes recusada inteira");
+                            return;
+                        }
+                        HostAplicarGolpes(de, g);
                         break;
                     case Protocolo.TipoStatusInimigos:
                         if (Host && HostEmRun && de.Compativel && de.DlcOk && !Balanceamento.Escalonamento.ForaDaEscala(de)) HostAplicarStatus(de, StatusInimigos.Desserializar(dados));
@@ -1133,7 +1152,7 @@ namespace HellClockCoop.Fase3
             LimparConvidado("fim da sessão");
             HostPorId.Clear();
             HostPorControle.Clear();
-            AvisosStatus.Clear();
+            AvisosRecusa.Clear();
         }
     }
 }

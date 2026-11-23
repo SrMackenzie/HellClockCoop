@@ -200,6 +200,11 @@ ESTADO ATUAL (versão de teste, Fase 3)
   próprio save. Na aba Salas, a sala aonde você não chegou fica indisponível, com o seu recorde.
   Pelo convite, quem não chegou fica no hub com um aviso e acompanha a próxima run liberada; o
   host é avisado e esse jogador sai da escala do grupo. Exige a 0.19.0 em todos os PCs.
+- NOVO (0.20.0): coop mais seguro com desconhecidos. O host não conclui a masmorra no seu save
+  (só vale no último andar da run que você acompanha) nem avança uma run sua de outra masmorra.
+  Inimigos e santuários com valores fora do jogo são recusados, e quem não tem a mesma versão do
+  mod não manda nada além do aperto de mão. Com quem não é seu amigo na Steam, a conexão passa só
+  pelo relay da Steam: o seu IP não chega ao outro jogador. Exige a 0.20.0 em todos os PCs.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, abra o menu do coop (F7), escolha "Sair do coop" e depois use o menu normalmente.

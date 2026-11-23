@@ -488,10 +488,87 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Checar(!V("TimerValido", timer(float.NaN, 1f)) && !V("TimerValido", timer(1f, float.NegativeInfinity)) && !V("TimerValido", timer(-0.5f, 1f))
         && !V("TimerValido", timer(1f, -1f)) && !V("TimerValido", new object[] { null }), "Validação: TimerSync NaN, -∞, negativo e nulo recusados");
 
-    // ObjetoUsado: Concluido (purificação) só do host; Usado de qualquer par
+    // ObjetoUsado: Concluido (purificação) só do host e, desde a 0.20.0, depois do santuário ativado; Usado de qualquer par
     byte est(byte e) => (byte)Campo(Lido("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", e) }), "Estado");
-    Checar(V("ObjetoUsadoAceito", est(2), true) && !V("ObjetoUsadoAceito", est(2), false), "Validação: ObjetoUsado Concluido só do host");
-    Checar(V("ObjetoUsadoAceito", est(1), true) && V("ObjetoUsadoAceito", est(1), false), "Validação: ObjetoUsado Usado de qualquer par");
+    Checar(V("ObjetoUsadoAceito", est(2), true, true) && !V("ObjetoUsadoAceito", est(2), false, true), "Validação: ObjetoUsado Concluido só do host");
+    Checar(!V("ObjetoUsadoAceito", est(2), true, false), "Validação: ObjetoUsado Concluido antes do santuário ser ativado recusado (0.20.0)");
+    Checar(V("ObjetoUsadoAceito", est(1), true, false) && V("ObjetoUsadoAceito", est(1), false, false), "Validação: ObjetoUsado Usado de qualquer par");
+
+    // 0.20.0 — segurança com desconhecidos
+    {
+        // FimRun: Completed só no último andar de uma run que acompanha o host; senão ManualFinish
+        int fim(int m, bool ultimo, bool seguindo) => (int)tv.GetMethod("MotivoFimRunAplicado").Invoke(null, new object[] { mot(m), ultimo, seguindo });
+        Checar(fim(3, true, true) == 3, "Validação: FimRun Completed no último andar acompanhando o host vale");
+        Checar(fim(3, false, true) == 1 && fim(3, true, false) == 1 && fim(3, false, false) == 1, "Validação: FimRun Completed fora do último andar ou em run própria vira ManualFinish");
+        Checar(fim(0, false, true) == 0 && fim(1, false, false) == 1 && fim(2, false, true) == 2 && fim(4, false, true) == 4, "Validação: FimRun Defeat, ManualFinish, Timer e portal passam iguais");
+
+        // PlanoAndar com a run aberta: mesma run e salto até 3 andares
+        int planoHash(int h) => (int)Campo(Lido("PlanoAndar", new (string, object)[] { ("DungeonHash", h) }), "DungeonHash");
+        Checar(V("PlanoDaRunAberta", planoHash(111), 0, 111, 0) && V("PlanoDaRunAberta", 0, 2, 0, 2) && V("PlanoDaRunAberta", 999, 1, 5, 1),
+            "Validação: PlanoAndar da mesma masmorra ou do mesmo atalho especial aceito");
+        Checar(V("PlanoDaRunAberta", 111, 0, 111, 2), "Validação: PlanoAndar comum da mesma masmorra saindo de um atalho especial aceito");
+        Checar(!V("PlanoDaRunAberta", planoHash(222), 0, 111, 0) && !V("PlanoDaRunAberta", 111, 1, 111, 0) && !V("PlanoDaRunAberta", 111, 1, 111, 2) && !V("PlanoDaRunAberta", 222, 0, 111, 2),
+            "Validação: PlanoAndar de outra masmorra, de atalho com a run comum aberta ou de outro atalho recusado");
+        uint salto(uint p, uint a) => (uint)tv.GetMethod("SaltoPlano").Invoke(null, new object[] { p, a });
+        Checar(salto(5, 4) == 1 && salto(7, 4) == 3 && salto(4, 4) == 0 && salto(2, 4) == 0, "Validação: salto do plano 1, 3, 0 (mesmo andar) e 0 (atrás)");
+        Checar(salto(4294967295u, 0) == 3 && salto(200, 1) == 3, "Validação: salto do plano forjado longe limitado a 3");
+
+        // InimigoSpawn e InimigoAjuste
+        bool isp(byte tipo, int afixos, byte aj, float xp, float vida, float atraso, float yaw, float x, float ox) =>
+            V("InimigoSpawnValido", tipo, afixos, aj, xp, vida, atraso, yaw, x, 0f, 1f, ox, 0f, 1f);
+        Checar(isp(0, 0, 0, 1f, 1f, 0f, 0f, 10f, 10f) && isp(6, 32, 15, 10f, 0f, 30f, 359f, -99999f, 0f) && isp(3, 5, 4, 0f, 0.5f, 1.5f, -90f, 0f, 0f),
+            "Validação: InimigoSpawn com tipo 0..6, até 32 afixos, XP 0..10, vida 0..1 e atraso 0..30 s aceito");
+        Checar(!isp(7, 0, 0, 1f, 1f, 0f, 0f, 0f, 0f) && !isp(255, 0, 0, 1f, 1f, 0f, 0f, 0f, 0f), "Validação: InimigoSpawn com tipo fora do EEnemyType recusado");
+        Checar(!isp(0, 33, 0, 1f, 1f, 0f, 0f, 0f, 0f) && !isp(0, 255, 0, 1f, 1f, 0f, 0f, 0f, 0f), "Validação: InimigoSpawn com mais de 32 afixos recusado");
+        Checar(!isp(0, 0, 4, 10.5f, 1f, 0f, 0f, 0f, 0f) && !isp(0, 0, 4, float.NaN, 1f, 0f, 0f, 0f, 0f) && !isp(0, 0, 4, -1f, 1f, 0f, 0f, 0f, 0f) && !isp(0, 0, 4, 3.4e38f, 1f, 0f, 0f, 0f, 0f),
+            "Validação: InimigoSpawn com XP 10,5, NaN, negativo ou 3.4e38 recusado");
+        Checar(isp(0, 0, 0, float.NaN, 1f, 0f, 0f, 0f, 0f), "Validação: InimigoSpawn sem a marca Xp ignora o multiplicador");
+        Checar(!isp(0, 0, 16, 1f, 1f, 0f, 0f, 0f, 0f) && !isp(0, 0, 255, 1f, 1f, 0f, 0f, 0f, 0f), "Validação: InimigoSpawn com marca de ajuste desconhecida recusado");
+        Checar(!isp(0, 0, 0, 1f, 1.01f, 0f, 0f, 0f, 0f) && !isp(0, 0, 0, 1f, -0.1f, 0f, 0f, 0f, 0f) && !isp(0, 0, 0, 1f, float.NaN, 0f, 0f, 0f, 0f),
+            "Validação: InimigoSpawn com vida acima de 1, negativa ou NaN recusado");
+        Checar(!isp(0, 0, 0, 1f, 1f, 30.5f, 0f, 0f, 0f) && !isp(0, 0, 0, 1f, 1f, -1f, 0f, 0f, 0f) && !isp(0, 0, 0, 1f, 1f, float.PositiveInfinity, 0f, 0f, 0f),
+            "Validação: InimigoSpawn com atraso acima de 30 s, negativo ou ∞ recusado");
+        Checar(!isp(0, 0, 0, 1f, 1f, 0f, float.NaN, 0f, 0f) && !isp(0, 0, 0, 1f, 1f, 0f, 0f, float.NaN, 0f) && !isp(0, 0, 0, 1f, 1f, 0f, 0f, 100001f, 0f) && !isp(0, 0, 0, 1f, 1f, 0f, 0f, 0f, float.NegativeInfinity),
+            "Validação: InimigoSpawn com giro NaN, posição NaN ou acima de 100 000, ou origem -∞ recusado");
+        Checar(V("AjusteValido", (byte)4, 2.5f) && V("AjusteValido", (byte)9, float.NaN) && !V("AjusteValido", (byte)4, 11f) && !V("AjusteValido", (byte)32, 1f),
+            "Validação: InimigoAjuste com XP no teto aceito; XP 11 ou marca desconhecida recusado");
+
+        // ObjetoSpawn e teto por andar
+        bool osp(byte tipo, float raio, float x) => V("ObjetoSpawnValido", tipo, raio, x, 0f, 0f);
+        Checar(osp(1, 1f, 5f) && osp(2, 200f, -5f), "Validação: ObjetoSpawn santuário e totem com raio até 200 aceito");
+        Checar(!osp(0, 1f, 0f) && !osp(3, 1f, 0f) && !osp(1, 0f, 0f) && !osp(1, -1f, 0f) && !osp(1, 200.5f, 0f) && !osp(1, float.NaN, 0f) && !osp(1, 1f, float.NaN) && !osp(1, 1f, 100001f),
+            "Validação: ObjetoSpawn com tipo desconhecido, raio 0/negativo/acima de 200/NaN ou posição inválida recusado");
+        Checar(V("ObjetoCabeNoAndar", 0, 0, true) && V("ObjetoCabeNoAndar", 5, 1, true) && V("ObjetoCabeNoAndar", 31, 2, false),
+            "Validação: até 2 santuários amaldiçoados e 32 objetos por andar");
+        Checar(!V("ObjetoCabeNoAndar", 5, 2, true) && !V("ObjetoCabeNoAndar", 32, 0, false), "Validação: 3º amaldiçoado ou 33º objeto no andar recusado");
+
+        // Porta de entrada: sem Hello compatível, só Hello, Tchau e Expulso
+        var tpr = T("HellClockCoop.Net.Protocolo");
+        byte tipo(string n) => (byte)tpr.GetField(n).GetValue(null);
+        Checar(V("PortaDeEntrada", tipo("TipoHello"), false, false) && V("PortaDeEntrada", tipo("TipoTchau"), false, false) && V("PortaDeEntrada", tipo("TipoExpulso"), true, false),
+            "Validação: Hello, Tchau e Expulso passam sem Hello compatível");
+        Checar(!V("PortaDeEntrada", tipo("TipoPlanoAndar"), false, false) && !V("PortaDeEntrada", tipo("TipoInimigoSpawn"), true, false) && !V("PortaDeEntrada", tipo("TipoGolpes"), false, true),
+            "Validação: plano, inimigo e golpes de par sem Hello compatível descartados");
+        Checar(V("PortaDeEntrada", tipo("TipoFimRun"), true, true), "Validação: mensagens de par com Hello compatível passam");
+
+        // Golpes: compatível, mesma DLC, mesmo andar e até 512 itens (sem teto de dano)
+        Checar(V("GolpesAceitos", 1, true, true, true) && V("GolpesAceitos", 512, true, true, true), "Validação: Golpes com 1 e 512 itens do mesmo andar aceito");
+        Checar(!V("GolpesAceitos", 513, true, true, true) && !V("GolpesAceitos", 65535, true, true, true), "Validação: Golpes com 513 ou 65535 itens recusado inteiro");
+        Checar(!V("GolpesAceitos", 1, false, true, true) && !V("GolpesAceitos", 1, true, false, true) && !V("GolpesAceitos", 1, true, true, false),
+            "Validação: Golpes de par incompatível, com outra DLC ou de outro andar recusado");
+        Checar(V("DanoValido", 3.4e38f), "Validação: dano alto continua aceito (sem teto de dano)");
+
+        // Relay obrigatório: ICE desligado (0) com quem não é amigo; padrão do usuário (-1) com amigos
+        int ice(bool amigo) => (int)tv.GetMethod("IceDoPar").Invoke(null, new object[] { amigo });
+        Checar(ice(false) == 0 && ice(true) == -1, "Validação: sem ICE (só relay) com quem não é amigo; amigos como a Steam escolher");
+        Checar(V("CaminhoAceito", false, true) && V("CaminhoAceito", true, false) && V("CaminhoAceito", true, true) && !V("CaminhoAceito", false, false),
+            "Validação: conexão direta só com amigo; quem não é amigo só pelo relay");
+
+        // Reconexão no mesmo andar: volta a acompanhar só na mesma run e com o save liberado ali
+        Checar(V("RetomaRunDoHost", 5u, 5u, true, true), "Validação: reconexão no mesmo andar, mesma run e save liberado volta a acompanhar");
+        Checar(!V("RetomaRunDoHost", 6u, 5u, true, true) && !V("RetomaRunDoHost", 4u, 5u, true, true) && !V("RetomaRunDoHost", 5u, 5u, false, true) && !V("RetomaRunDoHost", 5u, 5u, true, false),
+            "Validação: reconexão em outro andar, outra run ou sem o save liberado não volta a acompanhar");
+    }
 
     // Status de controle do convidado (0.9.0): valores lidos de volta do codec passam pelo filtro e pelos tetos
     {

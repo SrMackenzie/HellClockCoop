@@ -4,6 +4,16 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.20.0 — Lista de salas (3/3, parte 1): segurança com desconhecidos 🧪
+_23/11/2026_
+
+- O host não conclui a masmorra no seu save: o fim de run como "concluída" só vale se você está no último andar da run que acompanha; senão a sua run encerra sem concluir
+- Com a sua run aberta, o plano do host só avança a mesma masmorra (ou o mesmo atalho), no máximo 3 andares de uma vez
+- Inimigos e santuários do host com valores fora do jogo (tipo, afixos, multiplicador de XP, vida, posição, raio) são recusados; no máximo 2 santuários amaldiçoados e 32 objetos por andar, e a purificação só vale depois que o santuário foi ativado
+- Quem ainda não mandou o aperto de mão com a mesma versão do mod não manda mais nada (planos, inimigos, golpes). Os golpes também exigem a mesma DLC e o mesmo andar, até 512 por mensagem (o dano não tem teto)
+- Com quem não é seu amigo na Steam, a conexão passa só pelo relay da Steam: o seu IP não chega ao outro jogador. Entre amigos, nada muda
+- Exige a 0.20.0 em todos os PCs (protocolo 20, sem mudança nas mensagens)
+
 ## 0.19.0 — Lista de salas (2/3): trava pelo progresso 🧪
 _23/11/2026_
 

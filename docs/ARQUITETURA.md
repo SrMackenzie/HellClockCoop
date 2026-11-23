@@ -1228,6 +1228,57 @@ acompanhar, o host é avisado e a escala deixa de contar esse convidado.
   progresso no próprio save (o host não grava nada do convidado). O `hcc_dungeon` falso de um host só trava ou libera
   a linha na lista: a checagem da entrada usa o `DungeonHash` do `PlanoAndar`. Fica para a etapa 3 junto do resto.
 
+### 12.9 Lista de salas, etapa 3/3 parte 1: segurança com desconhecidos (versão 0.20.0, protocolo 20)
+
+Decisões do autor (23/11/2026): a etapa 3 sai em fatias (3a-1 = 0.20.0, 3a-2 = 0.20.1, 3b bloquear jogador, 3c
+filtros). Os tetos valem para todos (amigos e desconhecidos), folgados (≥ 2x o que o jogo gera, quando o IL mostra),
+fixos no código, em `Validacao` com caso no `codectest`. **Sem teto de dano de golpe** (quebraria skills cujo dano o
+mod não conhece). Nenhum formato de mensagem mudou: o protocolo continua 20.
+
+- **Fatos do IL (2.1.1.1):** `LevelObjects.SetupLevelObjects` cria no máximo 1 santuário amaldiçoado por andar
+  (`LevelDefinition.GenerateCursedShrineSpawnInfo` devolve um só). O ponto de constelação da purificação já tem teto no
+  jogo: `CursedShrineDefinition.Use` só soma se `DungeonConfig.ClaimShrineLevel(andar)` aceitar (1 por andar, no save).
+  O multiplicador de XP das ondas (`SurvivalEventManager._xpMultiplier`), a quantidade de afixos
+  (`DungeonConfig._rareAffixesPerFloor`) e a de santuários comuns (`LevelDefinition._shrineRangeAmount`) são campos
+  serializados do asset, sem valor no IL: tetos folgados, para recusar só o absurdo.
+- **Porta de entrada (`SessaoCoop.TratarConfiavel`, `Validacao.PortaDeEntrada`):** de par sem `Hello` compatível só
+  passam `Hello`, `Tchau` e `Expulso`. O canal de snapshots já exigia `Compativel`.
+- **FimRun (`Validacao.MotivoFimRunAplicado`):** no convidado, `Completed` (grava a masmorra como concluída) só vale no
+  último andar (`IsLastLevel`) de uma run que acompanha o host (`_seguindoHost`); senão vira `ManualFinish`.
+- **PlanoAndar com a run aberta (`PlanoDaRunAberta`, `SaltoPlano`):** plano de atalho especial exige o mesmo
+  atalho; plano comum exige a mesma masmorra, também saindo de um atalho (a run segue do andar especial para os comuns:
+  `AdvanceLevel` zera o `ESpecialFloor`); no máximo 3 andares por plano. O `PlanoValido` conferia o índice contra a masmorra do plano, não contra
+  a da run aberta. Limite: convidado com run própria mais de 3 andares atrás cai num andar intermediário sem plano do
+  host (bloco sorteado por ele) e só volta a sincronizar no próximo andar do host; numa run acompanhada desde o início
+  o salto é sempre 1.
+- **Inimigos (`InimigoSpawnValido`, `AjusteValido`):** tipo no `EEnemyType` (0..6), até 32 afixos, marcas de ajuste
+  conhecidas, multiplicador de XP finito de 0 a 10, vida de 0 a 1, atraso de spawn de 0 a 30 s, giro e posições finitos
+  (até 100 000). Recusa vai ao log com teto por par (`AvisarRecusa`, o antigo aviso de status).
+- **Santuários (`ObjetoSpawnValido`, `ObjetoCabeNoAndar`, `ObjetoUsadoAceito`):** tipo conhecido, raio finito de 0 a
+  200, posição válida; no convidado, até 2 amaldiçoados e 32 objetos por andar. `Concluido` (purificação) só do host e
+  só depois que o santuário foi ativado aqui (uso local, ordem `Usado` ou entrada com a sobrevivência em andamento).
+  Limite: um host alterado ainda pode criar o santuário já `Usado` e mandar `Concluido`; o ganho fica no teto do jogo
+  (1 ponto por andar, `ClaimShrineLevel`) e só no save de quem recebe.
+- **Golpes (`GolpesAceitos`):** convidado `Compativel`, `DlcOk` e `MesmoAndar`, até 512 itens por mensagem (acima
+  disso a mensagem inteira é recusada).
+- **IP (`SteamTransporte`):** a SteamNetworkingMessages copia o valor global de `P2P_Transport_ICE_Enable` ao criar a
+  sessão. Quando a Steam fica pronta (antes de qualquer lobby) o global vai a 0 (sem ICE, só relay SDR); na 1ª sessão com cada par (envio ou aceite), vai a
+  -1 (padrão do usuário) se o par é amigo (`SteamFriends.HasFriend`, `Immediate`) e volta a 0 logo depois. `Fechar`
+  esquece o par, para a próxima sessão ser ajustada de novo. Fail-closed: se a Steam recusar o 0, não abre sessão com
+  quem não é amigo. Depois do 1º `Hello`, `ConferirCaminho` lê `GetSessionConnectionInfo` e registra no log se a
+  conexão é pelo relay ou direta; quem não é amigo fora do relay (flag `Relayed` ausente; `Validacao.CaminhoAceito`)
+  é desconectado, sai da escala (`Compativel` falso) e fica recusado até sair do coop (`Esquecer`), o que cobre qualquer ordem de eventos em que a Steam leia o global.
+- **Reconexão (`RetomaRunDoHost`):** a queda da sessão zera `_seguindoHost`. Com a run aberta no mesmo andar do plano,
+  na mesma run e com o save liberado ali, o convidado volta a acompanhar; sem isso o `Completed` do host viraria
+  `ManualFinish` para ele. O `IsLastLevel` só é lido num `Completed`, protegido por `try` (erro = não conclui).
+- **Limites conhecidos para a 3a-2:** a quantidade de `InimigoSpawn` por andar não tem teto (cada campo é validado,
+  mas um host alterado pode mandar muitos inimigos com XP x10 e o tesouro de um chefe); `InimigosEstado` grava posição
+  sem validar também em réplica viva; o salto de 3 andares dá ritmo, não barreira (planos seguidos levam ao último
+  andar, como um host honesto com o convidado parado); `StatusInimigos` não exige `MesmoAndar`.
+- **Fica para a 3a-2 (0.20.1):** host fixo da run até o `FimRun`, expulsão avisada, `BauAberto`/`Quebrou`/`ObjetoUsado`
+  só do host, teto de baús, `AndarLimpo` 1 vez por andar, `TimerBonus` com as mesmas exigências e floats de
+  `Snapshot`/`InimigosEstado`.
+
 ## 13. Atualizador automático (versão 0.8.0)
 
 **Onde roda.** `BepInEx\patchers\HellClockCoop.Atualizador.dll`, um preloader patcher do BepInEx 5 sem DLL alvo: só o

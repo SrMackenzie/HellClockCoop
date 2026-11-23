@@ -27,6 +27,110 @@ namespace HellClockCoop.Net
 
         public static bool MotivoFimRunValido(int motivo) => motivo >= 0 && motivo <= MotivoFimRunMaximo;
 
+        /// <summary>EGameOverSource.ManualFinish e Completed no jogo 2.1.1.1.</summary>
+        public const int MotivoManualFinish = 1, MotivoCompleted = 3;
+
+        /// <summary>
+        /// FimRun no convidado (0.20.0): Completed grava a dungeon como concluída no save. Só vale se o convidado está no
+        /// último andar (DungeonProgressManager.IsLastLevel) de uma run que acompanha o host; senão vira ManualFinish
+        /// (encerra a run sem concluir). Host que manda Completed no andar 1 não conclui a dungeon de ninguém.
+        /// </summary>
+        public static int MotivoFimRunAplicado(int motivo, bool ultimoAndar, bool seguindoHost) =>
+            motivo == MotivoCompleted && !(ultimoAndar && seguindoHost) ? MotivoManualFinish : motivo;
+
+        /// <summary>Teto de andares que um PlanoAndar faz o convidado avançar de uma vez com a run aberta (0.20.0).</summary>
+        public const uint SaltoPlanoMaximo = 3;
+
+        /// <summary>
+        /// PlanoAndar com a run do convidado aberta (0.20.0): só avança na mesma run. Plano de atalho especial exige o mesmo
+        /// atalho; plano comum exige a mesma masmorra, também saindo de um atalho (a run segue do andar especial para os
+        /// comuns: AdvanceLevel zera o ESpecialFloor). Sem isto, o índice de um plano de outra masmorra avançaria a run
+        /// atual do convidado.
+        /// </summary>
+        public static bool PlanoDaRunAberta(int dungeonPlano, int especialPlano, int dungeonAtual, int especialAtual) =>
+            especialPlano != 0 ? especialPlano == especialAtual : dungeonPlano == dungeonAtual;
+
+        /// <summary>
+        /// Reconexão (0.20.0): com a run aberta no mesmo andar do plano do host, na mesma run e com o save já liberado ali
+        /// (Salas.Liberado), o convidado volta a acompanhar (o Completed do host vale para ele no último andar).
+        /// </summary>
+        public static bool RetomaRunDoHost(uint indicePlano, uint atual, bool mesmaRun, bool liberado) =>
+            indicePlano == atual && mesmaRun && liberado;
+
+        /// <summary>Andares a avançar até o plano: 0 se o plano não está à frente; no máximo SaltoPlanoMaximo (o resto vem nos próximos planos).</summary>
+        public static uint SaltoPlano(uint indicePlano, uint atual) =>
+            indicePlano <= atual ? 0u : System.Math.Min(indicePlano - atual, SaltoPlanoMaximo);
+
+        // Inimigos do host (0.20.0). O multiplicador de XP das ondas de sobrevivência (SurvivalEventManager._xpMultiplier)
+        // e a quantidade de afixos (DungeonConfig._rareAffixesPerFloor) vêm de campos serializados do asset, sem valor no
+        // IL da 2.1.1.1: tetos folgados, para recusar só o absurdo.
+        public const float MultiplicadorXpMaximo = 10f;
+        public const int AfixosMaximo = 32;
+        public const int TipoInimigoMaximo = 6;       // EEnemyType: Regular=0 .. Unique=6
+        public const float AtrasoSpawnMaximo = 30f;   // SpawnBehaviourConfig.DelayToSpawn
+        public const byte AjustesConhecidos = 15;     // InimigoAjuste: Invocacao | Descartavel | Xp | Tesouro
+        public const float CoordenadaMaxima = 100000f;
+
+        public static bool PosicaoValida(float x, float y, float z) =>
+            Finito(x) && Finito(y) && Finito(z)
+            && System.Math.Abs(x) <= CoordenadaMaxima && System.Math.Abs(y) <= CoordenadaMaxima && System.Math.Abs(z) <= CoordenadaMaxima;
+
+        public static bool FracaoValida(float v) => Finito(v) && v >= 0f && v <= 1f;
+
+        /// <summary>Ajustes só com as marcas conhecidas; com a marca Xp, multiplicador finito de 0 a MultiplicadorXpMaximo.</summary>
+        public static bool AjusteValido(byte ajustes, float multiplicadorXp) =>
+            (ajustes & ~AjustesConhecidos) == 0
+            && ((ajustes & 4) == 0 || (Finito(multiplicadorXp) && multiplicadorXp >= 0f && multiplicadorXp <= MultiplicadorXpMaximo));
+
+        /// <summary>
+        /// InimigoSpawn (0.20.0): tipo no enum, afixos até o teto, ajustes válidos, vida em fração de 0 a 1, atraso finito
+        /// de 0 a AtrasoSpawnMaximo, giro finito e as duas posições (inimigo e origem do efeito) finitas e dentro do teto.
+        /// </summary>
+        public static bool InimigoSpawnValido(byte tipo, int afixos, byte ajustes, float multiplicadorXp, float vida, float atraso, float yaw,
+                                              float x, float y, float z, float ox, float oy, float oz) =>
+            tipo <= TipoInimigoMaximo && afixos >= 0 && afixos <= AfixosMaximo && AjusteValido(ajustes, multiplicadorXp)
+            && FracaoValida(vida) && Finito(atraso) && atraso >= 0f && atraso <= AtrasoSpawnMaximo && Finito(yaw)
+            && PosicaoValida(x, y, z) && PosicaoValida(ox, oy, oz);
+
+        // Santuários e totens do host (0.20.0). O jogo cria no máximo 1 santuário amaldiçoado por andar
+        // (LevelDefinition.GenerateCursedShrineSpawnInfo devolve um só) e dá o ponto de constelação 1 vez por andar
+        // (DungeonConfig.ClaimShrineLevel, no save). Os comuns vêm de LevelDefinition._shrineRangeAmount (asset).
+        public const int AmaldicoadosPorAndarMaximo = 2;
+        public const int ObjetosPorAndarMaximo = 32;
+        public const float RaioSantuarioMaximo = 200f;
+
+        /// <summary>ObjetoSpawn: tipo conhecido (santuário 1, totem 2), raio finito e positivo até o teto, posição válida.</summary>
+        public static bool ObjetoSpawnValido(byte tipo, float raio, float x, float y, float z) =>
+            (tipo == ObjetoSpawn.Santuario || tipo == ObjetoSpawn.Totem)
+            && Finito(raio) && raio > 0f && raio <= RaioSantuarioMaximo && PosicaoValida(x, y, z);
+
+        /// <summary>Teto por andar do que o host manda criar no convidado (contagens do andar antes deste objeto).</summary>
+        public static bool ObjetoCabeNoAndar(int objetosNoAndar, int amaldicoadosNoAndar, bool amaldicoado) =>
+            objetosNoAndar < ObjetosPorAndarMaximo && (!amaldicoado || amaldicoadosNoAndar < AmaldicoadosPorAndarMaximo);
+
+        /// <summary>
+        /// Porta de entrada (0.20.0): de um par que ainda não mandou Hello compatível, só passam Hello, Tchau e Expulso.
+        /// O resto (planos, inimigos, golpes...) de um desconhecido do lobby é descartado antes de chegar ao jogo.
+        /// </summary>
+        public static bool PortaDeEntrada(byte tipo, bool helloRecebido, bool compativel) =>
+            tipo == Protocolo.TipoHello || tipo == Protocolo.TipoTchau || tipo == Protocolo.TipoExpulso || (helloRecebido && compativel);
+
+        /// <summary>Teto de itens de uma mensagem Golpes (0.20.0): acima disso a mensagem inteira é recusada. Sem teto de dano.</summary>
+        public const int ItensGolpesPorMensagemMaximo = 512;
+
+        /// <summary>Golpes (0.20.0): do convidado compatível, com a mesma DLC, no mesmo andar e até o teto de itens.</summary>
+        public static bool GolpesAceitos(int itens, bool compativel, bool dlcOk, bool mesmoAndar) =>
+            compativel && dlcOk && mesmoAndar && itens <= ItensGolpesPorMensagemMaximo;
+
+        /// <summary>P2P_Transport_ICE_Enable (Steamworks): -1 = padrão do usuário (ICE, pode expor o IP); 0 = sem ICE, só relay.</summary>
+        public const int IcePadraoDoUsuario = -1, IceDesligado = 0;
+
+        /// <summary>Relay obrigatório (0.20.0): com quem não é amigo na Steam, a sessão abre sem ICE (o IP não passa); amigos como antes.</summary>
+        public static int IceDoPar(bool amigo) => amigo ? IcePadraoDoUsuario : IceDesligado;
+
+        /// <summary>Conferência depois de conectar (0.20.0): com quem não é amigo, só vale a conexão pelo relay (flag Relayed).</summary>
+        public static bool CaminhoAceito(bool amigo, bool relay) => amigo || relay;
+
         /// <summary>Teto de andares de um pedido de avanço (portais comuns avançam 1; o jogo ainda limita pelo dele).</summary>
         public const uint AvancoMaximo = 3;
 
@@ -137,8 +241,12 @@ namespace HellClockCoop.Net
         public static bool TimerValido(TimerSync t) =>
             t != null && Finito(t.Timer) && t.Timer >= 0f && Finito(t.TimerRelaxado) && t.TimerRelaxado >= 0f;
 
-        /// <summary>ObjetoUsado com Estado=Concluido (santuário amaldiçoado purificado) só vale vindo do host.</summary>
-        public static bool ObjetoUsadoAceito(byte estado, bool doHost) => doHost || estado != ObjetoSpawn.Concluido;
+        /// <summary>
+        /// ObjetoUsado com Estado=Concluido (santuário amaldiçoado purificado) só vale vindo do host e, desde a 0.20.0, depois
+        /// que o santuário foi ativado aqui (Usado): purificar sem a sobrevivência ter começado daria o ponto de graça.
+        /// </summary>
+        public static bool ObjetoUsadoAceito(byte estado, bool doHost, bool usadoAntes) =>
+            estado != ObjetoSpawn.Concluido || (doHost && usadoAntes);
 
         // Status de controle do convidado (0.9.0). A intensidade multiplica (ou divide, no modificador
         // multiplicativo abaixo de 1) o valor do status; o jogo usa 1 como padrão. Abaixo de 1, a divisão
