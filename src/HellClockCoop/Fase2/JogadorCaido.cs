@@ -1,6 +1,5 @@
 using System;
 using System.Reflection;
-using BepInEx.Configuration;
 using HarmonyLib;
 using HellClock.Character;
 using HellClock.Damage;
@@ -21,11 +20,11 @@ namespace HellClockCoop.Fase2
     ///   A vida fica em 0 (LifeController.IsDead): os inimigos largam o alvo e a regeneração do jogo não age em quem
     ///   está morto. O Hell Clock continua correndo: o TimerManager.Update do jogo para com o jogador local morto, e o
     ///   Run_TimerUpdate o faz correr no host caído. As quedas não sobem o contador de mortes do save; só a morte final.
-    /// - Voltar: no próximo andar (LevelObjects.SetupPlayerSpawn), com VidaAoVoltarDoChao da vida
+    /// - Voltar: no próximo andar (LevelObjects.SetupPlayerSpawn), com VidaAoVoltar (50%, fixo no código) da vida
     ///   (ForceRegeneratePercentage, que passa por cima do teste de morto), gatilho "revive" e ações liberadas.
     /// - Quem decide o fim é o host: com ele caído e nenhum aliado de pé, roda a morte do jogo (que termina a run e
     ///   manda FimRun). O convidado caído espera o host; sem sessão, morre como no solo.
-    /// - Cada queda tira SegundosPerdidosPorQueda do Hell Clock do host (o host aplica as dele e as dos convidados).
+    /// - Cada queda tira SegundosPorQueda (10 s, fixo no código) do Hell Clock do host (o host aplica as dele e as dos convidados).
     /// - Modo eco (F8): o fantasma conta como aliado de pé (só teste); desligá-lo com você caído encerra a run.
     /// - Reanimação (0.16.0, Fase2/Reanimacao): um aliado parado ao seu lado te levanta antes do próximo andar.
     /// Decisões do autor em 22/11/2026: volta no próximo andar com 50%, −10 s por queda, a escala continua contando o
@@ -36,7 +35,10 @@ namespace HellClockCoop.Fase2
         private const float SemSinalSegundos = 5f; // mesmo limite do "sem sinal" do canto do coop
         private const string NomeBloqueio = "HellClockCoop.Caido";
 
-        internal static ConfigEntry<float> VidaAoVoltar, SegundosPorQueda;
+        // Valores do autor (0.16.3), fixos no código e fora do .cfg, como a reanimação desde a 0.16.1: o balanceamento é
+        // calibrado com as métricas, e um valor mudado por jogador sujaria os dados.
+        internal const float VidaAoVoltar = 0.5f;      // fração da vida com que o caído volta no próximo andar
+        internal const float SegundosPorQueda = 10f;   // segundos que cada queda tira do Hell Clock (o host aplica)
 
         private static readonly object Chave = new object(); // dono do bloqueio de ações
         private static readonly MethodInfo HandleOnDie = AccessTools.Method(typeof(PlayerController), "Handle_OnDie");
@@ -67,14 +69,6 @@ namespace HellClockCoop.Fase2
 
         private static SessaoCoop Sessao => RunCompartilhada.Sessao;
         private static DungeonProgressManager Dpm => DungeonProgressManager.Instance;
-
-        internal static void Configurar(ConfigFile config)
-        {
-            VidaAoVoltar = config.Bind("Balanceamento", "VidaAoVoltarDoChao", 0.5f,
-                "Fração da vida (0,05 a 1) com que o jogador caído volta no próximo andar. Padrão 0,5.");
-            SegundosPorQueda = config.Bind("Balanceamento", "SegundosPerdidosPorQueda", 10f,
-                "Segundos que cada queda tira do Hell Clock (0 desliga; até 60). Vale o valor do host. Padrão 10.");
-        }
 
         /// <summary>Em run com aliados (convidado, host com convidado ou eco): só aí a morte vira queda.</summary>
         private static bool EmRunCoop =>
@@ -131,8 +125,8 @@ namespace HellClockCoop.Fase2
             }
         }
 
-        /// <summary>Fração da vida na volta, no intervalo aceito.</summary>
-        internal static float FracaoAoVoltar => Mathf.Clamp(Validacao.Finito(VidaAoVoltar.Value) ? VidaAoVoltar.Value : 0.5f, 0.05f, 1f);
+        /// <summary>Fração da vida na volta (VidaAoVoltar, valor do autor).</summary>
+        internal static float FracaoAoVoltar => VidaAoVoltar;
 
         // ---------------- Patches ----------------
 
@@ -254,7 +248,7 @@ namespace HellClockCoop.Fase2
             long andar = RunCompartilhada.AndarAtual;
             if (QuedasNoAndar.TryGetValue(p.Id.m_SteamID, out long ja) && ja == andar) return;
             QuedasNoAndar[p.Id.m_SteamID] = andar;
-            float perdidos = RunCompartilhada.Host ? RunCompartilhada.PerderTempo(SegundosPorQueda.Value) : 0f;
+            float perdidos = RunCompartilhada.Host ? RunCompartilhada.PerderTempo(SegundosPorQueda) : 0f;
             Plugin.Log.LogInfo($"[Caído] {p.Nome} caiu{(perdidos > 0f ? $" (−{perdidos:0} s no Hell Clock)" : "")}.");
             Interface.CaidoNaTela.AvisarQueda(p.Nome, perdidos);
         }
@@ -283,7 +277,7 @@ namespace HellClockCoop.Fase2
             {
                 Plugin.Log.LogWarning($"[Caído] Parte da queda falhou (o personagem pode não deitar): {e}");
             }
-            float perdidos = RunCompartilhada.Convidado ? 0f : RunCompartilhada.PerderTempo(SegundosPorQueda.Value);
+            float perdidos = RunCompartilhada.Convidado ? 0f : RunCompartilhada.PerderTempo(SegundosPorQueda);
             Plugin.Log.LogInfo($"[Caído] Você caiu{(perdidos > 0f ? $" (−{perdidos:0} s no Hell Clock)" : "")}; volta no próximo andar ou se um aliado te reanimar.");
             Balanceamento.Metricas.Caiu();
             Interface.CaidoNaTela.AoCair();

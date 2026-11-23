@@ -646,6 +646,18 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
 // Balanceamento: lista "2, 3, 4" do .cfg e XP/ouro/Soulstones/moedas em coop (cada um × fator, arredondamento sorteado)
 {
     var te = T("HellClockCoop.Balanceamento.Escalonamento");
+    // XP e ouro: valores do autor fixos no código desde a 0.16.3 (fora do .cfg)
+    var ff = te.GetMethod("FatorFixo", BindingFlags.NonPublic | BindingFlags.Static);
+    foreach (var nome in new[] { "XpGrupo", "OuroGrupo" })
+    {
+        var lista = (float[])te.GetField(nome, BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+        float G(int n) => (float)ff.Invoke(null, new object[] { lista, n });
+        Checar(Math.Abs(G(2) - 0.83f) < 1e-6f && Math.Abs(G(3) - 0.71f) < 1e-6f && Math.Abs(G(4) - 0.63f) < 1e-6f && G(1) == 1f && Math.Abs(G(5) - 0.63f) < 1e-6f,
+            $"{nome}: fixo 0,83 / 0,71 / 0,63 para 2 / 3 / 4 jogadores, solo ×1, além da lista o último");
+    }
+    var tc = T("HellClockCoop.Fase2.JogadorCaido");
+    float Const(string n) => (float)tc.GetField(n, BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+    Checar(Const("VidaAoVoltar") == 0.5f && Const("SegundosPorQueda") == 10f, "Caído: volta com 50% e −10 s por queda, fixos no código (0.16.3)");
     var fl = te.GetMethod("FatorDaLista", BindingFlags.NonPublic | BindingFlags.Static);
     var es = te.GetMethod("Escalar", BindingFlags.NonPublic | BindingFlags.Static);
     float F(string texto, int n) => (float)fl.Invoke(null, new object[] { texto, n });

@@ -25,14 +25,21 @@ namespace HellClockCoop.Balanceamento
     ///   (0,83 / 0,71 / 0,63) deixa o ganho por andar perto do solo. Vale só em run com mais de um jogador e é aplicado
     ///   em cada PC, no próprio ganho (o drop de cada um sai do jogo dele).
     ///
-    /// Os valores ficam no .cfg (seção Balanceamento), um por número de jogadores: "2, 3, 4".
+    /// Vida, chefes, dano, quantidade e tempo ficam no .cfg (seção Balanceamento), um por número de jogadores: "2, 3, 4".
+    /// XP e ouro são valores do autor (0.16.3), fixos no código: XpGrupo e OuroGrupo.
     /// </summary>
     internal static class Escalonamento
     {
         private const string Chave = "HellClockCoop.Escalonamento";
 
         private static ConfigEntry<bool> _ativo;
-        private static ConfigEntry<string> _vida, _vidaChefe, _dano, _quantidade, _tempo, _xp, _moedas;
+        private static ConfigEntry<string> _vida, _vidaChefe, _dano, _quantidade, _tempo;
+
+        // Valores do autor (0.16.3), fora do .cfg: multiplicador do XP e do ouro/Soulstones/moedas de criação de cada
+        // jogador com 2, 3 e 4 jogadores (1/quantidade de inimigos, para o ganho por andar ficar perto do solo).
+        // O balanceamento é calibrado com as métricas; um valor mudado por jogador sujaria os dados.
+        internal static readonly float[] XpGrupo = { 0.83f, 0.71f, 0.63f };
+        internal static readonly float[] OuroGrupo = { 0.83f, 0.71f, 0.63f };
         private static int _jogadoresAplicados = 1;
         private static float _proximaChecagem;
 
@@ -47,8 +54,6 @@ namespace HellClockCoop.Balanceamento
             _dano = config.Bind(s, "DanoInimigos", "1.1, 1.2, 1.3", "Multiplicador do dano dos inimigos com 2, 3 e 4 jogadores.");
             _quantidade = config.Bind(s, "QuantidadeInimigos", "1.2, 1.4, 1.6", "Multiplicador da quantidade de inimigos por andar e nas ondas, com 2, 3 e 4 jogadores.");
             _tempo = config.Bind(s, "TempoGanho", "0.55, 0.4, 0.32", "Multiplicador do tempo ganho no Hell Clock com 2, 3 e 4 jogadores (cada um pega as próprias recompensas de tempo).");
-            _xp = config.Bind(s, "XpGanho", "0.83, 0.71, 0.63", "Multiplicador do XP que cada jogador ganha por inimigo com 2, 3 e 4 jogadores (só em run).");
-            _moedas = config.Bind(s, "OuroGanho", "0.83, 0.71, 0.63", "Multiplicador do ouro, das Soulstones e das moedas de criação que cada jogador ganha com 2, 3 e 4 jogadores (só em run; nas moedas é a chance de o drop sair).");
         }
 
         /// <summary>Jogadores no coop que dividem a run (o local + aliados compatíveis com a mesma DLC).</summary>
@@ -86,8 +91,12 @@ namespace HellClockCoop.Balanceamento
         internal static float FatorDano => Ligado ? Fator(_dano, Jogadores) : 1f;
         internal static float FatorQuantidade => Ligado ? Fator(_quantidade, Jogadores) : 1f;
         internal static float FatorTempo => Ligado ? Fator(_tempo, Jogadores) : 1f;
-        internal static float FatorXp => Ligado ? Fator(_xp, Jogadores) : 1f;
-        internal static float FatorOuro => Ligado ? Fator(_moedas, Jogadores) : 1f;
+        internal static float FatorXp => Ligado ? FatorFixo(XpGrupo, Jogadores) : 1f;
+        internal static float FatorOuro => Ligado ? FatorFixo(OuroGrupo, Jogadores) : 1f;
+
+        /// <summary>Valor fixo do autor para o número de jogadores (2, 3, 4; além usa o último); solo = 1.</summary>
+        internal static float FatorFixo(float[] lista, int jogadores) =>
+            jogadores <= 1 || lista == null || lista.Length == 0 ? 1f : lista[Mathf.Min(jogadores - 2, lista.Length - 1)];
 
         /// <summary>
         /// valor × fator com arredondamento sorteado: a parte fracionária vira a chance de +1 (sorteio em [0, 1)).
@@ -177,7 +186,7 @@ namespace HellClockCoop.Balanceamento
             }
         }
 
-        /// <summary>Aba Ajustes do menu do coop: os multiplicadores deste .cfg, só para leitura (com 2 jogadores fora do coop).</summary>
+        /// <summary>Aba Ajustes do menu do coop: os multiplicadores deste .cfg e os fixos do autor (XP e ouro), só para leitura (com 2 jogadores fora do coop).</summary>
         internal static System.Collections.Generic.List<string> LinhasDoMenu()
         {
             var l = new System.Collections.Generic.List<string>();
@@ -187,11 +196,11 @@ namespace HellClockCoop.Balanceamento
                 return l;
             }
             int agora = Jogadores, n = Mathf.Max(2, agora);
-            l.Add(agora > 1 ? $"Agora, com {n} jogadores:" : "Com 2 jogadores (os valores de 3 e 4 estão no .cfg):");
+            l.Add(agora > 1 ? $"Agora, com {n} jogadores:" : "Com 2 jogadores (3 e 4 jogadores têm outros valores):");
             l.Add($"Vida dos inimigos x{Fator(_vida, n):0.##}   Chefes x{Fator(_vidaChefe, n):0.##}");
             l.Add($"Dano dos inimigos x{Fator(_dano, n):0.##}   Quantidade x{Fator(_quantidade, n):0.##}");
-            l.Add($"Tempo ganho x{Fator(_tempo, n):0.##}   XP x{Fator(_xp, n):0.##}   Ouro x{Fator(_moedas, n):0.##}");
-            l.Add("O host decide os inimigos; os valores devem ser iguais para todos e só mudam no arquivo de configuração.");
+            l.Add($"Tempo ganho x{Fator(_tempo, n):0.##}   XP x{FatorFixo(XpGrupo, n):0.##}   Ouro x{FatorFixo(OuroGrupo, n):0.##}");
+            l.Add("O host decide os inimigos. Vida, dano, quantidade e tempo mudam no .cfg; XP e ouro são fixos.");
             return l;
         }
 

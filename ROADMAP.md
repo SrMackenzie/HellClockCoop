@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 22/11/2026 · versão 0.16.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 22/11/2026 · versão 0.16.3. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -16,7 +16,7 @@ _Prioridade 1, trilha permanente: o coop deve ser um pouco mais difícil que o s
 |:-:|---|
 | 🧪 | Escalonamento por número de jogadores: vida, chefes, dano, quantidade de inimigos e tempo ganho |
 | 🧪 | XP, ouro, Soulstones e moedas de criação em grupo: cada um × 0,83 / 0,71 / 0,63 (2 / 3 / 4 jogadores), só em run |
-| 🧪 | Valores ajustáveis no arquivo de configuração, sem recompilar |
+| 🧪 | Valores ajustáveis no arquivo de configuração, sem recompilar (vida, dano, quantidade e tempo; XP, ouro, volta do caído e reanimação são fixos pelo autor) |
 | 🧪 | Resumo de balanceamento de cada run, salvo no computador |
 | 🧪 | Envio anônimo dos resumos, só com aceite (Firebase, só criação) |
 | 🧪 | Pergunta do aceite no primeiro início, numa janela no menu (runs solo e coop) |

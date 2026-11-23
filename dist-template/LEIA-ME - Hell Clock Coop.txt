@@ -51,7 +51,7 @@ ESTADO ATUAL (versão de teste, Fase 3)
   * NOVO (0.10.0): XP, ouro, Soulstones e moedas de criação em grupo. Cada um continua ganhando
     o próprio (inimigos, chefes, vasos, baús, bênçãos), mas × 0,83 / 0,71 / 0,63 com 2 / 3 / 4
     jogadores (como há mais inimigos por andar, o ganho por andar fica perto do solo). Só vale em run com aliados; no
-    solo nada muda. Valores no mesmo .cfg (XpGanho e OuroGanho), lidos no PC de cada jogador.
+    solo nada muda. Desde a 0.16.3 esses valores são fixos no mod (não estão mais no .cfg).
   * NOVO (0.10.1): nas ondas de sobrevivência e nos inimigos das temporadas, o convidado ganha
     o mesmo XP e sorteia o loot da mesma tabela que o host. O equipamento não tem redução em
     grupo: é o prêmio de jogar junto. Exige a 0.10.1 nos dois PCs.
@@ -166,8 +166,8 @@ ESTADO ATUAL (versão de teste, Fase 3)
   e volta no próximo andar com 50% da vida; a run só acaba quando todos caem. Os aliados veem
   "caído" na barra e a seta em cinza. Com o host caído, o portal do convidado leva o grupo; no
   último andar, quando ele fica limpo, o host levanta com metade da vida para usar o portal final.
-  Cada queda tira 10 s do Hell Clock (no .cfg, seção [Balanceamento]: SegundosPerdidosPorQueda,
-  que vale o do host, e VidaAoVoltarDoChao, que vale o de cada PC). No modo eco (F8) o fantasma conta como aliado de
+  Cada queda tira 10 s do Hell Clock (desde a 0.16.3, os 10 s e os 50% são fixos no mod e não
+  estão mais no .cfg). No modo eco (F8) o fantasma conta como aliado de
   pé, para testar sozinho. Exige a 0.15.0 nos dois PCs.
 - NOVO (0.16.0): reanimação. Fique parado ao lado do aliado caído (até 2 m, sem usar skill)
   e ele levanta com 30% da vida, sem tecla. A primeira reanimação do andar leva 3 s, a segunda
@@ -180,6 +180,11 @@ ESTADO ATUAL (versão de teste, Fase 3)
 - NOVO (0.16.2): tela do caído com peças do próprio jogo. A sua luz encolhe, as bordas pulsam
   em vermelho e "VOCÊ CAIU" se revela como na tela de morte. Os avisos de queda e de reanimação
   de aliado entram na pilha de avisos da HUD. Só visual; exige a 0.16.2 em todos os PCs.
+- NOVO (0.16.3): os valores de balanceamento do autor saíram do .cfg e ficaram fixos no mod: a
+  volta do caído no próximo andar (50% da vida), os 10 s por queda e o XP e o ouro em grupo
+  (0,83 / 0,71 / 0,63). VidaAoVoltarDoChao, SegundosPerdidosPorQueda, XpGanho e OuroGanho não
+  são mais lidos (podem ficar no .cfg, sem efeito). Vida, dano, quantidade de inimigos e tempo
+  ganho continuam no .cfg. Exige a 0.16.3 em todos os PCs.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, abra o menu do coop (F7), escolha "Sair do coop" e depois use o menu normalmente.

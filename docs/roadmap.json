@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "22/11/2026",
-  "versao": "0.16.0",
+  "versao": "0.16.3",
   "fases": [
     {
       "id": "B",
@@ -18,7 +18,7 @@
         ],
         [
           "testar",
-          "Valores ajustáveis no arquivo de configuração, sem recompilar"
+          "Valores ajustáveis no arquivo de configuração, sem recompilar (vida, dano, quantidade e tempo; XP, ouro, volta do caído e reanimação são fixos pelo autor)"
         ],
         [
           "testar",

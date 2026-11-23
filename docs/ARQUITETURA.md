@@ -740,10 +740,10 @@ Decisão do projeto: **em grupo, um pouco mais difícil que o solo**. Prioridade
   lido por `LevelObjects` ao montar o andar e pelo `SurvivalEventManager` nas ondas. Vale a partir do andar seguinte.
 - *Tempo:* prefixo em `TimerManager.IncrementTimer` no host, só para ganhos (> 0). O tempo do convidado chega por
   TimerBonus e passa pelo mesmo ponto. Motivo: com loot individual, cada jogador pega as próprias recompensas de tempo.
-- *Jogadores:* 1 + aliados compatíveis com a mesma DLC (igual nos dois lados). Valores em `[Balanceamento]`, "2, 3, 4"
+- *Jogadores:* 1 + aliados compatíveis com a mesma DLC (igual nos dois lados). Valores em `[Balanceamento]` (menos XP e ouro), "2, 3, 4"
   (aceita "1,7; 2,4; 3,1").
 - *XP, ouro, Soulstones e moedas de criação (0.10.0):* decisão do autor, cada um ganha o valor de cada inimigo × fator
-  (`XpGanho`, `OuroGanho`; padrão 0,83 / 0,71 / 0,63 = 1/quantidade, para o ganho por andar ficar perto do solo). Só com
+  (`Escalonamento.XpGrupo` e `OuroGrupo`, fixos no código desde a 0.16.3: 0,83 / 0,71 / 0,63 = 1/quantidade, para o ganho por andar ficar perto do solo). Só com
   run iniciada e mais de um jogador; aplicado em cada PC, no próprio ganho (o loot é individual). Pontos:
   prefixo em `DropBalance.CalculateExperienceDrop` (`baseExperience`), postfix em `GoldTreasureClass.RollGoldValue` e
   `SoulStoneTreasureClass.RollSoulStonesAmount` (drop e bênção; vale para inimigo, chefe, vaso, baú, loot do andar, goblin e Sanctum, tudo que rola esses tesouros) e prefixo em `CurrencyTreasureClass.RollLoot` (a moeda é
@@ -941,7 +941,7 @@ S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum 
 | COOP-CFG-DANO-TAM | "Tamanho do dano" (barra, 30–200%; indisponível com os números desligados) | aba Ajustes | P | `[Interface] TamanhoDanoDosAliados` |
 | COOP-CFG-SOM | "Sons das skills dos aliados" (caixa de marcar) | aba Ajustes | P | `[Audio] SonsDosAliados` |
 | COOP-CFG-VOL | "Volume dos sons" (barra, 0–100%; indisponível com os sons desligados) | aba Ajustes | P | `[Audio] VolumeDosAliados` |
-| COOP-BAL-LEITURA | Multiplicadores do balanceamento deste `.cfg` | aba Ajustes | ∅ (só muda no arquivo) | `[Balanceamento]` |
+| COOP-BAL-LEITURA | Multiplicadores do balanceamento deste `.cfg` e os fixos do autor (XP e ouro, desde a 0.16.3) | aba Ajustes | ∅ (só muda no arquivo; XP e ouro não mudam) | `[Balanceamento]`, `Escalonamento.XpGrupo`/`OuroGrupo` |
 | COOP-NOVIDADES | "Novidades da <versão>": fecha o menu e abre a janela antiga (§12.1) | só na reserva (gaveta); no painel nativo virou a aba Novidades (0.13.0) | R | `[Teclas] Novidades` (F10) |
 | COOP-NAV | Setas ou direcional movem o foco; esquerda/direita ajustam a barra focada; Enter ou A executam; mouse: passar por cima foca, clique executa, clique ou arrasto na barra escolhe o valor, roda rola | menu aberto | R | — |
 | COOP-ECO-TECLA / COOP-DIAG-TECLA | F8 (modo eco) e F9 (diagnóstico) | jogo, com o menu do coop e a Novidades fechados | S | `[Teclas] ModoEco`, `SalvarHierarquia` |
@@ -993,7 +993,7 @@ modo eco conta como aliado de pé (só teste).
 - **Subir de nível caído:** a opção do jogo "restaurar vida ao subir de nível" chama `StatBasedValueController.Refill`;
   um prefixo recusa o `Refill` da vida do jogador local caído (o XP continua contando).
 - **Volta:** no postfix de `LevelObjects.SetupPlayerSpawn` de um andar da run (no hub, `LevelBlockInfo` é nulo):
-  `ClearDelayedDamage`, `ForceRegeneratePercentage(VidaAoVoltarDoChao)` (passa por cima do teste de morto), gatilho
+  `ClearDelayedDamage`, `ForceRegeneratePercentage(VidaAoVoltar)` (0,5) (passa por cima do teste de morto), gatilho
   `revive` e as ações liberadas. **Último andar** (decisão do autor): a saída é o portal do fim da dungeon, que não passa
   por `AdvanceLevel` e só o host usa; quando o andar fica limpo (`EnemyManager.OnAllEnemiesCleared`, `HostAndarLimpo`)
   e `IsLastLevel`, o host caído levanta com a mesma fração para usar o portal; quem cai depois de o andar estar limpo
@@ -1006,7 +1006,7 @@ modo eco conta como aliado de pé (só teste).
   está `Morto`. Durante a troca de andar do próprio PC (`IsTransitioning`, `IsChangingLevel` ou cena -1) e por 3 s depois
   dela ou de aceitar um `PedidoAvanco`, o host não decide (os aliados aparecem em outra cena até ele chegar). O convidado
   caído espera o host e só morre como no solo se perder a sessão ou se o host ficar 20 s sem sinal.
-- **Tempo:** o host tira `SegundosPerdidosPorQueda` (padrão 10, até 60, 0 desliga) do Hell Clock a cada queda: a dele
+- **Tempo:** o host tira `SegundosPorQueda` (10 s) do Hell Clock a cada queda: a dele
   (em `Cair`) e a dos convidados (`Morto` de falso para verdadeiro no snapshot, no mesmo andar, de par compatível e com
   a mesma DLC), no máximo uma por SteamID e por andar (snapshot fora de ordem ou forjado não cobra de novo). O valor vai direto no
   relógio (`_timer`, ou `_relaxedTimer` no modo relaxado) sem `IncrementTimer`, para não contar como tempo ganho; relógio
@@ -1042,8 +1042,8 @@ modo eco conta como aliado de pé (só teste).
     do mod leva uma marca invisível e o patch `GenericHudNotificationView.Write` (fase 5) tira o tradutor daquele
     rótulo e escreve o texto como está (o jogo recria o tradutor no próximo aviso dele, e o `richText` volta ao do
     jogo). Sem o patch aplicado ou sem a HUD, o aviso do topo continua.
-- **`.cfg`, seção `[Balanceamento]`:** `VidaAoVoltarDoChao` (0,05 a 1, padrão 0,5) e `SegundosPerdidosPorQueda`.
-  Vale o do host para o tempo; a vida na volta é a de cada PC.
+- **Valores do autor (0.16.3):** `VidaAoVoltar` (0,5) e `SegundosPorQueda` (10) são constantes em `JogadorCaido`, fora
+  do `.cfg` (as chaves `VidaAoVoltarDoChao` e `SegundosPerdidosPorQueda` deixam de ser lidas), como a reanimação desde a 0.16.1.
 - **Balanceamento:** cair tira o jogador da luta até o fim do andar e custa 10 s a todos, enquanto os inimigos continuam
   escalados para o grupo inteiro. Quem fica de pé luta sozinho contra inimigos de dupla. Comparado à 0.14.0, em que a
   morte do host encerrava a run de todos, o grupo dura mais; o custo de tempo e a escala cheia mantêm o coop um pouco
@@ -1097,7 +1097,6 @@ queda; visual da opção B ("barra do aliado").
 - **Snapshot fora de ordem:** a `SessaoCoop` guarda a `Sequencia` do snapshot que decidiu `Morto`; um pacote igual ou
   até 64 atrás não muda `Morto` (`Validacao.SequenciaAtrasada`), para um "caído" velho não cobrar a queda de novo
   depois da reanimação. Diferença maior conta como contagem recomeçada no outro PC.
-- **`.cfg` inválido:** `NaN` ou infinito em `VidaAoVoltarDoChao` vale o padrão.
 - **Visual (opção B, `AliadosNaTela` e `CaidoNaTela`):**
   - Barra do aliado caído: barra fina 90x7 logo abaixo dela (trilho preto 62%, preenchimento verde #7FB77E, vermelho
     #B3261E quando interrompido); o rótulo "caído" vira "reanimando" (verde), "interrompido" (vermelho) ou "fique

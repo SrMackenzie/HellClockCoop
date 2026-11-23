@@ -18,7 +18,7 @@ namespace HellClockCoop.Fase2
     ///   virar imortal sem cobrar de novo o relógio (os −10 s da queda já cobram).
     /// - Golpe recebido por quem reanima congela o avanço por 1 s; enquanto congelado, o progresso cai 1 s por segundo.
     ///   Mover, usar skill, sair do raio ou trocar de alvo zera.
-    /// - O reanimado volta com VidaAoReanimar (30%, fixo no código; a volta no próximo andar continua com VidaAoVoltarDoChao).
+    /// - O reanimado volta com VidaAoReanimar (30%, fixo no código; a volta no próximo andar continua com JogadorCaido.VidaAoVoltar, 50%).
     /// Rede: quem reanima conta o progresso (só ele sabe se andou, usou skill ou levou golpe) e manda Reanimando a 5 Hz
     /// para o andar; ao terminar manda Reanimou. Cada um é dono da própria vida: o caído levanta na máquina dele, se a
     /// mensagem é do andar dele e quem a mandou está perto (Validacao.ReanimouValido). Todos contam a reanimação do andar

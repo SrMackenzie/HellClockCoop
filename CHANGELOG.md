@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.16.3 — Valores de balanceamento do autor fixos no mod 🧪
+_22/11/2026_
+
+- A volta do jogador caído no próximo andar (50% da vida) e os 10 s que cada queda tira do Hell Clock agora são fixos no mod, iguais para todos
+- O XP e o ouro (com Soulstones e moedas de criação) em grupo também ficaram fixos: × 0,83 / 0,71 / 0,63 com 2 / 3 / 4 jogadores
+- Saíram do .cfg: VidaAoVoltarDoChao, SegundosPerdidosPorQueda, XpGanho e OuroGanho não são mais lidos (se ainda estiverem no arquivo, não fazem efeito). Os valores são calibrados pelo autor com os resumos das runs
+- Vida, chefes, dano, quantidade de inimigos e tempo ganho continuam no .cfg, seção [Balanceamento]
+- Exige a 0.16.3 em todos os PCs (o protocolo continua o 17)
+
 ## 0.16.2 — Tela do jogador caído com peças do jogo 🧪
 _22/11/2026_
 
