@@ -860,7 +860,7 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
         "Trava: aviso do convidado que não acompanha");
 }
 
-// Balanceamento: lista "2, 3, 4" do .cfg e XP/ouro/Soulstones/moedas em coop (cada um × fator, arredondamento sorteado)
+// Balanceamento: valores fixos do autor e XP/ouro/Soulstones/moedas em coop (cada um × fator, arredondamento sorteado)
 {
     var te = T("HellClockCoop.Balanceamento.Escalonamento");
     // XP e ouro: valores do autor fixos no código desde a 0.16.3 (fora do .cfg)
@@ -875,18 +875,23 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     var tc = T("HellClockCoop.Fase2.JogadorCaido");
     float Const(string n) => (float)tc.GetField(n, BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
     Checar(Const("VidaAoVoltar") == 0.5f && Const("SegundosPorQueda") == 10f, "Caído: volta com 50% e −10 s por queda, fixos no código (0.16.3)");
-    var fl = te.GetMethod("FatorDaLista", BindingFlags.NonPublic | BindingFlags.Static);
     var es = te.GetMethod("Escalar", BindingFlags.NonPublic | BindingFlags.Static);
-    float F(string texto, int n) => (float)fl.Invoke(null, new object[] { texto, n });
     double E(double v, float f, double sorteio) => (double)es.Invoke(null, new object[] { v, f, sorteio });
-    bool Perto(float a, float b) => Math.Abs(a - b) < 1e-6f;
 
-    const string padrao = "0.83, 0.71, 0.63";
-    Checar(Perto(F(padrao, 2), 0.83f) && Perto(F(padrao, 3), 0.71f) && Perto(F(padrao, 4), 0.63f), "Fator: 0,83 / 0,71 / 0,63 para 2 / 3 / 4 jogadores");
-    Checar(F(padrao, 1) == 1f && F(padrao, 0) == 1f, "Fator: solo (1 jogador) fica ×1");
-    Checar(Perto(F(padrao, 5), 0.63f) && Perto(F("0.9", 4), 0.9f), "Fator: além da lista usa o último valor");
-    Checar(Perto(F("0,83; 0,71; 0,63", 3), 0.71f) && Perto(F("0,83 / 0,71 / 0,63", 4), 0.63f), "Fator: vírgula decimal com ; ou /");
-    Checar(F("", 2) == 1f && F(null, 2) == 1f && F("abc, 0.7", 2) == 1f && F("-0.5", 2) == 1f && F("0", 2) == 1f, "Fator: vazio, inválido, zero ou negativo fica ×1");
+    // 0.22.0: vida, chefes, dano, quantidade e tempo também fixos no código (sem .cfg nem liga/desliga)
+    foreach (var (nome, v2, v3, v4) in new[] { ("VidaGrupo", 1.7f, 2.4f, 3.1f), ("VidaChefeGrupo", 1.8f, 2.6f, 3.4f), ("DanoGrupo", 1.1f, 1.2f, 1.3f),
+                                               ("QuantidadeGrupo", 1.2f, 1.4f, 1.6f), ("TempoGrupo", 0.55f, 0.4f, 0.32f) })
+    {
+        var lista = (float[])te.GetField(nome, BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+        float G(int n) => (float)ff.Invoke(null, new object[] { lista, n });
+        Checar(G(1) == 1f && G(2) == v2 && G(3) == v3 && G(4) == v4 && G(5) == v4, $"{nome}: fixo {v2} / {v3} / {v4} para 2 / 3 / 4 jogadores, solo ×1");
+    }
+    Checar(te.GetMethod("FatorDaLista", BindingFlags.NonPublic | BindingFlags.Static) == null
+           && te.GetField("_ativo", BindingFlags.NonPublic | BindingFlags.Static) == null,
+        "Balanceamento: sem leitura do .cfg e sem liga/desliga (0.22.0)");
+    var antigas = (string[])te.GetField("ChavesAntigas", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+    Checar(antigas.SequenceEqual(new[] { "Ativo", "VidaInimigos", "VidaChefes", "DanoInimigos", "QuantidadeInimigos", "TempoGanho" }),
+        "Balanceamento: as 6 opções antigas do .cfg são apagadas do arquivo");
 
     Checar(E(100, 1f, 0.99) == 100 && E(7.5, 1f, 0) == 7.5, "Escalar: fator 1 não mexe no valor");
     Checar(E(0, 0.83f, 0) == 0, "Escalar: zero continua zero");

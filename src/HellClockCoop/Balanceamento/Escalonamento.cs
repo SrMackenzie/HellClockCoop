@@ -1,6 +1,7 @@
 using System;
-using System.Globalization;
+using System.Collections.Generic;
 using BepInEx.Configuration;
+using HarmonyLib;
 using HellClock.Character.Enemy;
 using HellClock.Manager;
 using HellClock.Stats;
@@ -25,35 +26,56 @@ namespace HellClockCoop.Balanceamento
     ///   (0,83 / 0,71 / 0,63) deixa o ganho por andar perto do solo. Vale só em run com mais de um jogador e é aplicado
     ///   em cada PC, no próprio ganho (o drop de cada um sai do jogo dele).
     ///
-    /// Vida, chefes, dano, quantidade e tempo ficam no .cfg (seção Balanceamento), um por número de jogadores: "2, 3, 4".
-    /// XP e ouro são valores do autor (0.16.3), fixos no código: XpGrupo e OuroGrupo.
+    /// Todos os valores são do autor e fixos no código, um por número de jogadores (2, 3, 4): XP e ouro desde a 0.16.3;
+    /// vida, chefes, dano, quantidade e tempo desde a 0.22.0, sem liga/desliga (decisão do autor: quem usa o mod usa os
+    /// critérios do mod; ninguém, nem o host, muda o balanceamento pelo .cfg).
     /// </summary>
     internal static class Escalonamento
     {
         private const string Chave = "HellClockCoop.Escalonamento";
 
-        private static ConfigEntry<bool> _ativo;
-        private static ConfigEntry<string> _vida, _vidaChefe, _dano, _quantidade, _tempo;
-
-        // Valores do autor (0.16.3), fora do .cfg: multiplicador do XP e do ouro/Soulstones/moedas de criação de cada
-        // jogador com 2, 3 e 4 jogadores (1/quantidade de inimigos, para o ganho por andar ficar perto do solo).
-        // O balanceamento é calibrado com as métricas; um valor mudado por jogador sujaria os dados.
+        // Valores do autor, fora do .cfg, com 2, 3 e 4 jogadores. O balanceamento é calibrado com as métricas; um valor
+        // mudado por jogador sujaria os dados e daria a um host o poder de mexer no jogo dos outros.
+        // 0.22.0: vida, chefes, dano, quantidade e tempo saíram do .cfg com os valores padrão que tinham lá.
+        internal static readonly float[] VidaGrupo = { 1.7f, 2.4f, 3.1f };
+        internal static readonly float[] VidaChefeGrupo = { 1.8f, 2.6f, 3.4f };
+        internal static readonly float[] DanoGrupo = { 1.1f, 1.2f, 1.3f };
+        internal static readonly float[] QuantidadeGrupo = { 1.2f, 1.4f, 1.6f };
+        internal static readonly float[] TempoGrupo = { 0.55f, 0.4f, 0.32f }; // cada um pega as próprias recompensas de tempo
+        // XP e ouro/Soulstones/moedas de criação de cada jogador (0.16.3): 1/quantidade, para o ganho por andar ficar perto do solo.
         internal static readonly float[] XpGrupo = { 0.83f, 0.71f, 0.63f };
         internal static readonly float[] OuroGrupo = { 0.83f, 0.71f, 0.63f };
+
+        /// <summary>Chaves que ficavam na seção [Balanceamento] do .cfg até a 0.21.x (apagadas do arquivo na 0.22.0).</summary>
+        internal static readonly string[] ChavesAntigas = { "Ativo", "VidaInimigos", "VidaChefes", "DanoInimigos", "QuantidadeInimigos", "TempoGanho" };
         private static int _jogadoresAplicados = 1;
         private static float _proximaChecagem;
 
         private static SessaoCoop Sessao => RunCompartilhada.Sessao;
 
+        /// <summary>
+        /// 0.22.0: apaga do .cfg a seção [Balanceamento] antiga (os valores agora são do autor, no código), para ninguém
+        /// achar que editar o arquivo muda alguma coisa. Sem a API (BepInEx diferente), só avisa no log.
+        /// </summary>
         internal static void Configurar(ConfigFile config)
         {
-            const string s = "Balanceamento";
-            _ativo = config.Bind(s, "Ativo", true, "Ajusta os inimigos e o Hell Clock ao número de jogadores (o host decide; os valores devem ser iguais para todos).");
-            _vida = config.Bind(s, "VidaInimigos", "1.7, 2.4, 3.1", "Multiplicador da vida dos inimigos com 2, 3 e 4 jogadores.");
-            _vidaChefe = config.Bind(s, "VidaChefes", "1.8, 2.6, 3.4", "Multiplicador da vida dos chefes com 2, 3 e 4 jogadores.");
-            _dano = config.Bind(s, "DanoInimigos", "1.1, 1.2, 1.3", "Multiplicador do dano dos inimigos com 2, 3 e 4 jogadores.");
-            _quantidade = config.Bind(s, "QuantidadeInimigos", "1.2, 1.4, 1.6", "Multiplicador da quantidade de inimigos por andar e nas ondas, com 2, 3 e 4 jogadores.");
-            _tempo = config.Bind(s, "TempoGanho", "0.55, 0.4, 0.32", "Multiplicador do tempo ganho no Hell Clock com 2, 3 e 4 jogadores (cada um pega as próprias recompensas de tempo).");
+            try
+            {
+                var orfas = AccessTools.Property(typeof(ConfigFile), "OrphanedEntries")?.GetValue(config, null) as Dictionary<ConfigDefinition, string>;
+                if (orfas == null) return;
+                int apagadas = 0;
+                foreach (string chave in ChavesAntigas)
+                {
+                    if (orfas.Remove(new ConfigDefinition("Balanceamento", chave))) apagadas++;
+                }
+                if (apagadas == 0) return;
+                config.Save();
+                Plugin.Log.LogInfo($"[Balanceamento] {apagadas} opção(ões) antiga(s) de [Balanceamento] apagada(s) do .cfg: os valores agora são fixos no mod.");
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Balanceamento] Não deu para apagar a seção antiga do .cfg ({(e.InnerException ?? e).Message}); ela é ignorada.");
+            }
         }
 
         /// <summary>
@@ -81,31 +103,12 @@ namespace HellClockCoop.Balanceamento
         internal static bool ForaDaEscala(Par p) =>
             !p.MesmoAndar && (p.SemLiberar || (!p.CursedWar && Fase2.RunCompartilhada.RunAtualDaDlc()));
 
-        private static bool Ligado => _ativo == null || _ativo.Value;
-
-        internal static float Fator(ConfigEntry<string> e, int jogadores) => e == null ? 1f : FatorDaLista(e.Value, jogadores);
-
-        /// <summary>Valor da lista "2, 3, 4" do .cfg para o número de jogadores; solo, vazio ou inválido = 1.</summary>
-        internal static float FatorDaLista(string texto, int jogadores)
-        {
-            if (jogadores <= 1 || texto == null) return 1f;
-            // "1.7, 2.4, 3.1" ou, com vírgula decimal, "1,7; 2,4; 3,1" (ou separado por /)
-            bool outroSeparador = texto.IndexOf(';') >= 0 || texto.IndexOf('/') >= 0;
-            string[] partes = outroSeparador
-                ? texto.Split(new[] { ';', '/' }, StringSplitOptions.RemoveEmptyEntries)
-                : texto.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            int i = Mathf.Min(jogadores - 2, partes.Length - 1);
-            if (i < 0) return 1f;
-            string num = partes[i].Trim().Replace(',', '.');
-            return float.TryParse(num, NumberStyles.Float, CultureInfo.InvariantCulture, out float v) && v > 0f ? v : 1f;
-        }
-
-        internal static float FatorVida(bool chefe) => Ligado ? Fator(chefe ? _vidaChefe : _vida, Jogadores) : 1f;
-        internal static float FatorDano => Ligado ? Fator(_dano, Jogadores) : 1f;
-        internal static float FatorQuantidade => Ligado ? Fator(_quantidade, Jogadores) : 1f;
-        internal static float FatorTempo => Ligado ? Fator(_tempo, Jogadores) : 1f;
-        internal static float FatorXp => Ligado ? FatorFixo(XpGrupo, Jogadores) : 1f;
-        internal static float FatorOuro => Ligado ? FatorFixo(OuroGrupo, Jogadores) : 1f;
+        internal static float FatorVida(bool chefe) => FatorFixo(chefe ? VidaChefeGrupo : VidaGrupo, Jogadores);
+        internal static float FatorDano => FatorFixo(DanoGrupo, Jogadores);
+        internal static float FatorQuantidade => FatorFixo(QuantidadeGrupo, Jogadores);
+        internal static float FatorTempo => FatorFixo(TempoGrupo, Jogadores);
+        internal static float FatorXp => FatorFixo(XpGrupo, Jogadores);
+        internal static float FatorOuro => FatorFixo(OuroGrupo, Jogadores);
 
         /// <summary>Valor fixo do autor para o número de jogadores (2, 3, 4; além usa o último); solo = 1.</summary>
         internal static float FatorFixo(float[] lista, int jogadores) =>
@@ -199,21 +202,16 @@ namespace HellClockCoop.Balanceamento
             }
         }
 
-        /// <summary>Aba Ajustes do menu do coop: os multiplicadores deste .cfg e os fixos do autor (XP e ouro), só para leitura (com 2 jogadores fora do coop).</summary>
-        internal static System.Collections.Generic.List<string> LinhasDoMenu()
+        /// <summary>Aba Ajustes do menu do coop: os valores do autor, só para leitura (com 2 jogadores fora do coop).</summary>
+        internal static List<string> LinhasDoMenu()
         {
-            var l = new System.Collections.Generic.List<string>();
-            if (!Ligado)
-            {
-                l.Add("Desligado neste .cfg ([Balanceamento] Ativo = false).");
-                return l;
-            }
+            var l = new List<string>();
             int agora = Jogadores, n = Mathf.Max(2, agora);
             l.Add(agora > 1 ? $"Agora, com {n} jogadores:" : "Com 2 jogadores (3 e 4 jogadores têm outros valores):");
-            l.Add($"Vida dos inimigos x{Fator(_vida, n):0.##}   Chefes x{Fator(_vidaChefe, n):0.##}");
-            l.Add($"Dano dos inimigos x{Fator(_dano, n):0.##}   Quantidade x{Fator(_quantidade, n):0.##}");
-            l.Add($"Tempo ganho x{Fator(_tempo, n):0.##}   XP x{FatorFixo(XpGrupo, n):0.##}   Ouro x{FatorFixo(OuroGrupo, n):0.##}");
-            l.Add("O host decide os inimigos. Vida, dano, quantidade e tempo mudam no .cfg; XP e ouro são fixos.");
+            l.Add($"Vida dos inimigos x{FatorFixo(VidaGrupo, n):0.##}   Chefes x{FatorFixo(VidaChefeGrupo, n):0.##}");
+            l.Add($"Dano dos inimigos x{FatorFixo(DanoGrupo, n):0.##}   Quantidade x{FatorFixo(QuantidadeGrupo, n):0.##}");
+            l.Add($"Tempo ganho x{FatorFixo(TempoGrupo, n):0.##}   XP x{FatorFixo(XpGrupo, n):0.##}   Ouro x{FatorFixo(OuroGrupo, n):0.##}");
+            l.Add("Valores fixos do mod, iguais para todos os jogadores.");
             return l;
         }
 
@@ -221,7 +219,7 @@ namespace HellClockCoop.Balanceamento
         internal static string Resumo()
         {
             int n = Jogadores;
-            if (n <= 1 || !Ligado) return null;
+            if (n <= 1) return null;
             return $"Balanceamento {n}J: vida ×{FatorVida(false):0.#} · chefes ×{FatorVida(true):0.#} · dano ×{FatorDano:0.#} · inimigos ×{FatorQuantidade:0.#} · tempo ×{FatorTempo:0.##} · XP ×{FatorXp:0.##} · ouro ×{FatorOuro:0.##}";
         }
     }
