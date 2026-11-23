@@ -304,7 +304,7 @@ O zip é reproduzível (datas fixas). Na 0.2.0, os 24 binários e configs do zip
 - Log do primeiro snapshot enviado e recebido, e de cada mudança de cena dos aliados.
 - `try/catch` com log na amostragem.
 
-**DLC e modos de jogo (para a Fase 2):** na Fase 1 não interferem. Nós de aparência e estados de animação que não existem no outro jogo são ignorados (`Find` nulo, `HasState` falso). Na Fase 2, a run vai ser a do host. Se o host tiver a DLC e o convidado não, andares e itens da DLC não carregam no convidado. Vai ser preciso exigir a mesma DLC ou restringir ao conteúdo base, e anunciar as opções da run (`hardcoreModeEnabled`, `relaxedModeEnabled`, pausa) nos dados do lobby.
+**DLC e modos de jogo (para a Fase 2):** na Fase 1 não interferem. Nós de aparência e estados de animação que não existem no outro jogo são ignorados (`Find` nulo, `HasState` falso). Na Fase 2, a run vai ser a do host. (Desde a 0.21.0, §12.10: a Cursed War não tem depot próprio, o conteúdo dela vem no jogo base de todos e é liberado só pela posse; quem não tem a DLC divide a run do jogo base e só o Ato 4 trava.) Vai ser preciso anunciar as opções da run (`hardcoreModeEnabled`, `relaxedModeEnabled`, pausa) nos dados do lobby.
 
 **2º teste com amigo (0.2.1, 20/11/2026) — Fase 1b confirmada na rede:**
 - Convite, Hello compatível e snapshots (274 bytes a 20/s) funcionaram nos dois sentidos.
@@ -327,12 +327,12 @@ O zip é reproduzível (datas fixas). Na 0.2.0, os 24 binários e configs do zip
 
 **Decisões do autor (20/11/2026):**
 - Convidado **puxado junto** quando o host inicia a run.
-- **Mesma DLC Cursed War** exigida para dividir a run (a Deluxe, cosmética, só gera aviso).
+- Até a 0.20.0, a mesma DLC Cursed War era exigida para dividir a run. Desde a 0.21.0, DLC diferente divide a run do jogo base e o Ato 4 só com a Cursed War (§12.10). A Deluxe, cosmética, só gera aviso.
 - **Andar vazio** no convidado até a Fase 3.
 
 **Modos (`SessaoCoop`):**
-- `ModoHost`: dono do lobby com ao menos um convidado compatível e com a mesma DLC.
-- `ModoConvidado`: o host trocou Hello, é compatível e tem a mesma DLC.
+- `ModoHost`: dono do lobby com ao menos um convidado compatível (até a 0.20.0, também com a mesma DLC).
+- `ModoConvidado`: o host trocou Hello e é compatível (até a 0.20.0, também com a mesma DLC).
 - `ComAliados`: alguém no lobby (afeta a pausa).
 
 Fora desses modos, todos os patches deixam o jogo seguir como sem o mod.
@@ -600,7 +600,7 @@ recebe clona a primeira irmã. Era o caso das facas da skill Reflexos girando em
   `HashID` da `StatusDefinition`, duração, intensidade, `HashID` da skill de origem e pilhas. O mesmo status no mesmo
   inimigo, na janela de 50 ms, vira um item (maior duração, maior intensidade; pilhas somadas até 255, ou a maior, se o
   status não acumula pilhas: `StatusDefinition.CanStack` falso, ou seja, `Refresh` e instâncias múltiplas). Só é aceita de
-  par compatível e com a mesma DLC (`Compativel && DlcOk`).
+  par compatível (`Compativel`; até a 0.20.0, também `DlcOk`).
 - **Convidado:** postfix em `StatusController.AddStatus`. Vai ao host o status que entrou numa réplica viva (`__result`
   não nulo, ou seja, a réplica não era imune), aplicado pelo jogador local ou por uma invocação dele
   (`PlayerController`/`PlayerCompanionController`; status de inimigo em inimigo fica de fora). O `AddStatus` reescreve
@@ -740,7 +740,7 @@ Decisão do projeto: **em grupo, um pouco mais difícil que o solo**. Prioridade
   lido por `LevelObjects` ao montar o andar e pelo `SurvivalEventManager` nas ondas. Vale a partir do andar seguinte.
 - *Tempo:* prefixo em `TimerManager.IncrementTimer` no host, só para ganhos (> 0). O tempo do convidado chega por
   TimerBonus e passa pelo mesmo ponto. Motivo: com loot individual, cada jogador pega as próprias recompensas de tempo.
-- *Jogadores:* 1 + aliados compatíveis com a mesma DLC (igual nos dois lados). Valores em `[Balanceamento]` (menos XP e ouro), "2, 3, 4"
+- *Jogadores:* 1 + aliados compatíveis (igual nos dois lados; desde a 0.21.0 com ou sem a mesma DLC, e fora quem avisou ForaDaRun). Valores em `[Balanceamento]` (menos XP e ouro), "2, 3, 4"
   (aceita "1,7; 2,4; 3,1").
 - *XP, ouro, Soulstones e moedas de criação (0.10.0):* decisão do autor, cada um ganha o valor de cada inimigo × fator
   (`Escalonamento.XpGrupo` e `OuroGrupo`, fixos no código desde a 0.16.3: 0,83 / 0,71 / 0,63 = 1/quantidade, para o ganho por andar ficar perto do solo). Só com
@@ -832,7 +832,7 @@ testadas; sem item selecionável, as setas e o direcional rolam (`PainelNativo.R
 ### 12.2 Menu do coop e bloqueio da entrada (versões 0.9.3, 0.12.0, 0.13.0 e 0.13.1)
 
 Desde a 0.12.0, `Interface/MenuCoop.cs` guarda o conteúdo, o foco e a entrada, e `Interface/PainelNativo.cs` desenha o
-menu com a interface do próprio jogo: uma janela no centro da tela (720 × 900 no canvas de 1080 de altura), montada na
+menu com a interface do próprio jogo: uma janela no centro da tela (720 × 900 no canvas de 1080 de altura; 1100 × 960 desde a 0.21.0, §12.10), montada na
 entrada do botão "Coop" na lista do menu do jogo (`BotoesDoJogo`, 0.13.0; até a 0.12.0, na primeira exibição do botão "Menu do coop"), na abertura automática da aba Novidades ou na primeira abertura, com cópias, em tempo de execução, das peças da `HellClock.UI.Options.OptionsWindow` de PC (a de
 celular, `OptionsScreenMobile`, fica de fora): fundo `Container/MiddleLeftAnchor/Background`, cabeçalho `Header` (linhas,
 título "COOP" e o [X]), botão de aba `SwitchButtons/GameplayButton` (uma cópia por aba: Sessão, Ajustes e, desde a 0.13.0, Novidades; desde a 0.18.0, Salas entre Sessão e Ajustes), fundo do conteúdo
@@ -931,9 +931,9 @@ S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum 
 | COOP-ALIADO | Linha por aliado: nome e estado | aba Sessão, em sessão | ∅ | — |
 | COOP-EXPULSAR | "Expulsar <nome>" abaixo de cada aliado; o primeiro aperto vira "Confirmar: expulsar <nome>?" por 3 s (0.18.0, §12.7) | aba Sessão, só o host | S (`SessaoCoop.Expulsar`) | — |
 | COOP-SALA-PUBLICA | "Sala pública (aparece na aba Salas)" (caixa de marcar); vale para o próximo coop e, como host, muda a sala na hora; convidado não muda (0.18.0) | aba Sessão (sem sessão ou como host) | P + S (`SessaoCoop.AlternarSalaPublica`, `SetLobbyType`) | `[Coop] SalaPublica` |
-| COOP-ABA-SALAS | Aba "Salas" (0.18.0), entre Sessão e Ajustes; abas de 160 para caber 4 | janela; na reserva, na lista única depois da Sessão | R | — |
+| COOP-ABA-SALAS | Aba "Salas" (0.18.0), entre Sessão e Ajustes; abas de 160 para caber 4. Desde a 0.21.0 o menu abre nela (F7, View, botão Coop) | janela; na reserva, na lista única depois da Sessão | R | — |
 | COOP-SALAS-ATUALIZAR | "Atualizar lista" com a idade da lista ("há 12 s"); "Buscando salas..." indisponível. Busca sozinha com a aba à vista quando nunca buscou ou a lista tem mais de 30 s; no máximo 1 busca a cada 3 s; sem resposta em 15 s, libera nova busca | aba Salas | S (`SessaoCoop.BuscarSalas`) | — |
-| COOP-SALAS-SALA | Uma linha por sala pública compatível: "Host  -  Ato 2, andar 5" e "Nv 34  2/4"; indisponível conectando ou, desde a 0.19.0, numa run aonde o save não chegou (à direita, "você chegou ao andar 4", e uma linha de explicação abaixo da lista; §12.8) | aba Salas | S (`SessaoCoop.EntrarNaSala`; já num coop, o primeiro aperto vira "Confirmar: sair do seu coop e entrar?" por 3 s) | — |
+| COOP-SALAS-SALA | Um item por sala pública compatível. Desde a 0.21.0 em 2 linhas: "Host  ·  Cursed War" e "Nv 34  2/4" em cima, o lugar ("Ato 2, andar 5") embaixo; desabilitada ao conectar; no Ato 4 sem a DLC (§12.10) ou numa run aonde o save não chegou (§12.8), indisponível: à direita "indisponível", o motivo na linha de baixo e uma linha de explicação abaixo da lista. Até a 0.20.0, uma linha "Host  -  lugar" | aba Salas | S (`SessaoCoop.EntrarNaSala`; já num coop, o primeiro aperto vira "Confirmar: sair do seu coop e entrar?" por 3 s) | — |
 | COOP-AVISO-ATUALIZACAO | Recado do atualizador desta abertura (versão nova instalada ou atualização recusada), no topo da lista (0.13.0; antes no painel do canto) | aba Sessão, quando houver | ∅ | `[Atualizacao]` |
 | COOP-CRIAR | "Criar coop e convidar amigos" (sem sessão); "Esperando o Steam..." e "Conectando..." indisponíveis | aba Sessão | S (`SessaoCoop.HospedarOuConvidar`) | — |
 | COOP-CONVIDAR | "Convidar amigos (Steam)" | aba Sessão, em sessão | S (reabre o overlay de convite) | — |
@@ -1013,8 +1013,7 @@ modo eco conta como aliado de pé (só teste).
   dela ou de aceitar um `PedidoAvanco`, o host não decide (os aliados aparecem em outra cena até ele chegar). O convidado
   caído espera o host e só morre como no solo se perder a sessão ou se o host ficar 20 s sem sinal.
 - **Tempo:** o host tira `SegundosPorQueda` (10 s) do Hell Clock a cada queda: a dele
-  (em `Cair`) e a dos convidados (`Morto` de falso para verdadeiro no snapshot, no mesmo andar, de par compatível e com
-  a mesma DLC), no máximo uma por SteamID e por andar (snapshot fora de ordem ou forjado não cobra de novo). O valor vai direto no
+  (em `Cair`) e a dos convidados (`Morto` de falso para verdadeiro no snapshot, no mesmo andar, de par compatível), no máximo uma por SteamID e por andar (snapshot fora de ordem ou forjado não cobra de novo). O valor vai direto no
   relógio (`_timer`, ou `_relaxedTimer` no modo relaxado) sem `IncrementTimer`, para não contar como tempo ganho; relógio
   já em 0 ou negativo (modo relaxado) não muda; zerado, o próprio jogo encerra a run por tempo.
 - **Rede (protocolo 16):** `PedidoAvanco` (tipo 25, convidado → host: andar atual e quantos andares). O prefixo de
@@ -1139,7 +1138,7 @@ visual da opção A ("seta no chão", só peças do jogo).
   (4294967295 fora da run, no hub) e o ponto. Quem recebe confere cena, andar, ponto finito e a distância entre o ponto
   e o avatar de quem marcou (30 m + 10 m de folga no chão, até 10 m de desnível, `Validacao.MarcadorValido`); um
   segundo marcador do mesmo par em menos de 0,5 s é ignorado (sem linha no log padrão: só `LogDebug`). Não confere a
-  DLC (como o resto do que vai pelo `EnviarParaMesmoAndar`): com DLC diferente vocês se veem, e o marcador é só visual.
+  DLC (como o resto do que vai pelo `EnviarParaMesmoAndar`; desde a 0.21.0 nada confere a DLC).
   Filtros na tabela da §14.
 - **Vida do marcador:** 5 s (`Marcadores.Duracao`) desde a marcação; some antes na troca de cena ou de andar, quando o
   par sai da sessão e, o do eco, quando o eco desliga.
@@ -1168,8 +1167,8 @@ existe só no host; quem herda o lobby hoje vira "host" sem estado).
   0 fora do padrão, como Sobrevivência), `hcc_andar` (1 = primeiro), `hcc_nivel` (`PlayerSheet.Experience.Level`) e
   `hcc_host`. Quem herda o lobby passa a gravar os dele.
 - **Busca:** `RequestLobbyList` com `k_ELobbyDistanceFilterWorldwide` (sem ele a Steam só olha a região), filtros de
-  igualdade em `hcc_proto`, `hcc_mod` e `hcc_dlc`, com vaga e até 50. Cada resultado passa de novo por
-  `Salas.SalaVisivel` (versões, DLC, vaga, não é a nossa nem uma de onde fomos expulsos).
+  igualdade em `hcc_proto` e `hcc_mod` (até a 0.20.0 também `hcc_dlc`), com vaga e até 50. Cada resultado passa de novo por
+  `Salas.SalaVisivel` (versões, vaga, não é a nossa nem uma de onde fomos expulsos). Desde a 0.21.0 `hcc_dlc` só marca a sala (§12.10).
 - **Dados não confiáveis:** tudo do lobby vem de qualquer jogador. Nome sem `<`, `>`, controles e formatação invisível
   (U+202E, U+200B), até 32 caracteres sem partir emoji (`Salas.LimparNome`; desde a 0.18.0 vale também para o nome do
   `Hello` e os nomes da Steam do par e do dono do lobby); números fora da faixa viram 0
@@ -1259,7 +1258,7 @@ mod não conhece). Nenhum formato de mensagem mudou: o protocolo continua 20.
   só depois que o santuário foi ativado aqui (uso local, ordem `Usado` ou entrada com a sobrevivência em andamento).
   Limite: um host alterado ainda pode criar o santuário já `Usado` e mandar `Concluido`; o ganho fica no teto do jogo
   (1 ponto por andar, `ClaimShrineLevel`) e só no save de quem recebe.
-- **Golpes (`GolpesAceitos`):** convidado `Compativel`, `DlcOk` e `MesmoAndar`, até 512 itens por mensagem (acima
+- **Golpes (`GolpesAceitos`):** convidado `Compativel`, `MesmoAndar` (até a 0.20.0, também `DlcOk`), até 512 itens por mensagem (acima
   disso a mensagem inteira é recusada).
 - **IP (`SteamTransporte`):** a SteamNetworkingMessages copia o valor global de `P2P_Transport_ICE_Enable` ao criar a
   sessão. Quando a Steam fica pronta (antes de qualquer lobby) o global vai a 0 (sem ICE, só relay SDR); na 1ª sessão com cada par (envio ou aceite), vai a
@@ -1278,6 +1277,62 @@ mod não conhece). Nenhum formato de mensagem mudou: o protocolo continua 20.
 - **Fica para a 3a-2 (0.20.1):** host fixo da run até o `FimRun`, expulsão avisada, `BauAberto`/`Quebrou`/`ObjetoUsado`
   só do host, teto de baús, `AndarLimpo` 1 vez por andar, `TimerBonus` com as mesmas exigências e floats de
   `Snapshot`/`InimigosEstado`.
+
+### 12.10 Salas: DLC Cursed War e menu maior (versão 0.21.0, protocolo 20)
+
+Decisões do autor (23/11/2026), antes da 3a-2: a lista mostra salas com e sem a Cursed War. Sala num andar ou modo da
+DLC só aceita quem tem a DLC, e os modos normais não restringem. "Modo da DLC" é só o **Ato 4**: a Ascensão nos atos
+1 a 3 fica livre, porque a Penitência é a árvore do save de cada um. O menu do coop abre direto na aba Salas, numa
+janela maior (visual A das 3 opções: lista larga, com cada sala em 2 linhas).
+
+**O que o IL e a instalação mostram (2.1.1.1):**
+- A Cursed War não tem depot próprio. A instalação tem o depot base (1782461) e o 5326530, que é só o Art Book da
+  Deluxe. O conteúdo da DLC vem no jogo base de todo mundo e é liberado pela posse: `DlcConfig.HasCursedWar` =
+  `SteamApps.BIsDlcInstalled(_cursedWarDlcAppId)` (ou `GameConfig.UnlockAllDlc`). Ou seja, o convidado sem a DLC
+  carregaria o Ato 4 sem erro; a trava é regra nossa, para não dar conteúdo pago a quem não tem.
+- Usos de `HasCursedWar`: `GameConfig.MaxActEnabled` (4 com a DLC); `CorruptedShrinesInfo.GetPresentationData` (tira
+  o `EDungeon` 8 = Act04 sem a DLC); `StartDungeonPortalInteractable` e `PenanceHudView` (Penitência na Ascensão);
+  `PlayerSaveData.TryToUnlockAct4`/`SkipCampaign`; cosméticos; `HasCursedWarDLCCondition`.
+- `HasCursedWarDLCCondition` é uma `Condition` usada pelos assets. Entre os campos que aceitam condições estão a
+  disponibilidade de relíquias únicas e de afixos de relíquia, `EnemySpawnComposition`, `BlessingLootTreasureList`, os
+  tiers de pledge e as bênçãos de Miracles. Quais assets usam a condição da DLC não aparece no IL: fica nos bundles do
+  Addressables. Efeito no coop: o loot é sorteado no jogo de cada um, com as condições avaliadas pela DLC de quem pega.
+  A composição de inimigos é do host e chega replicada. Então, numa run do jogo base com host que tem a DLC, o
+  convidado sem a DLC pode ver nos atos 1 a 3 inimigos que a DLC liberou, se algum asset fizer isso. É aceito pela
+  decisão de que os modos normais não restringem.
+- `EDungeon` do Ato 4: Act04 = 8, Act04Endgame = 9, Act04Abyss = 13, Act04Oblivion = 17, Act04Void = 21. O jogo troca
+  `EDungeon` por `DungeonConfig` em `GameDifficultyController.GetDungeonConfig`: na Ascensão, por
+  `DungeonConfig.GetByID((int)e)`; fora dela, por `WorldTierConfig.GetDungeonConfig(e)` do tier atual (que cai no mesmo
+  `GetByID` quando o tier não tem a masmorra).
+
+**Como ficou:**
+- Fim do `Par.DlcOk`. Tudo o que exigia `Compativel && DlcOk` passa a exigir só `Compativel`: escala, run, golpes,
+  status, caído, reanimação, objetos, santuários e alvos. `Validacao.GolpesAceitos` perdeu o parâmetro da DLC. As
+  mensagens não mudaram (protocolo 20); a versão do mod (0.21.0) separa quem tem a regra nova.
+- `RunCompartilhada.MasmorraDaDlc(hash)` junta os `HashID` das masmorras do Ato 4 pelos dois caminhos acima, em todos
+  os tiers de `GameConfig.WorldTierConfigs`. Só uma leitura completa e não vazia fica guardada; até lá (dados ainda
+  não carregados ou exceção no meio), cada chamada lê de novo e confere também o nome da masmorra ("Act04..."). Falha
+  de leitura avisa uma vez no log. O convidado sem a DLC que recebe o plano
+  de uma run do Ato 4 não acompanha. O caminho é o mesmo da trava de progresso (`_semLiberar`, `ForaDaRun` aos pares,
+  fora da escala), com o aviso `Salas.TextoForaDaRunDlc`. Na escala, `Escalonamento.ForaDaEscala` também tira o par
+  sem a DLC fora do nosso andar numa run do Ato 4 (`RunCompartilhada.RunAtualDaDlc`), sem esperar o ForaDaRun, que não
+  chega se ele está no menu. Sem a DLC o save nunca chega ao Ato 4, então a trava de
+  progresso já barrava; a conferência explícita cobre o save que teve a DLC antes e dá o motivo certo.
+- Lista: a busca não filtra mais `hcc_dlc`, que vira `SalaListada.CursedWar` (a marca "Cursed War" ao lado do host).
+  `SessaoCoop.AtualizarTrava` roda a cada quadro da aba e de novo em `EntrarNaSala`. Ela calcula o recorde (§12.8) e
+  `SemDlc`: sala na run com `hcc_ato` = 4, ou masmorra do Ato 4 (`MasmorraDaDlc` no hash do lobby, conferido com os
+  dados do próprio jogo), e este PC sem a DLC. Mentir no lobby só trava mais; quem decide acompanhar é o plano do host,
+  conferido no convidado.
+- No Hello com DLC diferente, o aviso é `Salas.TextoDlcDiferente`: jogam juntos os atos 1 a 3, e o Ato 4 é só de quem
+  tem a DLC.
+- Menu: `MenuCoop.Abrir` abre na aba Salas; a abertura automática das Novidades continua na aba Novidades. O painel
+  nativo passou a 1100 × 960, que cabe em 4:3 (canvas de 1440 × 1080). `MenuCoop.Linha.Detalhe` é a segunda linha do
+  item. No painel, ela é um texto "Detalhe" (cópia do texto da linha, no tamanho de informação, recuado) na faixa de
+  baixo, de 26, e o título e o valor sobem para a faixa de cima. Na reserva (gaveta, agora com até 720 de largura e
+  40% da tela), é um rótulo a mais, de 22. Na sala: `Salas.TextoSala` (host e marca), `ValorSala` ("Nv 34  2/4" ou
+  "indisponível") e `DetalheSala` (o lugar e, se indisponível, o motivo; a DLC vem antes do recorde).
+- codectest: golpes sem DLC, `SalaVisivel` sem DLC, as 2 linhas da sala, a marca da DLC, `PrecisaDaDlc`,
+  `SalaIndisponivel` e os textos novos.
 
 ## 13. Atualizador automático (versão 0.8.0)
 
@@ -1365,8 +1420,8 @@ filtros puros ficam em `Net/Validacao.cs` e têm casos no `tools/codectest`.
 |---|---|---|
 | `PlanoAndar` | convidado, só do host | `IndiceAndar < DungeonConfig.GetByID(DungeonHash).MaxLevelIndex` (`MaxLevelIndex` é a quantidade de andares: o jogo usa `IsLastLevel = índice + 1 >= MaxLevelIndex`); dungeon desconhecida é descartada; andar especial (sem dungeon): até 200. Aviso no log |
 | `FimRun` | convidado, só do host | `Motivo` dentro de `EGameOverSource` (0..4). Aviso no log |
-| `PedidoAvanco` (0.15.0) | host, só caído, com a run em andamento e sem troca de andar, de par compatível, com a mesma DLC e no mesmo andar | `IndiceAndar` igual ao andar atual do host (pedido repetido ou atrasado é recusado), `Andares` ≥ 1 (o host limita a 3) e nunca no último andar, onde o avanço viraria `FinishDungeon(Completed)` no save do host (`Validacao.PedidoAvancoValido`); um avanço aceito por andar (o Endless Nightmare gera o bloco seguinte de forma assíncrona); o host chama `AdvanceLevel(n, false)` e o jogo ainda limita pelo máximo dele. O convidado manda no máximo um a cada 2 s. Log de recusa no máximo a cada 5 s |
-| `Reanimando` (0.16.0) | todos, de par compatível, com a mesma DLC, no mesmo andar e de pé, com a run em andamento | andar igual ao seu, estado 0 a 2 e fração finita de 0 a 1 (`Validacao.ReanimandoValido`); o alvo é você caído ou um aliado caído na run (outro alvo é descartado, para não ocupar memória). Só aparece na tela; não muda nada do jogo |
+| `PedidoAvanco` (0.15.0) | host, só caído, com a run em andamento e sem troca de andar, de par compatível e no mesmo andar (até a 0.20.0, também com a mesma DLC) | `IndiceAndar` igual ao andar atual do host (pedido repetido ou atrasado é recusado), `Andares` ≥ 1 (o host limita a 3) e nunca no último andar, onde o avanço viraria `FinishDungeon(Completed)` no save do host (`Validacao.PedidoAvancoValido`); um avanço aceito por andar (o Endless Nightmare gera o bloco seguinte de forma assíncrona); o host chama `AdvanceLevel(n, false)` e o jogo ainda limita pelo máximo dele. O convidado manda no máximo um a cada 2 s. Log de recusa no máximo a cada 5 s |
+| `Reanimando` (0.16.0) | todos, de par compatível, no mesmo andar e de pé (até a 0.20.0, também com a mesma DLC), com a run em andamento | andar igual ao seu, estado 0 a 2 e fração finita de 0 a 1 (`Validacao.ReanimandoValido`); o alvo é você caído ou um aliado caído na run (outro alvo é descartado, para não ocupar memória). Só aparece na tela; não muda nada do jogo |
 | `Reanimou` (0.16.0) | todos, com os mesmos filtros do `Reanimando` | andar igual ao seu e alvo diferente de quem mandou (ninguém se levanta sozinho). A conta do andar fica com o maior `Ordem` visto, subindo no máximo um (`Validacao.OrdemReanimacao`). Com o alvo na run (caído ou já de pé), todos esquecem a queda já vista dele (a próxima avisa de novo e o host volta a cobrar). Para o caído: ele precisa estar caído e quem mandou a até 2 m + 2 m de folga (atraso do snapshot), pela posição do avatar (`Validacao.ReanimouValido`); sem avatar, recusa. Para os outros: o alvo precisa jogar a run. Efeito: o caído levanta com `VidaAoReanimar` e todos contam a reanimação do andar |
 | `Marcador` (0.17.0) | todos, de par compatível, no mesmo andar (pela cena do snapshot), com o seu personagem no mundo | cena conhecida e igual à sua, mesmo índice de andar (fora da run, 4294967295 dos dois lados), coordenadas finitas até 100 000 e o ponto a até 30 m + 10 m de folga do avatar de quem marcou no chão e até 10 m de desnível (`Validacao.MarcadorValido`; sem avatar, recusa). Do mesmo par, um marcador a cada 0,5 s no máximo, e só 1 guardado por par. Só aparece na tela; não muda nada do jogo |
 | `Expulso` (0.18.0) | convidado, só do dono do lobby (nunca de si mesmo) | sem campos; sai do coop e esconde a sala da lista (`Salas.ExpulsaoValida`) |
@@ -1376,7 +1431,7 @@ filtros puros ficam em `Net/Validacao.cs` e têm casos no `tools/codectest`.
 | `BauSpawn`, `ObjetoSpawn` | convidado, só do host | — |
 | `ObjetoUsado` | qualquer par | `Estado = Concluido` (purificação) só do host. Aviso no log |
 | `BauAberto`, `Quebrou`, `ObjetoUsado` (`Usado`) | qualquer par | — (o host repassa) |
-| `StatusInimigos` (0.9.0) | host, de convidado compatível e com a mesma DLC | duração e intensidade finitas e `> 0`, pelo menos 1 pilha (`Validacao.StatusValido`); duração limitada a 30 s, intensidade a 1–10 e pilhas ao `MaxStacks` (sem ele, 10; status que não acumula pilhas, `CanStack` falso, 1); mais de 512 itens recusa a mensagem; status desconhecido ou que não é de controle recusado (desde a 0.9.1, modificador de atributo só se for lentidão; seção 11.4). No máximo 20 avisos por convidado na sessão |
+| `StatusInimigos` (0.9.0) | host, de convidado compatível (até a 0.20.0, também com a mesma DLC) | duração e intensidade finitas e `> 0`, pelo menos 1 pilha (`Validacao.StatusValido`); duração limitada a 30 s, intensidade a 1–10 e pilhas ao `MaxStacks` (sem ele, 10; status que não acumula pilhas, `CanStack` falso, 1); mais de 512 itens recusa a mensagem; status desconhecido ou que não é de controle recusado (desde a 0.9.1, modificador de atributo só se for lentidão; seção 11.4). No máximo 20 avisos por convidado na sessão |
 | `SonsAliado`, `SonsFim` (0.11.0) | qualquer par compatível no mesmo andar, com avatar | GUID não nulo de evento 3D deste jogo (não snapshot), ponto finito a até 40 m do avatar, até 40 sons/s por aliado, até 64 itens e 4 parâmetros (nome de 1–64 letras, valor finito) por som; som que dura só com Id, até 64 por aliado, parado em 20 s (seção 11.6). Aviso a cada 5 s no máximo |
 | `GolpesVistos` (0.11.0) | qualquer par compatível no mesmo andar | `EFxOnDamage` e tipos só com bits conhecidos, principal entre os presentes, vetores finitos, ponto a até 10 m do inimigo, inimigo a até 40 m do avatar, até 120/s por aliado. Aviso a cada 5 s no máximo |
 | `Golpes` (0.8.5) | host, de qualquer convidado | dano finito e `> 0` (`Validacao.DanoValido`); NaN ou infinito mataria qualquer inimigo. Valor finito grande segue aceito: o dano do convidado é confiável (seção 2). Descarte sem log (20 Hz) |

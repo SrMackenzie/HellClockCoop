@@ -43,6 +43,7 @@ namespace HellClockCoop.Interface
             public Tipo Tipo;
             public Acao Acao;
             public string Texto, Valor;
+            public string Detalhe; // 0.21.0: segunda linha do item (aba Salas, visual A: lugar e motivo de indisponível)
             public bool Habilitada, Ligado;
             public float Fracao; // deslizante: posição 0..1
             public Enfase Enfase;
@@ -58,8 +59,8 @@ namespace HellClockCoop.Interface
             return i >= 0 && i < tamanho ? i : -1;
         }
 
-        private const float LarguraMin = 380f, LarguraMax = 460f;
-        private const float Margem = 20f, AlturaItem = 48f, AlturaSecao = 34f, LadoBotao = 44f, LarguraValor = 120f;
+        private const float LarguraMin = 380f, LarguraMax = 720f; // 0.21.0: a lista de salas usa mais tela
+        private const float Margem = 20f, AlturaItem = 48f, AlturaSecao = 34f, LadoBotao = 44f, LarguraValor = 120f, AlturaDetalhe = 22f;
         private const float EsperaConfirmarSaida = 3f;
         private const float PassoRoda = 60f; // unidades de 1080p por entalhe da roda do mouse
 
@@ -86,7 +87,7 @@ namespace HellClockCoop.Interface
         private static ulong _expulsarAlvo; // Expulsar pede dois apertos, como o Sair; armado pelo SteamID (não pelo lugar na lista)
         private static readonly List<SalaListada> SalasMostradas = new List<SalaListada>(); // Sala0 + i → a sala desenhada, não a da busca nova
         private static float _confirmarExpulsarAte = -1f;
-        private static GUIStyle _titulo, _secao, _info, _item, _valor, _rodape, _botao, _invisivel;
+        private static GUIStyle _titulo, _secao, _info, _item, _valor, _detalhe, _rodape, _botao, _invisivel;
 
         internal static bool Aberto => _aberto;
 
@@ -216,7 +217,7 @@ namespace HellClockCoop.Interface
             }
         }
 
-        private static void Abrir(string motivo, bool peloControle, Aba aba = Aba.Sessao)
+        private static void Abrir(string motivo, bool peloControle, Aba aba = Aba.Salas) // 0.21.0: abre direto na aba Salas
         {
             _aberto = true;
             _controle = peloControle;
@@ -675,8 +676,9 @@ namespace HellClockCoop.Interface
         }
 
         /// <summary>
-        /// Aba Salas (0.18.0, visual A): botão de atualizar com a idade da lista e uma linha por sala pública compatível
-        /// ("Host  -  Ato 2, andar 5" e "Nv 34  2/4"). Busca sozinha ao abrir e a cada 30 s com a aba à vista.
+        /// Aba Salas (0.18.0; 0.21.0 visual A da janela larga): botão de atualizar com a idade da lista e um item de 2 linhas
+        /// por sala ("Host  ·  Cursed War" | "Nv 34  2/4"; embaixo o lugar e o motivo de indisponível). Busca sozinha ao
+        /// abrir e a cada 30 s com a aba à vista.
         /// </summary>
         private static void MontarSalas(CoopRuntime rt)
         {
@@ -693,7 +695,7 @@ namespace HellClockCoop.Interface
             if (!steam) Adicionar(Tipo.Info, Acao.Nenhuma, "Esperando o Steam ficar pronto.", null, false);
             else if (s.FalhaNaBusca) Adicionar(Tipo.Info, Acao.Nenhuma, "A busca falhou (sem conexão com a Steam). Tente de novo.", null, false);
             else if (!s.BuscandoSalas && s.UltimaBusca >= 0f && s.SalasListadas.Count == 0)
-                Adicionar(Tipo.Info, Acao.Nenhuma, $"Nenhuma sala pública aberta com o mod {Plugin.PluginVersion} {(s.MinhaCursedWar ? "e a DLC Cursed War" : "sem a DLC Cursed War")}. Crie a sua na aba Sessão.", null, false);
+                Adicionar(Tipo.Info, Acao.Nenhuma, $"Nenhuma sala pública aberta com o mod {Plugin.PluginVersion}. Crie a sua na aba Sessão.", null, false);
 
             SalasMostradas.Clear();
             bool algumaTravada = false;
@@ -701,19 +703,22 @@ namespace HellClockCoop.Interface
             {
                 SalaListada sala = s.SalasListadas[i];
                 SalasMostradas.Add(sala);
-                // 0.19.0: recorde do save carregado agora (pode ter trocado de save desde a busca); travada fica indisponível
-                sala.Recorde = sala.Dungeon != 0 ? Fase2.RunCompartilhada.RecordeNoSave(sala.Dungeon) : -1;
-                bool travada = Salas.SalaTravada(sala);
+                s.AtualizarTrava(sala); // recorde do save carregado agora e DLC deste PC; indisponível não entra
+                bool travada = Salas.SalaIndisponivel(sala);
                 if (travada) algumaTravada = true;
                 bool armada = !travada && _entrarAlvo == sala.Lobby && ConfirmaSaida(Time.unscaledTime, _confirmarEntrarAte);
-                Adicionar(Tipo.Item, (Acao)((int)Acao.Sala0 + i), armada ? "Confirmar: sair do seu coop e entrar?" : Salas.TextoSala(sala),
-                    Salas.ValorSala(sala), !conectando && !travada);
+                Linhas.Add(new Linha
+                {
+                    Tipo = Tipo.Item, Acao = (Acao)((int)Acao.Sala0 + i), Habilitada = !conectando && !travada,
+                    Texto = armada ? "Confirmar: sair do seu coop e entrar?" : Salas.TextoSala(sala),
+                    Valor = Salas.ValorSala(sala), Detalhe = Salas.DetalheSala(sala),
+                });
             }
 
-            if (algumaTravada) Adicionar(Tipo.Info, Acao.Nenhuma, "Salas indisponíveis estão numa run aonde o seu save ainda não chegou (mesma masmorra e andar).", null, false);
+            if (algumaTravada) Adicionar(Tipo.Info, Acao.Nenhuma, "Salas indisponíveis estão no Ato 4 sem você ter a DLC Cursed War, ou numa run aonde o seu save ainda não chegou (mesma masmorra e andar).", null, false);
 
             if (s.EmSessao && s.SalasListadas.Count > 0) Adicionar(Tipo.Info, Acao.Nenhuma, "Entrar numa sala tira você do coop atual (pede confirmação).", null, false);
-            Adicionar(Tipo.Info, Acao.Nenhuma, "Só aparecem salas com vaga, a mesma versão do mod e a mesma DLC. Dá para entrar com a run em andamento.", null, false);
+            Adicionar(Tipo.Info, Acao.Nenhuma, "Só aparecem salas com vaga e a mesma versão do mod, com ou sem a DLC Cursed War (o Ato 4 só com a DLC). Dá para entrar com a run em andamento.", null, false);
         }
 
         private static void MontarAjustes()
@@ -849,7 +854,7 @@ namespace HellClockCoop.Interface
                 _mouseAntes = ev.mousePosition;
             }
 
-            float largura = Mathf.Min(Mathf.Clamp(telaL * 0.3f, LarguraMin, LarguraMax), telaL);
+            float largura = Mathf.Min(Mathf.Clamp(telaL * 0.4f, LarguraMin, LarguraMax), telaL);
             if (_semPersonagem) Retangulo(new Rect(0f, 0f, telaL - largura, telaA), new Color(0f, 0f, 0f, 0.35f)); // em jogo: sem escurecer
             var caixa = new Rect(telaL - largura, 0f, largura, telaA);
             Retangulo(caixa, Ferrugem);
@@ -923,8 +928,10 @@ namespace HellClockCoop.Interface
                     GUI.color = l.Habilitada ? corAntes : new Color(1f, 1f, 1f, 0.45f);
                     string valor = l.Tipo == Tipo.Deslizante ? "<  " + l.Valor + "  >" : l.Valor;
                     float lValor = valor != null ? LarguraValor : 0f;
-                    GUI.Label(new Rect(14f, yl, interna - 28f - lValor, h), new GUIContent(l.Texto), _item);
-                    if (valor != null) GUI.Label(new Rect(interna - 14f - lValor, yl, lValor, h), new GUIContent(valor), _valor);
+                    float hTexto = string.IsNullOrEmpty(l.Detalhe) ? h : _alturaItem; // detalhe: 2ª linha embaixo
+                    GUI.Label(new Rect(14f, yl, interna - 28f - lValor, hTexto), new GUIContent(l.Texto), _item);
+                    if (hTexto < h) GUI.Label(new Rect(28f, yl + hTexto - 10f, interna - 42f, h - hTexto + 4f), new GUIContent(l.Detalhe), _detalhe);
+                    if (valor != null) GUI.Label(new Rect(interna - 14f - lValor, yl, lValor, hTexto), new GUIContent(valor), _valor);
                     GUI.color = corAntes;
                     if (mouse && l.Habilitada)
                     {
@@ -952,7 +959,7 @@ namespace HellClockCoop.Interface
         private static float Altura(Linha l, float largura)
         {
             if (l.Tipo == Tipo.Secao) return AlturaSecao;
-            if (l.Tipo != Tipo.Info) return _alturaItem;
+            if (l.Tipo != Tipo.Info) return string.IsNullOrEmpty(l.Detalhe) ? _alturaItem : _alturaItem + AlturaDetalhe;
             return Mathf.Max(26f, _info.CalcHeight(new GUIContent(l.Texto), largura - 8f));
         }
 
@@ -971,6 +978,8 @@ namespace HellClockCoop.Interface
             _item.normal.textColor = Creme;
             _valor = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleRight };
             _valor.normal.textColor = new Color(0.92f, 0.5f, 0.38f);
+            _detalhe = new GUIStyle(GUI.skin.label) { fontSize = 14, alignment = TextAnchor.MiddleLeft, richText = false };
+            _detalhe.normal.textColor = new Color(0.72f, 0.68f, 0.65f);
             _rodape = new GUIStyle(GUI.skin.label) { fontSize = 13, wordWrap = true };
             _rodape.normal.textColor = new Color(0.62f, 0.6f, 0.57f);
             _botao = new GUIStyle(GUI.skin.button) { fontSize = 16, fontStyle = FontStyle.Bold };

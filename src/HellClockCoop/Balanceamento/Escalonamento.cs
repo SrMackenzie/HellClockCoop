@@ -57,7 +57,7 @@ namespace HellClockCoop.Balanceamento
         }
 
         /// <summary>
-        /// Jogadores no coop que dividem a run (o local + aliados compatíveis com a mesma DLC). Desde a 0.19.0 sem o
+        /// Jogadores no coop que dividem a run (o local + aliados compatíveis; desde a 0.21.0 com ou sem a mesma DLC). Desde a 0.19.0 sem o
         /// convidado que avisou não acompanhar (o save dele não chegou à run: ForaDaRun), a não ser que ele esteja no
         /// mesmo andar (um ForaDaRun falso não tira da escala quem joga a run).
         /// </summary>
@@ -67,7 +67,7 @@ namespace HellClockCoop.Balanceamento
             {
                 if (Sessao == null || !Sessao.EmSessao) return 1;
                 int n = 1;
-                foreach (Par p in Sessao.Pares.Values) if (p.Compativel && p.DlcOk && !ForaDaEscala(p)) n++;
+                foreach (Par p in Sessao.Pares.Values) if (p.Compativel && !ForaDaEscala(p)) n++;
                 return Mathf.Clamp(n, 1, 4);
             }
         }
@@ -75,8 +75,11 @@ namespace HellClockCoop.Balanceamento
         /// <summary>
         /// 0.19.0: par que avisou não acompanhar a run e não está no mesmo andar. Não conta na escala e, no host, os golpes
         /// e status dele são ignorados (sem isso, ForaDaRun falso + cena falsa tiraria da escala quem ainda bate).
+        /// 0.21.0: também o par sem a Cursed War fora do nosso andar numa run do Ato 4, sem esperar o ForaDaRun (que não
+        /// chega se ele está no menu ou carregando). Mentir que tem a DLC só o põe na escala (grupo mais difícil).
         /// </summary>
-        internal static bool ForaDaEscala(Par p) => p.SemLiberar && !p.MesmoAndar;
+        internal static bool ForaDaEscala(Par p) =>
+            !p.MesmoAndar && (p.SemLiberar || (!p.CursedWar && Fase2.RunCompartilhada.RunAtualDaDlc()));
 
         private static bool Ligado => _ativo == null || _ativo.Value;
 

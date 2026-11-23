@@ -236,7 +236,7 @@ namespace HellClockCoop.Fase2
 
         internal static void Receber(SessaoCoop sessao, Par de, byte[] dados)
         {
-            if (!de.Compativel || !de.DlcOk || !de.MesmoAndar || de.Morto || !EmRun) return;
+            if (!de.Compativel || !de.MesmoAndar || de.Morto || !EmRun) return;
             ContarAndar();
             byte tipo = dados.Length > 0 ? dados[0] : (byte)0;
             if (tipo == Protocolo.TipoReanimando)

@@ -138,6 +138,85 @@ namespace HellClockCoop.Fase2
             }
         }
 
+        private static HashSet<int> _masmorrasDaDlc; // null até uma leitura completa
+        private static bool _avisouMasmorrasDaDlc;
+        private static readonly EDungeon[] MasmorrasDoAto4 =
+            { EDungeon.Act04, EDungeon.Act04Endgame, EDungeon.Act04Abyss, EDungeon.Act04Oblivion, EDungeon.Act04Void };
+
+        /// <summary>
+        /// 0.21.0: a masmorra (DungeonConfig.HashID) é do Ato 4, o conteúdo da Cursed War. O jogo troca EDungeon por
+        /// DungeonConfig em GameDifficultyController.GetDungeonConfig: na Ascensão DungeonConfig.GetByID((int)e), senão
+        /// WorldTierConfig.GetDungeonConfig(e) do tier (que cai no mesmo GetByID se o tier não tem a masmorra). Aqui junta as
+        /// duas formas, de todos os tiers. Só lê dados do jogo; só guarda uma leitura completa e, até lá, confere também o
+        /// nome da masmorra ("Act04...").
+        /// </summary>
+        internal static bool MasmorraDaDlc(int dungeonHash)
+        {
+            if (dungeonHash == 0) return false;
+            if (_masmorrasDaDlc == null)
+            {
+                var conjunto = new HashSet<int>();
+                bool completo = false;
+                try
+                {
+                    var tiers = global::HellClock.Constants.GameConfig.WorldTierConfigs;
+                    foreach (EDungeon e in MasmorrasDoAto4)
+                    {
+                        DungeonConfig d = DungeonConfig.GetByID((int)e);
+                        if (d != null) conjunto.Add(d.HashID);
+                        if (tiers == null) continue;
+                        foreach (WorldTierConfig w in tiers.Values)
+                        {
+                            d = w != null ? w.GetDungeonConfig(e) : null;
+                            if (d != null) conjunto.Add(d.HashID);
+                        }
+                    }
+                    completo = true;
+                }
+                catch (Exception e)
+                {
+                    if (!_avisouMasmorrasDaDlc) Plugin.Log.LogWarning($"[Run] Não foi possível listar as masmorras do Ato 4: {e.Message}");
+                    _avisouMasmorrasDaDlc = true; // a aba Salas pergunta a cada quadro: o aviso sai uma vez
+                }
+                // Só guarda a leitura inteira: um conjunto parcial (exceção no meio) ficaria para sempre sem os tiers que faltaram.
+                if (completo && conjunto.Count > 0)
+                {
+                    _masmorrasDaDlc = conjunto;
+                    Plugin.Log.LogInfo($"[Run] Masmorras do Ato 4 (Cursed War): {conjunto.Count}.");
+                }
+                else if (conjunto.Contains(dungeonHash)) return true;
+                else return AtoDaMasmorra(dungeonHash) == Salas.AtoDaDlc; // reserva: nome do DungeonConfig ("Act04...")
+            }
+            return _masmorrasDaDlc.Contains(dungeonHash);
+        }
+
+        /// <summary>0.21.0: a run aberta neste PC é do Ato 4 (escala: quem não tem a DLC fica fora sem esperar o ForaDaRun).</summary>
+        internal static bool RunAtualDaDlc()
+        {
+            if (CoopRuntime.JogadorLocal() == null) return false; // sem personagem não há run (e não cria singletons)
+            try
+            {
+                if (!Dpm.RunStarted.Value) return false;
+                DungeonConfig d = Dpm.CurrentDungeonConfig;
+                return d != null && MasmorraDaDlc(d.HashID);
+            }
+            catch (Exception) { return false; }
+        }
+
+        private static int AtoDaMasmorra(int dungeonHash)
+        {
+            try
+            {
+                DungeonConfig d = DungeonConfig.GetByID(dungeonHash);
+                return Salas.AtoDoNome(d != null ? d.name : "");
+            }
+            catch (Exception) { return 0; }
+        }
+
+        /// <summary>0.21.0: o plano do host é uma run do Ato 4 e este PC não tem a Cursed War (atalho especial não é do ato).</summary>
+        private static bool SemDlcPara(PlanoAndar p) =>
+            p.AndarEspecial == (int)ESpecialFloor.None && Salas.PrecisaDaDlc(MasmorraDaDlc(p.DungeonHash), Sessao.MinhaCursedWar);
+
         // ---------------- Laço ----------------
 
         public static void Atualizar(PlayerController jogador)
@@ -181,13 +260,17 @@ namespace HellClockCoop.Fase2
                 {
                     long recorde = RecordeNoSave(p.DungeonHash);
                     int andar = (int)Math.Min(p.IndiceAndar + 1u, (uint)Salas.AndarMaximo);
-                    if (!Salas.Liberado(andar, recorde))
+                    // 0.21.0: o Ato 4 é da Cursed War. Sem a DLC o save nunca chega lá (a trava de progresso já barra); a
+                    // conferência explícita cobre save que teve a DLC antes e dá o motivo certo no aviso.
+                    bool semDlc = SemDlcPara(p);
+                    if (semDlc || !Salas.Liberado(andar, recorde))
                     {
                         DungeonConfig dc = DungeonConfig.GetByID(p.DungeonHash);
+                        int ato = Salas.AtoDoNome(dc != null ? dc.name : "");
                         _semLiberar = true;
                         _entradaTardia = null;
-                        Plugin.Log.LogInfo($"[Run] Não acompanha a run do host: {p} (recorde do save nessa masmorra: {recorde}).");
-                        Sessao.Avisar(Salas.TextoForaDaRun(Salas.AtoDoNome(dc != null ? dc.name : ""), andar, recorde));
+                        Plugin.Log.LogInfo($"[Run] Não acompanha a run do host: {p} ({(semDlc ? "Ato 4 sem a DLC Cursed War" : "recorde do save nessa masmorra: " + recorde)}).");
+                        Sessao.Avisar(semDlc ? Salas.TextoForaDaRunDlc(ato, andar) : Salas.TextoForaDaRun(ato, andar, recorde));
                         AvisarHostForaDaRun(true);
                         return;
                     }
@@ -347,7 +430,7 @@ namespace HellClockCoop.Fase2
                     break;
 
                 case Protocolo.TipoPedidoAvanco:
-                    if (!Host || !de.Compativel || !de.DlcOk) return; // só quem divide a run
+                    if (!Host || !de.Compativel) return; // só quem divide a run
                     PedidoAvanco pa = PedidoAvanco.Desserializar(dados);
                     if (!JogadorCaido.Caido || !Dpm.RunStarted.Value || Dpm.EndingExecuted.Value || Dpm.IsTransitioning ||
                         ClassSingleton<LevelChanger>.Instance.IsChangingLevel.Value || _andarAvancadoPorPedido == IndiceAtual)
@@ -377,14 +460,15 @@ namespace HellClockCoop.Fase2
                     break;
 
                 case Protocolo.TipoForaDaRun: // 0.19.0: cada par só fala de si; todos tiram da escala quem está fora
-                    if (!de.Compativel || !de.DlcOk) return;
+                    if (!de.Compativel) return;
                     bool fora = ForaDaRun.Desserializar(dados).Fora;
                     if (de.SemLiberar == fora) return;
                     de.SemLiberar = fora;
                     if (!Host || Time.unscaledTime < de.ProximoAvisoFora) return; // aviso e log: só no host, 1 a cada 30 s por par
                     de.ProximoAvisoFora = Time.unscaledTime + 30f;
-                    Plugin.Log.LogInfo($"[Run] {de.Nome} {(fora ? "não acompanha a run (o save dele não chegou aqui); fora da escala do grupo" : "voltou a acompanhar")}.");
-                    if (fora) Sessao.Avisar($"{de.Nome} ainda não chegou aqui na campanha: fica no hub, fora da escala do grupo.");
+                    bool semDlc = fora && !de.CursedWar && RunAtualDaDlc(); // 0.21.0: o motivo é a DLC, não o save
+                    Plugin.Log.LogInfo($"[Run] {de.Nome} {(fora ? $"não acompanha a run ({(semDlc ? "sem a DLC Cursed War" : "o save dele não chegou aqui")}); fora da escala do grupo" : "voltou a acompanhar")}.");
+                    if (fora) Sessao.Avisar(Salas.TextoParFora(de.Nome, semDlc));
                     break;
 
                 case Protocolo.TipoFimRun:

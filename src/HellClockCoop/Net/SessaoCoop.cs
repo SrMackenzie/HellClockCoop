@@ -23,8 +23,7 @@ namespace HellClockCoop.Net
         public bool MesmoAndar;
         public bool Morto;
         public int SequenciaMorto = -1; // sequência do último snapshot que decidiu Morto (0.16.0; -1 = nenhum)
-        public bool Deluxe, CursedWar;
-        public bool DlcOk;              // mesma Cursed War (decide se o convidado acompanha a run)
+        public bool Deluxe, CursedWar;  // 0.21.0: DLC diferente divide a run do jogo base; o Ato 4 só com a Cursed War (ForaDaRun)
         public bool SemLiberar;         // 0.19.0: o save do convidado não chegou à run (ForaDaRun); fora da escala
         public float ProximoAvisoFora;  // 0.19.0, no host: limite do aviso de ForaDaRun (1 a cada 30 s)
         public int CenaRemota = -2;   // -2 = ainda não visto (int.MinValue foi removido do mscorlib do jogo)
@@ -64,7 +63,7 @@ namespace HellClockCoop.Net
         internal static void Configurar(ConfigFile config)
         {
             SalaPublica = config.Bind("Coop", "SalaPublica", true,
-                "Ao criar o coop: true = sala pública (aparece na aba Salas para jogadores do mundo todo com a mesma versão do mod e a mesma DLC); false = só amigos da Steam, por convite.");
+                "Ao criar o coop: true = sala pública (aparece na aba Salas para jogadores do mundo todo com a mesma versão do mod); false = só amigos da Steam, por convite.");
         }
 
         public bool EmSessao => EstadoAtual == Estado.NoLobby;
@@ -80,7 +79,7 @@ namespace HellClockCoop.Net
         /// <summary>Fase 2: este PC segue a run do host (andar, timer, início e fim).</summary>
         public bool ModoConvidado
         {
-            get { Par h = Host; return h != null && h.Compativel && h.DlcOk; }
+            get { Par h = Host; return h != null && h.Compativel; }
         }
 
         /// <summary>Fase 2: este PC é o host e há ao menos um convidado acompanhando a run.</summary>
@@ -89,7 +88,7 @@ namespace HellClockCoop.Net
             get
             {
                 if (!SouHost) return false;
-                foreach (Par p in Pares.Values) if (p.Compativel && p.DlcOk) return true;
+                foreach (Par p in Pares.Values) if (p.Compativel) return true;
                 return false;
             }
         }
@@ -215,11 +214,21 @@ namespace HellClockCoop.Net
             SteamMatchmaking.AddRequestLobbyListDistanceFilter(ELobbyDistanceFilter.k_ELobbyDistanceFilterWorldwide);
             SteamMatchmaking.AddRequestLobbyListStringFilter(Protocolo.ChaveLobbyProtocolo, Protocolo.Versao.ToString(), ELobbyComparison.k_ELobbyComparisonEqual);
             SteamMatchmaking.AddRequestLobbyListStringFilter(Protocolo.ChaveLobbyMod, Plugin.PluginVersion, ELobbyComparison.k_ELobbyComparisonEqual);
-            SteamMatchmaking.AddRequestLobbyListStringFilter(Protocolo.ChaveLobbyDlc, MinhaCursedWar ? "1" : "0", ELobbyComparison.k_ELobbyComparisonEqual);
             SteamMatchmaking.AddRequestLobbyListFilterSlotsAvailable(1);
             SteamMatchmaking.AddRequestLobbyListResultCountFilter(50);
             _crListaSalas.Set(SteamMatchmaking.RequestLobbyList());
             Plugin.Log.LogInfo("[Sessão] Buscando salas públicas (mundo inteiro).");
+        }
+
+        /// <summary>
+        /// Trava da sala com o save carregado agora (0.19.0: recorde; pode ter trocado de save desde a busca) e a DLC deste
+        /// PC (0.21.0: o Ato 4, pelo ato do lobby ou pela masmorra, precisa da Cursed War).
+        /// </summary>
+        internal void AtualizarTrava(SalaListada sala)
+        {
+            sala.Recorde = sala.Dungeon != 0 ? Fase2.RunCompartilhada.RecordeNoSave(sala.Dungeon) : -1;
+            bool atoDaDlc = sala.Lugar == Salas.LugarRun && (sala.Ato == Salas.AtoDaDlc || Fase2.RunCompartilhada.MasmorraDaDlc(sala.Dungeon));
+            sala.SemDlc = Salas.PrecisaDaDlc(atoDaDlc, MinhaCursedWar);
         }
 
         /// <summary>Entra numa sala da lista (sai da sala atual, se houver).</summary>
@@ -231,7 +240,12 @@ namespace HellClockCoop.Net
                 Avisar("Você foi expulso dessa sala.");
                 return;
             }
-            sala.Recorde = sala.Dungeon != 0 ? Fase2.RunCompartilhada.RecordeNoSave(sala.Dungeon) : -1;
+            AtualizarTrava(sala);
+            if (sala.SemDlc) // 0.21.0: o menu já mostra indisponível; aqui confere de novo
+            {
+                Avisar("Essa sala está no Ato 4, que precisa da DLC Cursed War.");
+                return;
+            }
             if (Salas.SalaTravada(sala)) // 0.19.0: o menu já mostra indisponível; aqui confere de novo
             {
                 Avisar($"O seu save ainda não chegou aonde essa sala está ({Salas.TextoRecorde(sala.Recorde)}).");
@@ -337,11 +351,11 @@ namespace HellClockCoop.Net
                 int jogadores = SteamMatchmaking.GetNumLobbyMembers(l);
                 int vagas = Math.Min(SteamMatchmaking.GetLobbyMemberLimit(l), MaximoJogadores);
                 if (!Salas.SalaVisivel(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyMod), SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyProtocolo),
-                        SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyDlc), Plugin.PluginVersion, proto, MinhaCursedWar,
-                        jogadores, vagas, l == Lobby, _salasQueMeExpulsaram.Contains(l.m_SteamID))) continue;
+                        Plugin.PluginVersion, proto, jogadores, vagas, l == Lobby, _salasQueMeExpulsaram.Contains(l.m_SteamID))) continue;
                 SalasListadas.Add(new SalaListada
                 {
                     Lobby = l.m_SteamID,
+                    CursedWar = SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyDlc) == "1", // 0.21.0: só marca; a trava é o Ato 4
                     Host = Salas.LimparNome(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyNome)),
                     Lugar = Salas.LerLugar(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyLugar)),
                     Ato = Salas.LerInteiro(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyAto), Salas.AtoMaximo),
@@ -604,20 +618,19 @@ namespace HellClockCoop.Net
                     p.Incompatibilidade = p.Compativel ? null : $"mod {h.VersaoMod} (você {Plugin.PluginVersion})";
                     p.Deluxe = h.Deluxe;
                     p.CursedWar = h.CursedWar;
-                    p.DlcOk = h.CursedWar == MinhaCursedWar;
                     Plugin.Log.LogInfo($"[Sessão] Hello de {p.Nome}: mod {h.VersaoMod}, protocolo {h.Protocolo}, jogo {h.VersaoJogo}, " +
-                                       $"Cursed War={(h.CursedWar ? "sim" : "não")}, Deluxe={(h.Deluxe ? "sim" : "não")} — {(p.Compativel ? "compatível" : "INCOMPATÍVEL")}{(p.DlcOk ? "" : ", DLC diferente")}.");
+                                       $"Cursed War={(h.CursedWar ? "sim" : "não")}, Deluxe={(h.Deluxe ? "sim" : "não")} — {(p.Compativel ? "compatível" : "INCOMPATÍVEL")}.");
                     if (!p.Compativel) Avisar($"{p.Nome} usa outra versão do mod ({h.VersaoMod}). Ele não vai aparecer para você.");
-                    else if (!p.DlcOk) Avisar($"{p.Nome} {(h.CursedWar ? "tem" : "não tem")} a DLC Cursed War e você {(MinhaCursedWar ? "tem" : "não tem")}: vocês se veem, mas não dividem a run.");
+                    else if (h.CursedWar != MinhaCursedWar) Avisar(Salas.TextoDlcDiferente(p.Nome, h.CursedWar)); // 0.21.0: dividem o jogo base
                     else if (h.Deluxe != MinhaDeluxe) Avisar($"Aviso: só um de vocês tem a Deluxe Edition (cosmética). A run funciona normalmente.");
-                    if (p.Compativel && p.DlcOk && SouHost)
+                    if (p.Compativel && SouHost)
                     {
                         Fase2.RunCompartilhada.AoNovoConvidado(this, p);
                         Fase3.InimigosCompartilhados.AoNovoConvidado(this, p);
                         Fase3.ObjetosCompartilhados.AoNovoConvidado(this, p);
                         Fase3.SantuariosCompartilhados.AoNovoConvidado(this, p);
                     }
-                    if (p.Compativel && p.DlcOk) Fase2.RunCompartilhada.AoNovoPar(this, p); // 0.19.0: ForaDaRun a quem chegou depois
+                    if (p.Compativel) Fase2.RunCompartilhada.AoNovoPar(this, p); // 0.19.0: ForaDaRun a quem chegou depois
                     if (p.Compativel && jogadorLocal != null)
                     {
                         // Manda a aparência atual direto para quem acabou de chegar.
@@ -787,12 +800,12 @@ namespace HellClockCoop.Net
             }
         }
 
-        /// <summary>Envia para todos os convidados que acompanham a run (compatíveis e com a mesma DLC).</summary>
+        /// <summary>Envia para todos os pares compatíveis (com ou sem a mesma DLC desde a 0.21.0).</summary>
         public void EnviarParaConvidados(byte[] pacote, bool confiavel)
         {
             foreach (Par p in Pares.Values)
             {
-                if (p.Compativel && p.DlcOk) SteamTransporte.Enviar(p.Id, pacote, confiavel, confiavel ? Protocolo.CanalConfiavel : Protocolo.CanalSnapshots);
+                if (p.Compativel) SteamTransporte.Enviar(p.Id, pacote, confiavel, confiavel ? Protocolo.CanalConfiavel : Protocolo.CanalSnapshots);
             }
         }
 

@@ -13,6 +13,8 @@ namespace HellClockCoop.Net
         public int Jogadores, Vagas;
         public int Dungeon;             // DungeonConfig.HashID da run do host (0.19.0); 0 = fora da run ou desconhecido
         public long Recorde = -1;       // nosso recorde de andar nessa masmorra (maxFloorReached); -1 = sem save carregado
+        public bool CursedWar;          // 0.21.0: o host anuncia a DLC Cursed War (hcc_dlc); só marca na lista
+        public bool SemDlc;             // 0.21.0: sala no Ato 4 e este PC sem a Cursed War (SessaoCoop.AtualizarTrava)
     }
 
     /// <summary>
@@ -82,11 +84,20 @@ namespace HellClockCoop.Net
             }
         }
 
-        /// <summary>Linha da aba Salas: "Host  -  lugar" à esquerda e "Nv 34  2/4" à direita.</summary>
-        public static string TextoSala(SalaListada s) => s.Host + "  -  " + TextoLugar(s.Lugar, s.Ato, s.Andar);
+        /// <summary>Linha 1 da sala (0.21.0, visual A da janela larga): o host e a marca da Cursed War.</summary>
+        public static string TextoSala(SalaListada s) => s.CursedWar ? s.Host + "  ·  Cursed War" : s.Host;
 
+        /// <summary>Linha 2 da sala: o lugar e, se indisponível, o motivo (DLC antes do recorde).</summary>
+        public static string DetalheSala(SalaListada s)
+        {
+            string lugar = TextoLugar(s.Lugar, s.Ato, s.Andar);
+            if (s.SemDlc) return lugar + "  ·  " + TextoSemDlc;
+            return SalaTravada(s) ? lugar + "  ·  " + TextoRecorde(s.Recorde) : lugar;
+        }
+
+        /// <summary>À direita: "Nv 34  2/4", ou "indisponível" (o motivo vai na linha 2).</summary>
         public static string ValorSala(SalaListada s) =>
-            SalaTravada(s) ? TextoRecorde(s.Recorde) : (s.Nivel > 0 ? "Nv " + s.Nivel + "  " : "") + s.Jogadores + "/" + s.Vagas;
+            SalaIndisponivel(s) ? "indisponível" : (s.Nivel > 0 ? "Nv " + s.Nivel + "  " : "") + s.Jogadores + "/" + s.Vagas;
 
         /// <summary>Hash do DungeonConfig vindo do lobby: qualquer int (pode ser negativo); lixo ou vazio vira 0.</summary>
         public static int LerHash(string s) => !string.IsNullOrEmpty(s) && s.Length <= 11 && int.TryParse(s, out int v) ? v : 0;
@@ -109,13 +120,41 @@ namespace HellClockCoop.Net
             "Você fica no hub e acompanha a próxima run liberada.";
 
         /// <summary>
-        /// A sala aparece na lista: mesma versão do mod e do protocolo, mesma DLC Cursed War (a run só é dividida assim),
-        /// com vaga e que não seja a nossa nem uma de onde fomos expulsos. A Steam já filtra; aqui confere de novo.
+        /// A sala aparece na lista: mesma versão do mod e do protocolo, com vaga e que não seja a nossa nem uma de onde fomos
+        /// expulsos. A Steam já filtra; aqui confere de novo. Desde a 0.21.0 a DLC não esconde a sala (só o Ato 4 trava).
         /// </summary>
-        public static bool SalaVisivel(string mod, string proto, string dlc, string meuMod, string meuProto, bool minhaCursedWar,
+        public static bool SalaVisivel(string mod, string proto, string meuMod, string meuProto,
                                        int jogadores, int vagas, bool nossa, bool expulso) =>
-            !nossa && !expulso && mod == meuMod && proto == meuProto && dlc == (minhaCursedWar ? "1" : "0")
-            && vagas > 0 && jogadores > 0 && jogadores < vagas;
+            !nossa && !expulso && mod == meuMod && proto == meuProto && vagas > 0 && jogadores > 0 && jogadores < vagas;
+
+        // ---------- DLC Cursed War (0.21.0) ----------
+
+        /// <summary>
+        /// Ato da Cursed War: no IL da 2.1.1.1 a DLC libera o Ato 4 (GameConfig.MaxActEnabled = 4; EDungeon Act04, Act04Endgame,
+        /// Act04Abyss, Act04Oblivion e Act04Void). O resto (atos 1 a 3, Ascensão) é jogo base e não trava ninguém.
+        /// </summary>
+        public const int AtoDaDlc = 4;
+
+        public const string TextoSemDlc = "precisa da DLC Cursed War";
+
+        /// <summary>A run é do Ato 4 e este PC não tem a DLC: não entra pela lista nem acompanha o host.</summary>
+        public static bool PrecisaDaDlc(bool atoDaDlc, bool minhaCursedWar) => atoDaDlc && !minhaCursedWar;
+
+        /// <summary>Indisponível na lista: falta a DLC ou o save não chegou lá.</summary>
+        public static bool SalaIndisponivel(SalaListada s) => s != null && (s.SemDlc || SalaTravada(s));
+
+        /// <summary>Aviso do convidado sem a DLC quando o host vai para o Ato 4.</summary>
+        public static string TextoForaDaRunDlc(int ato, int andar) =>
+            $"O host foi para uma run da DLC Cursed War ({TextoLugar(LugarRun, ato, andar)}), que você não tem. Você fica no hub e acompanha a próxima run do jogo base.";
+
+        /// <summary>Aviso do host quando um par avisa que não acompanha (ForaDaRun): pela DLC (0.21.0) ou pelo save (0.19.0).</summary>
+        public static string TextoParFora(string nome, bool semDlc) => semDlc
+            ? $"{nome} não tem a DLC Cursed War: fica no hub, fora da escala do grupo."
+            : $"{nome} ainda não chegou aqui na campanha: fica no hub, fora da escala do grupo.";
+
+        /// <summary>Aviso no Hello quando só um dos dois tem a Cursed War.</summary>
+        public static string TextoDlcDiferente(string nome, bool eleTem) =>
+            $"{nome} {(eleTem ? "tem" : "não tem")} a DLC Cursed War e você {(eleTem ? "não tem" : "tem")}: vocês jogam juntos os atos 1 a 3; o Ato 4 é só para quem tem a DLC.";
 
         /// <summary>Expulsão só vale vinda do dono do lobby (o host), e nunca de nós mesmos.</summary>
         public static bool ExpulsaoValida(ulong de, ulong dono, ulong eu) => de != 0 && de == dono && de != eu;

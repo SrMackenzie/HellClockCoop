@@ -87,7 +87,7 @@ namespace HellClockCoop.Fase2
         }
 
         internal static bool NaRun(Par p) =>
-            p.Compativel && p.DlcOk && p.UltimoPacote >= 0f && Time.unscaledTime - p.UltimoPacote < SemSinalSegundos &&
+            p.Compativel && p.UltimoPacote >= 0f && Time.unscaledTime - p.UltimoPacote < SemSinalSegundos &&
             (p.MesmoAndar || p.CenaRemota == -1); // -1: carregando o andar
 
         private static bool DePe(Par p) => NaRun(p) && !p.Morto;
@@ -242,7 +242,7 @@ namespace HellClockCoop.Fase2
         /// <summary>Um aliado caiu (snapshot com Morto, na run): o host tira o tempo; todos veem o aviso.</summary>
         internal static void AliadoCaiu(Par p)
         {
-            if (!Dpm.RunStarted.Value || Dpm.EndingExecuted.Value || !p.Compativel || !p.DlcOk) return;
+            if (!Dpm.RunStarted.Value || Dpm.EndingExecuted.Value || !p.Compativel) return;
             // Uma queda por aliado e por andar (o caído só levanta no próximo): snapshot fora de ordem ou forjado
             // alternando Morto não tira tempo de novo nem repete o aviso.
             long andar = RunCompartilhada.AndarAtual;

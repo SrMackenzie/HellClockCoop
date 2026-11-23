@@ -551,11 +551,11 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
             "Validação: plano, inimigo e golpes de par sem Hello compatível descartados");
         Checar(V("PortaDeEntrada", tipo("TipoFimRun"), true, true), "Validação: mensagens de par com Hello compatível passam");
 
-        // Golpes: compatível, mesma DLC, mesmo andar e até 512 itens (sem teto de dano)
-        Checar(V("GolpesAceitos", 1, true, true, true) && V("GolpesAceitos", 512, true, true, true), "Validação: Golpes com 1 e 512 itens do mesmo andar aceito");
-        Checar(!V("GolpesAceitos", 513, true, true, true) && !V("GolpesAceitos", 65535, true, true, true), "Validação: Golpes com 513 ou 65535 itens recusado inteiro");
-        Checar(!V("GolpesAceitos", 1, false, true, true) && !V("GolpesAceitos", 1, true, false, true) && !V("GolpesAceitos", 1, true, true, false),
-            "Validação: Golpes de par incompatível, com outra DLC ou de outro andar recusado");
+        // Golpes: compatível, mesmo andar e até 512 itens (sem teto de dano); desde a 0.21.0 a DLC diferente não recusa
+        Checar(V("GolpesAceitos", 1, true, true) && V("GolpesAceitos", 512, true, true), "Validação: Golpes com 1 e 512 itens do mesmo andar aceito");
+        Checar(!V("GolpesAceitos", 513, true, true) && !V("GolpesAceitos", 65535, true, true), "Validação: Golpes com 513 ou 65535 itens recusado inteiro");
+        Checar(!V("GolpesAceitos", 1, false, true) && !V("GolpesAceitos", 1, true, false),
+            "Validação: Golpes de par incompatível ou de outro andar recusado");
         Checar(V("DanoValido", 3.4e38f), "Validação: dano alto continua aceito (sem teto de dano)");
 
         // Relay obrigatório: ICE desligado (0) com quem não é amigo; padrão do usuário (-1) com amigos
@@ -780,20 +780,45 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     var tSala = T("HellClockCoop.Net.SalaListada"); var sl = Activator.CreateInstance(tSala);
     foreach (var (c, v) in new (string, object)[] { ("Host", "Fulano"), ("Lugar", "run"), ("Ato", 2), ("Andar", 5), ("Nivel", 34), ("Jogadores", 2), ("Vagas", 4) })
         tSala.GetField(c).SetValue(sl, v);
-    Checar((string)Sm("TextoSala", sl) == "Fulano  -  Ato 2, andar 5" && (string)Sm("ValorSala", sl) == "Nv 34  2/4", "Salas: linha da sala (visual A)");
+    Checar((string)Sm("TextoSala", sl) == "Fulano" && (string)Sm("DetalheSala", sl) == "Ato 2, andar 5" && (string)Sm("ValorSala", sl) == "Nv 34  2/4",
+        "Salas: sala em 2 linhas, host em cima e lugar embaixo (visual A da 0.21.0)");
+    tSala.GetField("CursedWar").SetValue(sl, true);
+    Checar((string)Sm("TextoSala", sl) == "Fulano  ·  Cursed War", "Salas: host com a Cursed War ganha a marca na linha 1");
+    tSala.GetField("CursedWar").SetValue(sl, false);
     tSala.GetField("Nivel").SetValue(sl, 0);
     Checar((string)Sm("ValorSala", sl) == "2/4", "Salas: sem nível (host no menu) mostra só as vagas");
-    bool Vis(string mod, string proto, string dlc, bool cw, int j, int v, bool nossa, bool exp) =>
-        (bool)Sm("SalaVisivel", mod, proto, dlc, "0.18.0", "19", cw, j, v, nossa, exp);
-    Checar(Vis("0.18.0", "19", "1", true, 1, 4, false, false) && Vis("0.18.0", "19", "0", false, 3, 4, false, false),
-        "Salas: mesma versão, protocolo e DLC, com vaga, aparece");
-    Checar(!Vis("0.17.0", "19", "1", true, 1, 4, false, false) && !Vis("0.18.0", "18", "1", true, 1, 4, false, false)
-           && !Vis("0.18.0", "19", "0", true, 1, 4, false, false) && !Vis("0.18.0", "19", null, false, 1, 4, false, false),
-        "Salas: outra versão do mod, outro protocolo ou outra DLC (ou sem dado) não aparece");
-    Checar(!Vis("0.18.0", "19", "1", true, 4, 4, false, false) && !Vis("0.18.0", "19", "1", true, 0, 4, false, false)
-           && !Vis("0.18.0", "19", "1", true, 1, 0, false, false) && !Vis("0.18.0", "19", "1", true, 1, 4, true, false)
-           && !Vis("0.18.0", "19", "1", true, 1, 4, false, true),
+    bool Vis(string mod, string proto, int j, int v, bool nossa, bool exp) =>
+        (bool)Sm("SalaVisivel", mod, proto, "0.18.0", "19", j, v, nossa, exp);
+    Checar(Vis("0.18.0", "19", 1, 4, false, false) && Vis("0.18.0", "19", 3, 4, false, false),
+        "Salas: mesma versão e protocolo, com vaga, aparece (com ou sem a DLC desde a 0.21.0)");
+    Checar(!Vis("0.17.0", "19", 1, 4, false, false) && !Vis("0.18.0", "18", 1, 4, false, false) && !Vis(null, "19", 1, 4, false, false),
+        "Salas: outra versão do mod ou outro protocolo (ou sem dado) não aparece");
+    Checar(!Vis("0.18.0", "19", 4, 4, false, false) && !Vis("0.18.0", "19", 0, 4, false, false)
+           && !Vis("0.18.0", "19", 1, 0, false, false) && !Vis("0.18.0", "19", 1, 4, true, false)
+           && !Vis("0.18.0", "19", 1, 4, false, true),
         "Salas: cheia, vazia, sem vagas, a nossa ou de onde fomos expulsos não aparece");
+
+    // 0.21.0: DLC Cursed War — só o Ato 4 trava quem não tem a DLC
+    Checar((bool)Sm("PrecisaDaDlc", true, false) && !(bool)Sm("PrecisaDaDlc", true, true) && !(bool)Sm("PrecisaDaDlc", false, false)
+           && !(bool)Sm("PrecisaDaDlc", false, true), "DLC: só run do Ato 4 sem a Cursed War trava; jogo base nunca trava");
+    var sd = Activator.CreateInstance(tSala);
+    foreach (var (c, v) in new (string, object)[] { ("Host", "Beltrano"), ("Lugar", "run"), ("Ato", 4), ("Andar", 2), ("Nivel", 61), ("Jogadores", 1),
+                 ("Vagas", 4), ("Dungeon", 88), ("Recorde", 0L), ("CursedWar", true), ("SemDlc", true) })
+        tSala.GetField(c).SetValue(sd, v);
+    Checar((bool)Sm("SalaIndisponivel", sd) && (string)Sm("ValorSala", sd) == "indisponível"
+           && (string)Sm("DetalheSala", sd) == "Ato 4, andar 2  ·  precisa da DLC Cursed War",
+        "DLC: sala do Ato 4 sem a DLC fica indisponível e o motivo da DLC vem antes do recorde");
+    tSala.GetField("SemDlc").SetValue(sd, false); tSala.GetField("Recorde").SetValue(sd, 9L);
+    Checar(!(bool)Sm("SalaIndisponivel", sd) && (string)Sm("ValorSala", sd) == "Nv 61  1/4" && (string)Sm("DetalheSala", sd) == "Ato 4, andar 2",
+        "DLC: com a DLC e o save no andar, a sala do Ato 4 fica disponível");
+    Checar((string)Sm("TextoForaDaRunDlc", 4, 2) == "O host foi para uma run da DLC Cursed War (Ato 4, andar 2), que você não tem. Você fica no hub e acompanha a próxima run do jogo base.",
+        "DLC: aviso do convidado sem a DLC quando o host vai ao Ato 4");
+    Checar((string)Sm("TextoDlcDiferente", "Ana", true) == "Ana tem a DLC Cursed War e você não tem: vocês jogam juntos os atos 1 a 3; o Ato 4 é só para quem tem a DLC."
+           && ((string)Sm("TextoDlcDiferente", "Ana", false)).StartsWith("Ana não tem a DLC Cursed War e você tem"),
+        "DLC: aviso de DLC diferente no aperto de mão");
+    Checar((string)Sm("TextoParFora", "Ana", true) == "Ana não tem a DLC Cursed War: fica no hub, fora da escala do grupo."
+           && (string)Sm("TextoParFora", "Ana", false) == "Ana ainda não chegou aqui na campanha: fica no hub, fora da escala do grupo.",
+        "DLC: o host vê o motivo certo de quem não acompanha (DLC ou save)");
     Checar((bool)Sm("ExpulsaoValida", 5ul, 5ul, 9ul) && !(bool)Sm("ExpulsaoValida", 6ul, 5ul, 9ul) && !(bool)Sm("ExpulsaoValida", 9ul, 9ul, 9ul)
            && !(bool)Sm("ExpulsaoValida", 0ul, 0ul, 9ul), "Salas: Expulso só vale do dono do lobby, nunca de nós mesmos nem de id 0");
     Checar((bool)Sm("PodeBuscar", 10f, -1f) && !(bool)Sm("PodeBuscar", 10f, 8f) && (bool)Sm("PodeBuscar", 11f, 8f),
@@ -826,7 +851,11 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Ps("run", 0, 5, 2); bool t4 = Trav();
     Ps("hub", 77, 0, 0); bool t5 = Trav(); string v5 = (string)Sm("ValorSala", st);
     Checar(t1 && !t2 && !t3 && !t4 && !t5, "Trava: sala na run além do recorde trava; recorde alcançado, sem save, atalho especial (sem masmorra) e hub não");
-    Checar(v1 == "você chegou ao andar 2" && v0 == "você não começou essa masmorra" && v5 == "1/4", "Trava: sala travada mostra o recorde no lugar do nível e das vagas");
+    Ps("run", 77, 5, 2); string d1 = (string)Sm("DetalheSala", st);
+    Ps("run", 77, 5, 0); string d0 = (string)Sm("DetalheSala", st);
+    Checar(v1 == "indisponível" && v0 == "indisponível" && v5 == "1/4" && d1 == "em run, andar 5  ·  você chegou ao andar 2"
+           && d0 == "em run, andar 5  ·  você não começou essa masmorra",
+        "Trava: sala travada fica indisponível à direita e mostra o recorde na linha 2 (0.21.0)");
     Checar((string)Sm("TextoForaDaRun", 3, 5, 2L) == "O seu save não chegou aonde o host está (Ato 3, andar 5; você chegou ao andar 2). Você fica no hub e acompanha a próxima run liberada.",
         "Trava: aviso do convidado que não acompanha");
 }

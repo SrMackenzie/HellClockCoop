@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "23/11/2026",
-  "versao": "0.20.0",
+  "versao": "0.21.0",
   "fases": [
     {
       "id": "B",
@@ -297,6 +297,10 @@
         [
           "testar",
           "Lista de salas (3/3, parte 1): coop mais seguro com desconhecidos: o host não conclui a masmorra nem avança a run de outra masmorra no save do convidado, valores de inimigos e santuários fora do jogo são recusados, par sem versão compatível não manda nada além do aperto de mão, e com quem não é amigo na Steam a conexão passa só pelo relay (sem IP)"
+        ],
+        [
+          "testar",
+          "Salas com e sem a DLC Cursed War: os atos 1 a 3 e a Ascensão são para todos, o Ato 4 só para quem tem a DLC (sala indisponível na lista e convidado no hub); o menu do coop abre na aba Salas, numa janela maior, com cada sala em 2 linhas"
         ],
         [
           "planejado",

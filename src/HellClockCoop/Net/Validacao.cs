@@ -118,9 +118,9 @@ namespace HellClockCoop.Net
         /// <summary>Teto de itens de uma mensagem Golpes (0.20.0): acima disso a mensagem inteira é recusada. Sem teto de dano.</summary>
         public const int ItensGolpesPorMensagemMaximo = 512;
 
-        /// <summary>Golpes (0.20.0): do convidado compatível, com a mesma DLC, no mesmo andar e até o teto de itens.</summary>
-        public static bool GolpesAceitos(int itens, bool compativel, bool dlcOk, bool mesmoAndar) =>
-            compativel && dlcOk && mesmoAndar && itens <= ItensGolpesPorMensagemMaximo;
+        /// <summary>Golpes (0.20.0): do convidado compatível, no mesmo andar e até o teto de itens (0.21.0: DLC diferente vale).</summary>
+        public static bool GolpesAceitos(int itens, bool compativel, bool mesmoAndar) =>
+            compativel && mesmoAndar && itens <= ItensGolpesPorMensagemMaximo;
 
         /// <summary>P2P_Transport_ICE_Enable (Steamworks): -1 = padrão do usuário (ICE, pode expor o IP); 0 = sem ICE, só relay.</summary>
         public const int IcePadraoDoUsuario = -1, IceDesligado = 0;

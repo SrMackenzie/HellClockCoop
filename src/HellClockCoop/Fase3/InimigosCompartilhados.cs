@@ -294,7 +294,7 @@ namespace HellClockCoop.Fase3
             PosicoesAliados.Clear();
             foreach (Par p in Sessao.Pares.Values)
             {
-                if (p.Compativel && p.DlcOk && p.MesmoAndar && p.Avatar != null && p.Avatar.gameObject.activeSelf) PosicoesAliados.Add(p.Avatar.transform.position);
+                if (p.Compativel && p.MesmoAndar && p.Avatar != null && p.Avatar.gameObject.activeSelf) PosicoesAliados.Add(p.Avatar.transform.position);
             }
             if (PosicoesAliados.Count == 0) return;
 
@@ -1127,8 +1127,8 @@ namespace HellClockCoop.Fase3
                     case Protocolo.TipoGolpes:
                         if (!Host || !HostEmRun || Balanceamento.Escalonamento.ForaDaEscala(de)) return;
                         Golpes g = Golpes.Desserializar(dados);
-                        // 0.20.0: só de convidado compatível, com a mesma DLC, no mesmo andar e até o teto de itens (sem teto de dano).
-                        if (!Validacao.GolpesAceitos(g.Itens.Count, de.Compativel, de.DlcOk, de.MesmoAndar))
+                        // 0.20.0: só de convidado compatível, no mesmo andar e até o teto de itens (sem teto de dano).
+                        if (!Validacao.GolpesAceitos(g.Itens.Count, de.Compativel, de.MesmoAndar))
                         {
                             if (g.Itens.Count > Validacao.ItensGolpesPorMensagemMaximo) AvisarRecusa(de, $"mensagem com {g.Itens.Count} golpes recusada inteira");
                             return;
@@ -1136,7 +1136,7 @@ namespace HellClockCoop.Fase3
                         HostAplicarGolpes(de, g);
                         break;
                     case Protocolo.TipoStatusInimigos:
-                        if (Host && HostEmRun && de.Compativel && de.DlcOk && !Balanceamento.Escalonamento.ForaDaEscala(de)) HostAplicarStatus(de, StatusInimigos.Desserializar(dados));
+                        if (Host && HostEmRun && de.Compativel && !Balanceamento.Escalonamento.ForaDaEscala(de)) HostAplicarStatus(de, StatusInimigos.Desserializar(dados));
                         break;
                 }
             }

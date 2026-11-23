@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.21.0 — Salas: DLC Cursed War e menu maior 🧪
+_23/11/2026_
+
+- Quem tem e quem não tem a DLC Cursed War jogam juntos: os atos 1 a 3 e a Ascensão são do jogo base e não travam ninguém
+- O Ato 4 (campanha e todos os tiers) é só para quem tem a DLC: na aba Salas a sala no Ato 4 fica indisponível para quem não tem, e pelo convite quem não tem fica no hub com um aviso e acompanha a próxima run do jogo base
+- A lista mostra salas com e sem a DLC; a marca "Cursed War" aparece ao lado do host
+- O menu do coop abre direto na aba Salas, numa janela maior; cada sala ocupa 2 linhas (host, nível e vagas em cima; lugar e motivo de indisponível embaixo)
+- Exige a 0.21.0 em todos os PCs (protocolo 20, sem mudança nas mensagens)
+
 ## 0.20.0 — Lista de salas (3/3, parte 1): segurança com desconhecidos 🧪
 _23/11/2026_
 

@@ -2,6 +2,25 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.21.0",
+      "data": "23/11/2026",
+      "testado": false,
+      "titulo": "Salas: DLC Cursed War e menu maior",
+      "itens": [
+        "Quem tem e quem não tem a DLC Cursed War jogam juntos: os atos 1 a 3 e a Ascensão são do jogo base e não travam ninguém",
+        "O Ato 4 (campanha e todos os tiers) é só para quem tem a DLC: na aba Salas a sala no Ato 4 fica indisponível para quem não tem, e pelo convite quem não tem fica no hub com um aviso e acompanha a próxima run do jogo base",
+        "A lista mostra salas com e sem a DLC; a marca \"Cursed War\" aparece ao lado do host",
+        "O menu do coop abre direto na aba Salas, numa janela maior; cada sala ocupa 2 linhas (host, nível e vagas em cima; lugar e motivo de indisponível embaixo)",
+        "Exige a 0.21.0 em todos os PCs (protocolo 20, sem mudança nas mensagens)"
+      ],
+      "testar": [
+        "Abra o menu do coop (F7): abre na aba Salas, na janela maior, e as salas aparecem em 2 linhas",
+        "Coop entre um PC com a Cursed War e outro sem: os dois entram juntos numa run dos atos 1 a 3",
+        "Com o host (com DLC) indo para o Ato 4, o convidado sem DLC fica no hub com o aviso da DLC e a sala aparece indisponível na lista dele",
+        "As outras abas (Sessão, Ajustes, Novidades) continuam legíveis e com o controle funcionando na janela maior"
+      ]
+    },
+    {
       "v": "0.20.0",
       "data": "23/11/2026",
       "testado": false,

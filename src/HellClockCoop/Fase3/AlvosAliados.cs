@@ -142,7 +142,7 @@ namespace HellClockCoop.Fase3
             foreach (Par p in Sessao.Pares.Values)
             {
                 ulong id = p.Id.m_SteamID;
-                bool deveria = p.Compativel && p.DlcOk && p.MesmoAndar && p.Avatar != null && p.Avatar.gameObject.activeInHierarchy;
+                bool deveria = p.Compativel && p.MesmoAndar && p.Avatar != null && p.Avatar.gameObject.activeInHierarchy;
                 AlvoAvatar a = deveria ? De(p) : (Alvos.TryGetValue(id, out AlvoAvatar x) ? x : null);
                 if (a == null) continue;
                 a.DefinirMorto(p.Morto);

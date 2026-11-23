@@ -314,7 +314,7 @@ namespace HellClockCoop.Fase3
                         UsarPorOrdem(u, de);
                         if (Host)
                         {
-                            foreach (Par p in sessao.Pares.Values) if (p != de && p.Compativel && p.DlcOk) sessao.EnviarPara(p, dados);
+                            foreach (Par p in sessao.Pares.Values) if (p != de && p.Compativel) sessao.EnviarPara(p, dados);
                         }
                         break;
                 }

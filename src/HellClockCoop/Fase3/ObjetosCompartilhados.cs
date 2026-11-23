@@ -423,7 +423,7 @@ namespace HellClockCoop.Fase3
         {
             foreach (Par p in sessao.Pares.Values)
             {
-                if (p != de && p.Compativel && p.DlcOk) sessao.EnviarPara(p, dados);
+                if (p != de && p.Compativel) sessao.EnviarPara(p, dados);
             }
         }
 

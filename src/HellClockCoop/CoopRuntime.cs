@@ -374,7 +374,6 @@ namespace HellClockCoop
         {
             if (!p.HelloRecebido) return "conectando...";
             if (!p.Compativel) return "versão incompatível: " + p.Incompatibilidade;
-            if (!p.DlcOk) return "DLC Cursed War diferente (não divide a run)";
             if (p.UltimoPacote < 0f) return "aguardando o personagem";
             if (Time.unscaledTime - p.UltimoPacote > 5f) return "sem sinal";
             return p.MesmoAndar ? (p.Morto ? "no mesmo andar (caído)" : "no mesmo andar") : "em outro lugar";

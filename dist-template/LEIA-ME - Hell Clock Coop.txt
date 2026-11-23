@@ -191,7 +191,7 @@ ESTADO ATUAL (versão de teste, Fase 3)
   marcador (marcar de novo move o antigo). Exige a 0.17.0 em todos os PCs.
 - NOVO (0.18.0): LISTA DE SALAS. O coop novo nasce como sala pública (interruptor "Sala pública"
   na aba Sessão; desligado = só amigos, por convite). A aba Salas do menu do coop mostra as salas
-  públicas do mundo inteiro com a mesma versão do mod e a mesma DLC Cursed War: host, onde está
+  públicas do mundo inteiro com a mesma versão do mod: host, onde está
   (hub ou ato e andar), nível do host e vagas. Escolha uma para entrar, também com a run em
   andamento. O host pode expulsar (seção Aliados, dois toques); quem foi expulso não volta à mesma
   sala. Exige a 0.18.0 em todos os PCs.
@@ -209,8 +209,14 @@ ESTADO ATUAL (versão de teste, Fase 3)
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, abra o menu do coop (F7), escolha "Sair do coop" e depois use o menu normalmente.
   Caído, o "Terminar run" do menu do jogo já tira só você da run.
-- Todos precisam ter (ou não ter) a DLC Cursed War. Com DLC diferente vocês se veem, mas não
-  dividem a run. A Deluxe Edition (cosmética) não importa.
+- NOVO (0.21.0): DLC Cursed War. Quem tem e quem não tem a DLC jogam juntos os atos 1 a 3 (e a
+  Ascensão). O Ato 4 é só para quem tem a DLC: na aba Salas, a sala no Ato 4 fica indisponível
+  para quem não tem; pelo convite, quem não tem fica no hub com um aviso e acompanha a próxima
+  run do jogo base. A lista mostra salas com e sem a DLC (marca "Cursed War" ao lado do host).
+  O menu do coop agora abre direto na aba Salas, numa janela maior, com cada sala em 2 linhas
+  (host, nível e vagas em cima; lugar e motivo de indisponível embaixo). Exige a 0.21.0 em
+  todos os PCs.
+- A Deluxe Edition (cosmética) não importa.
 
 
 INSTALAÇÃO (uma vez, cada jogador)

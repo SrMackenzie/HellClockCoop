@@ -27,7 +27,8 @@ namespace HellClockCoop.Interface
     /// </summary>
     internal static class PainelNativo
     {
-        private const float LarguraPainel = 720f, AlturaPainel = 900f, AlturaSecao = 46f, AlturaMinimaItem = 48f;
+        // 0.21.0: janela larga (visual A) para a lista de salas usar mais tela; cabe em 4:3 (canvas de 1440 × 1080).
+        private const float LarguraPainel = 1100f, AlturaPainel = 960f, AlturaSecao = 46f, AlturaMinimaItem = 48f, AlturaDetalhe = 26f;
         private const float TopoAbas = -150f, TopoConteudo = -196f, BaseConteudo = 78f;
         private const float LarguraAba = 160f, AlturaAba = 44f, LarguraValor = 180f, LarguraBotao = 260f;
         private const float TamanhoTexto = 18f, TamanhoInfo = 17f, TamanhoRodape = 15f;
@@ -42,7 +43,7 @@ namespace HellClockCoop.Interface
             public MenuCoop.Tipo Tipo;
             public MenuCoop.Acao Acao; // a ação desenhada (o mouse devolve a ação, não o índice da lista)
             public RectTransform Rt, Preenche, Alca, Barra;
-            public TMP_Text Texto, Valor;
+            public TMP_Text Texto, Valor, Detalhe;
             public GameObject Destaque, Caixa, Marca;
             public string Medido; // informação: texto e largura da última medida (a altura só é recalculada quando mudam)
             public float LarguraMedida, AlturaMedida;
@@ -319,6 +320,19 @@ namespace HellClockCoop.Interface
                 TMP_Text tv = v.GetComponent<TMP_Text>();
                 tv.alignment = TextAlignmentOptions.MidlineRight;
                 tv.color = CorValor;
+                // 0.21.0: segunda linha (aba Salas, visual A): faixa de baixo, recuada, na cor de informação; some sem detalhe.
+                GameObject d = Object.Instantiate(t.gameObject, rt, false);
+                d.name = "Detalhe";
+                var rd = (RectTransform)d.transform;
+                rd.anchorMin = new Vector2(0f, 0f);
+                rd.anchorMax = new Vector2(1f, 0f);
+                rd.pivot = new Vector2(0f, 0f);
+                rd.offsetMin = new Vector2(34f, 6f);
+                rd.offsetMax = new Vector2(-10f, 6f + AlturaDetalhe);
+                TMP_Text td = d.GetComponent<TMP_Text>();
+                td.fontSize = TamanhoInfo;
+                td.color = CorInfo;
+                d.SetActive(false);
             }
             Transform caixa = rt.Find("UI_ToggleBox");
             if (caixa != null)
@@ -477,7 +491,9 @@ namespace HellClockCoop.Interface
                 }
                 else
                 {
-                    altura = alturaItem;
+                    bool comDetalhe = l.Tipo == MenuCoop.Tipo.Item && !string.IsNullOrEmpty(l.Detalhe);
+                    altura = comDetalhe ? alturaItem + AlturaDetalhe : alturaItem;
+                    MostrarDetalhe(v, comDetalhe ? l.Detalhe : null);
                     bool focado = i == foco;
                     if (focado) { topoFoco = y; alturaFoco = altura; }
                     if (v.Destaque != null && v.Destaque.activeSelf != focado) v.Destaque.SetActive(focado);
@@ -520,6 +536,23 @@ namespace HellClockCoop.Interface
             if (v.Valor.gameObject.activeSelf != temValor) v.Valor.gameObject.SetActive(temValor);
             if (temValor) v.Valor.text = l.Valor;
             v.Texto.rectTransform.offsetMax = new Vector2(temValor ? -(LarguraValor + 16f) : -10f, 0f);
+        }
+
+        /// <summary>
+        /// 0.21.0: segunda linha do item. Com detalhe, título e valor sobem para a faixa de cima (a de baixo é do detalhe);
+        /// sem detalhe, voltam a ocupar a altura toda (o Visual é reaproveitado entre abas).
+        /// </summary>
+        private static void MostrarDetalhe(Visual v, string detalhe)
+        {
+            bool tem = detalhe != null;
+            if (v.Detalhe != null)
+            {
+                if (v.Detalhe.gameObject.activeSelf != tem) v.Detalhe.gameObject.SetActive(tem);
+                if (tem) v.Detalhe.text = detalhe;
+            }
+            float baixo = tem && v.Detalhe != null ? AlturaDetalhe : 0f;
+            if (v.Texto != null) v.Texto.rectTransform.offsetMin = new Vector2(v.Texto.rectTransform.offsetMin.x, baixo);
+            if (v.Valor != null && v.Tipo == MenuCoop.Tipo.Item) v.Valor.rectTransform.offsetMin = new Vector2(v.Valor.rectTransform.offsetMin.x, baixo);
         }
 
         private static void MostrarBarra(Visual v, MenuCoop.Linha l)
@@ -579,6 +612,7 @@ namespace HellClockCoop.Interface
                 default:
                     v.Texto = Texto(v.Rt, "Text");
                     v.Valor = Texto(v.Rt, "Valor");
+                    v.Detalhe = Texto(v.Rt, "Detalhe");
                     v.Destaque = Filho(v.Rt, "highlight");
                     v.Caixa = Filho(v.Rt, "UI_ToggleBox");
                     v.Marca = Filho(v.Rt, "UI_ToggleBox/Checkmark");
