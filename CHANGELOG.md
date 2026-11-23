@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.16.2 — Tela do jogador caído com peças do jogo 🧪
+_22/11/2026_
+
+- Caído, a faixa escura saiu: além do cinza, a sua luz encolhe e as bordas da tela pulsam em vermelho, com a vinheta de vida baixa do próprio jogo
+- "VOCÊ CAIU" aparece acima do personagem com a revelação e o som da tela de morte do jogo
+- Reanimando, as bordas pulsam mais devagar; golpe no reanimador dá um pico vermelho. A volta, a barra e os pontos de quem está de pé continuam embaixo
+- Os avisos de queda de aliado e de reanimação (inclusive "Fulano te levantou") agora entram na pilha de avisos da HUD do jogo, em vermelho ou âmbar
+- Só visual, mas o lobby pede a mesma versão: exige a 0.16.2 em todos os PCs (o protocolo continua o 17)
+
 ## 0.16.1 — Menu do jogo com você caído 🧪
 _22/11/2026_
 

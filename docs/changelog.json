@@ -2,6 +2,25 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.16.2",
+      "data": "22/11/2026",
+      "testado": false,
+      "titulo": "Tela do jogador caído com peças do jogo",
+      "itens": [
+        "Caído, a faixa escura saiu: além do cinza, a sua luz encolhe e as bordas da tela pulsam em vermelho, com a vinheta de vida baixa do próprio jogo",
+        "\"VOCÊ CAIU\" aparece acima do personagem com a revelação e o som da tela de morte do jogo",
+        "Reanimando, as bordas pulsam mais devagar; golpe no reanimador dá um pico vermelho. A volta, a barra e os pontos de quem está de pé continuam embaixo",
+        "Os avisos de queda de aliado e de reanimação (inclusive \"Fulano te levantou\") agora entram na pilha de avisos da HUD do jogo, em vermelho ou âmbar",
+        "Só visual, mas o lobby pede a mesma versão: exige a 0.16.2 em todos os PCs (o protocolo continua o 17)"
+      ],
+      "testar": [
+        "Caia: a luz encolhe, as bordas pulsam e \"VOCÊ CAIU\" se revela acima do personagem, com som",
+        "Seja reanimado: a barra enche, as bordas pulsam devagar; ao levantar, a luz e as bordas voltam ao normal",
+        "Aliado caído ou levantado: o aviso entra na pilha da HUD com o texto certo (sem código estranho)",
+        "Depois desse aviso, pegue um item ou suba de nível: o aviso do jogo sai normal"
+      ]
+    },
+    {
       "v": "0.16.1",
       "data": "22/11/2026",
       "testado": false,

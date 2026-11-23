@@ -1019,6 +1019,24 @@ modo eco conta como aliado de pé (só teste).
     tira). Nada no canto de cima à esquerda.
   - Textos na fonte da barra flutuante do jogo (`AliadosNaTela.Fonte`, achada quando a barra monta). Sem ela, ou com
     erro, a faixa e o aviso saem no `OnGUI`, até reabrir o jogo. Nada é clicável e nada pausa o jogo.
+  - **Desde a 0.16.2 (opção C "Aviso de sangue" com o título da A, escolha do autor em 22/11/2026):** a faixa escura
+    sai (a reserva no `OnGUI` mantém a faixa). Quem caiu vê, além do cinza: a luz do jogador (`PlayerLightController`, cujo tamanho é o tempo do Hell Clock)
+    encolher a 35% em 1 s, presa pela trava `BlockUpdate` com a chave do mod (o fim do `LerpSize` solta a trava do
+    jogo) até levantar, quando volta ao tamanho do tempo em 0,5 s; a vinheta de vida baixa (`LowLifeUIController._health`,
+    `FullScreenHealthUI.SetIntensity`) pulsando (0,5 ± 0,12 a cada 2,4 s; reanimando, 0,35 a cada 4 s; golpe no
+    reanimador, pico de até 0,95, escalado pela opção de intensidade dos flashes, que cai em 0,45 s; nada se a opção da vinheta
+    estiver desligada), recalculada ao levantar pelo próprio jogo com a vida nova (`OnHealthChanged`); o título "VOCÊ CAIU"
+    acima do personagem, cópia do título da tela de morte (`GameOverScreen._titleMask`, sem os scripts) revelada pela
+    máscara em 0,7 s, com o som de abertura dela (`_gameOverShowSfx`, tocado por `FMODUnity.RuntimeManager` para não
+    passar pelo patch de sons dos aliados). Se o título do jogo não tiver um texto TMP dentro de uma máscara `Filled`,
+    vale o título do mod (64 px, vermelho, surge em 0,3 s); o log registra a hierarquia copiada. As linhas de baixo
+    ficam sem fundo, com contorno preto.
+  - Avisos de queda de aliado e de reanimação, inclusive "Fulano te levantou" (0.16.2): na pilha de avisos da HUD do jogo
+    (`HUDNotificationManager.AddNotification`, cor de raridade vermelha ou âmbar, sem ícone). O rótulo do aviso passa
+    pela localização (`SetLocalizedText`), que troca texto sem chave pelo formato de "texto não encontrado": o texto
+    do mod leva uma marca invisível e o patch `GenericHudNotificationView.Write` (fase 5) tira o tradutor daquele
+    rótulo e escreve o texto como está (o jogo recria o tradutor no próximo aviso dele, e o `richText` volta ao do
+    jogo). Sem o patch aplicado ou sem a HUD, o aviso do topo continua.
 - **`.cfg`, seção `[Balanceamento]`:** `VidaAoVoltarDoChao` (0,05 a 1, padrão 0,5) e `SegundosPerdidosPorQueda`.
   Vale o do host para o tempo; a vida na volta é a de cada PC.
 - **Balanceamento:** cair tira o jogador da luta até o fim do andar e custa 10 s a todos, enquanto os inimigos continuam
@@ -1082,7 +1100,8 @@ queda; visual da opção B ("barra do aliado").
   - Faixa de quem caiu: a linha da volta vira "Fulano está te reanimando" ("Fulano está ao seu lado" se ele se mexe)
     e uma barra 360x12 (trilho âmbar 22%) enche entre a linha e os pontos.
   - Fim: aviso no topo, ao centro, em âmbar: "Fulano te levantou", "Você levantou Fulano" ou "Fulano levantou
-    Beltrano". O preenchimento é pela âncora (o `Image.Filled` sem sprite não corta). Reserva no `OnGUI` igual.
+    Beltrano" (desde a 0.16.2, na pilha de avisos da HUD do jogo, ver §12.4; o topo fica como reserva). O
+    preenchimento é pela âncora (o `Image.Filled` sem sprite não corta). Reserva no `OnGUI` igual.
 - **Modo eco:** o fantasma não reanima nem é reanimado (ele repete você). O teste é em dupla.
 - **Valores fixos (fora do `.cfg`):** `SegundosBase` (3 s) e `VidaAoReanimar` (30%) são constantes da `Reanimacao`,
   iguais em todos os PCs. O autor do mod os calibra; o jogador não os muda (decisão de 22/11/2026). As linhas

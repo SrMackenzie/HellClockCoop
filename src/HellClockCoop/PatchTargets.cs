@@ -110,6 +110,7 @@ namespace HellClockCoop
 
             // Fase 5 — polimento (interface; fora das fases ativas: se sumir, só este patch cai e o menu segue sem segurar os eixos)
             new Alvo("5", "HellClock.GameInput.InputHandler", "Update", "Zerar movimento e mira com um painel do mod aberto (menu do coop, Novidades)"),
+            new Alvo("5", "HellClock.UI.HUD.GenericHudNotificationView", "Write", "Aviso de queda/reanimação de aliado na pilha da HUD com o texto do mod, sem o tradutor (0.16.2)"),
 
             // Etapa 8 — sons e golpes dos aliados (0.11.0). Fase "8": só cosmético; se faltar, avisa e o resto do mod roda.
             // Os métodos de contexto das skills (ContextosDeSom.Lista) entram no fim da lista, em Todos.

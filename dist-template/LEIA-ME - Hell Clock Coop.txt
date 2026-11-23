@@ -177,6 +177,9 @@ ESTADO ATUAL (versão de teste, Fase 3)
 - NOVO (0.16.1): com você caído, o Esc abre o menu do jogo. "Terminar run" do host encerra a run de
   todos; o convidado caído sai sozinho (o grupo continua e ele volta na próxima run do host).
   A duração e a vida da reanimação são fixas (3 s e 30%) e não estão mais no .cfg.
+- NOVO (0.16.2): tela do caído com peças do próprio jogo. A sua luz encolhe, as bordas pulsam
+  em vermelho e "VOCÊ CAIU" se revela como na tela de morte. Os avisos de queda e de reanimação
+  de aliado entram na pilha de avisos da HUD. Só visual; exige a 0.16.2 em todos os PCs.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, abra o menu do coop (F7), escolha "Sair do coop" e depois use o menu normalmente.
