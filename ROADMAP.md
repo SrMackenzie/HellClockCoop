@@ -8,7 +8,7 @@
 
 Regra do projeto: uma fase só é dada como concluída depois de confirmada **rodando no jogo**.
 
-## Trilha permanente — Balanceamento · 55%
+## Trilha permanente — Balanceamento · 62%
 
 _Prioridade 1, trilha permanente: o coop deve ser um pouco mais difícil que o solo, com ajustes guiados por dados. Toda versão passa por revisão de balanceamento._
 
@@ -21,7 +21,7 @@ _Prioridade 1, trilha permanente: o coop deve ser um pouco mais difícil que o s
 | 🧪 | Envio anônimo dos resumos, só com aceite (Firebase, só criação) |
 | 🧪 | Pergunta do aceite no primeiro início, numa janela no menu (runs solo e coop) |
 | 🧪 | Teto do tempo ganho por convidado (120 s a cada 60 s) e golpe com dano inválido ignorado |
-| ⬜ | Painel de balanceamento: solo × 2, 3 e 4 jogadores, por andar e dificuldade |
+| ✅ | Painel de balanceamento: solo × 2, 3 e 4 jogadores, por andar e dificuldade |
 | ⬜ | Ajuste individual quando o convidado está muito abaixo ou acima do host |
 | 🧪 | Jogador caído: a run só acaba quando todos caem; o caído volta no próximo andar com 50% da vida e cada queda tira 10 s do Hell Clock |
 | 🧪 | Reanimação do aliado caído, com as quedas e reanimações no resumo da run |

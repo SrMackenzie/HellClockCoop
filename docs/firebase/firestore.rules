@@ -2,7 +2,8 @@ rules_version = '2';
 
 // Regras do Firestore do projeto de métricas do Hell Clock Coop (projeto exclusivo deste mod).
 // - O mod só pode CRIAR documentos em /runs, no formato do resumo (Balanceamento/Metricas.cs, formato 1).
-// - Ninguém lê, altera ou apaga pela internet. A leitura é feita pelo console do Firebase, que não passa por estas regras.
+// - Ninguém lê, altera ou apaga pela internet. A leitura é feita pelo console do Firebase ou pelo painel do autor
+//   (scripts/painel-balanceamento.py, login do gcloud), que passam pelo IAM do projeto e não por estas regras.
 // - Qualquer outra coleção fica fechada.
 service cloud.firestore {
   match /databases/{database}/documents {

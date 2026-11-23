@@ -762,14 +762,15 @@ Hell Clock na entrada e na saída. Sem nome, SteamID ou caminhos.
 pendente; 400/403 move para `recusadas`; sem rede ou 5xx espera 10 min. Projeto Firebase exclusivo do mod, plano
 gratuito; a chave da Web identifica o projeto (não dá acesso) e fica fora do repositório, em `EnvioConfig.local.cs`
 (sem ele o envio fica desligado). Regras em `docs/firebase/firestore.rules`: só criação em `/runs`, com id e campos
-validados; leitura, alteração e exclusão negadas (a análise é feita pelo console).
+validados; leitura, alteração e exclusão negadas (a análise é feita pelo console ou pelo painel do autor, com o login do
+gcloud; as duas leituras passam pelo IAM do projeto, não por estas regras).
 
 **Privacidade (LGPD).** Os resumos são pseudonimizados: só dados do jogo (números, dungeon, resultado, versões), sem
 nome, SteamID, log ou caminhos, mas com o id aleatório da instalação, que vai no campo `instalacao` e no id do documento
 (`<instalação>-<data>`) e liga as runs da mesma instalação. O autor não tem como ligar um id a uma pessoa; o jogador
 tem o próprio id em `instalacao.txt`. O IP chega ao Google no transporte (o envio sai da máquina do jogador pela
 `ISteamHTTP`) e não é gravado no documento. Guarda: até o fim da calibragem do balanceamento; depois o autor apaga a
-coleção `runs` pelo console. Exclusão antes disso: o jogador abre uma issue com o conteúdo de `instalacao.txt` e o
+coleção `runs` pelo console e a cópia local do painel (`build/painel-balanceamento.html`). Exclusão antes disso: o jogador abre uma issue com o conteúdo de `instalacao.txt` e o
 autor apaga `runs/<id>-*` pelo console. Para parar, desliga o envio; apagar `instalacao.txt` gera um id novo.
 
 **Aceite (0.8.1).** `Balanceamento/JanelaAceite.cs`: no primeiro início, sem personagem carregado (menu), uma janela
@@ -790,7 +791,11 @@ nas regras; JSON com no máximo 16 níveis); a janela diz quantos são. Runs
 solo e coop entram igual (papel `solo` é a base de comparação). Compilação sem `EnvioConfig.local.cs` não mostra a
 janela. O aviso no fim da run (0.7.1) saiu.
 
-**Próximos passos.** Painel solo × grupo, ajuste individual por diferença de progressão, reanimação do aliado caído e calibragem do jogador caído (§12.4).
+**Painel.** `scripts/painel-balanceamento.py` (ferramenta do autor, fora do mod) junta os `run-*.json`, os pendentes
+e, com `--firestore`, a coleção `runs` (leitura pelo login do gcloud, por fora das regras) numa página local com solo
+× grupo por andar (ver `DESENVOLVIMENTO.md`). Só mostra; o ajuste é do autor, no código.
+
+**Próximos passos.** Ajuste individual por diferença de progressão e calibragem do jogador caído com os dados da dupla (§12.4).
 
 ### 12.1 Janela Novidades (versões 0.9.2 e 0.13.0)
 

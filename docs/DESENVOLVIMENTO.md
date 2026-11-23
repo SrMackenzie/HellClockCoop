@@ -49,6 +49,17 @@ de `GUIStyle.padding`, `GUI.Box(Rect,string,GUIStyle)`, `int.MinValue`, `float.M
 O destino fica em `src/HellClockCoop/Balanceamento/EnvioConfig.local.cs`, fora do git. Sem esse arquivo o mod compila
 e o envio fica desligado. Formato: um `partial` de `EnvioConfig` que preenche `projeto` e `chave` em `Carregar`.
 
+## Painel de balanceamento (só o autor)
+`python scripts/painel-balanceamento.py [arquivos ou pastas] [--firestore]` gera `build/painel-balanceamento.html`
+(fora do git): uma tabela por dungeon, tier e Ascensão, andar por andar, com solo, dupla, 3 e 4 jogadores lado a lado
+(chegaram, segundos, inimigos mortos/min, dano causado e recebido/min, Hell Clock gasto, mortes, quedas,
+reanimações feitas e vezes reanimado) e a diferença do grupo para o solo no sentido da dificuldade (positivo = grupo
+mais difícil; alvo: 0 a +25%).
+Cada linha de run é a de um jogador; no coop, host e convidado mandam cada um a sua.
+Sem argumento, lê `metricas/` do jogo instalado (`pendentes/` entra; `recusadas/` não). `--firestore` lê também a
+coleção `runs` com o login do gcloud (`gcloud auth login` com a conta dona do projeto de métricas): só leitura, o
+token não é gravado. O painel só mostra os números; o ajuste é decidido pelo autor e fica fixo no código.
+
 ## Testes
 ```bash
 # ida e volta de todas as mensagens de rede
