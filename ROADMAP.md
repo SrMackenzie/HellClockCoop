@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 23/11/2026 · versão 0.21.1. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 23/11/2026 · versão 0.22.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -16,11 +16,12 @@ _Prioridade 1, trilha permanente: o coop deve ser um pouco mais difícil que o s
 |:-:|---|
 | 🧪 | Escalonamento por número de jogadores: vida, chefes, dano, quantidade de inimigos e tempo ganho |
 | 🧪 | XP, ouro, Soulstones e moedas de criação em grupo: cada um × 0,83 / 0,71 / 0,63 (2 / 3 / 4 jogadores), só em run |
-| 🧪 | Valores ajustáveis no arquivo de configuração, sem recompilar (vida, dano, quantidade e tempo; XP, ouro, volta do caído e reanimação são fixos pelo autor) |
+| 🧪 | Valores do autor, fixos no código (vida, chefes, dano, quantidade, tempo, XP, ouro, volta do caído e reanimação), sem liga/desliga |
 | 🧪 | Resumo de balanceamento de cada run, salvo no computador |
 | 🧪 | Envio anônimo dos resumos, só com aceite (Firebase, só criação) |
 | 🧪 | Pergunta do aceite no primeiro início, numa janela no menu (runs solo e coop) |
 | 🧪 | Teto do tempo ganho por convidado (120 s a cada 60 s) e golpe com dano inválido ignorado |
+| 🧪 | Teto de inimigos e baús por andar calculado no convidado com os dados do próprio jogo × quantidade do mod, com conta à parte para sobrevivência e invocações |
 | ✅ | Painel de balanceamento: solo × 2, 3 e 4 jogadores, por andar e dificuldade |
 | ⬜ | Ajuste individual quando o convidado está muito abaixo ou acima do host |
 | 🧪 | Jogador caído: a run só acaba quando todos caem; o caído volta no próximo andar com 50% da vida e cada queda tira 10 s do Hell Clock |

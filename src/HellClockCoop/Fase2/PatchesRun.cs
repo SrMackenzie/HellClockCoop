@@ -58,11 +58,19 @@ namespace HellClockCoop.Fase2
         }
     }
 
-    /// <summary>Alvo: HellClock.Level.LevelObjects.SetupEnemies — convidado com andar vazio até a Fase 3.</summary>
+    /// <summary>
+    /// Alvo: HellClock.Level.LevelObjects.SetupEnemies — convidado com andar vazio (os inimigos são réplicas do host);
+    /// antes, calcula o teto de inimigos do andar com os dados do jogo (0.22.0, Fase3.TetoDoAndar).
+    /// </summary>
     [HarmonyPatch(typeof(LevelObjects), "SetupEnemies")]
     internal static class Run_SetupEnemies
     {
-        private static bool Prefix(LevelInfo levelInfo) => !(RunCompartilhada.Convidado && levelInfo?.LevelBlockInfo != null);
+        private static bool Prefix(LevelInfo levelInfo)
+        {
+            if (!(RunCompartilhada.Convidado && levelInfo?.LevelBlockInfo != null)) return true;
+            Fase3.TetoDoAndar.CalcularInimigos(levelInfo);
+            return false;
+        }
     }
 
     /// <summary>Alvo: HellClock.Level.LevelObjects.SetupLevelObjects — baús, santuários, totens e portais são do host.</summary>
@@ -72,6 +80,7 @@ namespace HellClockCoop.Fase2
         private static bool Prefix(LevelObjects __instance, LevelInfo levelInfo)
         {
             if (!(RunCompartilhada.Convidado && levelInfo?.LevelBlockInfo != null)) return true;
+            Fase3.TetoDoAndar.CalcularBaus(levelInfo); // 0.22.0: teto de baús do andar com os dados do jogo
             Fase3.ObjetosCompartilhados.ConvidadoNovoAndar(__instance); // baús do host entram nas listas do andar
             return false;
         }

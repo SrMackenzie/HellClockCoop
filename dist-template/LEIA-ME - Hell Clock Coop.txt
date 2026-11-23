@@ -46,8 +46,9 @@ ESTADO ATUAL (versão de teste, Fase 3)
   * Em grupo o jogo fica um pouco mais difícil que no solo: inimigos com mais vida, um pouco
     mais de dano e mais inimigos por andar. O tempo ganho no Hell Clock é ajustado, porque cada
     um pega as próprias recompensas de tempo. O painel do coop mostra os valores em uso.
-  * Os valores ficam em BepInEx\config\br.srmackenzie.hellclockcoop.cfg, seção [Balanceamento],
-    um por número de jogadores (2, 3, 4). Quem manda é o host.
+  * NOVO (0.22.0): os valores são do autor, fixos no mod, um por número de jogadores (2, 3, 4),
+    e não dá mais para desligar nem mudar (quem usa o mod joga com os critérios do mod). A seção
+    [Balanceamento] antiga é apagada do .cfg sozinha. A aba Ajustes do menu mostra os valores.
   * NOVO (0.10.0): XP, ouro, Soulstones e moedas de criação em grupo. Cada um continua ganhando
     o próprio (inimigos, chefes, vasos, baús, bênçãos), mas × 0,83 / 0,71 / 0,63 com 2 / 3 / 4
     jogadores (como há mais inimigos por andar, o ganho por andar fica perto do solo). Só vale em run com aliados; no

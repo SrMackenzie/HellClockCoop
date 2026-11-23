@@ -104,23 +104,88 @@ namespace HellClockCoop.Net
             && FracaoValida(vida) && Finito(atraso) && atraso >= 0f && atraso <= AtrasoSpawnMaximo && Finito(yaw)
             && PosicaoValida(x, y, z) && PosicaoValida(ox, oy, oz);
 
-        // Teto por andar do que o host manda criar no convidado (0.21.1). As contagens vêm de assets, sem valor no IL da 2.1.1.1:
-        // LevelDefinition._enemySpawnCompositions/_eliteEnemyRange, SurvivalSpawnConfig._totalToEndWave/_waves/_maxSpawn e o
-        // chefe (_boss/_randomBossPool, um por sobrevivência), e LevelDefinition._chestsRangeAmount mais o baú do santuário
-        // amaldiçoado (_lastUsedChestSpawnConfigForCursedShrine). Tetos folgados (bem acima de 2x o que um andar comum ou de
-        // sobrevivência gera); o convidado registra no log o total de cada andar para conferir.
+        // Teto por andar do que o host manda criar no convidado. 0.21.1: genérico. 0.22.0: o convidado calcula o teto de cada
+        // andar com os dados do próprio jogo para aquele andar (Fase3.TetoDoAndar, IL da 2.1.1.1) e o fator de quantidade do
+        // mod; os genéricos abaixo viram o limite de cima e o valor de quando os dados não puderam ser lidos (-1).
+        // Três contagens, porque as fontes são diferentes:
+        //  - andar: geração do andar (packs, elites com lacaios, esquadrões, opcionais, par do chefe, único de Nightmare);
+        //  - sobrevivência (marca do spawn): ondas do andar de sobrevivência ou evento (santuário/Miracles, config própria);
+        //  - invocações (ajuste Invocacao/Descartavel): skills de inimigo, sem XP; dinâmicas, teto fixo a medir pelos logs.
         public const int InimigosPorAndarMaximo = 6000;
         public const int ChefesPorAndarMaximo = 16;   // EEnemyType Boss (3) e Unique (6)
         public const int BausPorAndarMaximo = 32;
         public const byte TipoBoss = 3, TipoUnico = 6;
 
+        /// <summary>Folga sobre o fator de quantidade do mod: cobre os nós da árvore do host que aumentam a quantidade.</summary>
+        public const float FolgaQuantidade = 1.5f;
+        /// <summary>Folga fixa do andar: opcionais, goblin, par do chefe, único de Nightmare.</summary>
+        public const int FolgaInimigosAndar = 40;
+        /// <summary>Sobrevivência de evento (santuário, Miracles) em qualquer andar: config fora do andar; medir pelos logs.</summary>
+        public const int SobrevivenciaEventoMaximo = 1500;
+        /// <summary>Invocações e descartáveis por andar (skills de inimigo; sem XP no convidado); medir pelos logs.</summary>
+        public const int InvocacoesPorAndarMaximo = 3000;
+        /// <summary>Folga dos baús: santuário amaldiçoado e baús de evento.</summary>
+        public const int FolgaBaus = 4;
+
         public static bool EhChefe(byte tipo) => tipo == TipoBoss || tipo == TipoUnico;
 
-        /// <summary>Inimigo do host cabe no andar (contagens dos já criados neste andar): chefe em massa e XP em massa recusados.</summary>
-        public static bool InimigoCabeNoAndar(int criadosNoAndar, int chefesNoAndar, byte tipo) =>
-            criadosNoAndar < InimigosPorAndarMaximo && (!EhChefe(tipo) || chefesNoAndar < ChefesPorAndarMaximo);
+        /// <summary>
+        /// Teto de inimigos de uma contagem, a partir do total que os dados do jogo permitem no andar (-1 = não lido: genérico).
+        /// O total vezes o fator de quantidade do mod (nunca abaixo de 1) vezes a folga, mais a folga fixa; nunca acima do genérico.
+        /// </summary>
+        public static int TetoInimigos(int doJogo, float fatorQuantidade, int folgaFixa)
+        {
+            if (doJogo < 0 || !Finito(fatorQuantidade)) return InimigosPorAndarMaximo;
+            // Round antes do Ceiling: 1.6f vira 1,6000000238 em double e arredondaria 240 para 241.
+            double teto = System.Math.Ceiling(System.Math.Round(doJogo * (double)System.Math.Max(1f, fatorQuantidade) * FolgaQuantidade, 3)) + System.Math.Max(0, folgaFixa);
+            return teto >= InimigosPorAndarMaximo ? InimigosPorAndarMaximo : (int)teto;
+        }
 
-        public static bool BauCabeNoAndar(int bausNoAndar) => bausNoAndar < BausPorAndarMaximo;
+        /// <summary>Ondas: o andar não é de sobrevivência (vale só o teto de evento). -1 continua sendo "dados não lidos".</summary>
+        public const int SemOndas = -2;
+
+        /// <summary>
+        /// Teto da sobrevivência: o das ondas (do andar ou da última sobrevivência da run, que pode seguir por vários andares)
+        /// e, no mínimo, o de evento; sem ondas no andar, o de evento; dados não lidos (-1), o genérico.
+        /// </summary>
+        public static int TetoSobrevivencia(int ondasDoJogo, float fatorQuantidade) =>
+            ondasDoJogo == SemOndas ? SobrevivenciaEventoMaximo
+            : ondasDoJogo < 0 ? InimigosPorAndarMaximo
+            : System.Math.Max(SobrevivenciaEventoMaximo, TetoInimigos(ondasDoJogo, fatorQuantidade, FolgaInimigosAndar));
+
+        public static int TetoBaus(int doJogo) =>
+            doJogo < 0 ? BausPorAndarMaximo : System.Math.Min(BausPorAndarMaximo, doJogo + FolgaBaus);
+
+        /// <summary>Inimigo do host cabe no andar: a contagem dele abaixo do teto dela, e chefe só até o teto de chefes.</summary>
+        public static bool InimigoCabeNoAndar(int criadosDaContagem, int tetoDaContagem, int chefesNoAndar, byte tipo) =>
+            criadosDaContagem < tetoDaContagem && (!EhChefe(tipo) || chefesNoAndar < ChefesPorAndarMaximo);
+
+        public static bool BauCabeNoAndar(int bausNoAndar, int teto) => bausNoAndar < teto;
+
+        public const byte ContagemAndar = 0, ContagemSobrevivencia = 1, ContagemInvocacoes = 2;
+
+        /// <summary>
+        /// Em qual contagem do teto por andar entra um spawn do host: invocação (InimigoAjuste 1; o SetupSummon tira XP e loot)
+        /// sem ajuste de XP (4) e sem tesouro próprio é invocação (o tesouro vazio que o próprio SetupSummon põe, ajuste 8 com
+        /// EmptyTreasureClass, não conta como próprio); com a marca de sobrevivência, sobrevivência; o resto, do andar. O
+        /// descartável (2) fica na do andar: o SetupDisposable só tira o XP, o loot continua.
+        /// </summary>
+        public static byte ContagemDoSpawn(byte ajustes, bool tesouroProprio, bool sobrevivencia) =>
+            (ajustes & 1) != 0 && (ajustes & 4) == 0 && ((ajustes & 8) == 0 || !tesouroProprio) ? ContagemInvocacoes
+            : sobrevivencia ? ContagemSobrevivencia : ContagemAndar;
+
+        /// <summary>
+        /// XP acima de 1 (ajuste 4) e tesouro próprio (ajuste 8 com um tesouro que não seja o vazio) só em inimigo de
+        /// sobrevivência ou chefe (Boss/Unique): são as únicas fontes no jogo (SurvivalEventManager, temporadas). O vazio
+        /// (hash 0 ou EmptyTreasureClass, que o SetupSummon e o goblin põem) sempre passa. Sem isso, o host mandaria XP x10 e
+        /// tesouro de chefe em inimigos comuns até o teto do andar.
+        /// </summary>
+        public static bool RecompensaPermitida(byte ajustes, float multiplicadorXp, bool tesouroProprio, bool sobrevivencia, byte tipo)
+        {
+            if (sobrevivencia || EhChefe(tipo)) return true;
+            if ((ajustes & 4) != 0 && multiplicadorXp > 1f) return false;
+            return (ajustes & 8) == 0 || !tesouroProprio;
+        }
 
         /// <summary>
         /// AndarLimpo (0.21.1): no mesmo andar, só dispara de novo se o host criou inimigos depois do último disparo (o jogo

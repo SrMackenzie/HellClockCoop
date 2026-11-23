@@ -56,6 +56,9 @@ namespace HellClockCoop.Fase3
 
         private static readonly Dictionary<ushort, ChestInteractable> BausPorId = new Dictionary<ushort, ChestInteractable>();
         private static readonly Dictionary<ChestInteractable, ushort> IdPorBau = new Dictionary<ChestInteractable, ushort>();
+
+        /// <summary>Baú já criado por ordem do host (fica fora da contagem dos baús da cena do andar, TetoDoAndar).</summary>
+        internal static bool EhBauDoHost(ChestInteractable bau) => bau != null && IdPorBau.ContainsKey(bau);
         private static readonly Dictionary<ushort, BauSpawn> SpawnsDoHost = new Dictionary<ushort, BauSpawn>(); // host: para quem chega depois
         private static readonly Dictionary<ushort, BauSpawn> Pendentes = new Dictionary<ushort, BauSpawn>();
         private static readonly Dictionary<ushort, float> RecebidoEm = new Dictionary<ushort, float>();
@@ -175,9 +178,10 @@ namespace HellClockCoop.Fase3
         private static void CriarBau(LevelInfo andar, BauSpawn s)
         {
             if (BausPorId.ContainsKey(s.Id)) return;
-            if (!Validacao.BauCabeNoAndar(BausPorId.Count)) // 0.21.1: host malicioso não enche o andar de baús
+            int teto = TetoDoAndar.TetoBaus(andar.LevelIndex);
+            if (!Validacao.BauCabeNoAndar(BausPorId.Count, teto)) // host malicioso não enche o andar de baús (0.22.0: teto pelos dados do andar)
             {
-                Plugin.Log.LogWarning($"[Objetos] Baú {s.Id} do host além do teto do andar ({BausPorId.Count} baús); ignorado.");
+                Plugin.Log.LogWarning($"[Objetos] Baú {s.Id} do host além do teto do andar ({BausPorId.Count} baús, teto {teto}); ignorado.");
                 return;
             }
             try

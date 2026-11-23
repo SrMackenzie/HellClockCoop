@@ -2,6 +2,24 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.22.0",
+      "data": "23/11/2026",
+      "testado": false,
+      "titulo": "Balanceamento só do autor e teto de inimigos pelo andar",
+      "itens": [
+        "Vida, chefes, dano, quantidade de inimigos e tempo ganho em grupo passam a ser valores fixos do autor, como XP e ouro: ninguém, nem o host, muda ou desliga o balanceamento",
+        "A seção [Balanceamento] antiga é apagada do .cfg sozinha; a aba Ajustes continua mostrando os valores",
+        "O teto de inimigos e baús que o host cria no seu jogo agora sai dos dados do próprio jogo para aquele andar (no lugar de um número igual para todos), com conta separada para as ondas de sobrevivência e para as invocações",
+        "O seu log mostra o teto de cada andar e quantos inimigos vieram de cada fonte, para calibrar",
+        "Exige a 0.22.0 em todos os PCs (protocolo 21, sem mudança)"
+      ],
+      "testar": [
+        "Abra o jogo num PC que já teve a 0.21: o log avisa que a seção [Balanceamento] foi apagada do .cfg",
+        "Em dupla, jogue andares comuns, um de sobrevivência e um com inimigo que invoca: todos os inimigos do host aparecem no convidado",
+        "No log do convidado: \"[Teto] Andar N\" a cada andar e nenhum aviso \"além do teto\""
+      ]
+    },
+    {
       "v": "0.21.1",
       "data": "23/11/2026",
       "testado": false,

@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.22.0 — Balanceamento só do autor e teto de inimigos pelo andar 🧪
+_23/11/2026_
+
+- Vida, chefes, dano, quantidade de inimigos e tempo ganho em grupo passam a ser valores fixos do autor, como XP e ouro: ninguém, nem o host, muda ou desliga o balanceamento
+- A seção [Balanceamento] antiga é apagada do .cfg sozinha; a aba Ajustes continua mostrando os valores
+- O teto de inimigos e baús que o host cria no seu jogo agora sai dos dados do próprio jogo para aquele andar (no lugar de um número igual para todos), com conta separada para as ondas de sobrevivência e para as invocações
+- O seu log mostra o teto de cada andar e quantos inimigos vieram de cada fonte, para calibrar
+- Exige a 0.22.0 em todos os PCs (protocolo 21, sem mudança)
+
 ## 0.21.1 — Lista de salas (3/3, parte 2): host fixo e expulsão avisada 🧪
 _23/11/2026_
 

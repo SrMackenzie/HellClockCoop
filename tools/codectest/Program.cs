@@ -932,12 +932,38 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
         "SpawnAndar: índice só de 0 a total-1");
 
     int maxI = (int)tv.GetField("InimigosPorAndarMaximo").GetValue(null), maxC = (int)tv.GetField("ChefesPorAndarMaximo").GetValue(null);
-    Checar(V("InimigoCabeNoAndar", 0, 0, (byte)0) && V("InimigoCabeNoAndar", maxI - 1, maxC, (byte)0) && !V("InimigoCabeNoAndar", maxI, 0, (byte)0),
-        $"Inimigos: até {maxI} por andar (comuns não contam no teto de chefes)");
-    Checar(V("InimigoCabeNoAndar", 10, maxC - 1, (byte)3) && !V("InimigoCabeNoAndar", 10, maxC, (byte)3) && !V("InimigoCabeNoAndar", 10, maxC, (byte)6)
-           && V("InimigoCabeNoAndar", 10, maxC, (byte)2), $"Inimigos: até {maxC} chefes (Boss 3 e Unique 6) por andar; campeão (2) não conta");
+    Checar(V("InimigoCabeNoAndar", 0, 120, 0, (byte)0) && V("InimigoCabeNoAndar", 119, 120, maxC, (byte)0) && !V("InimigoCabeNoAndar", 120, 120, 0, (byte)0),
+        "Inimigos: até o teto da contagem (comuns não contam no teto de chefes)");
+    Checar(V("InimigoCabeNoAndar", 10, 120, maxC - 1, (byte)3) && !V("InimigoCabeNoAndar", 10, 120, maxC, (byte)3) && !V("InimigoCabeNoAndar", 10, 120, maxC, (byte)6)
+           && V("InimigoCabeNoAndar", 10, 120, maxC, (byte)2), $"Inimigos: até {maxC} chefes (Boss 3 e Unique 6) por andar; campeão (2) não conta");
+    int TI(int doJogo, float q, int folga) => (int)tv.GetMethod("TetoInimigos").Invoke(null, new object[] { doJogo, q, folga });
+    Checar(TI(100, 1.6f, 40) == 280 && TI(100, 0.5f, 0) == 150 && TI(0, 1.6f, 40) == 40,
+        "Teto do andar 0.22.0: dados do jogo × fator de quantidade (mínimo 1) × folga 1,5 + folga fixa");
+    Checar(TI(-1, 1.6f, 40) == maxI && TI(100, float.NaN, 40) == maxI && TI(5000, 1.6f, 40) == maxI && TI(int.MaxValue, 1.6f, 40) == maxI,
+        $"Teto do andar: sem dados (-1) ou fator inválido, o genérico {maxI}; nunca acima dele");
+    int TS(int ondas, float q) => (int)tv.GetMethod("TetoSobrevivencia").Invoke(null, new object[] { ondas, q });
+    int evento = (int)tv.GetField("SobrevivenciaEventoMaximo").GetValue(null);
+    int semOndas = (int)tv.GetField("SemOndas").GetValue(null);
+    Checar(TS(semOndas, 1.6f) == evento && TS(10, 1.6f) == evento && TS(1000, 1.6f) == TI(1000, 1.6f, (int)tv.GetField("FolgaInimigosAndar").GetValue(null)),
+        $"Teto de sobrevivência: o de evento ({evento}) sem ondas no andar; com ondas, o maior entre elas e o de evento");
+    Checar(TS(-1, 1.6f) == maxI, $"Teto de sobrevivência: dados não lidos (-1), o genérico {maxI}");
+    byte CS(byte aj, bool sobrev, bool tc = true) => (byte)tv.GetMethod("ContagemDoSpawn").Invoke(null, new object[] { aj, tc, sobrev });
+    Checar(CS(0, false) == 0 && CS(0, true) == 1 && CS(1, false) == 2 && CS(1, true) == 2 && CS(1 | 4, false) == 0 && CS(1 | 8, true) == 1,
+        "Contagem do spawn: invocação à parte só sem XP e sem tesouro próprios; sobrevivência pela marca");
+    Checar(CS(2, false) == 0 && CS(2, true) == 1 && CS(3, false) == 2,
+        "Contagem do spawn: descartável (mantém o loot) fica na contagem do andar ou da sobrevivência");
+    Checar(CS(1 | 8, false, false) == 2 && CS(1 | 8, true, false) == 2 && CS(1 | 4 | 8, false, false) == 0,
+        "Contagem do spawn: invocação com o tesouro vazio do SetupSummon (EmptyTreasureClass) continua invocação; com XP, não");
+    bool RP(byte aj, float xp, bool tc, bool sobrev, byte tipo) => (bool)tv.GetMethod("RecompensaPermitida").Invoke(null, new object[] { aj, xp, tc, sobrev, tipo });
+    Checar(RP(4, 10f, false, true, 0) && RP(8, 1f, true, false, 3) && RP(8, 1f, true, false, 6) && RP(4 | 8, 10f, true, true, 0),
+        "Recompensa: XP acima de 1 e tesouro próprio valem em sobrevivência e chefes (Boss 3, Unique 6)");
+    Checar(!RP(4, 10f, false, false, 0) && !RP(8, 1f, true, false, 2) && RP(4, 1f, false, false, 0) && RP(8, 1f, false, false, 0) && RP(1 | 2, 1f, false, false, 0),
+        "Recompensa: inimigo comum não recebe XP acima de 1 nem tesouro próprio");
+    Checar(RP(1 | 8, 1f, false, false, 0), "Recompensa: invocação comum com o tesouro vazio do SetupSummon (EmptyTreasureClass) passa");
     int maxB = (int)tv.GetField("BausPorAndarMaximo").GetValue(null);
-    Checar(V("BauCabeNoAndar", 0) && V("BauCabeNoAndar", maxB - 1) && !V("BauCabeNoAndar", maxB), $"Baús: até {maxB} por andar");
+    int TB(int doJogo) => (int)tv.GetMethod("TetoBaus").Invoke(null, new object[] { doJogo });
+    Checar(TB(-1) == maxB && TB(6) == 10 && TB(100) == maxB && V("BauCabeNoAndar", 9, 10) && !V("BauCabeNoAndar", 10, 10),
+        $"Baús 0.22.0: dados do andar + folga 4, até {maxB}; sem dados, {maxB}");
     Checar(V("AndarLimpoNovo", 0u, -1L, 0, 0) && V("AndarLimpoNovo", 4u, 3L, 0, 9) && !V("AndarLimpoNovo", 4u, 4L, 9, 9),
         "AndarLimpo: no andar novo dispara; repetido no mesmo andar sem inimigos novos, não");
     Checar(V("AndarLimpoNovo", 4u, 4L, 12, 9), "AndarLimpo: no mesmo andar, de novo depois de inimigos novos (ondas, chefe)");

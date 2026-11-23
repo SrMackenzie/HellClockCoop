@@ -115,8 +115,10 @@ namespace HellClockCoop.Fase3
         private static ushort _proximoId = 1;
 
         // Convidado (0.21.1): réplicas criadas por ordem do host no andar atual (teto por andar) e o último AndarLimpo disparado.
+        // 0.22.0: três contagens (andar, sobrevivência, invocações), cada uma com o teto dela (Fase3.TetoDoAndar).
         private static long _andarContado = -1;
         private static int _criadosNoAndar, _chefesNoAndar;
+        private static readonly int[] _porContagem = new int[3];
         private static bool _avisouTetoDoAndar;
         private static long _andarLimpoDisparado = -1;
         private static int _criadosNoUltimoLimpo;
@@ -523,6 +525,13 @@ namespace HellClockCoop.Fase3
             public AnimatorFrame Animacao;
             public bool AnimacaoNova;
             public bool RootMotionOriginal;
+            // 0.22.0: contagem do teto por andar em que a réplica entrou (Validacao.ContagemDoSpawn) e os ajustes já juntados.
+            public byte Contagem;
+            public long AndarContado = -1;
+            public byte Ajustes;
+            public bool Sobrevivencia;
+            public byte Tipo;
+            public int TesouroHash;
             public float SkillAte;
             public ActiveSkill UltimaSkill;
             public bool Agressivo;
@@ -719,13 +728,15 @@ namespace HellClockCoop.Fase3
                 if (s.Andar < andarAtual) { (remover ?? (remover = new List<ushort>())).Add(kv.Key); continue; }
                 if (s.Andar != andarAtual || criados >= CriacoesPorQuadro) continue;
                 (remover ?? (remover = new List<ushort>())).Add(kv.Key);
-                if (!Validacao.InimigoCabeNoAndar(_criadosNoAndar, _chefesNoAndar, s.Tipo))
+                byte contagem = Validacao.ContagemDoSpawn(s.Ajustes, TesouroProprio(s.TesouroHash), s.Sobrevivencia);
+                int teto = TetoDaContagem(contagem, andarAtual);
+                if (!Validacao.InimigoCabeNoAndar(_porContagem[contagem], teto, _chefesNoAndar, s.Tipo))
                 {
                     if (!_avisouTetoDoAndar)
                     {
                         _avisouTetoDoAndar = true;
-                        Plugin.Log.LogWarning($"[Inimigos] Andar {andarAtual}: o host mandou inimigos além do teto ({_criadosNoAndar} criados, " +
-                            $"{_chefesNoAndar} chefes; teto {Validacao.InimigosPorAndarMaximo} e {Validacao.ChefesPorAndarMaximo}); os de cima são ignorados.");
+                        Plugin.Log.LogWarning($"[Inimigos] Andar {andarAtual}: o host mandou inimigos além do teto ({NomeDaContagem(contagem)}: " +
+                            $"{_porContagem[contagem]} de {teto}; {_chefesNoAndar} chefes de {Validacao.ChefesPorAndarMaximo}); os de cima são ignorados.");
                     }
                     continue;
                 }
@@ -733,7 +744,17 @@ namespace HellClockCoop.Fase3
                 {
                     criados++;
                     _criadosNoAndar++;
+                    _porContagem[contagem]++;
                     if (Validacao.EhChefe(s.Tipo)) _chefesNoAndar++;
+                    if (Replicas.TryGetValue(s.Id, out Replica nova))
+                    {
+                        nova.Contagem = contagem;
+                        nova.AndarContado = andarAtual;
+                        nova.Ajustes = s.Ajustes;
+                        nova.Sobrevivencia = s.Sobrevivencia;
+                        nova.Tipo = s.Tipo;
+                        nova.TesouroHash = s.TesouroHash;
+                    }
                 }
             }
             if (remover != null)
@@ -750,10 +771,45 @@ namespace HellClockCoop.Fase3
         {
             if (andar == _andarContado) return;
             if (_andarContado >= 0 && _criadosNoAndar > 0)
-                Plugin.Log.LogInfo($"[Inimigos] Andar {_andarContado}: {_criadosNoAndar} inimigos do host ({_chefesNoAndar} chefes).");
+                Plugin.Log.LogInfo($"[Inimigos] Andar {_andarContado}: {_criadosNoAndar} inimigos do host ({_porContagem[0]} do andar, " +
+                    $"{_porContagem[1]} de sobrevivência, {_porContagem[2]} invocações; {_chefesNoAndar} chefes).");
             _andarContado = andar;
             _criadosNoAndar = _chefesNoAndar = 0;
+            if (andar < 0) TetoDoAndar.Esquecer(); // hub ou fim da sessão: o teto calculado era da run que acabou
+            Array.Clear(_porContagem, 0, _porContagem.Length);
             _avisouTetoDoAndar = false;
+        }
+
+        private static int TetoDaContagem(byte contagem, long andar) =>
+            contagem == Validacao.ContagemInvocacoes ? Validacao.InvocacoesPorAndarMaximo
+            : contagem == Validacao.ContagemSobrevivencia ? TetoDoAndar.TetoSobrevivencia(andar)
+            : TetoDoAndar.TetoAndar(andar);
+
+        private static string NomeDaContagem(byte contagem) =>
+            contagem == Validacao.ContagemInvocacoes ? "invocações" : contagem == Validacao.ContagemSobrevivencia ? "sobrevivência" : "andar";
+
+        /// <summary>
+        /// Ajuste que chega depois da réplica criada (0.22.0). A contagem é de criações: a réplica nunca devolve a vaga em que
+        /// entrou (virar invocação não libera o andar). Só sobe: invocação que ganha XP ou tesouro passa à contagem do
+        /// andar/sobrevivência, e o ajuste é recusado se lá não houver vaga ou se a réplica for de outro andar.
+        /// </summary>
+        private static bool Recontar(Par de, Replica r, byte ajuste, int tesouroHash)
+        {
+            byte juntos = (byte)(r.Ajustes | ajuste);
+            int tesouro = (ajuste & InimigoAjuste.Tesouro) != 0 ? tesouroHash : r.TesouroHash;
+            byte nova = Validacao.ContagemDoSpawn(juntos, TesouroProprio(tesouro), r.Sobrevivencia);
+            if (nova == r.Contagem || nova == Validacao.ContagemInvocacoes) { r.Ajustes = juntos; r.TesouroHash = tesouro; return true; }
+            if (r.AndarContado != _andarContado || _porContagem[nova] >= TetoDaContagem(nova, _andarContado))
+            {
+                AvisarRecusa(de, $"ajuste {ajuste} da invocação {r.Id} recusado: sem vaga no teto de {NomeDaContagem(nova)} do andar");
+                return false;
+            }
+            _porContagem[r.Contagem] = Math.Max(0, _porContagem[r.Contagem] - 1);
+            _porContagem[nova]++;
+            r.Contagem = nova;
+            r.Ajustes = juntos;
+            r.TesouroHash = tesouro;
+            return true;
         }
 
         private static bool CriarReplica(EnemyManager em, InimigoSpawn s)
@@ -847,6 +903,23 @@ namespace HellClockCoop.Fase3
                 if (tc != null || tesouroHash == 0) c.SetInstanceTreasureClassOverride(tc);
                 else Plugin.Log.LogWarning($"[Inimigos] Tesouro {tesouroHash} do host não existe aqui; a réplica fica com o loot comum.");
             }
+        }
+
+        private static int _hashTesouroVazio;
+
+        /// <summary>
+        /// Tesouro que dá loot (0.22.0): nem 0 nem o EmptyTreasureClass, que o próprio jogo põe nas invocações (SetupSummon) e
+        /// no goblin; o HashID dele é lido uma vez da instância do jogo.
+        /// </summary>
+        private static bool TesouroProprio(int hash)
+        {
+            if (hash == 0) return false;
+            if (_hashTesouroVazio == 0)
+            {
+                try { _hashTesouroVazio = global::HellClock.Drop.EmptyTreasureClass.Instance?.HashID ?? 0; }
+                catch { _hashTesouroVazio = 0; }
+            }
+            return hash != _hashTesouroVazio;
         }
 
         private static TreasureClass Tesouro(int hash)
@@ -1123,6 +1196,11 @@ namespace HellClockCoop.Fase3
                             AvisarRecusa(de, $"inimigo {s.Id} com valores fora do jogo (tipo {s.Tipo}, {s.Afixos.Length} afixos, XP x{s.MultiplicadorXp}, vida {s.Vida})");
                             return;
                         }
+                        if (!Validacao.RecompensaPermitida(s.Ajustes, s.MultiplicadorXp, TesouroProprio(s.TesouroHash), s.Sobrevivencia, s.Tipo))
+                        {
+                            AvisarRecusa(de, $"inimigo {s.Id} comum com XP x{s.MultiplicadorXp} ou tesouro próprio (só sobrevivência e chefes)");
+                            return;
+                        }
                         if (!Replicas.ContainsKey(s.Id)) { Pendentes[s.Id] = s; RecebidoEm[s.Id] = Time.unscaledTime; }
                         break;
                     case Protocolo.TipoInimigosEstado:
@@ -1169,8 +1247,25 @@ namespace HellClockCoop.Fase3
                             AvisarRecusa(de, $"ajuste {aj.Ajuste} do inimigo {aj.Id} com XP x{aj.MultiplicadorXp}");
                             return;
                         }
-                        if (Replicas.TryGetValue(aj.Id, out Replica ra) && ra.C != null) AplicarAjustes(ra.C, aj.Ajuste, aj.MultiplicadorXp, aj.TesouroHash);
-                        else if (Pendentes.TryGetValue(aj.Id, out InimigoSpawn pa)) aj.JuntarEm(pa);
+                        if (Replicas.TryGetValue(aj.Id, out Replica ra) && ra.C != null)
+                        {
+                            if (!Validacao.RecompensaPermitida(aj.Ajuste, aj.MultiplicadorXp, TesouroProprio(aj.TesouroHash), ra.Sobrevivencia, ra.Tipo))
+                            {
+                                AvisarRecusa(de, $"ajuste {aj.Ajuste} do inimigo comum {aj.Id} com XP ou tesouro próprio");
+                                return;
+                            }
+                            if (!Recontar(de, ra, aj.Ajuste, aj.TesouroHash)) return; // 0.22.0: XP/tesouro numa invocação só com vaga no teto do andar
+                            AplicarAjustes(ra.C, aj.Ajuste, aj.MultiplicadorXp, aj.TesouroHash);
+                        }
+                        else if (Pendentes.TryGetValue(aj.Id, out InimigoSpawn pa))
+                        {
+                            if (!Validacao.RecompensaPermitida(aj.Ajuste, aj.MultiplicadorXp, TesouroProprio(aj.TesouroHash), pa.Sobrevivencia, pa.Tipo))
+                            {
+                                AvisarRecusa(de, $"ajuste {aj.Ajuste} do inimigo comum {aj.Id} com XP ou tesouro próprio");
+                                return;
+                            }
+                            aj.JuntarEm(pa);
+                        }
                         break;
                     case Protocolo.TipoGolpes:
                         if (!Host || !HostEmRun || Balanceamento.Escalonamento.ForaDaEscala(de)) return;

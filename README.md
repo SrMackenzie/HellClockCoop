@@ -158,7 +158,7 @@ entra mais gente, então o balanceamento é uma **trilha permanente**: toda vers
 - **Meta:** em grupo, o jogo fica **um pouco mais difícil** que no solo.
 - **Como:** o mod usa as mesmas alavancas que o jogo usa na dificuldade e na Ascensão: vida e dano dos inimigos,
   quantidade de inimigos por andar e tempo ganho no Hell Clock, com valores por número de jogadores
-  (configuráveis, seção `[Balanceamento]` do `.cfg`).
+  (fixos no mod desde a 0.22.0: o autor calibra com as métricas, e nenhum jogador, nem o host, muda o balanceamento).
 - **Com dados:** cada run gera um resumo sem identificação direta (tempo por andar, inimigos mortos, dano causado e recebido, mortes, quedas e reanimações)
   em `BepInEx/HellClockCoop/metricas`.
 - **Envio opcional:** só com aceite. No primeiro início, uma janela no menu pergunta se pode enviar os resumos das runs

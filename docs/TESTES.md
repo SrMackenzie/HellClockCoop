@@ -402,6 +402,19 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.22.0 — Balanceamento só do autor e teto de inimigos por andar
+
+Exige a 0.22.0 em todos os PCs (o protocolo não muda). O teto só age no convidado.
+- [ ] **.cfg antigo:** num PC que já teve a 0.21.x, abrir o jogo. Esperado: no log, `[Balanceamento] N opção(ões)
+  antiga(s) de [Balanceamento] apagada(s) do .cfg`, e o `.cfg` sem a seção. A aba Ajustes mostra os valores só para ler.
+- [ ] **Teto por andar (convidado):** jogar alguns andares comuns, um de sobrevivência e um com inimigo que invoca.
+  Esperado: os inimigos do host aparecem todos no convidado; no log do convidado, uma linha `[Teto] Andar N (...): até X
+  inimigos na geração do jogo` por andar e, ao trocar de andar, `[Inimigos] Andar N: X inimigos do host (A do andar, S
+  de sobrevivência, I invocações; C chefes)`, com A abaixo do teto do andar.
+- [ ] **Santuário de sobrevivência ou Miracles:** se aparecer, completar. Esperado: nenhum aviso `além do teto`.
+- Se falhar, mandar (convidado): todas as linhas `[Teto]`, `[Inimigos] Andar` e `além do teto`. Esses números calibram
+  os tetos fixos de evento (1500) e de invocações (3000).
+
 ## 0.18.0 — Lista de salas (1/3)
 
 Precisa de dois PCs com contas Steam diferentes (a lista não mostra a própria sala; o eco não ajuda aqui). Exige a
@@ -715,9 +728,8 @@ vazio no `.cfg`)
 
 **Menu e hub**
 
-- [ ] **Valores ajustáveis no `.cfg`** (roadmap B): com o jogo fechado, o host troca `[Balanceamento] VidaInimigos` para
-  `2.0, 2.4, 3.1`; com o coop criado, o painel mostra `Balanceamento 2J: vida ×2...`. Log do host:
-  `[Balanceamento] 2 jogador(es): ...`. Volte ao padrão (`1.7, 2.4, 3.1`) antes da run 1.
+- [ ] **Valores do autor** (desde a 0.22.0 fixos no código, roadmap B): com o coop criado, o painel mostra
+  `Balanceamento 2J: vida ×1,7...`. Log do host: `[Balanceamento] 2 jogador(es): ...`.
 
 **Run 1 — entrada no meio** (o host começa sozinho)
 

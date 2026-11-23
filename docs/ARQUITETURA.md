@@ -126,8 +126,8 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
 | `DungeonProgressManager.StartRunFromDungeon` | Post (H) / Pre (C) | Host envia `RunStart{dungeonHashId, worldTier}`; o cliente só inicia a run por mensagem |
 | `DungeonProgressManager.AdvanceLevel` | Post (H) / Pre (C) | Host envia `AdvanceLevel{n}`; no cliente, o portal vira pedido ao host |
 | `HellClock.Level.LevelBlock.GenerateNextLevel` | Post (H) / Post (C) | Host envia `levelDefinitionHashId`; o cliente substitui o resultado por um `LevelInfo` com a mesma definição (o construtor de `LevelInfo` é público) |
-| `HellClock.Level.LevelObjects.SetupEnemies` | Pre (C) | `return false`: o cliente não gera inimigos (vêm na Fase 3) |
-| `HellClock.Level.LevelObjects.SetupLevelObjects` | Pre (C) | Totens, santuários e portais replicados pelo host |
+| `HellClock.Level.LevelObjects.SetupEnemies` | Pre (C) | `return false`: o cliente não gera inimigos (vêm na Fase 3); desde a 0.22.0 calcula antes o teto de inimigos do andar (`TetoDoAndar`, §12.11) |
+| `HellClock.Level.LevelObjects.SetupLevelObjects` | Pre (C) | Totens, santuários e portais replicados pelo host; desde a 0.22.0 calcula antes o teto de baús do andar (`TetoDoAndar`) |
 | `LevelObjects.SetupPlayerSpawn` | Post (C) | Usar o mesmo `_currentPlayerSpawnIndex` do host, com pequeno deslocamento por jogador |
 | `TimerManager.Update` | Pre (C) | `return false`; aplicar o valor recebido do host (4 Hz e em eventos) via `_timer.Setter` |
 | `TimerManager.IncrementTimer` | Pre (C) | Virar pedido `TimerBonus{s}` ao host |
@@ -742,8 +742,11 @@ Decisão do projeto: **em grupo, um pouco mais difícil que o solo**. Prioridade
   lido por `LevelObjects` ao montar o andar e pelo `SurvivalEventManager` nas ondas. Vale a partir do andar seguinte.
 - *Tempo:* prefixo em `TimerManager.IncrementTimer` no host, só para ganhos (> 0). O tempo do convidado chega por
   TimerBonus e passa pelo mesmo ponto. Motivo: com loot individual, cada jogador pega as próprias recompensas de tempo.
-- *Jogadores:* 1 + aliados compatíveis (igual nos dois lados; desde a 0.21.0 com ou sem a mesma DLC, e fora quem avisou ForaDaRun). Valores em `[Balanceamento]` (menos XP e ouro), "2, 3, 4"
-  (aceita "1,7; 2,4; 3,1").
+- *Jogadores:* 1 + aliados compatíveis (igual nos dois lados; desde a 0.21.0 com ou sem a mesma DLC, e fora quem avisou ForaDaRun). Valores do autor, fixos no
+  código desde a 0.22.0 (`Escalonamento.VidaGrupo` 1,7/2,4/3,1, `VidaChefeGrupo` 1,8/2,6/3,4, `DanoGrupo` 1,1/1,2/1,3,
+  `QuantidadeGrupo` 1,2/1,4/1,6 e `TempoGrupo` 0,55/0,4/0,32 com 2/3/4 jogadores), sem liga/desliga: quem usa o mod usa
+  os critérios do mod, e nenhum jogador (nem o host) muda o balanceamento. Até a 0.21.x ficavam na seção `[Balanceamento]`
+  do `.cfg`; ao iniciar, a 0.22.0 apaga do arquivo as opções antigas dessa seção (`Escalonamento.Configurar`).
 - *XP, ouro, Soulstones e moedas de criação (0.10.0):* decisão do autor, cada um ganha o valor de cada inimigo × fator
   (`Escalonamento.XpGrupo` e `OuroGrupo`, fixos no código desde a 0.16.3: 0,83 / 0,71 / 0,63 = 1/quantidade, para o ganho por andar ficar perto do solo). Só com
   run iniciada e mais de um jogador; aplicado em cada PC, no próprio ganho (o loot é individual). Pontos:
@@ -880,8 +883,8 @@ Conteúdo das três abas (LB/RB, setas laterais fora de um deslizante ou clique 
   jogo, o aviso de que o jogo continua rodando), ALIADOS (só leitura, `CoopRuntime.EstadoDoPar`, o mesmo texto do painel
   do canto) e COOP (criar e convidar, sair com confirmação, modo eco).
 - **Ajustes:** aliados na tela (nomes, barra de vida e seta fora da tela desde a 0.14.0, números de dano e tamanho do dano), som (sons das skills dos aliados e volume) e
-  balanceamento deste `.cfg` só para leitura (`Escalonamento.LinhasDoMenu`: os multiplicadores do número de jogadores
-  atual, ou de 2 fora do coop; os valores só mudam no arquivo). Na reserva (gaveta), também o item Novidades.
+  balanceamento só para leitura (`Escalonamento.LinhasDoMenu`: os multiplicadores do número de jogadores atual, ou de 2
+  fora do coop; desde a 0.22.0 todos são valores do autor, fixos no código). Na reserva (gaveta), também o item Novidades.
 - **Novidades** (0.13.0): §12.1.
 - Deslizantes: esquerda/direita andam um passo (tamanho 0,3–2 em passos de 0,1, a mesma faixa que `DanosVisiveis`
   aplica; volume 0–1 em passos de 0,05); clique ou arrasto na barra escolhe o valor (o clique no rótulo só foca). Regras puras testadas no codectest:
@@ -948,7 +951,7 @@ S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum 
 | COOP-CFG-DANO-TAM | "Tamanho do dano" (barra, 30–200%; indisponível com os números desligados) | aba Ajustes | P | `[Interface] TamanhoDanoDosAliados` |
 | COOP-CFG-SOM | "Sons das skills dos aliados" (caixa de marcar) | aba Ajustes | P | `[Audio] SonsDosAliados` |
 | COOP-CFG-VOL | "Volume dos sons" (barra, 0–100%; indisponível com os sons desligados) | aba Ajustes | P | `[Audio] VolumeDosAliados` |
-| COOP-BAL-LEITURA | Multiplicadores do balanceamento deste `.cfg` e os fixos do autor (XP e ouro, desde a 0.16.3) | aba Ajustes | ∅ (só muda no arquivo; XP e ouro não mudam) | `[Balanceamento]`, `Escalonamento.XpGrupo`/`OuroGrupo` |
+| COOP-BAL-LEITURA | Multiplicadores do balanceamento, todos fixos do autor (XP e ouro desde a 0.16.3; vida, chefes, dano, quantidade e tempo desde a 0.22.0) | aba Ajustes | ∅ (só leitura; ninguém muda) | `Escalonamento.VidaGrupo`/`VidaChefeGrupo`/`DanoGrupo`/`QuantidadeGrupo`/`TempoGrupo`/`XpGrupo`/`OuroGrupo` |
 | COOP-NOVIDADES | "Novidades da <versão>": fecha o menu e abre a janela antiga (§12.1) | só na reserva (gaveta); no painel nativo virou a aba Novidades (0.13.0) | R | `[Teclas] Novidades` (F10) |
 | COOP-NAV | Setas ou direcional movem o foco; esquerda/direita ajustam a barra focada; Enter ou A executam; mouse: passar por cima foca, clique executa, clique ou arrasto na barra escolhe o valor, roda rola | menu aberto | R | — |
 | COOP-ECO-TECLA / COOP-DIAG-TECLA | F8 (modo eco) e F9 (diagnóstico) | jogo, com o menu do coop e a Novidades fechados | S | `[Teclas] ModoEco`, `SalvarHierarquia` |
@@ -1370,15 +1373,46 @@ aos expulsos que ainda estão nele.
 - `AndarLimpo`: o jogo dispara `_onAllEnemiesCleared` toda vez que os inimigos não opcionais chegam a 0
   (`EnemyManager.RemoveEnemy`; escutam o `ClearFloorTrigger` e o portal de chefe). No convidado, repetido no mesmo
   andar só vale se o host criou inimigos depois do último (`Validacao.AndarLimpoNovo`; zera no hub e ao sair).
-- Teto por andar no convidado, contado na criação (`InimigosCompartilhados.CriarPendentes`) e zerado ao trocar de andar:
-  `InimigosPorAndarMaximo` = 6000 e `ChefesPorAndarMaximo` = 16 (`EEnemyType` Boss 3 e Unique 6); baús,
-  `BausPorAndarMaximo` = 32 (`ObjetosCompartilhados.CriarBau`). **Calibração:** o IL da 2.1.1.1 não tem as quantidades:
-  vêm de assets (`LevelDefinition._enemySpawnCompositions`, `EnemySpawnComposition._eliteEnemyRange`,
-  `SurvivalSpawnConfig._totalToEndWave`/`_waves`/`_maxSpawn`, um chefe por sobrevivência em `_boss`/`_randomBossPool`;
-  `LevelDefinition._chestsRangeAmount` mais o baú do santuário amaldiçoado). Os tetos ficam bem acima do dobro de um
-  andar comum ou de sobrevivência, e o convidado registra no log o total de cada andar
-  (`[Inimigos] Andar N: X inimigos do host (Y chefes)` e `[Objetos] Andar N: X baús do host`) para conferir nos testes e
-  ajustar se preciso.
+- Teto por andar no convidado, contado na criação (`InimigosCompartilhados.CriarPendentes`) e zerado ao trocar de andar.
+  Na 0.21.1 era genérico (6000 inimigos, 32 baús); **desde a 0.22.0 é calculado no convidado com os dados do próprio
+  jogo para aquele andar** (`Fase3.TetoDoAndar`), nos prefixos que o convidado já tinha em `LevelObjects.SetupEnemies` e
+  `SetupLevelObjects` (os dois pulados por ele; recebem o `LevelInfo` do andar do host). Fontes, no IL da 2.1.1.1:
+  - *Geração do andar:* a composição (`LevelDefinition.EnemySpawnCompositions`, uma sorteada) põe `AmountPerSpawn[i]` de
+    cada `EnemyGroupSpawns` no ponto i (`EnemyManager.SpawnRegularEnemyGroup` cria um por unidade) e até
+    `EliteEnemyRange.MaxValue` elites; sem grupos, os esquadrões (`composition.SquadsPool` ou `LevelInfo.SquadPool`,
+    `TryUseSquadPool`) saem de um `AggregatedSubsetSelector`: cada seletor sorteia de `Min` a `Max` entradas
+    (`SubsetSelectorExtension.Roll`) mais as garantidas, e cada esquadrão sorteia os inimigos do mesmo jeito; o pool é
+    sorteado `ceil(RegularEnemyQuantity)` vezes (as garantidas contam em cada uma), e o teto usa `ceil(1,6 × 1,5)` = 3
+    repetições; as elites da composição valem também para o pool do `LevelInfo`. A elite vem em pack: campeão (`ChampionEnemyDefinition.AmountRange`) ou
+    raro com lacaios (`RareEnemyDefinition.MinionAmountRange`); conta o maior pack da coleção de inimigos do jogo.
+    Opcionais, goblin, par do chefe e o único de Nightmare entram na folga fixa (`FolgaInimigosAndar` = 40).
+  - *Sobrevivência:* cada onda até `floor(TotalToEndWave (ou o override da onda) × densidade)` (`SurvivalEventManager
+    .StartWave`; a densidade é o `RegularEnemyQuantity`), com as elites dentro do total, mais o chefe. A sobrevivência pode
+    seguir por vários andares (`MultiFloorCount`, `OnChangeLevel`) com a config do andar em que começou: nos andares
+    seguintes da run vale o teto das ondas da última sobrevivência calculada.
+  - *Baús:* `min(_chestsRangeAmount.MaxValue, pontos de baú)` (`LevelDefinition.GenerateChestsSpawnInfo`) mais os
+    `ChestInteractable` que vêm na cena do andar (o host varre todos), com `FolgaBaus` = 4 (santuário amaldiçoado e
+    baús de evento).
+  O teto (`Validacao.TetoInimigos`) é o total do jogo × o maior `QuantidadeGrupo` (1,6: o grupo pode crescer no andar)
+  × `FolgaQuantidade` 1,5 (nós da árvore do host que aumentam a quantidade) + a folga fixa, nunca acima do genérico.
+  Três contagens, porque as fontes são diferentes (`Validacao.ContagemDoSpawn`): **andar** (o teto acima);
+  **sobrevivência** (marca do spawn): o teto das ondas (andar de sobrevivência ou a que segue de um andar anterior) e, no
+  mínimo, `SobrevivenciaEventoMaximo` = 1500 para os eventos com config própria (santuário, Miracles) em qualquer andar; **invocações** (ajuste `Invocacao`
+  sem `Xp` e sem tesouro próprio (o vazio que o próprio `SetupSummon` põe não conta): skills de inimigo, `SkillSpawnEnemy`/`SkillSpawnEnemyWaves`; o `SetupSummon` tira XP e loot):
+  `InvocacoesPorAndarMaximo` = 3000. O `Descartavel` fica na contagem do andar: o `SetupDisposable` só tira o XP, o loot
+  continua. As contagens são de criações: a réplica nunca devolve a vaga em que entrou (virar invocação depois não libera o
+  andar); `Xp` ou `Tesouro` numa invocação a leva à contagem do andar e é recusado se lá não houver vaga
+  (`InimigosCompartilhados.Recontar`). XP acima de 1 e tesouro próprio não vazio só valem em inimigo de sobrevivência ou
+  chefe, no spawn e no ajuste (`Validacao.RecompensaPermitida`; as fontes no jogo são o `SurvivalEventManager` e as
+  temporadas), para o host não pôr XP x10 e tesouro de chefe em inimigos comuns até o teto. O tesouro vazio
+  (`EmptyTreasureClass`, que o `SetupSummon` e o goblin põem; tem `HashID` próprio) sempre passa. Limite conhecido: se o
+  spawn de uma invocação chegar num quadro e o ajuste `Invocacao` em outro, ela fica na contagem do andar (costumam
+  chegar juntos, no mesmo quadro do host). Chefes: `ChefesPorAndarMaximo` = 16 (`EEnemyType` Boss 3 e Unique 6), em
+  todas as contagens. Dados que não puderem ser lidos deixam o genérico (6000 inimigos, também na sobrevivência, e 32 baús), com aviso `[Teto]` no log.
+  **Calibração:** o convidado registra o teto de cada andar (`[Teto] Andar N (...): até X inimigos na geração do jogo`,
+  `[Teto] Andar N: até X baús`) e o total criado (`[Inimigos] Andar N: X inimigos do host (A do andar, S de
+  sobrevivência, I invocações; C chefes)` e `[Objetos] Andar N: X baús do host`). Os valores fixos de evento e de
+  invocações saem desses logs.
 
 **Mensagens dos pares revistas.**
 - `BauAberto`, `Quebrou` e `ObjetoUsado`: o convidado só obedece ao host (o que outro convidado fez chega repassado por
@@ -1495,8 +1529,8 @@ filtros puros ficam em `Net/Validacao.cs` e têm casos no `tools/codectest`.
 | `TimerSync` | convidado, só do host | os dois campos finitos e `>= 0` (4 Hz: descarte sem log) |
 | `PlayerSnapshot` | qualquer par compatível | desde a 0.21.1, tempo, posição (teto de 100 000), rotações, tempos e floats dos animators e ossos finitos (`Validacao.SnapshotValido`, §12.11; 20 Hz: descarte sem log) |
 | `FxNovo`, `FxMovimento`, `FxNos`, `DanosVistos` | qualquer par compatível; desde a 0.21.1, só do mesmo andar (o `FxFim` passa sempre) | §12.11 |
-| `InimigoSpawn`, `InimigosEstado`, `InimigoMorte`, `InimigoSumiu`, `AndarLimpo`, `InimigoAjuste` | convidado, só do host | valores do spawn e do ajuste (0.20.0, §12.9); desde a 0.21.1: até 6000 inimigos e 16 chefes (Boss e Unique) criados por andar, posição do `InimigosEstado` finita e dentro do teto também na réplica viva, `AndarLimpo` repetido no mesmo andar só com inimigos novos (§12.11) |
-| `BauSpawn`, `ObjetoSpawn` | convidado, só do host | `ObjetoSpawn`: valores e teto por andar (0.20.0); `BauSpawn`: até 32 baús por andar (0.21.1) |
+| `InimigoSpawn`, `InimigosEstado`, `InimigoMorte`, `InimigoSumiu`, `AndarLimpo`, `InimigoAjuste` | convidado, só do host | valores do spawn e do ajuste (0.20.0, §12.9); desde a 0.21.1: teto de inimigos e 16 chefes (Boss e Unique) criados por andar (0.22.0: calculado com os dados do andar, §12.11), posição do `InimigosEstado` finita e dentro do teto também na réplica viva, `AndarLimpo` repetido no mesmo andar só com inimigos novos (§12.11) |
+| `BauSpawn`, `ObjetoSpawn` | convidado, só do host | `ObjetoSpawn`: valores e teto por andar (0.20.0); `BauSpawn`: teto de baús por andar (0.21.1: 32; 0.22.0: dados do andar + 4, até 32) |
 | `ObjetoUsado` | convidado, só do host; host, de quem está no mesmo andar (0.21.1; até a 0.21.0, qualquer par) | `Estado = Concluido` (purificação) só do host. Aviso no log |
 | `BauAberto`, `Quebrou`, `ObjetoUsado` (`Usado`) | convidado, só do host; host, de quem está no mesmo andar (0.21.1, `Validacao.OrdemDeObjetoAceita`; até a 0.21.0, qualquer par) | — (o host repassa) |
 | `StatusInimigos` (0.9.0) | host, de convidado compatível e, desde a 0.21.1, no mesmo andar (até a 0.20.0, também com a mesma DLC) | duração e intensidade finitas e `> 0`, pelo menos 1 pilha (`Validacao.StatusValido`); duração limitada a 30 s, intensidade a 1–10 e pilhas ao `MaxStacks` (sem ele, 10; status que não acumula pilhas, `CanStack` falso, 1); mais de 512 itens recusa a mensagem; status desconhecido ou que não é de controle recusado (desde a 0.9.1, modificador de atributo só se for lentidão; seção 11.4). No máximo 20 avisos por convidado na sessão |

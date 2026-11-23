@@ -24,7 +24,7 @@ Obrigado pelo interesse no **Hell Clock Coop**! Este é um mod de fã, sem fins 
 - [ ] Mudou o formato de alguma mensagem? Suba `Protocolo.Versao`.
 - [ ] Patch novo? Está em `PatchTargets.cs` e documentado em `docs/ARQUITETURA.md`.
 - [ ] Atualizou `docs/changelog.json` e/ou `docs/roadmap.json` e rodou `python3 scripts/gerar-progresso.py`.
-- [ ] **Balanceamento revisado:** a mudança altera dificuldade, tempo, loot ou XP em grupo? Diga como e ajuste `[Balanceamento]` se preciso.
+- [ ] **Balanceamento revisado:** a mudança altera dificuldade, tempo, loot ou XP em grupo? Diga como e ajuste os valores do autor em `Escalonamento` (`VidaGrupo`…`TempoGrupo`, `XpGrupo`, `OuroGrupo`) se preciso; desde a 0.22.0 nada disso fica no `.cfg`.
 - [ ] Testou no jogo (modo eco e, se mexeu em rede, com dois PCs) e descreveu o teste no PR.
 
 ## Relatar um problema

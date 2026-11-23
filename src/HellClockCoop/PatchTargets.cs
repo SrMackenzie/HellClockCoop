@@ -46,7 +46,7 @@ namespace HellClockCoop
             new Alvo("2", "HellClock.Character.StatBasedValueController", "Refill", "Subir de nível caído não devolve a vida (0.15.0)"),
             new Alvo("2", "HellClock.Player.PlayerController", "IsPlayerBlockedFromPause", "Caído abre o menu (Esc) e pode abandonar a run"),
             new Alvo("2", "HellClock.Level.LevelBlock", "GenerateNextLevel", "Forçar no cliente a LevelDefinition sorteada pelo host"),
-            new Alvo("2", "HellClock.Level.LevelObjects", "SetupEnemies", "Cliente não gera inimigos próprios"),
+            new Alvo("2", "HellClock.Level.LevelObjects", "SetupEnemies", "Cliente não gera inimigos próprios; calcula o teto do andar"),
             new Alvo("2", "HellClock.Level.LevelObjects", "SetupLevelObjects", "Totens, santuários e portais vêm do host"),
             new Alvo("2", "TimerManager", "Update", "Cliente não decrementa o timer; recebe do host. Host caído: o relógio continua (0.15.0)"),
             new Alvo("2", "TimerManager", "IncrementTimer", "Bônus de tempo do cliente vira pedido ao host"),

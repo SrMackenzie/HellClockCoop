@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "23/11/2026",
-  "versao": "0.21.1",
+  "versao": "0.22.0",
   "fases": [
     {
       "id": "B",
@@ -18,7 +18,7 @@
         ],
         [
           "testar",
-          "Valores ajustáveis no arquivo de configuração, sem recompilar (vida, dano, quantidade e tempo; XP, ouro, volta do caído e reanimação são fixos pelo autor)"
+          "Valores do autor, fixos no código (vida, chefes, dano, quantidade, tempo, XP, ouro, volta do caído e reanimação), sem liga/desliga"
         ],
         [
           "testar",
@@ -35,6 +35,10 @@
         [
           "testar",
           "Teto do tempo ganho por convidado (120 s a cada 60 s) e golpe com dano inválido ignorado"
+        ],
+        [
+          "testar",
+          "Teto de inimigos e baús por andar calculado no convidado com os dados do próprio jogo × quantidade do mod, com conta à parte para sobrevivência e invocações"
         ],
         [
           "feito",
