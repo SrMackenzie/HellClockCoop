@@ -99,7 +99,7 @@ _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio s
 | 🧪 | Revisar drops de invocações, ondas de sobrevivência e temporadas (convidado com o XP e o tesouro próprio do host; equipamento sem redução, decisão do autor) |
 | ✅ | Auditoria: o mod nunca escreve no save de outro jogador |
 
-## Fase 5 — Polimento · 44%
+## Fase 5 — Polimento · 38%
 
 _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 
@@ -115,6 +115,9 @@ _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 | 🧪 | Sons das skills e dos golpes dos aliados |
 | 🧪 | Aliados na tela: barra de vida sobre o aliado e seta apontando quem está fora da tela |
 | 🧪 | Marcador (ping): o botão do meio do mouse (R3 no controle) marca um ponto no chão que todos veem por 5 s, com o nome na cor do aliado |
+| ⬜ | Lista de salas (1/3): ao criar o coop, sala pública (padrão) ou privada; aba Salas com as salas compatíveis (versão e DLC), host, jogadores, hub ou andar da run e nível; entrar também com a run em andamento; o host pode expulsar |
+| ⬜ | Lista de salas (2/3): só entra quem já chegou àquele ato e andar na própria campanha (o andar mais alto alcançado, do save de cada um) |
+| ⬜ | Lista de salas (3/3): coop seguro com desconhecidos (revisão das mensagens que hoje confiam no par, bloquear jogador) e filtros na lista |
 | ⬜ | Frases rápidas: avisos curtos prontos que aparecem sobre o personagem, sem chat de texto |
 | ⬜ | Ir até o aliado: botão que leva para perto do host quem ficou para trás, com tempo de recarga |
 | ⬜ | Ver a build do aliado: aba só de leitura com as skills e o nível de cada jogador da sessão |
