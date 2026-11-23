@@ -185,6 +185,7 @@ namespace HellClockCoop.Fase3
 
         public static void Receber(SessaoCoop sessao, Par de, byte[] dados)
         {
+            if (!de.MesmoAndar) return; // 0.21.1: números de dano só de quem está no mesmo andar (os ids de inimigo são do andar)
             try
             {
                 foreach (DanosVistos.Item i in DanosVistos.Desserializar(dados).Itens)

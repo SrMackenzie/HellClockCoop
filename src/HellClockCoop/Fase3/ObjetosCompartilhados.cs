@@ -87,6 +87,8 @@ namespace HellClockCoop.Fase3
             if (andar.LevelIndex != _andarDosBaus)
             {
                 // Andar novo: os baús do anterior já foram desativados pelo jogo (LevelObjects.Deactivate).
+                if (Convidado && _andarDosBaus >= 0 && BausPorId.Count > 0) // 0.21.1: para calibrar o teto de baús por andar
+                    Plugin.Log.LogInfo($"[Objetos] Andar {_andarDosBaus}: {BausPorId.Count} baús do host.");
                 _andarDosBaus = andar.LevelIndex;
                 BausPorId.Clear();
                 IdPorBau.Clear();
@@ -173,6 +175,11 @@ namespace HellClockCoop.Fase3
         private static void CriarBau(LevelInfo andar, BauSpawn s)
         {
             if (BausPorId.ContainsKey(s.Id)) return;
+            if (!Validacao.BauCabeNoAndar(BausPorId.Count)) // 0.21.1: host malicioso não enche o andar de baús
+            {
+                Plugin.Log.LogWarning($"[Objetos] Baú {s.Id} do host além do teto do andar ({BausPorId.Count} baús); ignorado.");
+                return;
+            }
             try
             {
                 ChestDefinition def = global::HellClock.Constants.Collections.CHEST_DEFINITION_COLLECTION.Reference.GetElement(s.DefinicaoHash);
@@ -402,11 +409,13 @@ namespace HellClockCoop.Fase3
                         if (!BausPorId.ContainsKey(s.Id)) { Pendentes[s.Id] = s; RecebidoEm[s.Id] = Time.unscaledTime; }
                         break;
                     case Protocolo.TipoBauAberto:
+                        if (!OrdemAceita(sessao, de)) return;
                         ushort id = BauAberto.Desserializar(dados).Id;
                         AbrirPorOrdem(id, de);
                         if (Host) Repassar(sessao, de, dados);
                         break;
                     case Protocolo.TipoQuebrou:
+                        if (!OrdemAceita(sessao, de)) return;
                         QuebrarPorOrdem(Net.Quebrou.Desserializar(dados), de);
                         if (Host) Repassar(sessao, de, dados);
                         break;
@@ -417,6 +426,13 @@ namespace HellClockCoop.Fase3
                 Plugin.Log.LogWarning($"[Objetos] Mensagem {dados[0]} de {de.Nome} ignorada: {(e.InnerException ?? e).Message}");
             }
         }
+
+        /// <summary>
+        /// 0.21.1: o convidado só obedece ao host (o que outro convidado fez chega repassado por ele); o host aceita de quem está
+        /// no mesmo andar dele (o id do baú/quebrável é do andar).
+        /// </summary>
+        internal static bool OrdemAceita(SessaoCoop sessao, Par de) =>
+            Validacao.OrdemDeObjetoAceita(Host, Convidado, de == sessao.Host, de.MesmoAndar);
 
         /// <summary>Host repassa o que um convidado fez para os demais convidados.</summary>
         private static void Repassar(SessaoCoop sessao, Par de, byte[] dados)

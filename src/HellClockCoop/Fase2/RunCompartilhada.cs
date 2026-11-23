@@ -229,6 +229,9 @@ namespace HellClockCoop.Fase2
                 _seguindoHost = false;
             }
             if (Sessao == null) return;
+            // 0.21.1: host fixo da run. Numa run aberta com host, só ele comanda até ela acabar; fora da run, vale o dono do lobby.
+            if (Dpm == null || !Dpm.RunStarted.Value) Sessao.SoltarHostDaRun();
+            else if (Convidado) Sessao.FixarHostDaRun();
             if (Host) AtualizarHost();
             if (Convidado) AtualizarConvidado(jogador);
             else _planoPendente = null;
@@ -393,6 +396,7 @@ namespace HellClockCoop.Fase2
                 case Protocolo.TipoSpawnAndar:
                     if (!Convidado || de != sessao.Host) return;
                     SpawnAndar sp = SpawnAndar.Desserializar(dados);
+                    if (sp.IndiceSpawn < 0) return; // 0.21.1: o teto (PlayerSpawnInfos do andar) é conferido ao usar (AjustarSpawn)
                     SpawnsDoHost[sp.IndiceAndar] = sp.IndiceSpawn;
                     ReposicionarSeJaChegou(sp);
                     break;
@@ -408,7 +412,8 @@ namespace HellClockCoop.Fase2
                     break;
 
                 case Protocolo.TipoTimerBonus:
-                    if (!Host) return;
+                    // 0.21.1: só com a run aberta e de quem divide a run (fora da escala não soma tempo ao grupo).
+                    if (!Host || !Validacao.BonusDoParAceito(Dpm != null && Dpm.RunStarted.Value, de.Compativel, Balanceamento.Escalonamento.ForaDaEscala(de))) return;
                     TimerBonus b = TimerBonus.Desserializar(dados);
                     // Chave pelo SteamID: sair e voltar ao lobby cria outro Par, mas não zera o teto.
                     ulong steam = de.Id.m_SteamID;
@@ -480,6 +485,7 @@ namespace HellClockCoop.Fase2
                         return;
                     }
                     bool seguia = _seguindoHost;
+                    sessao.SoltarHostDaRun(); // 0.21.1: a run do host acabou
                     Planos.Clear(); SpawnsDoHost.Clear(); _planoPendente = null; _entradaTardia = null; SementeCena = 0;
                     _abandonouHost = 0; // a run que você abandonou acabou
                     _semLiberar = false; // 0.19.0: a run que você não acompanhou acabou; volta a contar na escala
@@ -510,6 +516,12 @@ namespace HellClockCoop.Fase2
         /// </summary>
         private static bool PlanoValido(PlanoAndar p)
         {
+            if (!Validacao.AndarEspecialValido(p.AndarEspecial))
+            {
+                // 0.21.1: o plano de atalho pula as travas de progresso e de DLC; só os dois atalhos do jogo passam.
+                Plugin.Log.LogWarning($"[Run] Plano do host ignorado: andar especial {p.AndarEspecial} não é um atalho do jogo (só 1 e 2).");
+                return false;
+            }
             int max = -1;
             if (p.AndarEspecial == (int)ESpecialFloor.None)
             {
@@ -637,12 +649,17 @@ namespace HellClockCoop.Fase2
         }
 
         /// <summary>Ajusta o índice rotativo de spawn para cair no mesmo ponto do host.</summary>
-        internal static void AjustarSpawn(LevelObjects objetos, LevelInfo andar)
+        internal static bool AjustarSpawn(LevelObjects objetos, LevelInfo andar)
         {
-            if (!Convidado || andar?.LevelBlockInfo == null || !SpawnsDoHost.TryGetValue(andar.LevelIndex, out int alvo)) return;
+            if (!Convidado || andar?.LevelBlockInfo == null || !SpawnsDoHost.TryGetValue(andar.LevelIndex, out int alvo)) return false;
             int total = andar.LevelDefinition.PlayerSpawnInfos.Count;
-            if (total == 0) return;
+            if (!Validacao.SpawnValido(alvo, total)) // 0.21.1: índice fora do andar fica com o spawn sorteado aqui
+            {
+                Plugin.Log.LogWarning($"[Run] Spawn {alvo} do host fora do andar {andar.LevelIndex} ({total} pontos); ignorado.");
+                return false;
+            }
             SpawnIndexRef(objetos) = (alvo - 1 + total) % total; // o jogo faz ++ antes de usar
+            return true;
         }
 
         /// <summary>O spawn do host chegou depois de o convidado já ter nascido no andar: reposiciona.</summary>
@@ -651,7 +668,7 @@ namespace HellClockCoop.Fase2
             LevelInfo andar = LocalPlayerSampler.AndarAtual();
             if (andar?.LevelObjects == null || andar.LevelBlockInfo == null || andar.LevelIndex != sp.IndiceAndar) return;
             if (SpawnIndexRef(andar.LevelObjects) == sp.IndiceSpawn) return;
-            AjustarSpawn(andar.LevelObjects, andar);
+            if (!AjustarSpawn(andar.LevelObjects, andar)) return;
             SetupPlayerSpawn.Invoke(andar.LevelObjects, new object[] { andar });
             Plugin.Log.LogInfo($"[Run] Reposicionado no spawn {sp.IndiceSpawn} do host (andar {sp.IndiceAndar}).");
         }

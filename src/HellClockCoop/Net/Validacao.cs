@@ -27,6 +27,18 @@ namespace HellClockCoop.Net
 
         public static bool MotivoFimRunValido(int motivo) => motivo >= 0 && motivo <= MotivoFimRunMaximo;
 
+        /// <summary>ESpecialFloor no jogo 2.1.1.1: None=0, DesertShortcut=1, LaboratoryShortcut=2, Sandbox=3.</summary>
+        public const int AtalhoDeserto = 1, AtalhoLaboratorio = 2;
+
+        /// <summary>
+        /// PlanoAndar.AndarEspecial (0.21.1): nenhum ou um dos dois atalhos do jogo. O plano de atalho não passa pelas travas de
+        /// progresso e de DLC (decisão da 0.19.0), então Sandbox (3) e valores fora do enum seriam uma porta para pular as duas.
+        /// </summary>
+        public static bool AndarEspecialValido(int especial) => especial == 0 || especial == AtalhoDeserto || especial == AtalhoLaboratorio;
+
+        /// <summary>SpawnAndar (0.21.1): índice do ponto de nascimento dentro dos PlayerSpawnInfos do andar (0..total-1).</summary>
+        public static bool SpawnValido(int indice, int total) => indice >= 0 && indice < total;
+
         /// <summary>EGameOverSource.ManualFinish e Completed no jogo 2.1.1.1.</summary>
         public const int MotivoManualFinish = 1, MotivoCompleted = 3;
 
@@ -91,6 +103,84 @@ namespace HellClockCoop.Net
             tipo <= TipoInimigoMaximo && afixos >= 0 && afixos <= AfixosMaximo && AjusteValido(ajustes, multiplicadorXp)
             && FracaoValida(vida) && Finito(atraso) && atraso >= 0f && atraso <= AtrasoSpawnMaximo && Finito(yaw)
             && PosicaoValida(x, y, z) && PosicaoValida(ox, oy, oz);
+
+        // Teto por andar do que o host manda criar no convidado (0.21.1). As contagens vêm de assets, sem valor no IL da 2.1.1.1:
+        // LevelDefinition._enemySpawnCompositions/_eliteEnemyRange, SurvivalSpawnConfig._totalToEndWave/_waves/_maxSpawn e o
+        // chefe (_boss/_randomBossPool, um por sobrevivência), e LevelDefinition._chestsRangeAmount mais o baú do santuário
+        // amaldiçoado (_lastUsedChestSpawnConfigForCursedShrine). Tetos folgados (bem acima de 2x o que um andar comum ou de
+        // sobrevivência gera); o convidado registra no log o total de cada andar para conferir.
+        public const int InimigosPorAndarMaximo = 6000;
+        public const int ChefesPorAndarMaximo = 16;   // EEnemyType Boss (3) e Unique (6)
+        public const int BausPorAndarMaximo = 32;
+        public const byte TipoBoss = 3, TipoUnico = 6;
+
+        public static bool EhChefe(byte tipo) => tipo == TipoBoss || tipo == TipoUnico;
+
+        /// <summary>Inimigo do host cabe no andar (contagens dos já criados neste andar): chefe em massa e XP em massa recusados.</summary>
+        public static bool InimigoCabeNoAndar(int criadosNoAndar, int chefesNoAndar, byte tipo) =>
+            criadosNoAndar < InimigosPorAndarMaximo && (!EhChefe(tipo) || chefesNoAndar < ChefesPorAndarMaximo);
+
+        public static bool BauCabeNoAndar(int bausNoAndar) => bausNoAndar < BausPorAndarMaximo;
+
+        /// <summary>
+        /// AndarLimpo (0.21.1): no mesmo andar, só dispara de novo se o host criou inimigos depois do último disparo (o jogo
+        /// dispara toda vez que a contagem volta a 0: ondas, chefe depois dos comuns). -1 = nenhum ainda neste andar/run.
+        /// </summary>
+        public static bool AndarLimpoNovo(uint andar, long ultimoDisparado, int criadosAgora, int criadosNoUltimo) =>
+            (long)andar != ultimoDisparado || criadosAgora > criadosNoUltimo;
+
+        /// <summary>
+        /// BauAberto, Quebrou e ObjetoUsado (0.21.1): o convidado só obedece ao host (os dos outros chegam repassados por ele);
+        /// o host aceita de quem está no mesmo andar (o id do objeto é do andar). Fora do coop da run, nada.
+        /// </summary>
+        public static bool OrdemDeObjetoAceita(bool souHost, bool souConvidado, bool doHost, bool mesmoAndar) =>
+            souHost ? mesmoAndar : souConvidado && doHost;
+
+        /// <summary>TimerBonus (0.21.1): só com a run do host aberta e de quem divide a run (compatível e dentro da escala).</summary>
+        public static bool BonusDoParAceito(bool runAberta, bool compativel, bool foraDaEscala) => runAberta && compativel && !foraDaEscala;
+
+        /// <summary>
+        /// Snapshot (0.21.1): tempo, posição (dentro do teto), rotações, tempos e floats dos animators e ossos finitos. NaN no
+        /// avatar ou no Animator do aliado quebra a interpolação e a física local.
+        /// </summary>
+        public static bool SnapshotValido(PlayerSnapshot s)
+        {
+            if (s == null || !Finito(s.Tempo) || !PosicaoValida(s.Posicao.x, s.Posicao.y, s.Posicao.z)) return false;
+            if (!QuaternionFinito(s.Rotacao) || !QuaternionFinito(s.RotacaoModelo)) return false;
+            for (int i = 0; i < PlayerSnapshot.QuantidadeAnimators; i++)
+            {
+                if (!s.AnimatorAtivo[i]) continue;
+                AnimatorFrame f = s.Animators[i];
+                if (!TodosFinitos(f.NormalizedTimes) || !TodosFinitos(f.LayerWeights) || !TodosFinitos(f.Floats)) return false;
+            }
+            for (int i = 0; i < s.RotacoesOssos.Length; i++)
+            {
+                if ((s.MascaraOssos & (1 << i)) != 0 && !QuaternionFinito(s.RotacoesOssos[i])) return false;
+            }
+            return true;
+        }
+
+        private static bool QuaternionFinito(UnityEngine.Quaternion q) => Finito(q.x) && Finito(q.y) && Finito(q.z) && Finito(q.w);
+
+        private static bool TodosFinitos(float[] v)
+        {
+            if (v == null) return true;
+            foreach (float x in v) if (!Finito(x)) return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Host fixo da run (0.21.1): sem run aberta (0), o dono do lobby; com run, o host dela só enquanto ainda é o dono. Se o
+        /// lobby mudou de dono no meio da run, ninguém manda (0) até ela acabar.
+        /// </summary>
+        public static ulong HostEfetivo(ulong hostDaRun, ulong donoDoLobby) => hostDaRun == 0 || hostDaRun == donoDoLobby ? donoDoLobby : 0UL;
+
+        /// <summary>
+        /// ExpulsoAviso (0.21.1): vale do host da sala (o da run aberta, ver SessaoCoop.IdDoHost) e só fala de um terceiro
+        /// (nem de quem manda nem de quem recebe).
+        /// </summary>
+        public static bool AvisoExpulsaoValido(ulong de, ulong host, ulong expulso, ulong eu) =>
+            de != 0 && de == host && expulso != 0 && expulso != de && expulso != eu;
 
         // Santuários e totens do host (0.20.0). O jogo cria no máximo 1 santuário amaldiçoado por andar
         // (LevelDefinition.GenerateCursedShrineSpawnInfo devolve um só) e dá o ponto de constelação 1 vez por andar

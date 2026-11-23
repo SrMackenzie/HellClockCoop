@@ -113,6 +113,13 @@ namespace HellClockCoop.Fase3
         private static readonly Dictionary<EnemyController, InimigoHost> HostPorControle = new Dictionary<EnemyController, InimigoHost>();
         private static readonly Dictionary<ushort, InimigoHost> HostPorId = new Dictionary<ushort, InimigoHost>();
         private static ushort _proximoId = 1;
+
+        // Convidado (0.21.1): réplicas criadas por ordem do host no andar atual (teto por andar) e o último AndarLimpo disparado.
+        private static long _andarContado = -1;
+        private static int _criadosNoAndar, _chefesNoAndar;
+        private static bool _avisouTetoDoAndar;
+        private static long _andarLimpoDisparado = -1;
+        private static int _criadosNoUltimoLimpo;
         private static float _proximoEstado;
         private static uint _sequencia;
         private static EnemyManager _emComLimpeza;
@@ -579,6 +586,8 @@ namespace HellClockCoop.Fase3
             {
                 // Hub. Os spawns pendentes ficam: a run do host pode estar começando.
                 if (Replicas.Count > 0) LimparReplicas("voltou ao hub");
+                ContarAndar(-1); // run nova recomeça a contagem e o AndarLimpo
+                _andarLimpoDisparado = -1;
                 DevolverLimpeza(em);
                 return;
             }
@@ -703,18 +712,48 @@ namespace HellClockCoop.Fase3
         {
             List<ushort> remover = null;
             int criados = 0;
+            ContarAndar(andarAtual);
             foreach (var kv in Pendentes)
             {
                 InimigoSpawn s = kv.Value;
                 if (s.Andar < andarAtual) { (remover ?? (remover = new List<ushort>())).Add(kv.Key); continue; }
                 if (s.Andar != andarAtual || criados >= CriacoesPorQuadro) continue;
                 (remover ?? (remover = new List<ushort>())).Add(kv.Key);
-                if (CriarReplica(em, s)) criados++;
+                if (!Validacao.InimigoCabeNoAndar(_criadosNoAndar, _chefesNoAndar, s.Tipo))
+                {
+                    if (!_avisouTetoDoAndar)
+                    {
+                        _avisouTetoDoAndar = true;
+                        Plugin.Log.LogWarning($"[Inimigos] Andar {andarAtual}: o host mandou inimigos além do teto ({_criadosNoAndar} criados, " +
+                            $"{_chefesNoAndar} chefes; teto {Validacao.InimigosPorAndarMaximo} e {Validacao.ChefesPorAndarMaximo}); os de cima são ignorados.");
+                    }
+                    continue;
+                }
+                if (CriarReplica(em, s))
+                {
+                    criados++;
+                    _criadosNoAndar++;
+                    if (Validacao.EhChefe(s.Tipo)) _chefesNoAndar++;
+                }
             }
             if (remover != null)
             {
                 foreach (ushort id in remover) Pendentes.Remove(id);
             }
+        }
+
+        /// <summary>
+        /// Teto por andar (0.21.1): zera a contagem ao trocar de andar e registra o total do anterior (para calibrar o teto
+        /// com o que o jogo gera de verdade). -1 = sem andar contado (hub ou fim da sessão).
+        /// </summary>
+        private static void ContarAndar(long andar)
+        {
+            if (andar == _andarContado) return;
+            if (_andarContado >= 0 && _criadosNoAndar > 0)
+                Plugin.Log.LogInfo($"[Inimigos] Andar {_andarContado}: {_criadosNoAndar} inimigos do host ({_chefesNoAndar} chefes).");
+            _andarContado = andar;
+            _criadosNoAndar = _chefesNoAndar = 0;
+            _avisouTetoDoAndar = false;
         }
 
         private static bool CriarReplica(EnemyManager em, InimigoSpawn s)
@@ -954,6 +993,11 @@ namespace HellClockCoop.Fase3
             LevelInfo andar = LocalPlayerSampler.AndarAtual();
             EnemyManager em = EnemyManager.Instance;
             if (andar == null || em == null || andar.LevelIndex != a.Andar) return;
+            ContarAndar(andar.LevelIndex);
+            // 0.21.1: de novo no mesmo andar só com inimigos novos desde o último (sem spam do host)
+            if (!Validacao.AndarLimpoNovo(a.Andar, _andarLimpoDisparado, _criadosNoAndar, _criadosNoUltimoLimpo)) return;
+            _andarLimpoDisparado = a.Andar;
+            _criadosNoUltimoLimpo = _criadosNoAndar;
             Plugin.Log.LogInfo($"[Inimigos] Host limpou o andar {a.Andar}.");
             try { AndarLimpoRef(em)?.Trigger(); }
             catch (Exception e) { Plugin.Log.LogWarning($"[Inimigos] Andar limpo falhou: {(e.InnerException ?? e).Message}"); }
@@ -1026,6 +1070,8 @@ namespace HellClockCoop.Fase3
         private static void LimparConvidado(string motivo)
         {
             LimparReplicas(motivo);
+            ContarAndar(-1);
+            _andarLimpoDisparado = -1;
             Pendentes.Clear();
             RecebidoEm.Clear();
         }
@@ -1083,6 +1129,8 @@ namespace HellClockCoop.Fase3
                         if (!Convidado || de != sessao.Host) return;
                         foreach (InimigosEstado.Item i in InimigosEstado.Desserializar(dados).Itens)
                         {
+                            // 0.21.1: posição finita e dentro do teto também na réplica viva (Yaw e Vida chegam em 16 bits, sempre finitos).
+                            if (!Validacao.PosicaoValida(i.Posicao.x, i.Posicao.y, i.Posicao.z)) continue;
                             if (Replicas.TryGetValue(i.Id, out Replica r))
                             {
                                 r.Posicao = i.Posicao;
@@ -1136,7 +1184,7 @@ namespace HellClockCoop.Fase3
                         HostAplicarGolpes(de, g);
                         break;
                     case Protocolo.TipoStatusInimigos:
-                        if (Host && HostEmRun && de.Compativel && !Balanceamento.Escalonamento.ForaDaEscala(de)) HostAplicarStatus(de, StatusInimigos.Desserializar(dados));
+                        if (Host && HostEmRun && de.Compativel && de.MesmoAndar && !Balanceamento.Escalonamento.ForaDaEscala(de)) HostAplicarStatus(de, StatusInimigos.Desserializar(dados));
                         break;
                 }
             }

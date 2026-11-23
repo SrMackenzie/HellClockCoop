@@ -11,7 +11,7 @@ namespace HellClockCoop.Net
     internal static class Protocolo
     {
         /// <summary>Muda sempre que o formato de qualquer mensagem mudar. Pares com versões diferentes não conversam.</summary>
-        public const int Versao = 20; // 20: ForaDaRun (convidado sem progresso para o lugar do host, 0.19.0)
+        public const int Versao = 21; // 21: ExpulsoAviso (o host conta aos outros convidados quem expulsou, 0.21.1)
 
         public const int CanalConfiavel = 0;
         public const int CanalSnapshots = 1;
@@ -21,6 +21,7 @@ namespace HellClockCoop.Net
         public const byte TipoAparencia = 11;
         public const byte TipoTchau = 12;
         public const byte TipoExpulso = 13;      // host → um convidado: saia da sala (só 1 byte; 0.18.0)
+        public const byte TipoExpulsoAviso = 14; // host → os outros convidados: fulano foi expulso, cortem a conversa com ele (0.21.1)
 
         // Fase 2 — run compartilhada (host → convidados, salvo TimerBonus)
         public const byte TipoPlanoAndar = 20;
@@ -117,6 +118,18 @@ namespace HellClockCoop.Net
                 return new Hello { Protocolo = r.ReadInt32(), VersaoMod = Bin.LerTexto(r, Bin.TextoCurto), VersaoJogo = Bin.LerTexto(r, Bin.TextoCurto), Nome = Bin.LerTexto(r, Bin.TextoNome), JaTeOuvi = r.ReadBoolean(), Deluxe = r.ReadBoolean(), CursedWar = r.ReadBoolean() };
             }
         }
+    }
+
+    /// <summary>
+    /// Host → os outros convidados (0.21.1): o SteamID de quem foi expulso. Quem recebe corta a conversa com ele, para um
+    /// cliente alterado que ignore o Expulso não continuar par dos outros nem comandar se herdar o lobby.
+    /// </summary>
+    internal sealed class ExpulsoAviso
+    {
+        public ulong SteamId;
+
+        public byte[] Serializar() => Mensagem.Escrever(Net.Protocolo.TipoExpulsoAviso, w => w.Write(SteamId));
+        public static ExpulsoAviso Desserializar(byte[] d) => Mensagem.Ler(d, Net.Protocolo.TipoExpulsoAviso, r => new ExpulsoAviso { SteamId = r.ReadUInt64() });
     }
 
     /// <summary>

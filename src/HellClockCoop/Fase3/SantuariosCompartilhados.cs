@@ -299,6 +299,7 @@ namespace HellClockCoop.Fase3
                         if (!PorId.ContainsKey(s.Id)) { Pendentes[s.Id] = s; RecebidoEm[s.Id] = Time.unscaledTime; }
                         break;
                     case Protocolo.TipoObjetoUsado:
+                        if (!ObjetosCompartilhados.OrdemAceita(sessao, de)) return; // 0.21.1: convidado só do host; host do mesmo andar
                         ObjetoUsado u = ObjetoUsado.Desserializar(dados);
                         // Purificação (Concluido) dá ponto de constelação no save de quem recebe: só o host decide.
                         // 0.20.0: e só depois que o santuário foi ativado aqui. Ainda pendente (não criado), a purificação só o

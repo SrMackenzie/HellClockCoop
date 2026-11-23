@@ -73,8 +73,35 @@ namespace HellClockCoop.Net
         public bool MinhaDeluxe { get; private set; }
         public bool MinhaCursedWar { get; private set; }
 
-        /// <summary>O dono do lobby, se já trocou Hello conosco.</summary>
-        public Par Host => EmSessao && !SouHost && Pares.TryGetValue(SteamMatchmaking.GetLobbyOwner(Lobby).m_SteamID, out Par h) ? h : null;
+        /// <summary>
+        /// 0.21.1: host da run aberta neste PC (0 = nenhuma). Fixado enquanto o convidado está numa run com host e solto quando
+        /// a run acaba (FimRun ou volta ao hub): se o host sai no meio e o lobby passa a outro membro (inclusive um expulso que
+        /// ignorou o Expulso), o novo dono não comanda a run aberta (planos, inimigos, fim da run, expulsão).
+        /// </summary>
+        private ulong _hostDaRun;
+
+        /// <summary>
+        /// SteamID de quem manda neste PC (Validacao.HostEfetivo): sem run, o dono do lobby; com run, o host dela só enquanto
+        /// ainda é o dono. Se o lobby trocou de dono no meio da run, ninguém (0) até a run acabar: nem o novo dono nem o host
+        /// que saiu e voltou como membro comum.
+        /// </summary>
+        public ulong IdDoHost => Validacao.HostEfetivo(_hostDaRun, SteamMatchmaking.GetLobbyOwner(Lobby).m_SteamID);
+
+        /// <summary>O host (o da run aberta ou o dono do lobby), se já trocou Hello conosco.</summary>
+        public Par Host => EmSessao && !SouHost && Pares.TryGetValue(IdDoHost, out Par h) ? h : null;
+
+        /// <summary>Convidado numa run com host: fixa quem manda até a run acabar (só a 1ª vez).</summary>
+        public void FixarHostDaRun()
+        {
+            if (_hostDaRun != 0) return;
+            Par h = Host;
+            if (h == null) return;
+            _hostDaRun = h.Id.m_SteamID;
+            Plugin.Log.LogInfo($"[Sessão] Run aberta com {h.Nome}: até ela acabar, só ele comanda a sua run.");
+        }
+
+        /// <summary>A run acabou (FimRun, hub ou saída da sala): volta a valer o dono do lobby.</summary>
+        public void SoltarHostDaRun() => _hostDaRun = 0;
 
         /// <summary>Fase 2: este PC segue a run do host (andar, timer, início e fim).</summary>
         public bool ModoConvidado
@@ -107,11 +134,12 @@ namespace HellClockCoop.Net
         private CallResult<LobbyMatchList_t> _crListaSalas;
 
         // Expulsão (0.18.0): quem o host tirou desta sala (não volta a ela enquanto ela existir; zera ao sair) e as salas
-        // de onde fomos tirados (escondidas até fechar o jogo). Etapa 3: os outros convidados não sabem da expulsão, então um
-        // cliente alterado que ignore o Expulso continua par deles.
+        // de onde fomos tirados (escondidas até fechar o jogo). 0.21.1: o host avisa os outros convidados (ExpulsoAviso), que
+        // também põem o expulso aqui; um cliente alterado que ignore o Expulso deixa de ser par de todos.
         private readonly HashSet<ulong> _expulsos = new HashSet<ulong>();
         private readonly HashSet<ulong> _salasQueMeExpulsaram = new HashSet<ulong>();
         private float _proximoReenvioExpulso;
+        private bool _avisouDonoExpulso; // 0.21.1: o lobby passou a quem o host anterior expulsou (um aviso por sala)
 
         // Dados da sala no lobby: o dono grava a cada 2 s, só o que mudou.
         private readonly Dictionary<string, string> _dadosGravados = new Dictionary<string, string>();
@@ -264,6 +292,8 @@ namespace HellClockCoop.Net
             _proximoReenvioExpulso = Time.unscaledTime + 2f;
             DestruirAvatar(p);
             Pares.Remove(p.Id.m_SteamID); // a sessão P2P fica aberta até ele sair do lobby, para o Expulso chegar
+            byte[] aviso = new ExpulsoAviso { SteamId = p.Id.m_SteamID }.Serializar(); // 0.21.1: os outros cortam a conversa com ele
+            foreach (Par outro in Pares.Values) if (outro.Compativel) SteamTransporte.Enviar(outro.Id, aviso, confiavel: true, Protocolo.CanalConfiavel);
             Plugin.Log.LogInfo($"[Sessão] {p.Nome} foi expulso da sala.");
             Avisar($"{p.Nome} foi expulso da sala.");
         }
@@ -297,6 +327,8 @@ namespace HellClockCoop.Net
             Lobby = CSteamID.Nil;
             _ultimaAparenciaEnviada = null;
             _expulsos.Clear();
+            _hostDaRun = 0;
+            _avisouDonoExpulso = false;
             _dadosGravados.Clear();
             if (EstadoAtual != Estado.AguardandoSteam) EstadoAtual = Estado.Livre;
             Plugin.Log.LogInfo($"[Sessão] Saiu do coop ({motivo}).");
@@ -425,13 +457,14 @@ namespace HellClockCoop.Net
         private void OnPedidoDeSessao(SteamNetworkingMessagesSessionRequest_t pedido)
         {
             CSteamID quem = pedido.m_identityRemote.GetSteamID();
-            if (EmSessao && EhMembro(quem))
+            // 0.21.1: convidado não reabre conversa com quem o host expulsou (o host aceita: é por ela que o Expulso chega).
+            if (EmSessao && EhMembro(quem) && (SouHost || !_expulsos.Contains(quem.m_SteamID)))
             {
                 SteamTransporte.Aceitar(pedido.m_identityRemote);
             }
             else
             {
-                Plugin.Log.LogInfo($"[Rede] Pedido de conexão ignorado: {quem} não está no seu coop.");
+                Plugin.Log.LogInfo("[Rede] Pedido de conexão ignorado: o jogador não está no seu coop (ou foi expulso)."); // 0.21.1: sem o SteamID
             }
         }
 
@@ -573,8 +606,18 @@ namespace HellClockCoop.Net
                 foreach (ulong id in _expulsos)
                 {
                     var quem = new CSteamID(id);
-                    if (EhMembro(quem)) SteamTransporte.Enviar(quem, new[] { Protocolo.TipoExpulso }, confiavel: true, Protocolo.CanalConfiavel);
+                    if (!EhMembro(quem)) continue;
+                    SteamTransporte.Enviar(quem, new[] { Protocolo.TipoExpulso }, confiavel: true, Protocolo.CanalConfiavel);
+                    // 0.21.1: o aviso aos outros também se repete (quem estava com outro host fixado recusou o primeiro)
+                    byte[] aviso = new ExpulsoAviso { SteamId = id }.Serializar();
+                    foreach (Par outro in Pares.Values) if (outro.Compativel) SteamTransporte.Enviar(outro.Id, aviso, confiavel: true, Protocolo.CanalConfiavel);
                 }
+            }
+            if (!_avisouDonoExpulso && !SouHost && _expulsos.Contains(SteamMatchmaking.GetLobbyOwner(Lobby).m_SteamID))
+            {
+                _avisouDonoExpulso = true; // 0.21.1: a Steam passou a sala a um expulso; ninguém comanda a sua run
+                Plugin.Log.LogWarning("[Sessão] A sala passou a um jogador que o host anterior expulsou; ele não comanda a sua run.");
+                Avisar("A sala passou a um jogador que o host anterior expulsou. Saia do coop e entre em outra sala.");
             }
 
             SteamTransporte.Receber(Protocolo.CanalConfiavel, (de, dados) => TratarConfiavel(de, dados, jogadorLocal));
@@ -629,6 +672,11 @@ namespace HellClockCoop.Net
                         Fase3.InimigosCompartilhados.AoNovoConvidado(this, p);
                         Fase3.ObjetosCompartilhados.AoNovoConvidado(this, p);
                         Fase3.SantuariosCompartilhados.AoNovoConvidado(this, p);
+                        foreach (ulong idExpulso in _expulsos) // 0.21.1: quem chega depois também corta a conversa com quem ainda está no lobby
+                        {
+                            if (EhMembro(new CSteamID(idExpulso)))
+                                SteamTransporte.Enviar(p.Id, new ExpulsoAviso { SteamId = idExpulso }.Serializar(), confiavel: true, Protocolo.CanalConfiavel);
+                        }
                     }
                     if (p.Compativel) Fase2.RunCompartilhada.AoNovoPar(this, p); // 0.19.0: ForaDaRun a quem chegou depois
                     if (p.Compativel && jogadorLocal != null)
@@ -645,10 +693,17 @@ namespace HellClockCoop.Net
                 case Protocolo.TipoTchau:
                     RemoverPar(p, "saiu do coop");
                     break;
-                case Protocolo.TipoExpulso: // 0.18.0: só vale do dono do lobby
-                    if (!Salas.ExpulsaoValida(de.m_SteamID, SteamMatchmaking.GetLobbyOwner(Lobby).m_SteamID, Eu.m_SteamID)) break;
+                case Protocolo.TipoExpulso: // 0.18.0: só vale do dono do lobby; 0.21.1: com run aberta, do host dela
+                    if (!Salas.ExpulsaoValida(de.m_SteamID, IdDoHost, Eu.m_SteamID)) break;
                     _salasQueMeExpulsaram.Add(Lobby.m_SteamID);
                     Sair("expulso pelo host");
+                    break;
+                case Protocolo.TipoExpulsoAviso: // 0.21.1: o host expulsou um terceiro
+                    ExpulsoAviso av = ExpulsoAviso.Desserializar(dados);
+                    if (!Validacao.AvisoExpulsaoValido(de.m_SteamID, IdDoHost, av.SteamId, Eu.m_SteamID)) break;
+                    if (!EhMembro(new CSteamID(av.SteamId))) break; // só de quem está no lobby (id inventado não enche a lista)
+                    if (!_expulsos.Add(av.SteamId)) break;
+                    if (Pares.TryGetValue(av.SteamId, out Par expulso)) RemoverPar(expulso, "foi expulso pelo host");
                     break;
                 case Protocolo.TipoPlanoAndar:
                 case Protocolo.TipoSpawnAndar:
@@ -734,6 +789,7 @@ namespace HellClockCoop.Net
                 return;
             }
             PlayerSnapshot s = PlayerSnapshot.Desserializar(dados);
+            if (!Validacao.SnapshotValido(s)) return; // 0.21.1: NaN/infinito ou posição absurda (20 Hz: descarta sem log)
             if (p.UltimoPacote < 0f)
             {
                 Plugin.Log.LogInfo($"[Sessão] Primeiro snapshot de {p.Nome} ({dados.Length} bytes): cena {s.CenaHash}, andar {s.Andar}. Sua cena: {cenaLocal}.");

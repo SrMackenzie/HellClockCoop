@@ -216,6 +216,10 @@ ESTADO ATUAL (versão de teste, Fase 3)
   O menu do coop agora abre direto na aba Salas, numa janela maior, com cada sala em 2 linhas
   (host, nível e vagas em cima; lugar e motivo de indisponível embaixo). Exige a 0.21.0 em
   todos os PCs.
+- NOVO (0.21.1): mais segurança nas salas. O host da sua run fica fixo até ela acabar: se ele
+  sair no meio, quem herdar a sala não comanda a sua run. Quem o host expulsa deixa de falar com
+  todos do coop. Baús, vasos e santuários só valem do host; inimigos, chefes e baús têm teto por
+  andar, e valores fora do jogo são recusados. Exige a 0.21.1 em todos os PCs.
 - A Deluxe Edition (cosmética) não importa.
 
 

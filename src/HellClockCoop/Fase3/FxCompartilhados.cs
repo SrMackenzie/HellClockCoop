@@ -735,6 +735,8 @@ namespace HellClockCoop.Fase3
 
         public static void Receber(SessaoCoop sessao, Par de, byte[] dados)
         {
+            // 0.21.1: efeito novo ou que se move só de quem está no mesmo andar (o fim passa sempre: só remove a cópia).
+            if (dados[0] != Protocolo.TipoFxFim && !de.MesmoAndar) return;
             try
             {
                 Remetente r = DePar(de);

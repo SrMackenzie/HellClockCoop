@@ -276,6 +276,8 @@ No fantasma, a troca de estado usa `CrossFade` curto, e o mesmo estado com mais 
 | 10 | `Hello` | protocolo, versão do mod e do jogo, nome, `JaTeOuvi` |
 | 11 | `Aparencia` | ativo/inativo dos nós até 2 níveis sob `Pajeu_RIG_360/Mesh` |
 | 12 | `Tchau` | saída voluntária |
+| 13 | `Expulso` (0.18.0) | sem campos: o host tira o convidado da sala |
+| 14 | `ExpulsoAviso` (0.21.1) | SteamID do expulso, aos outros convidados |
 
 **Visibilidade:** o avatar de um aliado só aparece se `CenaHash` for igual nos dois lados e válida (-1 = carregando). Ao reaparecer, o buffer de interpolação é zerado para não "voar" de um andar a outro. Sem pacote por 5 s, o avatar some.
 
@@ -1334,6 +1336,68 @@ janela maior (visual A das 3 opções: lista larga, com cada sala em 2 linhas).
 - codectest: golpes sem DLC, `SalaVisivel` sem DLC, as 2 linhas da sala, a marca da DLC, `PrecisaDaDlc`,
   `SalaIndisponivel` e os textos novos.
 
+### 12.11 Lista de salas, etapa 3/3 parte 2: host fixo, expulsão avisada e tetos (versão 0.21.1, protocolo 21)
+
+Segunda fatia da segurança das salas (decisões do autor de 23/11/2026, §12.9): tetos valem para todos (amigos e
+desconhecidos), folgados, fixos no código; **sem teto de dano de golpe**.
+
+**Host fixo da run.** `SessaoCoop._hostDaRun` guarda o SteamID do host enquanto o convidado está numa run com ele
+(`RunCompartilhada.Atualizar` chama `FixarHostDaRun` com a run aberta e `SoltarHostDaRun` fora dela; o `FimRun` também
+solta, e `Sair` zera). `SessaoCoop.IdDoHost` (`Validacao.HostEfetivo`) é, sem run, o dono do lobby e, com run, o host
+dela só enquanto ainda é o dono; se o lobby mudou de dono no meio da run, ninguém (0); `Host` (e por ele `ModoConvidado`,
+os planos, inimigos, baús, santuários e o fim da run) e a validade do `Expulso` passam a usar `IdDoHost`. Se o host sai
+no meio e a Steam passa o lobby a outro membro (até a um expulso que ignorou o `Expulso`), o novo dono não comanda a run
+aberta de ninguém, e o host original que sai e volta como membro comum também não (auditoria: ele poderia expulsar o
+novo dono); a run segue sem novos andares do host e, na volta ao hub, vale o dono do lobby de novo. Se a Steam passa o
+lobby a um expulso, o convidado recebe um aviso único para sair e entrar em outra sala.
+
+**Expulsão avisada.** Mensagem nova `ExpulsoAviso` (tipo 14, 8 bytes do SteamID): o host manda aos outros convidados
+compatíveis ao expulsar, a quem chega depois (Hello) e de novo a cada 2 s, junto com o reenvio do `Expulso`, enquanto
+o expulso está no lobby (quem estava com outro host fixado recusou o primeiro; repetido não tem efeito). Quem recebe confere
+`Validacao.AvisoExpulsaoValido` (do `IdDoHost`, sobre um terceiro), põe o id em `_expulsos` e remove o par: sem
+avatar, sem conversa, fora da escala. `AtualizarMembros` já pulava `_expulsos`; o convidado também recusa pedido de
+sessão de um expulso (o host aceita, porque é por ela que o `Expulso` chega). Quem herdar o lobby já reenvia o `Expulso`
+aos expulsos que ainda estão nele.
+
+**Mensagens do host revistas.**
+- `PlanoAndar.AndarEspecial`: só 0, `DesertShortcut` (1) e `LaboratoryShortcut` (2) (`Validacao.AndarEspecialValido`).
+  O plano de atalho não passa pelas travas de progresso e de DLC (§12.8, §12.10); `Sandbox` (3) e valores fora do enum
+  eram uma porta para pular as duas (auditoria da 0.21.0).
+- `SpawnAndar`: índice negativo é descartado ao chegar; o teto (`PlayerSpawnInfos` do andar) é conferido em
+  `RunCompartilhada.AjustarSpawn` (`Validacao.SpawnValido`), que agora devolve se ajustou; fora dele, fica o spawn
+  sorteado aqui e o reposicionamento não roda.
+- `InimigosEstado`: posição finita e dentro do teto (`PosicaoValida`) também para a réplica viva, não só a pendente.
+- `AndarLimpo`: o jogo dispara `_onAllEnemiesCleared` toda vez que os inimigos não opcionais chegam a 0
+  (`EnemyManager.RemoveEnemy`; escutam o `ClearFloorTrigger` e o portal de chefe). No convidado, repetido no mesmo
+  andar só vale se o host criou inimigos depois do último (`Validacao.AndarLimpoNovo`; zera no hub e ao sair).
+- Teto por andar no convidado, contado na criação (`InimigosCompartilhados.CriarPendentes`) e zerado ao trocar de andar:
+  `InimigosPorAndarMaximo` = 6000 e `ChefesPorAndarMaximo` = 16 (`EEnemyType` Boss 3 e Unique 6); baús,
+  `BausPorAndarMaximo` = 32 (`ObjetosCompartilhados.CriarBau`). **Calibração:** o IL da 2.1.1.1 não tem as quantidades:
+  vêm de assets (`LevelDefinition._enemySpawnCompositions`, `EnemySpawnComposition._eliteEnemyRange`,
+  `SurvivalSpawnConfig._totalToEndWave`/`_waves`/`_maxSpawn`, um chefe por sobrevivência em `_boss`/`_randomBossPool`;
+  `LevelDefinition._chestsRangeAmount` mais o baú do santuário amaldiçoado). Os tetos ficam bem acima do dobro de um
+  andar comum ou de sobrevivência, e o convidado registra no log o total de cada andar
+  (`[Inimigos] Andar N: X inimigos do host (Y chefes)` e `[Objetos] Andar N: X baús do host`) para conferir nos testes e
+  ajustar se preciso.
+
+**Mensagens dos pares revistas.**
+- `BauAberto`, `Quebrou` e `ObjetoUsado`: o convidado só obedece ao host (o que outro convidado fez chega repassado por
+  ele); o host aceita de quem está no mesmo andar (`Validacao.OrdemDeObjetoAceita`, `ObjetosCompartilhados.OrdemAceita`).
+- `TimerBonus`: só com a run do host aberta e de quem divide a run (compatível e fora de `ForaDaEscala`,
+  `Validacao.BonusDoParAceito`).
+- `StatusInimigos`: exige também o mesmo andar, como os golpes.
+- `FxNovo`, `FxMovimento`, `FxNos` e `DanosVistos`: só de quem está no mesmo andar (o `FxFim` passa sempre: só remove a
+  cópia).
+- Limite: `MesmoAndar` vem do `CenaHash` que o próprio par declara no snapshot. As checagens de mesmo andar evitam
+  efeito errado por atraso ou troca de andar, mas não barram um cliente alterado (o impacto é pequeno: cada um saqueia o
+  próprio baú, e a purificação segue só do host).
+- Snapshot: `Validacao.SnapshotValido` recusa tempo, posição (teto de 100 000), rotações, tempos e floats dos animators
+  e rotações dos ossos NaN ou infinitos, sem log (20 Hz).
+
+**Protocolo 21** (mensagem nova). codectest: ida e volta do `ExpulsoAviso`, `AvisoExpulsaoValido`, `Expulso` do novo dono
+recusado com a run aberta, `HostEfetivo`, atalhos, spawn, tetos de inimigos/chefes/baús, `AndarLimpo` (repetido só com inimigos novos), ordens de objeto,
+bônus de tempo e snapshots com NaN/infinito.
+
 ## 13. Atualizador automático (versão 0.8.0)
 
 **Onde roda.** `BepInEx\patchers\HellClockCoop.Atualizador.dll`, um preloader patcher do BepInEx 5 sem DLL alvo: só o
@@ -1418,20 +1482,24 @@ filtros puros ficam em `Net/Validacao.cs` e têm casos no `tools/codectest`.
 
 | Mensagem | Quem aceita | Filtro |
 |---|---|---|
-| `PlanoAndar` | convidado, só do host | `IndiceAndar < DungeonConfig.GetByID(DungeonHash).MaxLevelIndex` (`MaxLevelIndex` é a quantidade de andares: o jogo usa `IsLastLevel = índice + 1 >= MaxLevelIndex`); dungeon desconhecida é descartada; andar especial (sem dungeon): até 200. Aviso no log |
+| `PlanoAndar` | convidado, só do host | `IndiceAndar < DungeonConfig.GetByID(DungeonHash).MaxLevelIndex` (`MaxLevelIndex` é a quantidade de andares: o jogo usa `IsLastLevel = índice + 1 >= MaxLevelIndex`); dungeon desconhecida é descartada; andar especial (sem dungeon): até 200; desde a 0.21.1, `AndarEspecial` só 0, 1 ou 2 (`Validacao.AndarEspecialValido`, §12.11). Aviso no log |
+| `SpawnAndar` | convidado, só do host | índice negativo descartado ao chegar; ao usar, de 0 ao total de `PlayerSpawnInfos` do andar menos 1 (`Validacao.SpawnValido`, 0.21.1). Aviso no log |
 | `FimRun` | convidado, só do host | `Motivo` dentro de `EGameOverSource` (0..4). Aviso no log |
 | `PedidoAvanco` (0.15.0) | host, só caído, com a run em andamento e sem troca de andar, de par compatível e no mesmo andar (até a 0.20.0, também com a mesma DLC) | `IndiceAndar` igual ao andar atual do host (pedido repetido ou atrasado é recusado), `Andares` ≥ 1 (o host limita a 3) e nunca no último andar, onde o avanço viraria `FinishDungeon(Completed)` no save do host (`Validacao.PedidoAvancoValido`); um avanço aceito por andar (o Endless Nightmare gera o bloco seguinte de forma assíncrona); o host chama `AdvanceLevel(n, false)` e o jogo ainda limita pelo máximo dele. O convidado manda no máximo um a cada 2 s. Log de recusa no máximo a cada 5 s |
 | `Reanimando` (0.16.0) | todos, de par compatível, no mesmo andar e de pé (até a 0.20.0, também com a mesma DLC), com a run em andamento | andar igual ao seu, estado 0 a 2 e fração finita de 0 a 1 (`Validacao.ReanimandoValido`); o alvo é você caído ou um aliado caído na run (outro alvo é descartado, para não ocupar memória). Só aparece na tela; não muda nada do jogo |
 | `Reanimou` (0.16.0) | todos, com os mesmos filtros do `Reanimando` | andar igual ao seu e alvo diferente de quem mandou (ninguém se levanta sozinho). A conta do andar fica com o maior `Ordem` visto, subindo no máximo um (`Validacao.OrdemReanimacao`). Com o alvo na run (caído ou já de pé), todos esquecem a queda já vista dele (a próxima avisa de novo e o host volta a cobrar). Para o caído: ele precisa estar caído e quem mandou a até 2 m + 2 m de folga (atraso do snapshot), pela posição do avatar (`Validacao.ReanimouValido`); sem avatar, recusa. Para os outros: o alvo precisa jogar a run. Efeito: o caído levanta com `VidaAoReanimar` e todos contam a reanimação do andar |
 | `Marcador` (0.17.0) | todos, de par compatível, no mesmo andar (pela cena do snapshot), com o seu personagem no mundo | cena conhecida e igual à sua, mesmo índice de andar (fora da run, 4294967295 dos dois lados), coordenadas finitas até 100 000 e o ponto a até 30 m + 10 m de folga do avatar de quem marcou no chão e até 10 m de desnível (`Validacao.MarcadorValido`; sem avatar, recusa). Do mesmo par, um marcador a cada 0,5 s no máximo, e só 1 guardado por par. Só aparece na tela; não muda nada do jogo |
-| `Expulso` (0.18.0) | convidado, só do dono do lobby (nunca de si mesmo) | sem campos; sai do coop e esconde a sala da lista (`Salas.ExpulsaoValida`) |
-| `TimerBonus` | host | finito, `> 0` e `<= 120 s`; desde a 0.8.5, também no máximo 120 s e 120 bônus somados por convidado (chave: SteamID, para sair e voltar ao lobby não zerar) numa janela fixa de 60 s (`Validacao.AceitarBonusNaJanela`; o recusado não conta; na virada da janela até o dobro passa em sequência, a média fica no teto). Um aviso de recusa por janela |
+| `Expulso` (0.18.0) | convidado, só do dono do lobby (nunca de si mesmo); desde a 0.21.1, com a run aberta, só do host dela e enquanto ele é o dono (`SessaoCoop.IdDoHost`) | sem campos; sai do coop e esconde a sala da lista (`Salas.ExpulsaoValida`) |
+| `ExpulsoAviso` (0.21.1) | convidado, só do host (`IdDoHost`) | o SteamID é de um terceiro (nem de quem manda nem de quem recebe; `Validacao.AvisoExpulsaoValido`); o expulso sai dos pares e fica sem conversa (§12.11) |
+| `TimerBonus` | host; desde a 0.21.1, só com a run aberta e de par compatível dentro da escala (`Validacao.BonusDoParAceito`) | finito, `> 0` e `<= 120 s`; desde a 0.8.5, também no máximo 120 s e 120 bônus somados por convidado (chave: SteamID, para sair e voltar ao lobby não zerar) numa janela fixa de 60 s (`Validacao.AceitarBonusNaJanela`; o recusado não conta; na virada da janela até o dobro passa em sequência, a média fica no teto). Um aviso de recusa por janela |
 | `TimerSync` | convidado, só do host | os dois campos finitos e `>= 0` (4 Hz: descarte sem log) |
-| `InimigoSpawn`, `InimigosEstado`, `InimigoMorte`, `InimigoSumiu`, `AndarLimpo`, `InimigoAjuste` | convidado, só do host | — |
-| `BauSpawn`, `ObjetoSpawn` | convidado, só do host | — |
-| `ObjetoUsado` | qualquer par | `Estado = Concluido` (purificação) só do host. Aviso no log |
-| `BauAberto`, `Quebrou`, `ObjetoUsado` (`Usado`) | qualquer par | — (o host repassa) |
-| `StatusInimigos` (0.9.0) | host, de convidado compatível (até a 0.20.0, também com a mesma DLC) | duração e intensidade finitas e `> 0`, pelo menos 1 pilha (`Validacao.StatusValido`); duração limitada a 30 s, intensidade a 1–10 e pilhas ao `MaxStacks` (sem ele, 10; status que não acumula pilhas, `CanStack` falso, 1); mais de 512 itens recusa a mensagem; status desconhecido ou que não é de controle recusado (desde a 0.9.1, modificador de atributo só se for lentidão; seção 11.4). No máximo 20 avisos por convidado na sessão |
+| `PlayerSnapshot` | qualquer par compatível | desde a 0.21.1, tempo, posição (teto de 100 000), rotações, tempos e floats dos animators e ossos finitos (`Validacao.SnapshotValido`, §12.11; 20 Hz: descarte sem log) |
+| `FxNovo`, `FxMovimento`, `FxNos`, `DanosVistos` | qualquer par compatível; desde a 0.21.1, só do mesmo andar (o `FxFim` passa sempre) | §12.11 |
+| `InimigoSpawn`, `InimigosEstado`, `InimigoMorte`, `InimigoSumiu`, `AndarLimpo`, `InimigoAjuste` | convidado, só do host | valores do spawn e do ajuste (0.20.0, §12.9); desde a 0.21.1: até 6000 inimigos e 16 chefes (Boss e Unique) criados por andar, posição do `InimigosEstado` finita e dentro do teto também na réplica viva, `AndarLimpo` repetido no mesmo andar só com inimigos novos (§12.11) |
+| `BauSpawn`, `ObjetoSpawn` | convidado, só do host | `ObjetoSpawn`: valores e teto por andar (0.20.0); `BauSpawn`: até 32 baús por andar (0.21.1) |
+| `ObjetoUsado` | convidado, só do host; host, de quem está no mesmo andar (0.21.1; até a 0.21.0, qualquer par) | `Estado = Concluido` (purificação) só do host. Aviso no log |
+| `BauAberto`, `Quebrou`, `ObjetoUsado` (`Usado`) | convidado, só do host; host, de quem está no mesmo andar (0.21.1, `Validacao.OrdemDeObjetoAceita`; até a 0.21.0, qualquer par) | — (o host repassa) |
+| `StatusInimigos` (0.9.0) | host, de convidado compatível e, desde a 0.21.1, no mesmo andar (até a 0.20.0, também com a mesma DLC) | duração e intensidade finitas e `> 0`, pelo menos 1 pilha (`Validacao.StatusValido`); duração limitada a 30 s, intensidade a 1–10 e pilhas ao `MaxStacks` (sem ele, 10; status que não acumula pilhas, `CanStack` falso, 1); mais de 512 itens recusa a mensagem; status desconhecido ou que não é de controle recusado (desde a 0.9.1, modificador de atributo só se for lentidão; seção 11.4). No máximo 20 avisos por convidado na sessão |
 | `SonsAliado`, `SonsFim` (0.11.0) | qualquer par compatível no mesmo andar, com avatar | GUID não nulo de evento 3D deste jogo (não snapshot), ponto finito a até 40 m do avatar, até 40 sons/s por aliado, até 64 itens e 4 parâmetros (nome de 1–64 letras, valor finito) por som; som que dura só com Id, até 64 por aliado, parado em 20 s (seção 11.6). Aviso a cada 5 s no máximo |
 | `GolpesVistos` (0.11.0) | qualquer par compatível no mesmo andar | `EFxOnDamage` e tipos só com bits conhecidos, principal entre os presentes, vetores finitos, ponto a até 10 m do inimigo, inimigo a até 40 m do avatar, até 120/s por aliado. Aviso a cada 5 s no máximo |
 | `Golpes` (0.8.5) | host, de qualquer convidado | dano finito e `> 0` (`Validacao.DanoValido`); NaN ou infinito mataria qualquer inimigo. Valor finito grande segue aceito: o dano do convidado é confiável (seção 2). Descarte sem log (20 Hz) |

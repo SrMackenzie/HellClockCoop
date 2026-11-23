@@ -4,6 +4,16 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.21.1 — Lista de salas (3/3, parte 2): host fixo e expulsão avisada 🧪
+_23/11/2026_
+
+- O host da sua run fica fixo até ela acabar: se ele sai no meio e a sala passa a outro jogador, esse jogador não comanda a sua run (andares, inimigos, fim da run, expulsão)
+- Quem o host expulsa deixa de falar com todos do coop, não só com o host, inclusive com quem entra depois
+- Baús, vasos e santuários só valem do host; no host, só de quem está no mesmo andar. Bônus de tempo só de quem divide a run
+- Teto por andar do que o host cria no seu jogo: inimigos, chefes e baús; o "andar limpo" repetido só vale com inimigos novos; o seu log mostra quantos inimigos e baús cada andar teve
+- Atalhos só os dois do jogo (deserto e laboratório); spawn, posições de inimigos, efeitos, números de dano e snapshots com valores fora do jogo ou de outro andar são recusados
+- Exige a 0.21.1 em todos os PCs (protocolo 21)
+
 ## 0.21.0 — Salas: DLC Cursed War e menu maior 🧪
 _23/11/2026_
 

@@ -824,9 +824,9 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Checar((bool)Sm("PodeBuscar", 10f, -1f) && !(bool)Sm("PodeBuscar", 10f, 8f) && (bool)Sm("PodeBuscar", 11f, 8f),
         "Salas: nova busca só 3 s depois da anterior");
     var tp = T("HellClockCoop.Net.Protocolo");
-    Checar((int)tp.GetField("Versao").GetValue(null) == 20 && (byte)tp.GetField("TipoExpulso").GetValue(null) == 13
-           && (byte)tp.GetField("TipoForaDaRun").GetValue(null) == 29,
-        "Protocolo 20 com Expulso tipo=13 (1 byte) e ForaDaRun tipo=29 (0.19.0)");
+    Checar((int)tp.GetField("Versao").GetValue(null) == 21 && (byte)tp.GetField("TipoExpulso").GetValue(null) == 13
+           && (byte)tp.GetField("TipoExpulsoAviso").GetValue(null) == 14 && (byte)tp.GetField("TipoForaDaRun").GetValue(null) == 29,
+        "Protocolo 21 com Expulso tipo=13 (1 byte), ExpulsoAviso tipo=14 (0.21.1) e ForaDaRun tipo=29 (0.19.0)");
 
     // 0.19.0: trava pelo progresso (maxFloorReached conta a partir de 1, como o andar do lobby)
     Checar((int)Sm("LerHash", "-123456789") == -123456789 && (int)Sm("LerHash", "2147483647") == 2147483647
@@ -901,6 +901,76 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
         for (int i = 0; i < passos; i++) soma += E(v, f, (i + 0.5) / passos);
         Checar(Math.Abs(soma / passos - v * f) < 1e-3, $"Escalar: média de {v} × {f} = {soma / passos:0.####} (esperado {v * f:0.####})");
     }
+}
+
+// 0.21.1: segurança das salas, fatia 3a-2
+{
+    var tv = T("HellClockCoop.Net.Validacao");
+    bool V(string m, params object[] a) => (bool)tv.GetMethod(m).Invoke(null, a);
+
+    var av = IdaVolta("ExpulsoAviso", new (string, object)[] { ("SteamId", 76561198000000001ul) }, 14);
+    Checar(((byte[])T("HellClockCoop.Net.ExpulsoAviso").GetMethod("Serializar").Invoke(av, null)).Length == 9, "ExpulsoAviso: 1 byte de tipo + 8 do SteamID");
+    try { T("HellClockCoop.Net.ExpulsoAviso").GetMethod("Desserializar").Invoke(null, new object[] { new byte[] { 13 } }); Checar(false, "Expulso lido como ExpulsoAviso deveria falhar"); }
+    catch (TargetInvocationException e) { Checar(e.InnerException is FormatException || e.InnerException is System.IO.EndOfStreamException, "ExpulsoAviso: Expulso (tipo 13) não é lido como aviso"); }
+    Checar(V("AvisoExpulsaoValido", 5ul, 5ul, 7ul, 9ul), "ExpulsoAviso: do host sobre um terceiro vale");
+    Checar(!V("AvisoExpulsaoValido", 6ul, 5ul, 7ul, 9ul) && !V("AvisoExpulsaoValido", 0ul, 0ul, 7ul, 9ul),
+        "ExpulsoAviso: de quem não é o host (ou id 0) é recusado");
+    Checar(!V("AvisoExpulsaoValido", 5ul, 5ul, 9ul, 9ul) && !V("AvisoExpulsaoValido", 5ul, 5ul, 5ul, 9ul) && !V("AvisoExpulsaoValido", 5ul, 5ul, 0ul, 9ul),
+        "ExpulsoAviso: sobre nós mesmos, sobre o próprio host ou id 0 é recusado");
+    Checar(!(bool)T("HellClockCoop.Net.Salas").GetMethod("ExpulsaoValida").Invoke(null, new object[] { 6ul, 5ul, 9ul }),
+        "Host fixo: com a run aberta do host 5, Expulso do novo dono do lobby (6) não vale");
+
+    Checar(V("AndarEspecialValido", 0) && V("AndarEspecialValido", 1) && V("AndarEspecialValido", 2), "Atalho: nenhum, DesertShortcut (1) e LaboratoryShortcut (2) passam");
+    Checar(!V("AndarEspecialValido", 3) && !V("AndarEspecialValido", -1) && !V("AndarEspecialValido", 99) && !V("AndarEspecialValido", int.MinValue),
+        "Atalho: Sandbox (3) e valores fora do enum são recusados (não pulam as travas de progresso e DLC)");
+    Checar(V("SpawnValido", 0, 3) && V("SpawnValido", 2, 3) && !V("SpawnValido", 3, 3) && !V("SpawnValido", -1, 3) && !V("SpawnValido", int.MinValue, 3) && !V("SpawnValido", 0, 0),
+        "SpawnAndar: índice só de 0 a total-1");
+
+    int maxI = (int)tv.GetField("InimigosPorAndarMaximo").GetValue(null), maxC = (int)tv.GetField("ChefesPorAndarMaximo").GetValue(null);
+    Checar(V("InimigoCabeNoAndar", 0, 0, (byte)0) && V("InimigoCabeNoAndar", maxI - 1, maxC, (byte)0) && !V("InimigoCabeNoAndar", maxI, 0, (byte)0),
+        $"Inimigos: até {maxI} por andar (comuns não contam no teto de chefes)");
+    Checar(V("InimigoCabeNoAndar", 10, maxC - 1, (byte)3) && !V("InimigoCabeNoAndar", 10, maxC, (byte)3) && !V("InimigoCabeNoAndar", 10, maxC, (byte)6)
+           && V("InimigoCabeNoAndar", 10, maxC, (byte)2), $"Inimigos: até {maxC} chefes (Boss 3 e Unique 6) por andar; campeão (2) não conta");
+    int maxB = (int)tv.GetField("BausPorAndarMaximo").GetValue(null);
+    Checar(V("BauCabeNoAndar", 0) && V("BauCabeNoAndar", maxB - 1) && !V("BauCabeNoAndar", maxB), $"Baús: até {maxB} por andar");
+    Checar(V("AndarLimpoNovo", 0u, -1L, 0, 0) && V("AndarLimpoNovo", 4u, 3L, 0, 9) && !V("AndarLimpoNovo", 4u, 4L, 9, 9),
+        "AndarLimpo: no andar novo dispara; repetido no mesmo andar sem inimigos novos, não");
+    Checar(V("AndarLimpoNovo", 4u, 4L, 12, 9), "AndarLimpo: no mesmo andar, de novo depois de inimigos novos (ondas, chefe)");
+    ulong HE(ulong run, ulong dono) => (ulong)tv.GetMethod("HostEfetivo").Invoke(null, new object[] { run, dono });
+    Checar(HE(0, 5) == 5 && HE(5, 5) == 5, "Host fixo: sem run, o dono do lobby; com run, o host dela enquanto é o dono");
+    Checar(HE(5, 6) == 0 && !(bool)tv.GetMethod("AvisoExpulsaoValido").Invoke(null, new object[] { 5ul, HE(5, 6), 6ul, 9ul }),
+        "Host fixo: lobby trocou de dono no meio da run → ninguém manda (nem o host que saiu e voltou expulsa o novo dono)");
+
+    Checar(V("OrdemDeObjetoAceita", false, true, true, false) && !V("OrdemDeObjetoAceita", false, true, false, true),
+        "Baú/quebrável/santuário: o convidado só obedece ao host");
+    Checar(V("OrdemDeObjetoAceita", true, false, false, true) && !V("OrdemDeObjetoAceita", true, false, false, false),
+        "Baú/quebrável/santuário: o host aceita de quem está no mesmo andar");
+    Checar(!V("OrdemDeObjetoAceita", false, false, true, true), "Baú/quebrável/santuário: fora do coop da run, nada");
+    Checar(V("BonusDoParAceito", true, true, false) && !V("BonusDoParAceito", false, true, false) && !V("BonusDoParAceito", true, false, false) && !V("BonusDoParAceito", true, true, true),
+        "TimerBonus: só com a run aberta, do par compatível e dentro da escala");
+
+    var tSn = T("HellClockCoop.Net.PlayerSnapshot");
+    object Snap(Action<object> ajuste)
+    {
+        var o = Activator.CreateInstance(tSn);
+        tSn.GetField("Rotacao").SetValue(o, new UnityEngine.Quaternion(0, 0, 0, 1)); tSn.GetField("RotacaoModelo").SetValue(o, new UnityEngine.Quaternion(0, 0, 0, 1));
+        tSn.GetField("Posicao").SetValue(o, new UnityEngine.Vector3(10, 0, -5));
+        ajuste(o);
+        return tSn.GetMethod("Desserializar").Invoke(null, new object[] { (byte[])tSn.GetMethod("Serializar").Invoke(o, null) });
+    }
+    bool SV(object o) => (bool)tv.GetMethod("SnapshotValido").Invoke(null, new[] { o });
+    Checar(SV(Snap(o => { })), "Snapshot: valores normais passam");
+    Checar(!SV(Snap(o => tSn.GetField("Posicao").SetValue(o, new UnityEngine.Vector3(float.NaN, 0, 0)))) && !SV(Snap(o => tSn.GetField("Posicao").SetValue(o, new UnityEngine.Vector3(0, 2e5f, 0)))),
+        "Snapshot: posição NaN ou além do teto recusada");
+    Checar(!SV(Snap(o => tSn.GetField("Tempo").SetValue(o, float.PositiveInfinity))) && !SV(Snap(o => tSn.GetField("Rotacao").SetValue(o, new UnityEngine.Quaternion(float.NaN, 0, 0, 1)))),
+        "Snapshot: tempo infinito ou rotação NaN recusados");
+    var tFr = T("HellClockCoop.Net.AnimatorFrame");
+    Checar(!SV(Snap(o => { ((bool[])tSn.GetField("AnimatorAtivo").GetValue(o))[1] = true; var fr = ((Array)tSn.GetField("Animators").GetValue(o)).GetValue(1);
+                         tFr.GetField("StateHashes").SetValue(fr, new[] { 1 }); tFr.GetField("NormalizedTimes").SetValue(fr, new[] { 0.5f }); tFr.GetField("LayerWeights").SetValue(fr, new[] { 1f });
+                         tFr.GetField("Floats").SetValue(fr, new[] { float.NaN }); })),
+        "Snapshot: float de animator NaN recusado");
+    Checar(!SV(Snap(o => { tSn.GetField("MascaraOssos").SetValue(o, (byte)1); ((UnityEngine.Quaternion[])tSn.GetField("RotacoesOssos").GetValue(o))[0] = new UnityEngine.Quaternion(0, float.NegativeInfinity, 0, 1); })),
+        "Snapshot: rotação de osso infinita recusada");
 }
 
 Console.WriteLine(falhas == 0 ? "\nTODOS OS TESTES PASSARAM" : $"\n{falhas} FALHA(S)");
