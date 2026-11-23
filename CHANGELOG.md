@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.18.0 — Lista de salas (1/3): salas públicas 🧪
+_22/11/2026_
+
+- Nova aba Salas no menu do coop: as salas públicas do mundo inteiro com a mesma versão do mod e a mesma DLC Cursed War, com host, lugar (hub ou ato e andar), nível do host e vagas
+- Escolha uma sala para entrar, também com a run em andamento (você entra no andar do host). Salas cheias, de outra versão ou de outra DLC não aparecem
+- O coop novo nasce como sala pública. O interruptor "Sala pública" da aba Sessão a deixa só para amigos (por convite); como host, muda a sala na hora. Fica no .cfg, em [Coop] SalaPublica
+- O host pode expulsar: na seção Aliados, "Expulsar <nome>" e confirmar. Quem foi expulso sai e não volta à mesma sala
+- Exige a 0.18.0 em todos os PCs (protocolo 19)
+
 ## 0.17.0 — Marcador no chão (ping) 🧪
 _22/11/2026_
 

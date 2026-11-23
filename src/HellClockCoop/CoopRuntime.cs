@@ -62,6 +62,7 @@ namespace HellClockCoop
             Balanceamento.Envio.Configurar(config);
             Interface.Novidades.Configurar(config);
             Interface.MenuCoop.Configurar(config);
+            SessaoCoop.Configurar(config); // 0.18.0: sala pública ou privada
 
             var go = new GameObject("HellClockCoop_Runtime");
             DontDestroyOnLoad(go);

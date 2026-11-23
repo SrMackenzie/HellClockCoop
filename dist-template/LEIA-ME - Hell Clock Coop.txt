@@ -189,6 +189,12 @@ ESTADO ATUAL (versão de teste, Fase 3)
   controle, o R3 marca à sua frente). Todos do grupo veem a seta no ponto por 5 s, com o nome de
   quem marcou na cor dele; fora da tela, a seta fica na borda com a distância. Cada um tem 1
   marcador (marcar de novo move o antigo). Exige a 0.17.0 em todos os PCs.
+- NOVO (0.18.0): LISTA DE SALAS. O coop novo nasce como sala pública (interruptor "Sala pública"
+  na aba Sessão; desligado = só amigos, por convite). A aba Salas do menu do coop mostra as salas
+  públicas do mundo inteiro com a mesma versão do mod e a mesma DLC Cursed War: host, onde está
+  (hub ou ato e andar), nível do host e vagas. Escolha uma para entrar, também com a run em
+  andamento. O host pode expulsar (seção Aliados, dois toques); quem foi expulso não volta à mesma
+  sala. Exige a 0.18.0 em todos os PCs.
 - Com alguém no coop, abrir inventário, mapa ou o menu NÃO pausa o jogo.
 - Convidado: os portais, o início de run e o "abandonar run" são do host. Para sair da run
   sozinho, abra o menu do coop (F7), escolha "Sair do coop" e depois use o menu normalmente.
@@ -226,12 +232,14 @@ Quem é convidado:
 - Com o jogo aberto: aceite o convite que aparece na Steam (notificação ou chat).
 - Com o jogo fechado: aceitar o convite abre o jogo e entra no coop sozinho.
 - Também dá para clicar no nome do amigo na lista de amigos da Steam > "Entrar no jogo".
+- Sem convite: F7 > aba Salas > escolha uma sala pública (desde a 0.18.0).
 Depois, entre num save. Quando os dois estiverem no mesmo lugar, um aparece para o outro,
 com o nome da Steam em cima da cabeça.
 
 Teclas (dá para trocar em BepInEx\config\br.srmackenzie.hellclockcoop.cfg):
   F7  menu do coop (no controle: View/Select; também o botão "Coop" do menu do jogo e da pausa):
-      abas Sessão (criar, convidar, sair, modo eco), Ajustes e Novidades
+      abas Sessão (sala pública, criar, convidar, expulsar, sair, modo eco), Salas (salas
+      públicas para entrar), Ajustes e Novidades
       No menu: setas ou direcional escolhem, LB/RB trocam de aba, setas laterais trocam de aba
       ou mexem na barra focada, Enter ou A confirma, Esc, B ou F7 fecham.
   F8  modo eco: um "fantasma" seu repete o que você faz (teste sem amigos)

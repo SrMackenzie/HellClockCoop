@@ -655,8 +655,73 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Checar(R(true, true, true, false) == "Fechar" && R(true, true, true, true) == "Ficar", "Novidades: na aba, a F10 fecha e a abertura automática não");
     Checar(Lib(5f, 0f) && !Lib(5f, 6.5f) && Lib(6.5f, 6.5f), "Menu: Esc, B e [X] só fecham depois da espera da abertura automática");
     var nomesAbas = (string[])tM.GetField("NomesDasAbas", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
-    Checar(nomesAbas.Length == 3 && nomesAbas[2] == "Novidades" && Enum.GetNames(T("HellClockCoop.Interface.MenuCoop+Aba")).Length == 3,
-        "Menu: três abas (Sessão, Ajustes, Novidades) com nome para cada uma");
+    var tAba = T("HellClockCoop.Interface.MenuCoop+Aba");
+    Checar(nomesAbas.Length == 4 && nomesAbas[1] == "Salas" && nomesAbas[3] == "Novidades" && Enum.GetNames(tAba).Length == 4
+           && (int)Enum.Parse(tAba, "Salas") == 1 && (int)Enum.Parse(tAba, "Novidades") == 3,
+        "Menu: quatro abas (Sessão, Salas, Ajustes, Novidades) com nome para cada uma, na ordem do enum");
+
+    // 0.18.0: faixas de ação (Sala0 + i, Expulsar0 + i) sem colidir com as ações fixas
+    var tAcao = T("HellClockCoop.Interface.MenuCoop+Acao");
+    var faixa = tM.GetMethod("IndiceNaFaixa", BindingFlags.Static | BindingFlags.NonPublic);
+    object Ac(int v) => Enum.ToObject(tAcao, v);
+    int Fx(int acao, string inicio, int tam) => (int)faixa.Invoke(null, new object[] { Ac(acao), Enum.Parse(tAcao, inicio), tam });
+    int sala0 = (int)Enum.Parse(tAcao, "Sala0"), exp0 = (int)Enum.Parse(tAcao, "Expulsar0");
+    int maiorFixa = Enum.GetValues(tAcao).Cast<int>().Where(v => v < sala0).Max();
+    Checar(maiorFixa < sala0 && sala0 + 50 <= exp0, "Menu: ações fixas abaixo de Sala0 e 50 salas antes de Expulsar0");
+    Checar(Fx(sala0, "Sala0", 50) == 0 && Fx(sala0 + 49, "Sala0", 50) == 49 && Fx(sala0 + 50, "Sala0", 50) == -1 && Fx(sala0 - 1, "Sala0", 50) == -1,
+        "Menu: Sala0 + i vira a sala i só dentro da faixa");
+    Checar(Fx(exp0 + 2, "Expulsar0", 3) == 2 && Fx(exp0 + 3, "Expulsar0", 3) == -1 && Fx(sala0, "Expulsar0", 3) == -1,
+        "Menu: Expulsar0 + i vira o aliado i (até 3)");
+}
+
+// 0.18.0: lista de salas (dados do lobby vêm de desconhecidos) e expulsão
+{
+    var ts = T("HellClockCoop.Net.Salas");
+    object Sm(string m, params object[] a) => ts.GetMethod(m, BindingFlags.Static | BindingFlags.Public).Invoke(null, a);
+    Checar((string)Sm("LimparNome", "Fu<b>la</b>no") == "Fubla/bno" && (string)Sm("LimparNome", "a\nb\tc") == "abc"
+           && (string)Sm("LimparNome", (object)null) == "?" && (string)Sm("LimparNome", "   ") == "?" && (string)Sm("LimparNome", "<>") == "?",
+        "Salas: nome sem < >, sem caracteres de controle e nunca vazio");
+    Checar(((string)Sm("LimparNome", new string('x', 200))).Length == 32, "Salas: nome cortado em 32 caracteres");
+    Checar((string)Sm("LimparNome", "ab" + (char)0x202E + "cd" + (char)0x200B + "e") == "abcde", "Salas: nome sem formatação invisível (U+202E, U+200B)");
+    Checar((string)Sm("LimparNome", new string('x', 31) + "\U0001F600") == new string('x', 31), "Salas: corte em 32 não parte emoji (par substituto)");
+    Checar((int)Sm("LerInteiro", "34", 999) == 34 && (int)Sm("LerInteiro", "1000", 999) == 0 && (int)Sm("LerInteiro", "-3", 999) == 0
+           && (int)Sm("LerInteiro", "abc", 999) == 0 && (int)Sm("LerInteiro", "", 999) == 0 && (int)Sm("LerInteiro", (object)null, 999) == 0
+           && (int)Sm("LerInteiro", "99999999999", 999) == 0,
+        "Salas: número do lobby fora da faixa, negativo, vazio ou lixo vira 0");
+    Checar((string)Sm("LerLugar", "run") == "run" && (string)Sm("LerLugar", "hub") == "hub" && (string)Sm("LerLugar", "menu") == "menu"
+           && (string)Sm("LerLugar", "RUN") == "" && (string)Sm("LerLugar", (object)null) == "", "Salas: lugar só aceita menu, hub e run");
+    Checar((int)Sm("AtoDoNome", "Act02_DungeonConfig") == 2 && (int)Sm("AtoDoNome", "act1") == 1 && (int)Sm("AtoDoNome", "Act12_X") == 12
+           && (int)Sm("AtoDoNome", "Survival_Config") == 0 && (int)Sm("AtoDoNome", "Act_X") == 0 && (int)Sm("AtoDoNome", "Act99") == 0
+           && (int)Sm("AtoDoNome", "") == 0 && (int)Sm("AtoDoNome", (object)null) == 0,
+        "Salas: ato pelo nome do DungeonConfig (Act02 → 2); fora do padrão, 0");
+    Checar((string)Sm("TextoLugar", "run", 2, 5) == "Ato 2, andar 5" && (string)Sm("TextoLugar", "run", 0, 3) == "em run, andar 3"
+           && (string)Sm("TextoLugar", "run", 0, 0) == "em run" && (string)Sm("TextoLugar", "hub", 0, 0) == "no hub"
+           && (string)Sm("TextoLugar", "menu", 0, 0) == "no menu" && (string)Sm("TextoLugar", "", 3, 3) == "lugar desconhecido",
+        "Salas: texto do lugar (ato e andar, hub, menu, desconhecido)");
+    var tSala = T("HellClockCoop.Net.SalaListada"); var sl = Activator.CreateInstance(tSala);
+    foreach (var (c, v) in new (string, object)[] { ("Host", "Fulano"), ("Lugar", "run"), ("Ato", 2), ("Andar", 5), ("Nivel", 34), ("Jogadores", 2), ("Vagas", 4) })
+        tSala.GetField(c).SetValue(sl, v);
+    Checar((string)Sm("TextoSala", sl) == "Fulano  -  Ato 2, andar 5" && (string)Sm("ValorSala", sl) == "Nv 34  2/4", "Salas: linha da sala (visual A)");
+    tSala.GetField("Nivel").SetValue(sl, 0);
+    Checar((string)Sm("ValorSala", sl) == "2/4", "Salas: sem nível (host no menu) mostra só as vagas");
+    bool Vis(string mod, string proto, string dlc, bool cw, int j, int v, bool nossa, bool exp) =>
+        (bool)Sm("SalaVisivel", mod, proto, dlc, "0.18.0", "19", cw, j, v, nossa, exp);
+    Checar(Vis("0.18.0", "19", "1", true, 1, 4, false, false) && Vis("0.18.0", "19", "0", false, 3, 4, false, false),
+        "Salas: mesma versão, protocolo e DLC, com vaga, aparece");
+    Checar(!Vis("0.17.0", "19", "1", true, 1, 4, false, false) && !Vis("0.18.0", "18", "1", true, 1, 4, false, false)
+           && !Vis("0.18.0", "19", "0", true, 1, 4, false, false) && !Vis("0.18.0", "19", null, false, 1, 4, false, false),
+        "Salas: outra versão do mod, outro protocolo ou outra DLC (ou sem dado) não aparece");
+    Checar(!Vis("0.18.0", "19", "1", true, 4, 4, false, false) && !Vis("0.18.0", "19", "1", true, 0, 4, false, false)
+           && !Vis("0.18.0", "19", "1", true, 1, 0, false, false) && !Vis("0.18.0", "19", "1", true, 1, 4, true, false)
+           && !Vis("0.18.0", "19", "1", true, 1, 4, false, true),
+        "Salas: cheia, vazia, sem vagas, a nossa ou de onde fomos expulsos não aparece");
+    Checar((bool)Sm("ExpulsaoValida", 5ul, 5ul, 9ul) && !(bool)Sm("ExpulsaoValida", 6ul, 5ul, 9ul) && !(bool)Sm("ExpulsaoValida", 9ul, 9ul, 9ul)
+           && !(bool)Sm("ExpulsaoValida", 0ul, 0ul, 9ul), "Salas: Expulso só vale do dono do lobby, nunca de nós mesmos nem de id 0");
+    Checar((bool)Sm("PodeBuscar", 10f, -1f) && !(bool)Sm("PodeBuscar", 10f, 8f) && (bool)Sm("PodeBuscar", 11f, 8f),
+        "Salas: nova busca só 3 s depois da anterior");
+    var tp = T("HellClockCoop.Net.Protocolo");
+    Checar((int)tp.GetField("Versao").GetValue(null) == 19 && (byte)tp.GetField("TipoExpulso").GetValue(null) == 13,
+        "Protocolo 19 com Expulso tipo=13 (mensagem de 1 byte)");
 }
 
 // Balanceamento: lista "2, 3, 4" do .cfg e XP/ouro/Soulstones/moedas em coop (cada um × fator, arredondamento sorteado)

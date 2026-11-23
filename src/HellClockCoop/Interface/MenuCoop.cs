@@ -9,12 +9,14 @@ namespace HellClockCoop.Interface
 {
     /// <summary>
     /// Menu do coop. Desde a 0.12.0 é desenhado com a interface do próprio jogo (PainelNativo: janela central com as peças das Opções
-    /// do jogo, com as abas Sessão, Ajustes e, desde a 0.13.0, Novidades); se a skin do jogo não puder ser montada, volta à gaveta
+    /// do jogo, com as abas Sessão, Salas (0.18.0: salas públicas do mundo todo), Ajustes e, desde a 0.13.0, Novidades); se a skin do
+    /// jogo não puder ser montada, volta à gaveta
     /// desenhada no OnGUI (lista única, como na 0.9.3) e a Novidades à janela própria.
     /// - Abre e fecha pela tecla [Teclas] MenuDoCoop (F7), pelo botão View/Select do controle ou pelo botão "Coop" do menu do
     ///   jogo e da pausa (BotoesDoJogo, 0.13.0); fecha também por Esc, B e pelo [X]. A tecla da Novidades (F10) abre na aba
     ///   Novidades; aberta sozinha depois de atualizar, Esc, B e o [X] só fecham depois de 1,5 s.
-    /// - Sessão: recado do atualizador, estado, ALIADOS (só leitura), COOP (criar e convidar, sair com confirmação, modo eco).
+    /// - Sessão: recado do atualizador, estado, ALIADOS (o host expulsa com confirmação), COOP (sala pública, criar e convidar, sair com
+    ///   confirmação, modo eco). Salas: atualizar a lista e entrar numa sala pública.
     ///   Ajustes: nomes, números e tamanho do dano dos aliados, sons e volume dos aliados (gravados no .cfg do mod,
     ///   nunca nas opções do jogo) e balanceamento deste .cfg só para leitura. Novidades: a versão atual e as 3 anteriores.
     /// - Aberto, segura a entrada do jogo (BloqueioEntrada): mouse, teclado e controle operam o menu sem mexer no
@@ -23,9 +25,17 @@ namespace HellClockCoop.Interface
     /// </summary>
     internal static class MenuCoop
     {
-        internal enum Acao { Nenhuma, CriarOuConvidar, Sair, Eco, Nomes, Vida, Seta, Dano, TamanhoDano, Sons, Volume, Novidades }
+        /// <summary>
+        /// Ações do menu. As salas e o Expulsar são faixas: Sala0 + i é a sala i da lista (até 50, o limite da busca) e
+        /// Expulsar0 + i o aliado i da seção Aliados (até 3).
+        /// </summary>
+        internal enum Acao
+        {
+            Nenhuma, CriarOuConvidar, Sair, Eco, Nomes, Vida, Seta, Dano, TamanhoDano, Sons, Volume, Novidades,
+            SalaPublica, AtualizarSalas, Sala0 = 100, Expulsar0 = 200,
+        }
         internal enum Tipo { Secao, Info, Item, Interruptor, Deslizante }
-        internal enum Aba { Sessao, Ajustes, Novidades }
+        internal enum Aba { Sessao, Salas, Ajustes, Novidades }
         internal enum Enfase { Normal, Titulo, Rotulo } // cor da linha de informação (aba Novidades)
 
         internal struct Linha
@@ -38,7 +48,15 @@ namespace HellClockCoop.Interface
             public Enfase Enfase;
         }
 
-        internal static readonly string[] NomesDasAbas = { "Sessão", "Ajustes", "Novidades" };
+        internal static readonly string[] NomesDasAbas = { "Sessão", "Salas", "Ajustes", "Novidades" };
+        private const int SalasNoMenu = 50, AliadosNoMenu = SessaoCoop.MaximoJogadores - 1;
+
+        /// <summary>Índice da faixa (Sala0 + i, Expulsar0 + i) ou -1 se a ação não é dela.</summary>
+        internal static int IndiceNaFaixa(Acao acao, Acao inicio, int tamanho)
+        {
+            int i = (int)acao - (int)inicio;
+            return i >= 0 && i < tamanho ? i : -1;
+        }
 
         private const float LarguraMin = 380f, LarguraMax = 460f;
         private const float Margem = 20f, AlturaItem = 48f, AlturaSecao = 34f, LadoBotao = 44f, LarguraValor = 120f;
@@ -60,6 +78,14 @@ namespace HellClockCoop.Interface
         private static float _alturaItem = AlturaItem, _ladoX = LadoBotao; // em 1080p; crescem em tela menor (alvo real ≥ 44 px)
         private static Vector2 _mouseAntes, _mouseAntesNativo;
         private static readonly List<Linha> Linhas = new List<Linha>();
+        // Expulsar0 + i → AliadosMostrados[i] (do último Montar). Criada no primeiro Montar: no inicializador estático, o tipo
+        // Par puxaria a Steamworks, que o tools/codectest não carrega.
+        private static List<Par> AliadosMostrados;
+        private static ulong _entrarAlvo; // entrar noutra sala já num coop: dois apertos, armado pelo lobby
+        private static float _confirmarEntrarAte = -1f;
+        private static ulong _expulsarAlvo; // Expulsar pede dois apertos, como o Sair; armado pelo SteamID (não pelo lugar na lista)
+        private static readonly List<SalaListada> SalasMostradas = new List<SalaListada>(); // Sala0 + i → a sala desenhada, não a da busca nova
+        private static float _confirmarExpulsarAte = -1f;
         private static GUIStyle _titulo, _secao, _info, _item, _valor, _rodape, _botao, _invisivel;
 
         internal static bool Aberto => _aberto;
@@ -200,6 +226,8 @@ namespace HellClockCoop.Interface
             _rolagem = 0f;
             PainelNativo.ZerarRolagem(); // reabre do topo
             _confirmarSairAte = -1f;
+            _confirmarExpulsarAte = -1f;
+            _confirmarEntrarAte = -1f;
             _fecharLiberadoEm = 0f;
             _novidadesVistas = false;
             _mouseAntes = Vector2.zero; // ao reabrir, o mouse parado não puxa o foco
@@ -314,6 +342,8 @@ namespace HellClockCoop.Interface
             _arrastando = Acao.Nenhuma;
             _rolagem = 0f;
             _confirmarSairAte = -1f;
+            _confirmarExpulsarAte = -1f;
+            _confirmarEntrarAte = -1f;
             PainelNativo.ZerarRolagem();
         }
 
@@ -336,8 +366,50 @@ namespace HellClockCoop.Interface
                 if (l.Acao == acao && Selecionavel(l)) habilitada = true;
             }
             if (!habilitada) return;
+            int sala = IndiceNaFaixa(acao, Acao.Sala0, SalasNoMenu);
+            int aliado = IndiceNaFaixa(acao, Acao.Expulsar0, AliadosNoMenu);
+            if (aliado < 0) _confirmarExpulsarAte = -1f;
+            if (sala < 0) _confirmarEntrarAte = -1f;
+            if (sala >= 0)
+            {
+                if (sala < SalasMostradas.Count)
+                {
+                    SalaListada alvo = SalasMostradas[sala];
+                    // Já num coop, entrar noutra sala sai dele: pede o segundo aperto, como o "Sair do coop".
+                    if (!rt.Sessao.EmSessao || (_entrarAlvo == alvo.Lobby && ConfirmaSaida(Time.unscaledTime, _confirmarEntrarAte)))
+                    {
+                        _confirmarEntrarAte = -1f;
+                        rt.Sessao.EntrarNaSala(alvo);
+                    }
+                    else
+                    {
+                        _entrarAlvo = alvo.Lobby;
+                        _confirmarEntrarAte = Time.unscaledTime + EsperaConfirmarSaida;
+                    }
+                }
+            }
+            else if (aliado >= 0 && AliadosMostrados != null && aliado < AliadosMostrados.Count)
+            {
+                Par alvo = AliadosMostrados[aliado];
+                if (_expulsarAlvo == alvo.Id.m_SteamID && ConfirmaSaida(Time.unscaledTime, _confirmarExpulsarAte))
+                {
+                    _confirmarExpulsarAte = -1f;
+                    rt.Sessao.Expulsar(alvo);
+                }
+                else
+                {
+                    _expulsarAlvo = alvo.Id.m_SteamID;
+                    _confirmarExpulsarAte = Time.unscaledTime + EsperaConfirmarSaida;
+                }
+            }
             switch (acao)
             {
+                case Acao.SalaPublica:
+                    rt.Sessao.AlternarSalaPublica();
+                    break;
+                case Acao.AtualizarSalas:
+                    rt.Sessao.BuscarSalas();
+                    break;
                 case Acao.CriarOuConvidar:
                     rt.Sessao.HospedarOuConvidar();
                     break;
@@ -530,8 +602,9 @@ namespace HellClockCoop.Interface
         private static void Montar(CoopRuntime rt)
         {
             Linhas.Clear();
-            // A reserva (OnGUI) mostra Sessão e Ajustes numa lista só (a Novidades fica na janela antiga); o painel nativo, só a aba escolhida.
+            // A reserva (OnGUI) mostra Sessão, Salas e Ajustes numa lista só (a Novidades fica na janela antiga); o painel nativo, só a aba escolhida.
             if (!_nativo || _aba == Aba.Sessao) MontarSessao(rt);
+            if (!_nativo || _aba == Aba.Salas) MontarSalas(rt);
             if (!_nativo || _aba == Aba.Ajustes) MontarAjustes();
             if (_nativo && _aba == Aba.Novidades)
             {
@@ -561,13 +634,33 @@ namespace HellClockCoop.Interface
                     : "O jogo continua rodando. Use teclado ou controle: o clique moveria o personagem.", null, false);
             }
 
+            if (AliadosMostrados == null) AliadosMostrados = new List<Par>();
+            AliadosMostrados.Clear();
             if (s.EmSessao && s.Pares.Count > 0)
             {
                 Adicionar(Tipo.Secao, Acao.Nenhuma, "Aliados", null, false);
-                foreach (Par p in s.Pares.Values) Adicionar(Tipo.Info, Acao.Nenhuma, p.Nome + "  -  " + CoopRuntime.EstadoDoPar(p), null, false);
+                foreach (Par p in s.Pares.Values)
+                {
+                    Adicionar(Tipo.Info, Acao.Nenhuma, p.Nome + "  -  " + CoopRuntime.EstadoDoPar(p), null, false);
+                    if (!s.SouHost || AliadosMostrados.Count >= AliadosNoMenu) continue;
+                    var acao = (Acao)((int)Acao.Expulsar0 + AliadosMostrados.Count);
+                    AliadosMostrados.Add(p);
+                    bool armado = _expulsarAlvo == p.Id.m_SteamID && ConfirmaSaida(Time.unscaledTime, _confirmarExpulsarAte);
+                    // O nome do Hello é escolhido pelo par: no botão, o nome da Steam ligado ao SteamID (ninguém se passa por outro).
+                    string nome = Salas.LimparNome(Steamworks.SteamFriends.GetFriendPersonaName(p.Id));
+                    Adicionar(Tipo.Item, acao, armado ? $"Confirmar: expulsar {nome}?" : $"Expulsar {nome}", null, true);
+                }
             }
 
             Adicionar(Tipo.Secao, Acao.Nenhuma, "Coop", null, false);
+            // Sala pública: vale para o próximo coop criado; como host, muda a sala atual na hora. Convidado não muda a do host.
+            bool podeMudarSala = !s.EmSessao || s.SouHost;
+            Linhas.Add(new Linha
+            {
+                Tipo = Tipo.Interruptor, Acao = Acao.SalaPublica, Texto = "Sala pública (aparece na aba Salas)",
+                Habilitada = SessaoCoop.SalaPublica != null && podeMudarSala,
+                Ligado = SessaoCoop.SalaPublica != null && SessaoCoop.SalaPublica.Value, Valor = Estado(SessaoCoop.SalaPublica),
+            });
             if (s.EmSessao) Adicionar(Tipo.Item, Acao.CriarOuConvidar, "Convidar amigos (Steam)", null, true);
             else if (conectando) Adicionar(Tipo.Item, Acao.CriarOuConvidar, "Conectando...", null, false);
             else if (s.EstadoAtual == SessaoCoop.Estado.AguardandoSteam) Adicionar(Tipo.Item, Acao.CriarOuConvidar, "Esperando o Steam...", null, false);
@@ -579,6 +672,41 @@ namespace HellClockCoop.Interface
             }
             string eco = rt.EcoAtivo ? "LIGADO" : _semPersonagem ? "entre num save" : "DESLIGADO";
             Adicionar(Tipo.Item, Acao.Eco, "Modo eco (teste com um PC)", eco, rt.EcoAtivo || !_semPersonagem);
+        }
+
+        /// <summary>
+        /// Aba Salas (0.18.0, visual A): botão de atualizar com a idade da lista e uma linha por sala pública compatível
+        /// ("Host  -  Ato 2, andar 5" e "Nv 34  2/4"). Busca sozinha ao abrir e a cada 30 s com a aba à vista.
+        /// </summary>
+        private static void MontarSalas(CoopRuntime rt)
+        {
+            SessaoCoop s = rt.Sessao;
+            bool steam = s.EstadoAtual != SessaoCoop.Estado.AguardandoSteam;
+            bool conectando = s.EstadoAtual == SessaoCoop.Estado.CriandoLobby || s.EstadoAtual == SessaoCoop.Estado.EntrandoLobby;
+            if (steam && (s.UltimaBusca < 0f || Time.unscaledTime - s.UltimaBusca > Salas.ListaVelhaApos)) s.BuscarSalas();
+
+            Adicionar(Tipo.Secao, Acao.Nenhuma, s.UltimaBusca < 0f || s.BuscandoSalas ? "Salas públicas" : $"Salas públicas  ·  {s.SalasListadas.Count} encontrada(s)", null, false);
+            string idade = s.UltimaBusca < 0f ? null : "há " + Mathf.FloorToInt(Time.unscaledTime - s.UltimaBusca) + " s";
+            Adicionar(Tipo.Item, Acao.AtualizarSalas, s.BuscandoSalas ? "Buscando salas..." : "Atualizar lista", s.BuscandoSalas ? null : idade,
+                steam && !s.BuscandoSalas);
+
+            if (!steam) Adicionar(Tipo.Info, Acao.Nenhuma, "Esperando o Steam ficar pronto.", null, false);
+            else if (s.FalhaNaBusca) Adicionar(Tipo.Info, Acao.Nenhuma, "A busca falhou (sem conexão com a Steam). Tente de novo.", null, false);
+            else if (!s.BuscandoSalas && s.UltimaBusca >= 0f && s.SalasListadas.Count == 0)
+                Adicionar(Tipo.Info, Acao.Nenhuma, $"Nenhuma sala pública aberta com o mod {Plugin.PluginVersion} {(s.MinhaCursedWar ? "e a DLC Cursed War" : "sem a DLC Cursed War")}. Crie a sua na aba Sessão.", null, false);
+
+            SalasMostradas.Clear();
+            for (int i = 0; i < s.SalasListadas.Count && i < SalasNoMenu; i++)
+            {
+                SalaListada sala = s.SalasListadas[i];
+                SalasMostradas.Add(sala);
+                bool armada = _entrarAlvo == sala.Lobby && ConfirmaSaida(Time.unscaledTime, _confirmarEntrarAte);
+                Adicionar(Tipo.Item, (Acao)((int)Acao.Sala0 + i), armada ? "Confirmar: sair do seu coop e entrar?" : Salas.TextoSala(sala),
+                    Salas.ValorSala(sala), !conectando);
+            }
+
+            if (s.EmSessao && s.SalasListadas.Count > 0) Adicionar(Tipo.Info, Acao.Nenhuma, "Entrar numa sala tira você do coop atual (pede confirmação).", null, false);
+            Adicionar(Tipo.Info, Acao.Nenhuma, "Só aparecem salas com vaga, a mesma versão do mod e a mesma DLC. Dá para entrar com a run em andamento.", null, false);
         }
 
         private static void MontarAjustes()

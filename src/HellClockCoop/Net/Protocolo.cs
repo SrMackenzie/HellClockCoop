@@ -11,7 +11,7 @@ namespace HellClockCoop.Net
     internal static class Protocolo
     {
         /// <summary>Muda sempre que o formato de qualquer mensagem mudar. Pares com versões diferentes não conversam.</summary>
-        public const int Versao = 18; // 18: Marcador (ping no chão, 0.17.0)
+        public const int Versao = 19; // 19: Expulso (host tira alguém da sala, 0.18.0)
 
         public const int CanalConfiavel = 0;
         public const int CanalSnapshots = 1;
@@ -20,6 +20,7 @@ namespace HellClockCoop.Net
         public const byte TipoHello = 10;
         public const byte TipoAparencia = 11;
         public const byte TipoTchau = 12;
+        public const byte TipoExpulso = 13;      // host → um convidado: saia da sala (só 1 byte; 0.18.0)
 
         // Fase 2 — run compartilhada (host → convidados, salvo TimerBonus)
         public const byte TipoPlanoAndar = 20;
@@ -68,6 +69,12 @@ namespace HellClockCoop.Net
         public const string ChaveLobbyProtocolo = "hcc_proto";
         public const string ChaveLobbyJogo = "hcc_game";
         public const string ChaveLobbyNome = "hcc_host";
+        // 0.18.0: lista de salas. O dono do lobby grava e atualiza; quem lista lê tudo pelo Salas.Ler* (não confiável).
+        public const string ChaveLobbyDlc = "hcc_dlc";      // "1" com Cursed War, "0" sem
+        public const string ChaveLobbyLugar = "hcc_lugar";  // Salas.LugarMenu/LugarHub/LugarRun
+        public const string ChaveLobbyAto = "hcc_ato";      // 0 = desconhecido
+        public const string ChaveLobbyAndar = "hcc_andar";  // 1 = primeiro andar; 0 fora da run
+        public const string ChaveLobbyNivel = "hcc_nivel";  // nível do personagem do host; 0 sem personagem
     }
 
     /// <summary>Apresentação: cada par manda ao entrar no lobby e quando alguém novo entra.</summary>

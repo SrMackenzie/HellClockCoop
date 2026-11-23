@@ -2,6 +2,26 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.18.0",
+      "data": "22/11/2026",
+      "testado": false,
+      "titulo": "Lista de salas (1/3): salas públicas",
+      "itens": [
+        "Nova aba Salas no menu do coop: as salas públicas do mundo inteiro com a mesma versão do mod e a mesma DLC Cursed War, com host, lugar (hub ou ato e andar), nível do host e vagas",
+        "Escolha uma sala para entrar, também com a run em andamento (você entra no andar do host). Salas cheias, de outra versão ou de outra DLC não aparecem",
+        "O coop novo nasce como sala pública. O interruptor \"Sala pública\" da aba Sessão a deixa só para amigos (por convite); como host, muda a sala na hora. Fica no .cfg, em [Coop] SalaPublica",
+        "O host pode expulsar: na seção Aliados, \"Expulsar <nome>\" e confirmar. Quem foi expulso sai e não volta à mesma sala",
+        "Exige a 0.18.0 em todos os PCs (protocolo 19)"
+      ],
+      "testar": [
+        "Crie o coop com \"Sala pública\" ligado e, no outro PC, abra a aba Salas: a sala aparece com o seu nome, o lugar e o nível",
+        "Entre numa run e espere uns segundos: \"Atualizar lista\" no outro PC mostra o ato e o andar",
+        "Entre pela lista com a run do host em andamento: o convidado vai para o andar do host",
+        "Como host, expulse o convidado (dois toques): ele sai, recebe o aviso e a sala some da lista dele",
+        "Desligue \"Sala pública\" com o coop aberto: a sala some da lista do outro PC depois de atualizar"
+      ]
+    },
+    {
       "v": "0.17.0",
       "data": "22/11/2026",
       "testado": false,

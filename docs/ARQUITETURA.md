@@ -254,7 +254,7 @@ No fantasma, a troca de estado usa `CrossFade` curto, e o mesmo estado com mais 
 ## 9. Fase 1b — coop pela Steam (versão 0.2.0)
 
 **Sessão (`Net/SessaoCoop.cs`):**
-- **Criar:** "Criar coop e convidar amigos" no menu do coop (§12.2; até a 0.9.2, a F7) cria um lobby `k_ELobbyTypeFriendsOnly` de até 4 jogadores e grava nos dados do lobby `hcc_mod`, `hcc_proto`, `hcc_game` e `hcc_host`. Depois abre `ActivateGameOverlayInviteDialog`.
+- **Criar:** "Criar coop e convidar amigos" no menu do coop (§12.2; até a 0.9.2, a F7) cria um lobby `k_ELobbyTypeFriendsOnly` de até 4 jogadores e grava nos dados do lobby `hcc_mod`, `hcc_proto`, `hcc_game` e `hcc_host`. Depois abre `ActivateGameOverlayInviteDialog`. Desde a 0.18.0 o lobby nasce `k_ELobbyTypePublic` (padrão) ou `FriendsOnly`, pelo `[Coop] SalaPublica`, e ganha os dados da lista de salas (§12.7).
 - **Entrar:**
   - pelo convite: `GameLobbyJoinRequested_t`;
   - pela lista de amigos, com "Entrar no jogo": `GameRichPresenceJoinRequested_t` lê a chave `connect` = `+connect_lobby <id>`;
@@ -835,7 +835,7 @@ Desde a 0.12.0, `Interface/MenuCoop.cs` guarda o conteúdo, o foco e a entrada, 
 menu com a interface do próprio jogo: uma janela no centro da tela (720 × 900 no canvas de 1080 de altura), montada na
 entrada do botão "Coop" na lista do menu do jogo (`BotoesDoJogo`, 0.13.0; até a 0.12.0, na primeira exibição do botão "Menu do coop"), na abertura automática da aba Novidades ou na primeira abertura, com cópias, em tempo de execução, das peças da `HellClock.UI.Options.OptionsWindow` de PC (a de
 celular, `OptionsScreenMobile`, fica de fora): fundo `Container/MiddleLeftAnchor/Background`, cabeçalho `Header` (linhas,
-título "COOP" e o [X]), botão de aba `SwitchButtons/GameplayButton` (uma cópia por aba: Sessão, Ajustes e, desde a 0.13.0, Novidades), fundo do conteúdo
+título "COOP" e o [X]), botão de aba `SwitchButtons/GameplayButton` (uma cópia por aba: Sessão, Ajustes e, desde a 0.13.0, Novidades; desde a 0.18.0, Salas entre Sessão e Ajustes), fundo do conteúdo
 `Content/Bg`, título de seção `TitleGameplay`, a primeira linha `ToggleWithLabel` (caixa de marcar) e a primeira
 `SliderWithLabel` (barra). Fontes (Avara, Avrile), sprites e cores são os do jogo; nada é extraído para o repositório
 nem para o pacote.
@@ -925,10 +925,15 @@ S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum 
 | COOP-MENU-ABRIR | Botão "Coop" na lista do canto superior direito da tela de saves, à esquerda de "Créditos" (0.13.0: cópia do botão do jogo, com destaque, som e foco do controle). Reserva, se a cópia falhar: "Menu do coop (F7)" abaixo do painel do canto (peça de aba das Opções; sem ela, o botão simples do OnGUI) | só no menu (sem personagem) | R | — |
 | COOP-MENU-PAUSA | Item "Coop" na pausa do jogo (Esc em jogo), abaixo de "Opções" (0.13.0: cópia do item do jogo): tira a pausa e abre o menu do coop | jogo, com a pausa aberta | R | — |
 | COOP-MENU-FECHAR | [X] no cabeçalho; Esc, B, F7 ou View | menu aberto | R (libera a entrada 2 quadros depois) | — |
-| COOP-ABA-SESSAO / COOP-ABA-AJUSTES / COOP-ABA-NOVIDADES | Abas "Sessão", "Ajustes" e "Novidades" (0.13.0) (botão de aba das Opções do jogo); LB/RB, setas laterais fora de um deslizante ou clique | janela (0.12.0); na reserva, Sessão e Ajustes numa lista só | R | — |
+| COOP-ABA-SESSAO / COOP-ABA-AJUSTES / COOP-ABA-NOVIDADES | Abas "Sessão", "Ajustes" e "Novidades" (0.13.0) (botão de aba das Opções do jogo); LB/RB, setas laterais fora de um deslizante ou clique | janela (0.12.0); na reserva, Sessão, Salas (0.18.0) e Ajustes numa lista só | R | — |
 | COOP-NOVIDADES-LISTA | Aba Novidades: versão atual e as 3 anteriores, com "O que testar" nas não testadas; setas, direcional e roda rolam | aba Novidades | ∅ | `[Interface] NovidadesVistas` (gravado ao fechar) |
 | COOP-NOVIDADES-TECLA | F10 abre o menu na aba Novidades, troca para ela ou, já nela, fecha; abre sozinha uma vez por versão (Esc, B e [X] só depois de 1,5 s) | menu e jogo | R | `[Teclas] Novidades` |
 | COOP-ALIADO | Linha por aliado: nome e estado | aba Sessão, em sessão | ∅ | — |
+| COOP-EXPULSAR | "Expulsar <nome>" abaixo de cada aliado; o primeiro aperto vira "Confirmar: expulsar <nome>?" por 3 s (0.18.0, §12.7) | aba Sessão, só o host | S (`SessaoCoop.Expulsar`) | — |
+| COOP-SALA-PUBLICA | "Sala pública (aparece na aba Salas)" (caixa de marcar); vale para o próximo coop e, como host, muda a sala na hora; convidado não muda (0.18.0) | aba Sessão (sem sessão ou como host) | P + S (`SessaoCoop.AlternarSalaPublica`, `SetLobbyType`) | `[Coop] SalaPublica` |
+| COOP-ABA-SALAS | Aba "Salas" (0.18.0), entre Sessão e Ajustes; abas de 160 para caber 4 | janela; na reserva, na lista única depois da Sessão | R | — |
+| COOP-SALAS-ATUALIZAR | "Atualizar lista" com a idade da lista ("há 12 s"); "Buscando salas..." indisponível. Busca sozinha com a aba à vista quando nunca buscou ou a lista tem mais de 30 s; no máximo 1 busca a cada 3 s; sem resposta em 15 s, libera nova busca | aba Salas | S (`SessaoCoop.BuscarSalas`) | — |
+| COOP-SALAS-SALA | Uma linha por sala pública compatível: "Host  -  Ato 2, andar 5" e "Nv 34  2/4"; indisponível conectando | aba Salas | S (`SessaoCoop.EntrarNaSala`; já num coop, o primeiro aperto vira "Confirmar: sair do seu coop e entrar?" por 3 s) | — |
 | COOP-AVISO-ATUALIZACAO | Recado do atualizador desta abertura (versão nova instalada ou atualização recusada), no topo da lista (0.13.0; antes no painel do canto) | aba Sessão, quando houver | ∅ | `[Atualizacao]` |
 | COOP-CRIAR | "Criar coop e convidar amigos" (sem sessão); "Esperando o Steam..." e "Conectando..." indisponíveis | aba Sessão | S (`SessaoCoop.HospedarOuConvidar`) | — |
 | COOP-CONVIDAR | "Convidar amigos (Steam)" | aba Sessão, em sessão | S (reabre o overlay de convite) | — |
@@ -1149,6 +1154,41 @@ visual da opção A ("seta no chão", só peças do jogo).
 - **Modo eco:** o fantasma repete o seu marcador 1 s depois, deslocado como ele (`DistanciaDoEco`), como aliado "Eco".
 - **Balanceamento:** só informação, sem efeito no jogo, no dano nem no tempo; não muda a dificuldade do grupo.
 
+### 12.7 Lista de salas, etapa 1/3 (versão 0.18.0, protocolo 19)
+
+Decisões do autor (22/11/2026): sala pública por padrão; entrar também com a run em andamento; mostrar o nível do host;
+o host pode expulsar já nesta etapa; visual A (uma linha por sala). Etapa 2: trava pelo progresso da campanha de quem
+entra. Etapa 3: segurança com desconhecidos e filtros. Troca de host quando ele sai: só no roadmap (a run em andamento
+existe só no host; quem herda o lobby hoje vira "host" sem estado).
+
+- **Tipo do lobby:** `k_ELobbyTypePublic` com `[Coop] SalaPublica = true` (padrão), senão `FriendsOnly`. O host muda na
+  hora com `SetLobbyType`.
+- **Dados da sala** (o dono do lobby grava a cada 2 s, só o que mudou, `SessaoCoop.AtualizarDadosDaSala`): `hcc_dlc`
+  ("1" com Cursed War), `hcc_lugar` (`menu`, `hub` ou `run`), `hcc_ato` (do nome do `DungeonConfig`, "Act02_..." → 2;
+  0 fora do padrão, como Sobrevivência), `hcc_andar` (1 = primeiro), `hcc_nivel` (`PlayerSheet.Experience.Level`) e
+  `hcc_host`. Quem herda o lobby passa a gravar os dele.
+- **Busca:** `RequestLobbyList` com `k_ELobbyDistanceFilterWorldwide` (sem ele a Steam só olha a região), filtros de
+  igualdade em `hcc_proto`, `hcc_mod` e `hcc_dlc`, com vaga e até 50. Cada resultado passa de novo por
+  `Salas.SalaVisivel` (versões, DLC, vaga, não é a nossa nem uma de onde fomos expulsos).
+- **Dados não confiáveis:** tudo do lobby vem de qualquer jogador. Nome sem `<`, `>`, controles e formatação invisível
+  (U+202E, U+200B), até 32 caracteres sem partir emoji (`Salas.LimparNome`; desde a 0.18.0 vale também para o nome do
+  `Hello` e os nomes da Steam do par e do dono do lobby); números fora da faixa viram 0
+  (`Salas.LerInteiro`); lugar só os três valores. Casos no `tools/codectest`.
+- **Entrar com a run em andamento:** o caminho de sempre (`Entrar` → `LobbyEnter_t` → `Hello`); o host manda o último
+  `PlanoAndar` e `SpawnAndar` (`RunCompartilhada.AoNovoConvidado`), como no convite.
+- **Expulsar:** o host manda `Expulso` (tipo 13, 1 byte), tira o par de `Pares` na hora (sem avatar, sem conversa, sem
+  contar na escala) e deixa a sessão P2P aberta até ele sair do lobby, reenviando a cada 2 s. Quem volta ao lobby não
+  vira par e recebe `Expulso` de novo. O convidado só aceita `Expulso` do dono do lobby (`Salas.ExpulsaoValida`), sai e
+  esconde a sala da lista até fechar o jogo. A Steam não tem expulsão de lobby: um cliente alterado pode ficar no lobby,
+  mas não conversa com o host. O botão "Expulsar <nome>" usa o nome da Steam ligado ao SteamID (o do `Hello` é escolhido
+  pelo par) e a confirmação fica armada pelo SteamID, não pelo lugar na lista.
+- **Pendências para a etapa 3** (auditoria de 22/11/2026): os outros convidados não sabem da expulsão (um cliente alterado
+  que ignore o `Expulso` segue par deles e conta na escala deles; se o host sair, pode herdar o lobby); conferir se o P2P
+  com quem não é amigo passa sempre pelo relay da Steam (IP); mudar para privada não tira quem já entrou; e as mensagens
+  que levam a progresso salvo (`PlanoAndar`, `FimRun`, inimigos e baús do host; `TimerBonus`, `Golpes` e objetos do
+  convidado) precisam de teto ou validação contra desconhecidos.
+- **Balanceamento:** sem efeito nos números. Expulsar reduz o grupo e a escala acompanha (`Pares`), como quem sai.
+
 ## 13. Atualizador automático (versão 0.8.0)
 
 **Onde roda.** `BepInEx\patchers\HellClockCoop.Atualizador.dll`, um preloader patcher do BepInEx 5 sem DLL alvo: só o
@@ -1239,6 +1279,7 @@ filtros puros ficam em `Net/Validacao.cs` e têm casos no `tools/codectest`.
 | `Reanimando` (0.16.0) | todos, de par compatível, com a mesma DLC, no mesmo andar e de pé, com a run em andamento | andar igual ao seu, estado 0 a 2 e fração finita de 0 a 1 (`Validacao.ReanimandoValido`); o alvo é você caído ou um aliado caído na run (outro alvo é descartado, para não ocupar memória). Só aparece na tela; não muda nada do jogo |
 | `Reanimou` (0.16.0) | todos, com os mesmos filtros do `Reanimando` | andar igual ao seu e alvo diferente de quem mandou (ninguém se levanta sozinho). A conta do andar fica com o maior `Ordem` visto, subindo no máximo um (`Validacao.OrdemReanimacao`). Com o alvo na run (caído ou já de pé), todos esquecem a queda já vista dele (a próxima avisa de novo e o host volta a cobrar). Para o caído: ele precisa estar caído e quem mandou a até 2 m + 2 m de folga (atraso do snapshot), pela posição do avatar (`Validacao.ReanimouValido`); sem avatar, recusa. Para os outros: o alvo precisa jogar a run. Efeito: o caído levanta com `VidaAoReanimar` e todos contam a reanimação do andar |
 | `Marcador` (0.17.0) | todos, de par compatível, no mesmo andar (pela cena do snapshot), com o seu personagem no mundo | cena conhecida e igual à sua, mesmo índice de andar (fora da run, 4294967295 dos dois lados), coordenadas finitas até 100 000 e o ponto a até 30 m + 10 m de folga do avatar de quem marcou no chão e até 10 m de desnível (`Validacao.MarcadorValido`; sem avatar, recusa). Do mesmo par, um marcador a cada 0,5 s no máximo, e só 1 guardado por par. Só aparece na tela; não muda nada do jogo |
+| `Expulso` (0.18.0) | convidado, só do dono do lobby (nunca de si mesmo) | sem campos; sai do coop e esconde a sala da lista (`Salas.ExpulsaoValida`) |
 | `TimerBonus` | host | finito, `> 0` e `<= 120 s`; desde a 0.8.5, também no máximo 120 s e 120 bônus somados por convidado (chave: SteamID, para sair e voltar ao lobby não zerar) numa janela fixa de 60 s (`Validacao.AceitarBonusNaJanela`; o recusado não conta; na virada da janela até o dobro passa em sequência, a média fica no teto). Um aviso de recusa por janela |
 | `TimerSync` | convidado, só do host | os dois campos finitos e `>= 0` (4 Hz: descarte sem log) |
 | `InimigoSpawn`, `InimigosEstado`, `InimigoMorte`, `InimigoSumiu`, `AndarLimpo`, `InimigoAjuste` | convidado, só do host | — |

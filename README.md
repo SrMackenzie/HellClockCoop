@@ -236,7 +236,7 @@ Requisito: overlay da Steam ligado (*Steam → Configurações → No jogo*).
 
 | Tecla | Ação |
 |:-:|---|
-| <kbd>F7</kbd> ou <kbd>View</kbd> no controle | **Menu do coop** (janela com a cara das Opções do jogo, abas Sessão, Ajustes e Novidades): criar o coop e convidar amigos, sair do coop, modo eco; nomes, barra de vida e seta fora da tela dos aliados, números e tamanho do dano dos aliados, sons e volume dos aliados, balanceamento (só leitura). Também pelo botão "Coop" do menu do jogo (ao lado de "Créditos") e pelo item "Coop" da pausa (<kbd>Esc</kbd> em jogo) |
+| <kbd>F7</kbd> ou <kbd>View</kbd> no controle | **Menu do coop** (janela com a cara das Opções do jogo, abas Sessão, Salas, Ajustes e Novidades): criar o coop (sala pública ou privada) e convidar amigos, expulsar (host), sair do coop, modo eco; salas públicas para entrar; nomes, barra de vida e seta fora da tela dos aliados, números e tamanho do dano dos aliados, sons e volume dos aliados, balanceamento (só leitura). Também pelo botão "Coop" do menu do jogo (ao lado de "Créditos") e pelo item "Coop" da pausa (<kbd>Esc</kbd> em jogo) |
 | <kbd>F8</kbd> | **Modo eco**: um fantasma seu repete tudo com 1 s de atraso — testa o mod sem amigo (também pelo menu do coop) |
 | <kbd>F9</kbd> | Diagnóstico: salva a estrutura do personagem |
 | <kbd>F10</kbd> | **Novidades**: o que mudou nas últimas versões do mod, na aba Novidades do menu do coop (abre sozinha uma vez depois de cada atualização) |
@@ -244,6 +244,9 @@ Requisito: overlay da Steam ligado (*Steam → Configurações → No jogo*).
 
 **Host** (quem convida): entre num save, aperte <kbd>F7</kbd> e escolha **Criar coop e convidar amigos**. **Convidado**:
 aceite o convite na Steam (com o jogo fechado, ele abre e entra sozinho). Quando o host entra numa run, todos vão junto.
+Sem convite (0.18.0): o coop nasce como **sala pública** e aparece na aba **Salas** de quem tem a mesma versão do mod e a
+mesma DLC, no mundo inteiro, com o lugar da run, o nível do host e as vagas; dá para entrar com a run em andamento. O
+interruptor "Sala pública" da aba Sessão deixa a sala só para amigos, e o host pode expulsar alguém pela seção Aliados.
 
 Com o menu do coop aberto, o jogo não recebe mouse, teclado nem controle: dá para clicar sem
 mover o personagem. O jogo continua rodando (no coop não pausa), então abra o menu longe dos inimigos.

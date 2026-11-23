@@ -87,6 +87,28 @@ namespace HellClockCoop.Fase2
         private static uint IndiceAtual => IndiceAndarRef(Dpm).Value;
         internal static uint AndarAtual => IndiceAtual;
 
+        /// <summary>
+        /// Lugar deste PC para a lista de salas (0.18.0): falso fora da run (hub). Na run, o nome do DungeonConfig (o ato sai
+        /// dele: Salas.AtoDoNome) e o andar contado a partir de 1.
+        /// </summary>
+        internal static bool LugarDaRun(out string dungeon, out int andar)
+        {
+            dungeon = "";
+            andar = 0;
+            try
+            {
+                DungeonProgressManager dpm = Dpm;
+                if (dpm == null || !dpm.RunStarted.Value) return false;
+                dungeon = dpm.CurrentDungeonConfig != null ? dpm.CurrentDungeonConfig.name : "";
+                andar = (int)Math.Min(IndiceAtual + 1u, (uint)Salas.AndarMaximo);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false; // jogo trocando de cena: fica como hub até a próxima leitura
+            }
+        }
+
         // ---------------- Laço ----------------
 
         public static void Atualizar(PlayerController jogador)

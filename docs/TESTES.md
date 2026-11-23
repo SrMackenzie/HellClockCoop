@@ -402,6 +402,21 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.18.0 — Lista de salas (1/3)
+
+Precisa de dois PCs com contas Steam diferentes (a lista não mostra a própria sala; o eco não ajuda aqui). Exige a
+0.18.0 em todos os PCs (protocolo 19). Sem efeito nos números do balanceamento.
+- [ ] **Aba (solo):** F7 mostra 4 abas (Sessão, Salas, Ajustes, Novidades) sem cortar o texto; a aba Salas busca sozinha
+  e mostra "Nenhuma sala pública aberta..." e "Atualizar lista  há N s". Anotar se a busca falha ou demora.
+- [ ] **Sala pública:** host cria o coop com "Sala pública" ligado; no outro PC, aba Salas > Atualizar. Esperado: a
+  linha "Host  -  no hub" com "Nv <nível>  1/4".
+- [ ] **Run em andamento:** host entra numa run; depois de alguns segundos, Atualizar no outro PC mostra "Ato N, andar M".
+  Entrar pela lista: o convidado vai para o andar do host.
+- [ ] **Expulsar:** host, aba Sessão > "Expulsar <nome>" duas vezes. Esperado: o convidado sai com o aviso "expulso pelo
+  host" e a sala some da lista dele; no host, o aliado some e a escala volta a solo.
+- [ ] **Privada:** host desliga "Sala pública" com o coop aberto; no outro PC, Atualizar. Esperado: a sala some.
+- Se falhar, mandar: o `LogOutput.log` dos dois PCs (linhas `[Sessão]`, sobretudo `Salas: N da Steam, M na lista`).
+
 ## 0.17.0 — Marcador no chão (ping)
 
 Solo com o modo eco (F8) cobre o mouse, o visual e a seta da borda; em dupla, conferir o nome na cor do aliado. Exige a

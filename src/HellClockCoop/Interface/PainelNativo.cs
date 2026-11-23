@@ -29,7 +29,7 @@ namespace HellClockCoop.Interface
     {
         private const float LarguraPainel = 720f, AlturaPainel = 900f, AlturaSecao = 46f, AlturaMinimaItem = 48f;
         private const float TopoAbas = -150f, TopoConteudo = -196f, BaseConteudo = 78f;
-        private const float LarguraAba = 180f, AlturaAba = 44f, LarguraValor = 180f, LarguraBotao = 260f;
+        private const float LarguraAba = 160f, AlturaAba = 44f, LarguraValor = 180f, LarguraBotao = 260f;
         private const float TamanhoTexto = 18f, TamanhoInfo = 17f, TamanhoRodape = 15f;
 
         private static readonly Color CorTexto = new Color(0.62f, 0.57f, 0.55f);
@@ -184,7 +184,7 @@ namespace HellClockCoop.Interface
             _fechar = cab.Find("CloseButton") as RectTransform;
             CaberNaJanela(cab);
 
-            // Abas: o botão de aba das Opções, uma cópia por aba (Sessão, Ajustes, Novidades).
+            // Abas: o botão de aba das Opções, uma cópia por aba (Sessão, Salas, Ajustes, Novidades: 4 × 160 cabem nos 720 do painel).
             var abas = new GameObject("Abas");
             RectTransform rtAbas = abas.AddComponent<RectTransform>();
             rtAbas.SetParent(_painel, false);

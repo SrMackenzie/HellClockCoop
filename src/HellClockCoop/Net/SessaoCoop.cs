@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BepInEx.Configuration;
 using HarmonyLib;
 using HellClock.Player;
 using HellClockCoop.Avatar;
@@ -30,8 +31,10 @@ namespace HellClockCoop.Net
     }
 
     /// <summary>
-    /// Sessão coop sobre um lobby da Steam (amigos, até 4). Fase 1b: todos mandam snapshots para todos
+    /// Sessão coop sobre um lobby da Steam (até 4). Fase 1b: todos mandam snapshots para todos
     /// (malha completa, no máximo 3 pares); o dono do lobby é o host para as fases seguintes.
+    /// 0.18.0: a sala é pública (aparece na aba Salas para o mundo todo) ou privada (só amigos), pelo .cfg
+    /// [Coop] SalaPublica; o host grava nos dados do lobby o lugar da run e o nível dele, e pode expulsar alguém.
     /// Os callbacks da Steam são processados pelo SteamManager do próprio jogo (SteamAPI.RunCallbacks).
     /// </summary>
     internal sealed class SessaoCoop
@@ -46,6 +49,21 @@ namespace HellClockCoop.Net
         public CSteamID Eu { get; private set; }
         public readonly Dictionary<ulong, Par> Pares = new Dictionary<ulong, Par>();
         public event Action<string> Aviso;
+
+        /// <summary>Sala nova aparece na aba Salas de todo mundo (padrão) ou só para amigos.</summary>
+        internal static ConfigEntry<bool> SalaPublica;
+
+        /// <summary>Resultado da última busca da aba Salas (só salas compatíveis e com vaga).</summary>
+        public readonly List<SalaListada> SalasListadas = new List<SalaListada>();
+        public bool BuscandoSalas { get; private set; }
+        public float UltimaBusca { get; private set; } = -1f;
+        public bool FalhaNaBusca { get; private set; }
+
+        internal static void Configurar(ConfigFile config)
+        {
+            SalaPublica = config.Bind("Coop", "SalaPublica", true,
+                "Ao criar o coop: true = sala pública (aparece na aba Salas para jogadores do mundo todo com a mesma versão do mod e a mesma DLC); false = só amigos da Steam, por convite.");
+        }
 
         public bool EmSessao => EstadoAtual == Estado.NoLobby;
         public bool SouHost => EmSessao && SteamMatchmaking.GetLobbyOwner(Lobby) == Eu;
@@ -85,6 +103,18 @@ namespace HellClockCoop.Net
         private Callback<SteamNetworkingMessagesSessionRequest_t> _cbPedidoSessao;
         private Callback<SteamNetworkingMessagesSessionFailed_t> _cbFalhaSessao;
         private CallResult<LobbyCreated_t> _crLobbyCriado;
+        private CallResult<LobbyMatchList_t> _crListaSalas;
+
+        // Expulsão (0.18.0): quem o host tirou desta sala (não volta a ela enquanto ela existir; zera ao sair) e as salas
+        // de onde fomos tirados (escondidas até fechar o jogo). Etapa 3: os outros convidados não sabem da expulsão, então um
+        // cliente alterado que ignore o Expulso continua par deles.
+        private readonly HashSet<ulong> _expulsos = new HashSet<ulong>();
+        private readonly HashSet<ulong> _salasQueMeExpulsaram = new HashSet<ulong>();
+        private float _proximoReenvioExpulso;
+
+        // Dados da sala no lobby: o dono grava a cada 2 s, só o que mudou.
+        private readonly Dictionary<string, string> _dadosGravados = new Dictionary<string, string>();
+        private float _proximosDadosSala;
 
         private CSteamID _lobbyPendenteLinhaDeComando = CSteamID.Nil;
         private Aparencia _ultimaAparenciaEnviada;
@@ -104,6 +134,7 @@ namespace HellClockCoop.Net
             _cbPedidoSessao = Callback<SteamNetworkingMessagesSessionRequest_t>.Create(OnPedidoDeSessao);
             _cbFalhaSessao = Callback<SteamNetworkingMessagesSessionFailed_t>.Create(OnFalhaDeSessao);
             _crLobbyCriado = CallResult<LobbyCreated_t>.Create(OnLobbyCriado);
+            _crListaSalas = CallResult<LobbyMatchList_t>.Create(OnListaDeSalas);
             SteamNetworkingUtils.InitRelayNetworkAccess(); // adianta a conexão com os relays da Steam
 
             try
@@ -153,9 +184,65 @@ namespace HellClockCoop.Net
                     return;
             }
             EstadoAtual = Estado.CriandoLobby;
-            SteamAPICall_t chamada = SteamMatchmaking.CreateLobby(ELobbyType.k_ELobbyTypeFriendsOnly, MaximoJogadores);
+            SteamAPICall_t chamada = SteamMatchmaking.CreateLobby(TipoDaSala(), MaximoJogadores);
             _crLobbyCriado.Set(chamada);
             Avisar("Criando o coop...");
+        }
+
+        private static ELobbyType TipoDaSala() =>
+            SalaPublica == null || SalaPublica.Value ? ELobbyType.k_ELobbyTypePublic : ELobbyType.k_ELobbyTypeFriendsOnly;
+
+        /// <summary>Interruptor "Sala pública" do menu: grava no .cfg e, sendo o host, muda o tipo do lobby na hora.</summary>
+        public void AlternarSalaPublica()
+        {
+            if (SalaPublica == null) return;
+            SalaPublica.Value = !SalaPublica.Value; // o BepInEx grava o .cfg
+            Plugin.Log.LogInfo($"[Sessão] Sala {(SalaPublica.Value ? "pública" : "privada (só amigos)")}.");
+            if (SouHost && !SteamMatchmaking.SetLobbyType(Lobby, TipoDaSala()))
+                Plugin.Log.LogWarning("[Sessão] A Steam recusou mudar o tipo da sala.");
+        }
+
+        /// <summary>Busca as salas públicas compatíveis no mundo inteiro (sem o filtro Worldwide a Steam só olha a região).</summary>
+        public void BuscarSalas()
+        {
+            if (EstadoAtual == Estado.AguardandoSteam || BuscandoSalas || !Salas.PodeBuscar(Time.unscaledTime, UltimaBusca)) return;
+            BuscandoSalas = true;
+            FalhaNaBusca = false;
+            UltimaBusca = Time.unscaledTime;
+            SteamMatchmaking.AddRequestLobbyListDistanceFilter(ELobbyDistanceFilter.k_ELobbyDistanceFilterWorldwide);
+            SteamMatchmaking.AddRequestLobbyListStringFilter(Protocolo.ChaveLobbyProtocolo, Protocolo.Versao.ToString(), ELobbyComparison.k_ELobbyComparisonEqual);
+            SteamMatchmaking.AddRequestLobbyListStringFilter(Protocolo.ChaveLobbyMod, Plugin.PluginVersion, ELobbyComparison.k_ELobbyComparisonEqual);
+            SteamMatchmaking.AddRequestLobbyListStringFilter(Protocolo.ChaveLobbyDlc, MinhaCursedWar ? "1" : "0", ELobbyComparison.k_ELobbyComparisonEqual);
+            SteamMatchmaking.AddRequestLobbyListFilterSlotsAvailable(1);
+            SteamMatchmaking.AddRequestLobbyListResultCountFilter(50);
+            _crListaSalas.Set(SteamMatchmaking.RequestLobbyList());
+            Plugin.Log.LogInfo("[Sessão] Buscando salas públicas (mundo inteiro).");
+        }
+
+        /// <summary>Entra numa sala da lista (sai da sala atual, se houver).</summary>
+        public void EntrarNaSala(SalaListada sala)
+        {
+            if (sala == null || EstadoAtual == Estado.AguardandoSteam || EstadoAtual == Estado.CriandoLobby || EstadoAtual == Estado.EntrandoLobby) return;
+            if (_salasQueMeExpulsaram.Contains(sala.Lobby))
+            {
+                Avisar("Você foi expulso dessa sala.");
+                return;
+            }
+            Plugin.Log.LogInfo($"[Sessão] Entrando na sala de {sala.Host} pela lista.");
+            Entrar(new CSteamID(sala.Lobby));
+        }
+
+        /// <summary>Host: tira o jogador da sala. Ele recebe Expulso e sai; até sair, fica sem conversa e sem contar na escala.</summary>
+        public void Expulsar(Par p)
+        {
+            if (!SouHost || p == null || !Pares.ContainsKey(p.Id.m_SteamID)) return;
+            _expulsos.Add(p.Id.m_SteamID);
+            SteamTransporte.Enviar(p.Id, new[] { Protocolo.TipoExpulso }, confiavel: true, Protocolo.CanalConfiavel);
+            _proximoReenvioExpulso = Time.unscaledTime + 2f;
+            DestruirAvatar(p);
+            Pares.Remove(p.Id.m_SteamID); // a sessão P2P fica aberta até ele sair do lobby, para o Expulso chegar
+            Plugin.Log.LogInfo($"[Sessão] {p.Nome} foi expulso da sala.");
+            Avisar($"{p.Nome} foi expulso da sala.");
         }
 
         public void Sair(string motivo)
@@ -185,6 +272,8 @@ namespace HellClockCoop.Net
             Fase3.AlvosAliados.Encerrar();
             Lobby = CSteamID.Nil;
             _ultimaAparenciaEnviada = null;
+            _expulsos.Clear();
+            _dadosGravados.Clear();
             if (EstadoAtual != Estado.AguardandoSteam) EstadoAtual = Estado.Livre;
             Plugin.Log.LogInfo($"[Sessão] Saiu do coop ({motivo}).");
             Avisar($"Você saiu do coop ({motivo}).");
@@ -214,14 +303,49 @@ namespace HellClockCoop.Net
             SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyProtocolo, Protocolo.Versao.ToString());
             SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyJogo, Application.version);
             SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyNome, SteamFriends.GetPersonaName());
-            Plugin.Log.LogInfo($"[Sessão] Coop criado (lobby {r.m_ulSteamIDLobby}).");
+            SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyDlc, MinhaCursedWar ? "1" : "0");
+            Plugin.Log.LogInfo($"[Sessão] Coop criado (lobby {r.m_ulSteamIDLobby}, sala {(TipoDaSala() == ELobbyType.k_ELobbyTypePublic ? "pública" : "privada")}).");
             // O LobbyEnter_t também chega para quem cria; lá o estado vira NoLobby.
             SteamFriends.ActivateGameOverlayInviteDialog(lobby);
         }
 
+        private void OnListaDeSalas(LobbyMatchList_t r, bool falhaIO)
+        {
+            BuscandoSalas = false;
+            SalasListadas.Clear();
+            if (falhaIO)
+            {
+                FalhaNaBusca = true;
+                Plugin.Log.LogWarning("[Sessão] A busca de salas falhou (comunicação com a Steam).");
+                return;
+            }
+            FalhaNaBusca = false; // resposta depois do tempo limite: a lista vale
+            string proto = Protocolo.Versao.ToString();
+            for (int i = 0; i < r.m_nLobbiesMatching; i++)
+            {
+                CSteamID l = SteamMatchmaking.GetLobbyByIndex(i);
+                int jogadores = SteamMatchmaking.GetNumLobbyMembers(l);
+                int vagas = Math.Min(SteamMatchmaking.GetLobbyMemberLimit(l), MaximoJogadores);
+                if (!Salas.SalaVisivel(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyMod), SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyProtocolo),
+                        SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyDlc), Plugin.PluginVersion, proto, MinhaCursedWar,
+                        jogadores, vagas, l == Lobby, _salasQueMeExpulsaram.Contains(l.m_SteamID))) continue;
+                SalasListadas.Add(new SalaListada
+                {
+                    Lobby = l.m_SteamID,
+                    Host = Salas.LimparNome(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyNome)),
+                    Lugar = Salas.LerLugar(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyLugar)),
+                    Ato = Salas.LerInteiro(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyAto), Salas.AtoMaximo),
+                    Andar = Salas.LerInteiro(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyAndar), Salas.AndarMaximo),
+                    Nivel = Salas.LerInteiro(SteamMatchmaking.GetLobbyData(l, Protocolo.ChaveLobbyNivel), Salas.NivelMaximo),
+                    Jogadores = jogadores, Vagas = vagas,
+                });
+            }
+            Plugin.Log.LogInfo($"[Sessão] Salas: {r.m_nLobbiesMatching} da Steam, {SalasListadas.Count} na lista.");
+        }
+
         private void OnConviteAceito(GameLobbyJoinRequested_t c)
         {
-            Plugin.Log.LogInfo($"[Sessão] Convite aceito de {SteamFriends.GetFriendPersonaName(c.m_steamIDFriend)}.");
+            Plugin.Log.LogInfo($"[Sessão] Convite aceito de {Salas.LimparNome(SteamFriends.GetFriendPersonaName(c.m_steamIDFriend))}.");
             Entrar(c.m_steamIDLobby);
         }
 
@@ -261,7 +385,7 @@ namespace HellClockCoop.Net
             Lobby = lobby;
             EstadoAtual = Estado.NoLobby;
             SteamFriends.SetRichPresence("connect", "+connect_lobby " + lobby.m_SteamID);
-            string dono = SteamFriends.GetFriendPersonaName(SteamMatchmaking.GetLobbyOwner(lobby));
+            string dono = Salas.LimparNome(SteamFriends.GetFriendPersonaName(SteamMatchmaking.GetLobbyOwner(lobby))); // sala pública: pode ser desconhecido
             Plugin.Log.LogInfo($"[Sessão] No coop (lobby {lobby.m_SteamID}, host {dono}, {(SouHost ? "você é o host" : "você é convidado")}).");
             Avisar(SouHost ? "Coop criado! Convide amigos pelo overlay (o menu do coop abre de novo)." : $"Você entrou no coop de {dono}.");
             AtualizarMembros();
@@ -311,10 +435,11 @@ namespace HellClockCoop.Net
             {
                 CSteamID id = SteamMatchmaking.GetLobbyMemberByIndex(Lobby, i);
                 if (id == Eu) continue;
+                if (_expulsos.Contains(id.m_SteamID)) continue; // ainda no lobby, mas fora do coop até sair
                 presentes.Add(id.m_SteamID);
                 if (!Pares.ContainsKey(id.m_SteamID))
                 {
-                    var par = new Par { Id = id, Nome = SteamFriends.GetFriendPersonaName(id) };
+                    var par = new Par { Id = id, Nome = Salas.LimparNome(SteamFriends.GetFriendPersonaName(id)) };
                     Pares[id.m_SteamID] = par;
                     Plugin.Log.LogInfo($"[Sessão] {par.Nome} está no coop.");
                     Avisar($"{par.Nome} entrou no coop.");
@@ -331,6 +456,45 @@ namespace HellClockCoop.Net
             {
                 RemoverPar(Pares[id], "saiu do coop");
             }
+            if (_expulsos.Count > 0)
+            {
+                foreach (ulong id in _expulsos)
+                {
+                    if (!EhMembro(new CSteamID(id))) SteamTransporte.Fechar(new CSteamID(id)); // saiu: fecha a sessão que ficou aberta
+                }
+            }
+        }
+
+        /// <summary>Dono do lobby: grava lugar, nível e nome nos dados da sala (aba Salas dos outros), só o que mudou.</summary>
+        private void AtualizarDadosDaSala(PlayerController jogadorLocal)
+        {
+            if (!SouHost || Time.unscaledTime < _proximosDadosSala) return;
+            _proximosDadosSala = Time.unscaledTime + 2f;
+            string lugar = Salas.LugarMenu;
+            int ato = 0, andar = 0, nivel = 0;
+            if (jogadorLocal != null)
+            {
+                lugar = Salas.LugarHub;
+                if (Fase2.RunCompartilhada.LugarDaRun(out string dungeon, out andar))
+                {
+                    lugar = Salas.LugarRun;
+                    ato = Salas.AtoDoNome(dungeon);
+                }
+                try { nivel = Math.Min(jogadorLocal.PlayerSheet?.Experience?.Level?.Value ?? 0, Salas.NivelMaximo); }
+                catch (Exception) { nivel = 0; }
+            }
+            GravarDado(Protocolo.ChaveLobbyDlc, MinhaCursedWar ? "1" : "0"); // quem herda o lobby anuncia a DLC dele
+            GravarDado(Protocolo.ChaveLobbyLugar, lugar);
+            GravarDado(Protocolo.ChaveLobbyAto, ato.ToString());
+            GravarDado(Protocolo.ChaveLobbyAndar, andar.ToString());
+            GravarDado(Protocolo.ChaveLobbyNivel, nivel.ToString());
+            GravarDado(Protocolo.ChaveLobbyNome, SteamFriends.GetPersonaName());
+        }
+
+        private void GravarDado(string chave, string valor)
+        {
+            if (_dadosGravados.TryGetValue(chave, out string antes) && antes == valor) return;
+            if (SteamMatchmaking.SetLobbyData(Lobby, chave, valor)) _dadosGravados[chave] = valor;
         }
 
         private void RemoverPar(Par p, string motivo)
@@ -369,7 +533,23 @@ namespace HellClockCoop.Net
                 _lobbyPendenteLinhaDeComando = CSteamID.Nil;
                 Entrar(l);
             }
+            if (BuscandoSalas && Time.unscaledTime - UltimaBusca > 15f)
+            {
+                BuscandoSalas = false; // a Steam não respondeu: "A busca falhou" e o botão volta
+                FalhaNaBusca = true;
+            }
             if (!EmSessao) return;
+
+            AtualizarDadosDaSala(jogadorLocal);
+            if (_expulsos.Count > 0 && SouHost && Time.unscaledTime >= _proximoReenvioExpulso)
+            {
+                _proximoReenvioExpulso = Time.unscaledTime + 2f;
+                foreach (ulong id in _expulsos)
+                {
+                    var quem = new CSteamID(id);
+                    if (EhMembro(quem)) SteamTransporte.Enviar(quem, new[] { Protocolo.TipoExpulso }, confiavel: true, Protocolo.CanalConfiavel);
+                }
+            }
 
             SteamTransporte.Receber(Protocolo.CanalConfiavel, (de, dados) => TratarConfiavel(de, dados, jogadorLocal));
             SteamTransporte.Receber(Protocolo.CanalSnapshots, (de, dados) => TratarSnapshot(de, dados, jogadorLocal, cenaLocal));
@@ -398,7 +578,7 @@ namespace HellClockCoop.Net
                     p.MeOuviu = h.JaTeOuvi;
                     if (!h.JaTeOuvi) EnviarHello(p);   // responde na hora: "também te ouvi"
                     if (!primeiroHello) break;
-                    p.Nome = string.IsNullOrEmpty(h.Nome) ? p.Nome : h.Nome;
+                    p.Nome = string.IsNullOrEmpty(h.Nome) ? p.Nome : Salas.LimparNome(h.Nome); // 0.18.0: com sala pública, o nome vem de desconhecidos
                     p.Compativel = h.Protocolo == Protocolo.Versao && h.VersaoMod == Plugin.PluginVersion;
                     p.Incompatibilidade = p.Compativel ? null : $"mod {h.VersaoMod} (você {Plugin.PluginVersion})";
                     p.Deluxe = h.Deluxe;
@@ -429,6 +609,11 @@ namespace HellClockCoop.Net
                     break;
                 case Protocolo.TipoTchau:
                     RemoverPar(p, "saiu do coop");
+                    break;
+                case Protocolo.TipoExpulso: // 0.18.0: só vale do dono do lobby
+                    if (!Salas.ExpulsaoValida(de.m_SteamID, SteamMatchmaking.GetLobbyOwner(Lobby).m_SteamID, Eu.m_SteamID)) break;
+                    _salasQueMeExpulsaram.Add(Lobby.m_SteamID);
+                    Sair("expulso pelo host");
                     break;
                 case Protocolo.TipoPlanoAndar:
                 case Protocolo.TipoSpawnAndar:
@@ -638,7 +823,7 @@ namespace HellClockCoop.Net
             p.Avatar = null;
         }
 
-        private static string Vazio(string s) => string.IsNullOrEmpty(s) ? "(sem mod)" : s;
+        private static string Vazio(string s) => string.IsNullOrEmpty(s) ? "(sem mod)" : Salas.LimparNome(s); // texto do lobby (não confiável)
     }
 
     /// <summary>
