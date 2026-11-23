@@ -837,7 +837,8 @@ testadas; sem item selecionável, as setas e o direcional rolam (`PainelNativo.R
 ### 12.2 Menu do coop e bloqueio da entrada (versões 0.9.3, 0.12.0, 0.13.0 e 0.13.1)
 
 Desde a 0.12.0, `Interface/MenuCoop.cs` guarda o conteúdo, o foco e a entrada, e `Interface/PainelNativo.cs` desenha o
-menu com a interface do próprio jogo: uma janela no centro da tela (720 × 900 no canvas de 1080 de altura; 1100 × 960 desde a 0.21.0, §12.10), montada na
+menu com a interface do próprio jogo: uma janela no centro da tela até a 0.23.0 (720 × 900 no canvas de 1080 de altura; 1100 × 960 desde a 0.21.0, §12.10) e,
+desde a 0.24.0, uma coluna de 900 colada à direita, na altura toda, que entra e sai deslizando como as Opções (§12.13), montada na
 entrada do botão "Coop" na lista do menu do jogo (`BotoesDoJogo`, 0.13.0; até a 0.12.0, na primeira exibição do botão "Menu do coop"), na abertura automática da aba Novidades ou na primeira abertura, com cópias, em tempo de execução, das peças da `HellClock.UI.Options.OptionsWindow` de PC (a de
 celular, `OptionsScreenMobile`, fica de fora): fundo `Container/MiddleLeftAnchor/Background`, cabeçalho `Header` (linhas,
 título "COOP" e o [X]), botão de aba `SwitchButtons/GameplayButton` (uma cópia por aba: Sessão, Ajustes e, desde a 0.13.0, Novidades; desde a 0.18.0, Salas entre Sessão e Ajustes), fundo do conteúdo
@@ -1475,6 +1476,30 @@ arquivo próprio, com Desbloquear na aba Ajustes; o bloqueio da própria Steam t
 
 **Protocolo 21, sem mudança** (nenhuma mensagem nova; `hcc_dono` é dado do lobby). codectest: `IdValido`, `Ler` (linhas
 ruins, repetidas, teto), ida e volta `Formatar`/`Ler` com nome limpo, `LerSteamId`.
+
+### 12.13 Menu do coop na lateral direita (versão 0.24.0, protocolo 21)
+
+Pedido do autor: menu "lateralizado, igual ao menu Opções, só que do lado oposto", com a mesma animação de abertura.
+Visual B (escolhido entre 3): coluna larga na altura toda.
+
+- **O que o jogo faz (IL, HellClock.dll 2.1.1.1):** `OptionsWindow.Show` chama `GenericHUD.MoveTo(MiddleLeftAnchor,
+  Vector2.right, 760)` e `Hide` chama `GenericHUD.MoveBack(..., 760)`: `DOKill(true)` e `DOAnchorPos(atual ± 760, 0,35 s)`
+  com `SetEase(Ease.OutBack, 0,8)` ao abrir, `SetEase(Ease.InOutBack, 0,8)` ao fechar e `SetUpdate(true)` (tempo sem
+  escala). A janela não tem Animator nem fade de CanvasGroup: é só o deslize da âncora.
+- **Coluna:** `PainelNativo` ancora o painel na borda direita (`anchorMin (1,0)`, `anchorMax (1,1)`, pivô `(1, 0,5)`),
+  900 de largura e a altura toda do canvas (1080). Em 4:3 (canvas de 1440) ocupa 62%. O fundo copiado passa 40 da borda
+  direita (`FolgaFundo`) para não abrir vão no recuo do OutBack (~2% da largura).
+- **Deslize:** as mesmas curvas do DOTween (`EaseManager`), escritas no `PainelNativo` (`SaidaRecuo`, `EntradaSaidaRecuo`), e a
+  mesma duração; a distância é a largura da coluna (o jogo anda 760, a largura da janela dele), para ela sair inteira.
+  Parte da posição atual, como o `DOAnchorPos`: reabrir no meio da saída volta dali. `Mostrar` e `Esconder` só escolhem o
+  destino; `PainelNativo.Animar`, chamado em todo quadro no `CoopRuntime.AtualizarMenus` antes dos retornos antecipados
+  (Novidades aberta), anda o deslize e apaga o canvas no fim da saída. Durante a saída, `DentroDoPainel` é falso (a
+  roda não rola o painel que está saindo); a entrada do jogo volta como antes (`BloqueioEntrada`, 2 quadros depois do fechar).
+- **Escurecer (só no menu do jogo):** em vez da tela toda a 50%, uma `RawImage` com textura de 128 × 1 gerada em tempo de
+  execução: transparente à esquerda, sobe em `SmoothStep` por 520 à esquerda da coluna até 50% de preto e fica cheia sob
+  ela. Um `CanvasGroup` acompanha o deslize (alfa = fração da coluna na tela).
+
+**Protocolo 21, sem mudança.** Sem patch Harmony novo.
 
 ## 13. Atualizador automático (versão 0.8.0)
 

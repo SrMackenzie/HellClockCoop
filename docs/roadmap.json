@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "23/11/2026",
-  "versao": "0.23.0",
+  "versao": "0.24.0",
   "fases": [
     {
       "id": "B",
@@ -273,6 +273,10 @@
         [
           "testar",
           "Botão Coop na lista de botões do menu do jogo e item Coop na pausa; novidades como aba da janela do coop"
+        ],
+        [
+          "testar",
+          "Menu do coop colado à direita, na altura toda, com a animação de abertura das Opções do jogo (0.24.0)"
         ],
         [
           "planejado",

@@ -227,6 +227,9 @@ ESTADO ATUAL (versão de teste, Fase 3)
   em Ajustes > Bloqueados. A lista fica só no seu PC (BepInEx\HellClockCoop\bloqueados.txt) e
   nunca é enviada. Para dar para bloquear pela lista, a sua sala pública mostra o seu ID da Steam
   a quem busca salas com o mod (sala privada não aparece). Exige a 0.23.0 em todos os PCs.
+- NOVO (0.24.0): o menu do coop fica na lateral direita, na altura toda da tela (as Opções do
+  jogo ficam à esquerda), e entra e sai deslizando com a mesma animação delas. No menu do jogo
+  escurece só o lado direito. Exige a 0.24.0 em todos os PCs.
 - A Deluxe Edition (cosmética) não importa.
 
 

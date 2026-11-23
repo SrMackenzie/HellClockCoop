@@ -106,6 +106,7 @@ namespace HellClockCoop
         {
             Interface.BloqueioEntrada.Atualizar(); // primeiro: libera a entrada do jogo se nenhum painel pediu no quadro anterior
             Interface.PainelNativo.EsconderBotaoParado(); // o botão do menu some quando o OnGUI deixa de pedi-lo
+            Interface.PainelNativo.Animar(); // deslize do menu do coop (0.24.0); antes dos retornos abaixo, para a saída terminar
             _sessao.TentarInicializar();
             Balanceamento.JanelaAceite.Atualizar(semPersonagem);
             Interface.Novidades.Atualizar(semPersonagem); // depois do aceite: abre só com ele fechado

@@ -4,6 +4,14 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.24.0 — Menu do coop na lateral direita 🧪
+_23/11/2026_
+
+- O menu do coop virou uma coluna colada à direita, na altura toda da tela, do lado oposto às Opções do jogo
+- Entra e sai deslizando com a mesma animação das Opções (mesma duração e mesma curva)
+- No menu do jogo, só o lado direito escurece, em degradê; durante a run a tela continua limpa
+- Exige a 0.24.0 em todos os PCs (protocolo 21, sem mudança)
+
 ## 0.23.0 — Bloquear jogador e faixa de foco na largura da janela 🧪
 _23/11/2026_
 

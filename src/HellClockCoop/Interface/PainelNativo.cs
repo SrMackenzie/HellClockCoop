@@ -10,7 +10,8 @@ using Object = UnityEngine.Object;
 namespace HellClockCoop.Interface
 {
     /// <summary>
-    /// Menu do coop com a interface do próprio jogo (0.12.0): janela no centro da tela, montada com as peças da tela de Opções.
+    /// Menu do coop com a interface do próprio jogo (0.12.0), montado com as peças da tela de Opções. Desde a 0.24.0 é uma
+    /// coluna colada à direita, na altura toda (as Opções do jogo ficam à esquerda), que entra e sai deslizando como elas.
     /// - Na primeira abertura, copia em tempo de execução os pedaços da OptionsWindow do jogo (fundo, cabeçalho com o [X],
     ///   botão de aba, fundo do conteúdo, título de seção, linha com caixa de marcar e linha com barra). Nada sai do jogo
     ///   para o repositório ou para o pacote: são as imagens e fontes já carregadas.
@@ -27,8 +28,15 @@ namespace HellClockCoop.Interface
     /// </summary>
     internal static class PainelNativo
     {
-        // 0.21.0: janela larga (visual A) para a lista de salas usar mais tela; cabe em 4:3 (canvas de 1440 × 1080).
-        private const float LarguraPainel = 1100f, AlturaPainel = 960f, AlturaSecao = 46f, AlturaMinimaItem = 48f, AlturaDetalhe = 26f;
+        // 0.24.0 (visual B): coluna de 900 colada à direita, na altura toda; a lista de salas cabe sem quebrar e, em 4:3
+        // (canvas de 1440 × 1080), sobra tela à esquerda.
+        private const float LarguraPainel = 900f, AlturaSecao = 46f, AlturaMinimaItem = 48f, AlturaDetalhe = 26f;
+        // Deslize das Opções do jogo (OptionsWindow.Show/Hide → GenericHUD.MoveTo/MoveBack): DOAnchorPos em 0,35 s, tempo sem
+        // escala, Ease.OutBack 0,8 ao abrir e Ease.InOutBack 0,8 ao fechar. O jogo anda 760 (a largura da janela dele); aqui
+        // anda a largura da coluna, para ela sair inteira da tela.
+        private const float DuracaoDeslize = 0.35f, Recuo = 0.8f;
+        private const float FolgaFundo = 40f; // o fundo passa da borda direita: no recuo do OutBack (~2% da largura) não abre vão
+        private const float LarguraDegrade = 520f; // escurecer (só no menu do jogo): degradê à esquerda da coluna, cheio sob ela
         private const float TopoAbas = -150f, TopoConteudo = -196f, BaseConteudo = 78f;
         private const float LarguraAba = 160f, AlturaAba = 44f, LarguraValor = 180f, LarguraBotao = 260f;
         private const float TamanhoTexto = 18f, TamanhoInfo = 17f, TamanhoRodape = 15f;
@@ -75,6 +83,9 @@ namespace HellClockCoop.Interface
         private static readonly List<Visual> Visuais = new List<Visual>();
         private static int _mostradas;
         private static float _rolagem;
+        private static CanvasGroup _grupoEscurecer;
+        private static float _xDe, _xPara, _inicioDeslize;
+        private static bool _deslizando, _fechando;
         private static bool _desativado, _avisouSemModelo;
 
         // ---------- Montagem ----------
@@ -127,6 +138,7 @@ namespace HellClockCoop.Interface
             if (_botaoRaiz != null) Object.Destroy(_botaoRaiz);
             _raiz = _botaoRaiz = null;
             _botao = null;
+            _deslizando = _fechando = false;
             Abas.Clear();
             Visuais.Clear();
         }
@@ -159,19 +171,33 @@ namespace HellClockCoop.Interface
             RectTransform rtEsc = _escurecer.AddComponent<RectTransform>();
             rtEsc.SetParent(_raiz.transform, false);
             Esticar(rtEsc, 0f, 0f, 0f, 0f);
-            _escurecer.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.5f); // o jogo mistura em espaço linear: 0,5 escurece como os 35% da gaveta antiga
+            _grupoEscurecer = _escurecer.AddComponent<CanvasGroup>(); // acompanha o deslize (MostrarDeslize)
+            _grupoEscurecer.blocksRaycasts = false;
+            var degrade = new GameObject("Degrade");
+            RectTransform rtDeg = degrade.AddComponent<RectTransform>();
+            rtDeg.SetParent(rtEsc, false);
+            rtDeg.anchorMin = new Vector2(1f, 0f);
+            rtDeg.anchorMax = new Vector2(1f, 1f);
+            rtDeg.pivot = new Vector2(1f, 0.5f);
+            rtDeg.sizeDelta = new Vector2(LarguraPainel + LarguraDegrade, 0f);
+            rtDeg.anchoredPosition = Vector2.zero;
+            RawImage imgDeg = degrade.AddComponent<RawImage>();
+            imgDeg.texture = TexturaDegrade(LarguraDegrade / (LarguraPainel + LarguraDegrade));
+            imgDeg.raycastTarget = false;
 
+            // 0.24.0: coluna presa à borda direita, na altura toda (o canvas tem sempre 1080 de altura); começa fora da tela.
             var painel = new GameObject("Painel");
             _painel = painel.AddComponent<RectTransform>();
             _painel.SetParent(_raiz.transform, false);
-            _painel.anchorMin = _painel.anchorMax = new Vector2(0.5f, 0.5f); // janela no centro da tela (o canvas tem sempre 1080 de altura)
-            _painel.pivot = new Vector2(0.5f, 0.5f);
-            _painel.sizeDelta = new Vector2(LarguraPainel, AlturaPainel);
-            _painel.anchoredPosition = Vector2.zero;
+            _painel.anchorMin = new Vector2(1f, 0f);
+            _painel.anchorMax = new Vector2(1f, 1f);
+            _painel.pivot = new Vector2(1f, 0.5f);
+            _painel.sizeDelta = new Vector2(LarguraPainel, 0f);
+            _painel.anchoredPosition = new Vector2(LarguraPainel, 0f);
 
             // Fundo da janela das Opções.
             RectTransform f = Copiar(fundo, _painel, "Fundo");
-            Esticar(f, 0f, 0f, 0f, 0f);
+            Esticar(f, 0f, 0f, FolgaFundo, 0f);
 
             // Cabeçalho do jogo: linhas, título e [X] (sem o ícone de atalho do controle).
             RectTransform cab = Copiar(cabecalho, _painel, "Cabecalho");
@@ -185,7 +211,7 @@ namespace HellClockCoop.Interface
             _fechar = cab.Find("CloseButton") as RectTransform;
             CaberNaJanela(cab);
 
-            // Abas: o botão de aba das Opções, uma cópia por aba (Sessão, Salas, Ajustes, Novidades: 4 × 160 cabem nos 720 do painel).
+            // Abas: o botão de aba das Opções, uma cópia por aba (Sessão, Salas, Ajustes, Novidades: 4 × 160 + 3 × 16 = 688 cabem nos 900 da coluna).
             var abas = new GameObject("Abas");
             RectTransform rtAbas = abas.AddComponent<RectTransform>();
             rtAbas.SetParent(_painel, false);
@@ -388,9 +414,82 @@ namespace HellClockCoop.Interface
 
         // ---------- Uso (no Update, pelo MenuCoop) ----------
 
+        /// <summary>Começa a saída deslizando para a direita; o Animar apaga o painel no fim (chamado a cada quadro fechado).</summary>
         internal static void Esconder()
         {
-            if (_raiz != null && _raiz.activeSelf) _raiz.SetActive(false);
+            if (_raiz == null || !_raiz.activeSelf || _fechando) return;
+            Deslizar(LarguraPainel, true);
+        }
+
+        /// <summary>
+        /// A cada quadro, no Update do runtime (antes de qualquer retorno antecipado, para a saída terminar até com a Novidades
+        /// aberta): anda o deslize de abrir ou fechar; ao fim de fechar, apaga o painel.
+        /// </summary>
+        internal static void Animar()
+        {
+            if (!_deslizando || _raiz == null) return;
+            float t = Mathf.Clamp01((Time.unscaledTime - _inicioDeslize) / DuracaoDeslize);
+            float e = _fechando ? EntradaSaidaRecuo(t) : SaidaRecuo(t);
+            MostrarDeslize(_xDe + (_xPara - _xDe) * e);
+            if (t < 1f) return;
+            _deslizando = false;
+            if (_fechando)
+            {
+                _fechando = false;
+                _raiz.SetActive(false);
+            }
+        }
+
+        private static void Deslizar(float alvo, bool fechar)
+        {
+            _xDe = _painel.anchoredPosition.x; // parte de onde está, como o DOAnchorPos (reabrir no meio da saída volta dali)
+            _xPara = alvo;
+            _inicioDeslize = Time.unscaledTime;
+            _deslizando = true;
+            _fechando = fechar;
+        }
+
+        private static void MostrarDeslize(float x)
+        {
+            _painel.anchoredPosition = new Vector2(x, 0f);
+            if (_grupoEscurecer != null) _grupoEscurecer.alpha = Mathf.Clamp01(1f - x / LarguraPainel);
+        }
+
+        // Curvas do DOTween (EaseManager), com o recuo de 0,8 que o GenericHUD usa.
+        private static float SaidaRecuo(float t)
+        {
+            t -= 1f;
+            return t * t * ((Recuo + 1f) * t + Recuo) + 1f;
+        }
+
+        private static float EntradaSaidaRecuo(float t)
+        {
+            float s = Recuo * 1.525f;
+            t *= 2f;
+            if (t < 1f) return 0.5f * (t * t * ((s + 1f) * t - s));
+            t -= 2f;
+            return 0.5f * (t * t * ((s + 1f) * t + s) + 2f);
+        }
+
+        /// <summary>Faixa de 128 × 1: transparente à esquerda, sobe suave até 50% de preto em <paramref name="rampa"/> e fica cheia.</summary>
+        private static Texture2D TexturaDegrade(float rampa)
+        {
+            const int largura = 128;
+            var tex = new Texture2D(largura, 1, TextureFormat.RGBA32, false)
+            {
+                name = "HellClockCoop.Degrade",
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+                hideFlags = HideFlags.DontSave,
+            };
+            for (int i = 0; i < largura; i++)
+            {
+                float x = (i + 0.5f) / largura;
+                float a = rampa > 0f ? Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(x / rampa)) : 1f;
+                tex.SetPixel(i, 0, new Color(0f, 0f, 0f, 0.5f * a)); // o jogo mistura em espaço linear: 0,5 como o escurecer antigo
+            }
+            tex.Apply(false, true);
+            return tex;
         }
 
         /// <summary>
@@ -449,7 +548,13 @@ namespace HellClockCoop.Interface
         internal static void Mostrar(List<MenuCoop.Linha> linhas, int foco, int aba, string rodape, bool escurecer, ref bool rolarParaFoco)
         {
             if (_raiz == null) throw new InvalidOperationException("painel não montado");
-            if (!_raiz.activeSelf) _raiz.SetActive(true);
+            if (!_raiz.activeSelf)
+            {
+                MostrarDeslize(LarguraPainel); // entra de fora da tela, pela direita
+                _raiz.SetActive(true);
+                Deslizar(0f, false);
+            }
+            else if (_fechando) Deslizar(0f, false); // reaberto no meio da saída
             if (_escurecer.activeSelf != escurecer) _escurecer.SetActive(escurecer); // só no menu do jogo; em jogo, a tela fica limpa
 
             for (int i = 0; i < Abas.Count; i++)
@@ -517,7 +622,9 @@ namespace HellClockCoop.Interface
             _mostradas = linhas.Count;
 
             // Rolagem: segue o foco do teclado/controle e a roda do mouse; presa ao tamanho da lista.
-            float janela = _viewport.rect.height;
+            // 0.24.0: a coluna tem a altura do canvas (sempre 1080, escala pela altura); a conta não depende do rect, que no
+            // primeiro quadro do canvas recém-ligado ainda não tem o tamanho certo. 24 = recuo do Recorte (12 em cima e embaixo).
+            const float janela = 1080f - BaseConteudo + TopoConteudo - 24f;
             if (rolarParaFoco && topoFoco >= 0f && janela > 1f)
             {
                 if (topoFoco < _rolagem) _rolagem = topoFoco;
@@ -629,7 +736,7 @@ namespace HellClockCoop.Interface
         // ---------- Mouse (posição em pixels da tela, origem embaixo à esquerda) ----------
 
         internal static bool DentroDoPainel(Vector2 tela) =>
-            _raiz != null && _raiz.activeSelf && RectTransformUtility.RectangleContainsScreenPoint(_painel, tela, null);
+            _raiz != null && _raiz.activeSelf && !_fechando && RectTransformUtility.RectangleContainsScreenPoint(_painel, tela, null);
 
         internal static bool FecharSob(Vector2 tela) =>
             DentroDoPainel(tela) && _fechar != null && RectTransformUtility.RectangleContainsScreenPoint(_fechar, tela, null);

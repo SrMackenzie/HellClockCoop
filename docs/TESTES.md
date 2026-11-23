@@ -580,8 +580,9 @@ das Opções:
   aberta, durante a run e com a Novidades (F10) aberta, e volta ao fechar. Nas telas de abertura (patrocínio, antes do
   menu de saves) o botão não aparece; antes aparecia o cinza e trocava sozinho.
 
-- [ ] **Abrir e visual:** no menu do jogo, F7 (e o botão "Menu do coop (F7)") abre a janela **no centro** com a moldura,
-  o título "COOP", o [X] e as abas das Opções do jogo; o resto da tela escurece. No log:
+- [ ] **Abrir e visual:** no menu do jogo, F7 (e o botão "Menu do coop (F7)") abre a janela **colada à direita**, na altura
+  toda, entrando pela direita com o deslize das Opções do jogo (0,35 s, leve recuo no fim), com a moldura, o título "COOP",
+  o [X] e as abas das Opções; o lado direito da tela escurece em degradê (0.24.0). Ao fechar, sai deslizando para a direita. No log:
   `[Menu] Painel do coop montado com a interface do jogo.` e `[Menu] Menu do coop aberto (tecla F7; interface do jogo).`
 - [ ] **Abas:** LB/RB, setas esquerda/direita (fora de uma barra) e o clique na aba trocam entre Sessão e Ajustes, girando
   nas pontas; o foco vai para o primeiro item da aba.
