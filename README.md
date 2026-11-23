@@ -244,7 +244,7 @@ Requisito: overlay da Steam ligado (*Steam → Configurações → No jogo*).
 
 **Host** (quem convida): entre num save, aperte <kbd>F7</kbd> e escolha **Criar coop e convidar amigos**. **Convidado**:
 aceite o convite na Steam (com o jogo fechado, ele abre e entra sozinho). Quando o host entra numa run, todos vão junto.
-Sem convite (0.18.0): o coop nasce como **sala pública** e aparece na aba **Salas** (onde o menu do coop abre) de quem tem a mesma
+Sem convite (0.18.0): o coop nasce como **sala pública** e aparece na aba **Salas** de quem tem a mesma
 versão do mod, com ou sem a DLC, no mundo inteiro, com o lugar da run, o nível do host e as vagas; dá para entrar com a run em andamento. O
 interruptor "Sala pública" da aba Sessão deixa a sala só para amigos, e o host pode expulsar alguém pela seção Aliados. Desde a 0.23.0 dá para bloquear um jogador: as salas dele somem da sua lista e, se você é o host, ele é expulso sempre que entrar (o bloqueio da Steam também conta).
 
@@ -263,7 +263,7 @@ mover o personagem. O jogo continua rodando (no coop não pausa), então abra o 
 - Com e sem a DLC **Cursed War** vocês jogam juntos os atos 1 a 3 (e a Ascensão); o **Ato 4** é só para quem tem a
   DLC (0.21.0). A Deluxe Edition (cosmética) não importa.
 - Ajustes em `BepInEx\config\br.srmackenzie.hellclockcoop.cfg` (nomes, vida, seta, dano, sons e volume dos aliados também pela aba Ajustes do menu do coop): teclas, nomes sobre a cabeça,
-  números de dano dos aliados (`MostrarDanoDosAliados`, `TamanhoDanoDosAliados`) e a última versão cujas novidades
+  números de dano dos aliados (`MostrarDanoDosAliados`, `TamanhoDanoDosAliados`, `OpacidadeDanoDosAliados`) e a última versão cujas novidades
   já apareceram (`[Interface] NovidadesVistas`; apague para as novidades abrirem sozinhas de novo).
 </details>
 

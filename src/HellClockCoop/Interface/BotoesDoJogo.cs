@@ -185,6 +185,7 @@ namespace HellClockCoop.Interface
         /// <summary>Primeira instância numa cena (fora os prefabs); com soAtiva, só a que está na tela.</summary>
         private static T NaCena<T>(bool soAtiva, out int quantas) where T : Component
         {
+            double inicio = Desempenho.Agora();
             T achada = null;
             quantas = 0;
             foreach (T t in Resources.FindObjectsOfTypeAll<T>())
@@ -194,6 +195,7 @@ namespace HellClockCoop.Interface
                 quantas++;
                 if (achada == null && (!soAtiva || t.gameObject.activeInHierarchy)) achada = t;
             }
+            Desempenho.SomarDetalhe(Desempenho.Detalhe.BuscarBotoesJogo, inicio);
             return achada;
         }
 

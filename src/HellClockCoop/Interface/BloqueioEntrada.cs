@@ -50,7 +50,9 @@ namespace HellClockCoop.Interface
         {
             _ultimoPedido = Time.frameCount;
             DesligarModulo();
-            if (Time.unscaledTime >= _proximaBuscaOuvintes) DesligarOuvintesDoEsc();
+            // Em jogo a busca não se repete (3.4e38); se o personagem sumir com o painel aberto (volta aos saves), procura de novo.
+            if (Time.unscaledTime >= _proximaBuscaOuvintes || (_proximaBuscaOuvintes > 1e38f && CoopRuntime.JogadorLocal() == null))
+                DesligarOuvintesDoEsc();
             Travar();
         }
 
@@ -84,11 +86,15 @@ namespace HellClockCoop.Interface
         /// O AndroidBackButtonListener da tela de saves lê o Esc direto (Input.GetKeyDown(Escape), sem passar pelo semáforo) e
         /// pede "Você realmente quer fechar o jogo?": fica desligado enquanto o painel está aberto e até a liberação (0.13.0).
         /// Procurado na abertura e de novo a cada 0,5 s enquanto travado (0.13.1): a janela do aceite abre nas telas de
-        /// abertura, antes de a cena com o ouvinte carregar, e uma busca só na abertura não o achava.
+        /// abertura, antes de a cena com o ouvinte carregar, e uma busca só na abertura não o achava. Desde a 0.26.0 a
+        /// repetição é só sem personagem: em jogo, uma busca por abertura (de novo se o personagem sumir com o painel aberto).
         /// </summary>
         private static void DesligarOuvintesDoEsc()
         {
-            _proximaBuscaOuvintes = Time.unscaledTime + IntervaloBuscaOuvintes;
+            // 0.26.0: o FindObjectsOfTypeAll varre todos os objetos carregados e, em jogo, custa ~55 ms (picos de "Menus" no
+            // Desempenho com o menu aberto). O ouvinte é da tela de saves: com personagem, uma busca na abertura basta.
+            _proximaBuscaOuvintes = CoopRuntime.JogadorLocal() != null ? 3.4e38f : Time.unscaledTime + IntervaloBuscaOuvintes;
+            double inicio = Desempenho.Agora();
             int novos = 0;
             foreach (AndroidBackButtonListener ouvinte in Resources.FindObjectsOfTypeAll<AndroidBackButtonListener>())
             {
@@ -97,6 +103,7 @@ namespace HellClockCoop.Interface
                 OuvintesDoEsc.Add(ouvinte);
                 novos++;
             }
+            Desempenho.SomarDetalhe(Desempenho.Detalhe.BuscarOuvintesEsc, inicio);
             if (novos > 0) Plugin.Log.LogInfo($"[Entrada] Ouvinte do Esc da tela de saves desligado ({novos}; {OuvintesDoEsc.Count} no total).");
         }
 

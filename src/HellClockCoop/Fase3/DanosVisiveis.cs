@@ -35,12 +35,18 @@ namespace HellClockCoop.Fase3
 
         private static ConfigEntry<bool> _mostrar;
         private static ConfigEntry<float> _tamanho;
+        private static ConfigEntry<float> _opacidade;
 
         /// <summary>[Interface] MostrarDanoDosAliados (interruptor do menu do coop).</summary>
         internal static ConfigEntry<bool> MostrarDano => _mostrar;
 
         /// <summary>[Interface] TamanhoDanoDosAliados (deslizante da aba Ajustes; o uso limita a 0,3–2).</summary>
         internal static ConfigEntry<float> TamanhoDano => _tamanho;
+
+        /// <summary>[Interface] OpacidadeDanoDosAliados (0.26.0, deslizante da aba Ajustes; o uso limita a 0,1–1).</summary>
+        internal static ConfigEntry<float> OpacidadeDano => _opacidade;
+
+        internal const float OpacidadeMinima = 0.1f; // abaixo disso o número some; para esconder há o interruptor
 
         /// <summary>(normal, crítico) por aliado, na ordem em que aparecem. O 1º é verde, como a seta no minimapa.</summary>
         private static readonly Color[,] Paleta =
@@ -61,6 +67,7 @@ namespace HellClockCoop.Fase3
         {
             _mostrar = config.Bind("Interface", "MostrarDanoDosAliados", true, "Mostra os números de dano dos aliados (com a cor de cada aliado).");
             _tamanho = config.Bind("Interface", "TamanhoDanoDosAliados", 0.8f, "Tamanho dos números de dano dos aliados em relação aos seus (1 = igual).");
+            _opacidade = config.Bind("Interface", "OpacidadeDanoDosAliados", 0.5f, "Opacidade dos números de dano dos aliados (0,1 a 1; 1 = opaco).");
         }
 
         /// <summary>Índice de cor do aliado (o eco usa a chave 0). Estável durante a sessão.</summary>
@@ -137,6 +144,8 @@ namespace HellClockCoop.Fase3
             DamageViewManager dv = DamageViewManager.Instance;
             int cor = CorDe(chave);
             float tam = _tamanho != null ? Mathf.Clamp(_tamanho.Value, 0.3f, 2f) : 0.8f;
+            // 0.26.0: o jogo põe a FontColor (com alfa) no Text.color; o sumiço vai à parte, no CanvasGroup.alpha (IL do DamageView).
+            float alfa = _opacidade != null ? Mathf.Clamp(_opacidade.Value, OpacidadeMinima, 1f) : 0.5f;
             // O jogo escolhe cor e escala dentro do SpawnDamageView: troca os campos só durante esta chamada.
             Color normal = CorNormalRef(dv), critico = CorCriticoRef(dv);
             Vector2 escIni = EscalaInicialRef(dv), escFim = EscalaFinalRef(dv);
@@ -145,8 +154,11 @@ namespace HellClockCoop.Fase3
             try
             {
                 d.TotalCrits = criticos;
-                CorNormalRef(dv) = Paleta[cor, 0];
-                CorCriticoRef(dv) = Paleta[cor, 1];
+                Color n = Paleta[cor, 0], c = Paleta[cor, 1];
+                n.a = alfa;
+                c.a = alfa;
+                CorNormalRef(dv) = n;
+                CorCriticoRef(dv) = c;
                 EscalaInicialRef(dv) = escIni * tam;
                 EscalaFinalRef(dv) = escFim * tam;
                 dv.SpawnDamageView(colisor, alvo, alvo.position, d);

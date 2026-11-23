@@ -2,6 +2,26 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.26.0",
+      "data": "23/11/2026",
+      "testado": false,
+      "titulo": "Nome da sala digitável, menu mais leve e opacidade do dano",
+      "itens": [
+        "Corrigido: dá para digitar o nome da sala (o jogo não entrega o teclado ao Input System; as letras vêm agora pelos eventos de tecla, com acento e maiúscula)",
+        "Menu do coop sem os picos de ~55 ms por segundo em jogo: a busca do ouvinte do Esc da tela de saves roda uma vez por abertura (antes, a cada 0,5 s)",
+        "O menu volta a abrir na aba Sessão, com \"Criar coop e convidar amigos\" / \"Convidar amigos (Steam)\" como primeiro item",
+        "Ajustes: \"Opacidade dos danos dos aliados\" (10% a 100%, padrão 50%)",
+        "O Desempenho do log detalha busca do ouvinte do Esc, medição de texto e criação de linha do menu e busca dos botões do jogo",
+        "Exige a 0.26.0 em todos os PCs (protocolo sem mudança)"
+      ],
+      "testar": [
+        "Host: aba Sessão > Nome da sala > Enter, digite (com acento) e Enter: o nome muda e o log tem \"Edição do nome encerrada: ... pelo OnGUI\"",
+        "Abra o menu (F7) em jogo, deixe 1 min aberto: sem \"Travada ... Menus 55\" no LogOutput.log",
+        "F7 abre na aba Sessão com o foco em \"Criar coop e convidar amigos\"",
+        "Ajustes > Opacidade dos danos dos aliados: em 10% os números do eco (F8) ficam quase transparentes; em 100%, opacos"
+      ]
+    },
+    {
       "v": "0.25.0",
       "data": "23/11/2026",
       "testado": false,

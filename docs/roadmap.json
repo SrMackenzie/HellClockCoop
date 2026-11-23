@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "23/11/2026",
-  "versao": "0.25.0",
+  "versao": "0.26.0",
   "fases": [
     {
       "id": "B",
@@ -281,6 +281,14 @@
         [
           "testar",
           "Nome da sala (padrão \"Sala de <host>\", o host renomeia na aba Sessão) e a sua sala no topo da aba Salas (0.25.0)"
+        ],
+        [
+          "testar",
+          "Nome da sala digitável no jogo, menu abrindo na Sessão com Criar/Convidar em primeiro, menu sem picos em jogo e opacidade dos danos dos aliados (0.26.0)"
+        ],
+        [
+          "planejado",
+          "Painel de grupo à esquerda: participantes, barra de vida, skills da barra e buffs/debuffs"
         ],
         [
           "planejado",

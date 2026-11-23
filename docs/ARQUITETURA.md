@@ -184,7 +184,7 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
 4. **Determinismo de VFX e projéteis.** Projéteis dos inimigos (`HellClock.Skill.Projectile`) colidem localmente. Nas réplicas, desligar dano de projétil e confiar no host.
 5. **Pooling** (`HellClock.Pool`, `ObjectPoolService`): réplicas e avatares precisam vir dos mesmos pools ou ser excluídos deles, para não serem reciclados por engano.
 6. **Unity 6 + BepInEx 5.** Usamos o BepInEx 5.4.23.6 oficial. **Confirmado no primeiro teste:** o `mscorlib.dll` do jogo é enxuto (2.072 tipos, sem `Module.GetPEKind`) e o preloader do BepInEx quebra. Faltam também APIs essenciais ao Harmony e ao MonoMod (`MethodBody`, `RuntimeMethodHandle.GetFunctionPointer`, `RuntimeHelpers.PrepareMethod`), então contornar só o `GetPEKind` não basta. A correção é um corlib completo **de Windows**, de `swyf-modding/Setup` (Unity 6000.3.10f1), em `BepInEx\unstripped_corlib`, via `dll_search_path_override`. O zip 6000.0.60 do unity.bepinex.dev é a variante Unix e trava o jogo no "Carregando". Compatibilidade conferida: zero referências ausentes e mesmas chamadas nativas do runtime. Há relatos de que o *listener* do log da Unity precisou de ajuste no Unity 6 em outros jogos. Se o `LogOutput.log` não mostrar as mensagens da Unity, os logs do próprio plugin continuam funcionando.
-7. **Desempenho (0.9.7).** Travadinhas esporádicas na sessão de 21/11/2026, sem número no log. Antes de otimizar, `Desempenho.cs` mede: cada parte do laço do mod (`Update`, `LateUpdate`, `OnGUI`) e os ganchos por golpe, número de dano e efeito somam o próprio tempo no quadro; criar avatar, carregar prefab de efeito (`WaitForCompletion`, síncrono) e copiar efeito são medidos à parte. Quadro ≥ 50 ms e ≥ 2,5× o normal vira linha `[Desempenho] Travada` (até 40 por janela), com coleta de lixo (`GC.CollectionCount`), mensagens recebidas e linhas de log do quadro; a cada 5 min em jogo, ou na troca solo/eco/coop, sai o `[Desempenho] Resumo`. Carregamento (sem personagem ou troca de cena) fica fora da conta. O mscorlib não tem `GC.GetTotalMemory`: a memória vem de `Profiler.GetMonoUsedSizeLong`.
+7. **Desempenho (0.9.7).** Travadinhas esporádicas na sessão de 21/11/2026, sem número no log. Antes de otimizar, `Desempenho.cs` mede: cada parte do laço do mod (`Update`, `LateUpdate`, `OnGUI`) e os ganchos por golpe, número de dano e efeito somam o próprio tempo no quadro; criar avatar, carregar prefab de efeito (`WaitForCompletion`, síncrono) e copiar efeito são medidos à parte (desde a 0.26.0 também buscar ouvintes do Esc, medir texto do menu, criar linha do menu e buscar botões do jogo; o painel mede de novo a linha de informação só quando o texto muda de conteúdo, não de referência). Quadro ≥ 50 ms e ≥ 2,5× o normal vira linha `[Desempenho] Travada` (até 40 por janela), com coleta de lixo (`GC.CollectionCount`), mensagens recebidas e linhas de log do quadro; a cada 5 min em jogo, ou na troca solo/eco/coop, sai o `[Desempenho] Resumo`. Carregamento (sem personagem ou troca de cena) fica fora da conta. O mscorlib não tem `GC.GetTotalMemory`: a memória vem de `Profiler.GetMonoUsedSizeLong`.
 
 ---
 
@@ -541,7 +541,8 @@ nunca dá) e quem recebe mostra no próprio boneco, se estiver chamado. Só o n�
 verde, como a seta do minimapa) e escala 0,8. O `SpawnDamageView` escolhe cor e escala por dentro, a partir dos
 campos `_normalDamageColor`, `_criticalDamageColor`, `_randomStartScale` e `_randomFinalScale` do DamageViewManager:
 o mod troca esses campos só durante a chamada e devolve em seguida. Configuração: `Interface.MostrarDanoDosAliados`
-e `Interface.TamanhoDanoDosAliados`.
+e `Interface.TamanhoDanoDosAliados`. *0.26.0:* `Interface.OpacidadeDanoDosAliados` (0,1–1, padrão 0,5) vai no alfa das
+duas cores: o `DamageView.Animate` põe a `FontColor` no `Text.color` e o sumiço é à parte, no `CanvasGroup.alpha` (IL).
 
 *0.5.4:* (a) efeito preso num inimigo (estacas cravadas, efeitos de status via `CharacterEffectsController.AddCharacterEffectVfx`)
 vai preso ao mesmo inimigo (netId + caminho do osso; no eco, o próprio objeto). (b) Partes internas mexidas por script
@@ -909,7 +910,7 @@ atualizador foi para a aba Sessão.
   `BloqueioEntrada_InputHandler_Update` (Alvo `InputHandler.Update`, fase 5 em `PatchTargets.cs`, fora das fases ativas)
   zera `MovementDirection` e `AimDirection` depois da leitura. WASD e o analógico ficam parados.
 - Desliga também `EventSystem.currentInputModule` (o `RewiredStandaloneInputModule` da UI do jogo).
-- Desde a 0.13.0 desliga também o `HellClock.UI.AndroidBackButtonListener` da tela de saves (procurado na abertura e, desde a 0.13.1, de novo a cada 0,5 s enquanto travado, porque a janela do aceite abre antes de a cena com ele carregar; religado na liberação; antes, procurado uma vez por
+- Desde a 0.13.0 desliga também o `HellClock.UI.AndroidBackButtonListener` da tela de saves (procurado na abertura e, desde a 0.13.1, de novo a cada 0,5 s enquanto travado — desde a 0.26.0 só sem personagem: em jogo o `Resources.FindObjectsOfTypeAll` custava ~55 ms por busca e a busca é uma por abertura, repetida se o personagem sumir com o painel aberto —, porque a janela do aceite abre antes de a cena com ele carregar; religado na liberação; antes, procurado uma vez por
   abertura, religado na liberação): ele lê o Esc direto (`Input.GetKeyDown(Escape)`, por fora do semáforo) e, no mesmo
   quadro em que o Esc fechava o menu do coop, abria "Você realmente quer fechar o jogo?".
 - O painel chama `Pedir()` a cada quadro aberto; o `Update` do runtime chama `Atualizar()` antes de tudo, que libera só
@@ -938,15 +939,15 @@ S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum 
 | COOP-EXPULSAR | "Expulsar <nome>" abaixo de cada aliado; o primeiro aperto vira "Confirmar: expulsar <nome>?" por 3 s (0.18.0, §12.7) | aba Sessão, só o host | S (`SessaoCoop.Expulsar`) | — |
 | COOP-BLOQUEAR-ALIADO | Ação secundária da linha do aliado (0.23.0, §12.12): X no controle, Delete ou clique direito (no painel nativo e na reserva); o primeiro aperto vira "Confirmar (X de novo): bloquear <nome>?" por 3 s. Como convidado a linha é "Bloquear <nome>" e o Enter/A também bloqueia. O rodapé mostra "X: bloquear" com o foco na linha | aba Sessão, em sessão | S + P (`SessaoCoop.Bloquear`; host também expulsa) | `bloqueados.txt` |
 | COOP-SALA-PUBLICA | "Sala pública (aparece na aba Salas)" (caixa de marcar); vale para o próximo coop e, como host, muda a sala na hora; convidado não muda (0.18.0) | aba Sessão (sem sessão ou como host) | P + S (`SessaoCoop.AlternarSalaPublica`, `SetLobbyType`) | `[Coop] SalaPublica` |
-| COOP-NOME-SALA | "Nome da sala:  <nome>" com "Renomear" à direita (0.25.0, §12.14). Enter ou clique: a linha vira campo ("_" piscando, "17/32", embaixo "Enter salva · Esc cancela · vazio volta a "Sala de <você>""); Backspace apaga; clique fora, trocar de aba ou fechar cancela. No controle, o A abre o teclado de tela da Steam (Big Picture e Steam Deck; fora deles, aviso e edição pelo teclado). Convidado vê o nome com "só o host muda" | aba Sessão (em coop) | S (`SessaoCoop.RenomearSala`, `hcc_sala`) | — (só a sala atual) |
-| COOP-ABA-SALAS | Aba "Salas" (0.18.0), entre Sessão e Ajustes; abas de 160 para caber 4. Desde a 0.21.0 o menu abre nela (F7, View, botão Coop) | janela; na reserva, na lista única depois da Sessão | R | — |
+| COOP-NOME-SALA | "Nome da sala:  <nome>" com "Renomear" à direita (0.25.0, §12.14). Enter ou clique: a linha vira campo ("_" piscando, "17/32", embaixo "Enter salva · Esc cancela · vazio volta a "Sala de <você>""); Backspace apaga; clique fora, trocar de aba ou fechar cancela. No controle, o A abre o teclado de tela da Steam (Big Picture e Steam Deck; fora deles, aviso e edição pelo teclado). Desde a 0.26.0 as letras vêm dos eventos de tecla do OnGUI (`Event.character`), porque no jogo o `Keyboard.current` do Input System é nulo e o `Input.inputString` foi removido pelo stripping. Convidado vê o nome com "só o host muda" | aba Sessão (em coop) | S (`SessaoCoop.RenomearSala`, `hcc_sala`) | — (só a sala atual) |
+| COOP-ABA-SALAS | Aba "Salas" (0.18.0), entre Sessão e Ajustes; abas de 160 para caber 4. De 0.21.0 a 0.25.0 o menu abria nela; desde a 0.26.0 abre na Sessão (F7, View, botão Coop) | janela; na reserva, na lista única depois da Sessão | R | — |
 | COOP-SALAS-ATUALIZAR | "Atualizar lista" com a idade da lista ("há 12 s"); "Buscando salas..." indisponível. Busca sozinha com a aba à vista quando nunca buscou ou a lista tem mais de 30 s; no máximo 1 busca a cada 3 s; sem resposta em 15 s, libera nova busca | aba Salas | S (`SessaoCoop.BuscarSalas`) | — |
 | COOP-SALAS-SUA-SALA | Seção "Sua sala" no topo (0.25.0, §12.14), só em coop, como host ou convidado, também privada ou cheia: "<nome da sala>  ·  você está aqui" e "Host <nome>  ·  2/4 jogadores  ·  pública" (o tipo só para o host). Só informação, sem foco nem ação | aba Salas | ∅ | — |
 | COOP-SALAS-SALA | Um item por sala pública compatível. Desde a 0.25.0 a linha de cima traz o nome da sala (`hcc_sala`; sem ele, "Sala de <host>") e a de baixo começa por "Host <nome>  ·  ". Desde a 0.21.0 em 2 linhas: "Host  ·  Cursed War" e "Nv 34  2/4" em cima, o lugar ("Ato 2, andar 5") embaixo; desabilitada ao conectar; no Ato 4 sem a DLC (§12.10) ou numa run aonde o save não chegou (§12.8), indisponível: à direita "indisponível", o motivo na linha de baixo e uma linha de explicação abaixo da lista. Até a 0.20.0, uma linha "Host  -  lugar" | aba Salas | S (`SessaoCoop.EntrarNaSala`; já num coop, o primeiro aperto vira "Confirmar: sair do seu coop e entrar?" por 3 s) | — |
 | COOP-SALAS-BLOQUEAR-HOST | Ação secundária da linha da sala (0.23.0, §12.12): X, Delete ou clique direito, dois apertos ("Confirmar (X de novo): bloquear <host>?"); a sala some da lista. Sala indisponível não recebe foco (não dá para bloquear por ela); sala sem `hcc_dono` válido só avisa | aba Salas | S + P (`SessaoCoop.Bloquear`) | `bloqueados.txt` |
 | COOP-AVISO-ATUALIZACAO | Recado do atualizador desta abertura (versão nova instalada ou atualização recusada), no topo da lista (0.13.0; antes no painel do canto) | aba Sessão, quando houver | ∅ | `[Atualizacao]` |
-| COOP-CRIAR | "Criar coop e convidar amigos" (sem sessão); "Esperando o Steam..." e "Conectando..." indisponíveis | aba Sessão | S (`SessaoCoop.HospedarOuConvidar`) | — |
-| COOP-CONVIDAR | "Convidar amigos (Steam)" | aba Sessão, em sessão | S (reabre o overlay de convite) | — |
+| COOP-CRIAR | "Criar coop e convidar amigos" (sem sessão); desde a 0.26.0 é o primeiro item da aba (foco ao abrir), logo abaixo das linhas de estado; "Esperando o Steam..." e "Conectando..." indisponíveis | aba Sessão | S (`SessaoCoop.HospedarOuConvidar`) | — |
+| COOP-CONVIDAR | "Convidar amigos (Steam)"; desde a 0.26.0 no lugar do COOP-CRIAR (primeiro item) | aba Sessão, em sessão | S (reabre o overlay de convite) | — |
 | COOP-SAIR | "Sair do coop"; o primeiro aperto vira "Confirmar: sair do coop?" por 3 s | aba Sessão, em sessão | S (`SessaoCoop.Sair`) | — |
 | COOP-ECO | "Modo eco (teste com um PC)" LIGADO/DESLIGADO; sem personagem: "entre num save" | aba Sessão | S (`CoopRuntime.AlternarEco`, também F8) | `[Teclas] ModoEco` |
 | COOP-CFG-NOMES | "Nomes dos aliados" (caixa de marcar) | aba Ajustes | P | `[Interface] MostrarNomesDosAliados` |
@@ -954,6 +955,7 @@ S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum 
 | COOP-CFG-SETA | "Seta do aliado fora da tela" (caixa de marcar) (0.14.0) | aba Ajustes | P | `[Interface] MostrarSetaDosAliados` |
 | COOP-CFG-DANO | "Números de dano dos aliados" (caixa de marcar) | aba Ajustes | P | `[Interface] MostrarDanoDosAliados` |
 | COOP-CFG-DANO-TAM | "Tamanho do dano" (barra, 30–200%; indisponível com os números desligados) | aba Ajustes | P | `[Interface] TamanhoDanoDosAliados` |
+| COOP-CFG-DANO-OPAC | "Opacidade dos danos dos aliados" (barra, 10–100%, padrão 50%; indisponível com os números desligados) (0.26.0) | aba Ajustes | P | `[Interface] OpacidadeDanoDosAliados` |
 | COOP-CFG-SOM | "Sons das skills dos aliados" (caixa de marcar) | aba Ajustes | P | `[Audio] SonsDosAliados` |
 | COOP-CFG-VOL | "Volume dos sons" (barra, 0–100%; indisponível com os sons desligados) | aba Ajustes | P | `[Audio] VolumeDosAliados` |
 | COOP-BAL-LEITURA | Multiplicadores do balanceamento, todos fixos do autor (XP e ouro desde a 0.16.3; vida, chefes, dano, quantidade e tempo desde a 0.22.0) | aba Ajustes | ∅ (só leitura; ninguém muda) | `Escalonamento.VidaGrupo`/`VidaChefeGrupo`/`DanoGrupo`/`QuantidadeGrupo`/`TempoGrupo`/`XpGrupo`/`OuroGrupo` |
@@ -1294,7 +1296,7 @@ mod não conhece). Nenhum formato de mensagem mudou: o protocolo continua 20.
 
 Decisões do autor (23/11/2026), antes da 3a-2: a lista mostra salas com e sem a Cursed War. Sala num andar ou modo da
 DLC só aceita quem tem a DLC, e os modos normais não restringem. "Modo da DLC" é só o **Ato 4**: a Ascensão nos atos
-1 a 3 fica livre, porque a Penitência é a árvore do save de cada um. O menu do coop abre direto na aba Salas, numa
+1 a 3 fica livre, porque a Penitência é a árvore do save de cada um. O menu do coop passou a abrir direto na aba Salas (até a 0.25.0), numa
 janela maior (visual A das 3 opções: lista larga, com cada sala em 2 linhas).
 
 **O que o IL e a instalação mostram (2.1.1.1):**
@@ -1337,7 +1339,7 @@ janela maior (visual A das 3 opções: lista larga, com cada sala em 2 linhas).
   conferido no convidado.
 - No Hello com DLC diferente, o aviso é `Salas.TextoDlcDiferente`: jogam juntos os atos 1 a 3, e o Ato 4 é só de quem
   tem a DLC.
-- Menu: `MenuCoop.Abrir` abre na aba Salas; a abertura automática das Novidades continua na aba Novidades. O painel
+- Menu: `MenuCoop.Abrir` abria na aba Salas (até a 0.25.0; desde a 0.26.0, na Sessão); a abertura automática das Novidades continua na aba Novidades. O painel
   nativo passou a 1100 × 960, que cabe em 4:3 (canvas de 1440 × 1080). `MenuCoop.Linha.Detalhe` é a segunda linha do
   item. No painel, ela é um texto "Detalhe" (cópia do texto da linha, no tamanho de informação, recuado) na faixa de
   baixo, de 26, e o título e o valor sobem para a faixa de cima. Na reserva (gaveta, agora com até 720 de largura e
@@ -1517,7 +1519,7 @@ nome vale só para a sala atual (não vai para o `.cfg`).
   de cima da sala passa a ser o nome; o host vai para a linha de baixo ("Host <nome>  ·  lugar"). O nome do host continua
   vindo do `hcc_host`; bloquear pela lista segue pelo `hcc_dono` (§12.12).
 - **Renomear** (`MenuCoop.ComecarEdicaoDoNome`/`EditarNome`, `SessaoCoop.RenomearSala`): só o dono do lobby. O texto chega
-  pelo `Keyboard.onTextInput` do Input System, sem controle nem `<` `>` e com no máximo 32 caracteres; Enter grava (limpo
+  pelo `Keyboard.onTextInput` do Input System ou, desde a 0.26.0, pelo `Event.character` do OnGUI (no jogo o `Keyboard.current` é nulo; a primeira fonte que entregar uma letra fica com a edição), sem controle nem `<` `>` e com no máximo 32 caracteres; Enter grava (limpo
   pelo `Salas.NomeDigitado`; vazio volta ao padrão), Esc ou B cancelam, Backspace apaga sem partir emoji. Enquanto edita, o
   Esc não fecha o menu e as setas não navegam; a tecla do menu não fecha (pode ser uma letra no .cfg) e o View fecha (cancela). A entrada do jogo já fica travada pelo
   semáforo do `InputHandler` (o mesmo do console de cheats do jogo), então as letras não abrem janelas do jogo.

@@ -32,7 +32,7 @@ namespace HellClockCoop.Interface
         internal enum Acao
         {
             Nenhuma, CriarOuConvidar, Sair, Eco, Nomes, Vida, Seta, Dano, TamanhoDano, Sons, Volume, Novidades,
-            SalaPublica, AtualizarSalas, NomeSala, Sala0 = 100, Expulsar0 = 200, Desbloquear0 = 300,
+            SalaPublica, AtualizarSalas, NomeSala, OpacidadeDano, Sala0 = 100, Expulsar0 = 200, Desbloquear0 = 300,
         }
         internal enum Tipo { Secao, Info, Item, Interruptor, Deslizante }
         internal enum Aba { Sessao, Salas, Ajustes, Novidades }
@@ -240,7 +240,7 @@ namespace HellClockCoop.Interface
             }
         }
 
-        private static void Abrir(string motivo, bool peloControle, Aba aba = Aba.Salas) // 0.21.0: abre direto na aba Salas
+        private static void Abrir(string motivo, bool peloControle, Aba aba = Aba.Sessao) // 0.26.0: volta a abrir na Sessão (de 0.21.0 a 0.25.0, Salas)
         {
             _aberto = true;
             _controle = peloControle;
@@ -366,6 +366,13 @@ namespace HellClockCoop.Interface
         private static bool _editandoNome;
         private static string _textoNome = "";
         private static Keyboard _tecladoOuvido; // onde o OnTexto está inscrito (o teclado pode trocar)
+        // 0.26.0: no jogo o Keyboard.current é nulo (o teclado vem pelo Input legado/Rewired), então o onTextInput não
+        // entrega nada, e o Input.inputString foi removido pelo stripping. A outra fonte são os eventos de tecla do IMGUI
+        // (Event.character no OnGUI, com acento e maiúscula do sistema). A primeira fonte que entregar uma letra fica com a
+        // edição inteira, para a mesma letra não entrar duas vezes.
+        private enum FonteTexto { Nenhuma, InputSystem, Gui }
+        private static FonteTexto _fonteTexto;
+        private static int _letrasInputSystem, _letrasGui;
 
         /// <summary>Host: Enter ou clique na linha "Nome da sala". No controle, tenta o teclado de tela da Steam antes.</summary>
         private static void ComecarEdicaoDoNome(CoopRuntime rt)
@@ -378,10 +385,13 @@ namespace HellClockCoop.Interface
             }
             _textoNome = rt.Sessao.NomeDaSalaAtual() ?? "";
             _editandoNome = true;
+            _letrasInputSystem = _letrasGui = 0;
+            _fonteTexto = FonteTexto.Nenhuma;
             try
             {
                 _tecladoOuvido = Keyboard.current;
                 if (_tecladoOuvido != null) _tecladoOuvido.onTextInput += OnTexto;
+                else Plugin.Log.LogInfo("[Menu] Nome da sala: sem teclado no Input System; letras pelos eventos do OnGUI.");
             }
             catch (Exception e)
             {
@@ -395,6 +405,7 @@ namespace HellClockCoop.Interface
             if (!_editandoNome) return;
             _editandoNome = false;
             _textoNome = "";
+            Plugin.Log.LogInfo($"[Menu] Edição do nome encerrada: {_letrasInputSystem} letra(s) pelo Input System, {_letrasGui} pelo OnGUI.");
             try { if (_tecladoOuvido != null) _tecladoOuvido.onTextInput -= OnTexto; }
             catch (Exception) { /* teclado desconectado */ }
             _tecladoOuvido = null;
@@ -403,12 +414,31 @@ namespace HellClockCoop.Interface
         /// <summary>Caracteres digitados (Input System). Fora o que o Salas.LimparTexto tiraria; o Enter salva já limpo.</summary>
         private static void OnTexto(char c)
         {
-            if (!_editandoNome || _textoNome.Length >= Salas.NomeMaximo) return;
-            if (!Salas.CaractereAceito(c)) return;
+            if (!_editandoNome || _fonteTexto == FonteTexto.Gui) return;
+            if (Salas.CaractereAceito(c)) _fonteTexto = FonteTexto.InputSystem; // só letra aceita decide a fonte (o Enter não)
+            if (Acrescentar(c)) _letrasInputSystem++;
+        }
+
+        /// <summary>No OnGUI do runtime: letras dos eventos de tecla do IMGUI, se o Input System não entregou nenhuma.</summary>
+        internal static void TextoDoGui(Event e)
+        {
+            if (!_editandoNome || _fonteTexto == FonteTexto.InputSystem || e == null || e.type != EventType.KeyDown) return;
+            char c = e.character;
+            if (c == '\0') return; // tecla sem letra (setas, Shift...): o caractere, se houver, vem num evento próprio
+            if (Salas.CaractereAceito(c)) _fonteTexto = FonteTexto.Gui;
+            if (Acrescentar(c)) _letrasGui++;
+        }
+
+        /// <summary>Uma letra no campo, se couber e for aceita. Falso quando ficou de fora.</summary>
+        private static bool Acrescentar(char c)
+        {
+            if (!_editandoNome || _textoNome.Length >= Salas.NomeMaximo) return false;
+            if (!Salas.CaractereAceito(c)) return false; // inclui \b, \n e \r (Backspace e Enter têm leitura própria)
             // Emoji chega em duas metades: sem lugar para as duas, nenhuma entra; metade de baixo solta é descartada.
-            if (char.IsHighSurrogate(c) && _textoNome.Length >= Salas.NomeMaximo - 1) return;
-            if (char.IsLowSurrogate(c) && (_textoNome.Length == 0 || !char.IsHighSurrogate(_textoNome[_textoNome.Length - 1]))) return;
+            if (char.IsHighSurrogate(c) && _textoNome.Length >= Salas.NomeMaximo - 1) return false;
+            if (char.IsLowSurrogate(c) && (_textoNome.Length == 0 || !char.IsHighSurrogate(_textoNome[_textoNome.Length - 1]))) return false;
             _textoNome += c;
+            return true;
         }
 
         /// <summary>No Update, editando: Enter salva, Esc ou B cancela, Backspace apaga (sem partir emoji).</summary>
@@ -669,6 +699,11 @@ namespace HellClockCoop.Interface
                 min = 0.3f; max = 2f; passo = 0.1f; // mesma faixa que DanosVisiveis aplica
                 return Fase3.DanosVisiveis.TamanhoDano;
             }
+            if (acao == Acao.OpacidadeDano)
+            {
+                min = Fase3.DanosVisiveis.OpacidadeMinima; max = 1f; passo = 0.05f; // mesma faixa que DanosVisiveis aplica
+                return Fase3.DanosVisiveis.OpacidadeDano;
+            }
             min = 0f; max = 1f; passo = 0.05f;
             return acao == Acao.Volume ? Fase3.SonsAliados.EntradaVolume : null;
         }
@@ -850,6 +885,12 @@ namespace HellClockCoop.Interface
                     : "O jogo continua rodando. Use teclado ou controle: o clique moveria o personagem.", null, false);
             }
 
+            // 0.26.0: criar/convidar é o primeiro item da aba (e o foco ao abrir).
+            if (s.EmSessao) Adicionar(Tipo.Item, Acao.CriarOuConvidar, "Convidar amigos (Steam)", null, true);
+            else if (conectando) Adicionar(Tipo.Item, Acao.CriarOuConvidar, "Conectando...", null, false);
+            else if (s.EstadoAtual == SessaoCoop.Estado.AguardandoSteam) Adicionar(Tipo.Item, Acao.CriarOuConvidar, "Esperando o Steam...", null, false);
+            else Adicionar(Tipo.Item, Acao.CriarOuConvidar, "Criar coop e convidar amigos", null, true);
+
             if (AliadosMostrados == null) AliadosMostrados = new List<Par>();
             AliadosMostrados.Clear();
             if (s.EmSessao && s.Pares.Count > 0)
@@ -881,10 +922,6 @@ namespace HellClockCoop.Interface
                 Ligado = SessaoCoop.SalaPublica != null && SessaoCoop.SalaPublica.Value, Valor = Estado(SessaoCoop.SalaPublica),
             });
             AdicionarNomeDaSala(s); // 0.25.0
-            if (s.EmSessao) Adicionar(Tipo.Item, Acao.CriarOuConvidar, "Convidar amigos (Steam)", null, true);
-            else if (conectando) Adicionar(Tipo.Item, Acao.CriarOuConvidar, "Conectando...", null, false);
-            else if (s.EstadoAtual == SessaoCoop.Estado.AguardandoSteam) Adicionar(Tipo.Item, Acao.CriarOuConvidar, "Esperando o Steam...", null, false);
-            else Adicionar(Tipo.Item, Acao.CriarOuConvidar, "Criar coop e convidar amigos", null, true);
             if (s.EmSessao)
             {
                 bool armado = ConfirmaSaida(Time.unscaledTime, _confirmarSairAte);
@@ -958,7 +995,9 @@ namespace HellClockCoop.Interface
             AdicionarInterruptor(Acao.Vida, "Barra de vida dos aliados", AliadosNaTela.MostrarVida);
             AdicionarInterruptor(Acao.Seta, "Seta do aliado fora da tela", AliadosNaTela.MostrarSeta);
             AdicionarInterruptor(Acao.Dano, "Números de dano dos aliados", Fase3.DanosVisiveis.MostrarDano);
-            AdicionarDeslizante(Acao.TamanhoDano, "Tamanho do dano", Fase3.DanosVisiveis.MostrarDano == null || Fase3.DanosVisiveis.MostrarDano.Value);
+            bool danoLigado = Fase3.DanosVisiveis.MostrarDano == null || Fase3.DanosVisiveis.MostrarDano.Value;
+            AdicionarDeslizante(Acao.TamanhoDano, "Tamanho do dano", danoLigado);
+            AdicionarDeslizante(Acao.OpacidadeDano, "Opacidade dos danos dos aliados", danoLigado); // 0.26.0
 
             Adicionar(Tipo.Secao, Acao.Nenhuma, "Som", null, false);
             AdicionarInterruptor(Acao.Sons, "Sons das skills dos aliados", Fase3.SonsAliados.EntradaLigado);

@@ -392,6 +392,7 @@ namespace HellClockCoop
             Desempenho.NoLaco = true;
             try
             {
+                Interface.MenuCoop.TextoDoGui(Event.current); // 0.26.0: letras do nome da sala (o jogo não tem teclado no Input System)
                 DesenharInterface();
             }
             finally

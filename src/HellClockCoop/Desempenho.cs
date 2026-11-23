@@ -17,11 +17,12 @@ namespace HellClockCoop
         internal enum Parte { Menus, Rede, Run, Inimigos, Objetos, Santuarios, Portas, Alvos, Fx, Danos, Sons, Balanceamento, Personagem, Interface, Ganchos, Quantidade }
 
         /// <summary>Trechos suspeitos medidos por dentro das partes (não entram na soma).</summary>
-        internal enum Detalhe { CriarAvatar, CarregarPrefabFx, CopiarFx, Quantidade }
+        internal enum Detalhe { CriarAvatar, CarregarPrefabFx, CopiarFx, BuscarOuvintesEsc, MedirTextoMenu, CriarLinhaMenu, BuscarBotoesJogo, Quantidade }
 
         private static readonly string[] NomesParte =
             { "Menus", "Rede", "Run", "Inimigos", "Objetos", "Santuários", "Portas", "Alvos", "Efeitos", "Danos", "Sons", "Balanceamento", "Personagem", "Interface", "Ganchos" };
-        private static readonly string[] NomesDetalhe = { "criar avatar", "carregar prefab de efeito", "copiar efeito" };
+        private static readonly string[] NomesDetalhe =
+            { "criar avatar", "carregar prefab de efeito", "copiar efeito", "buscar ouvintes do Esc", "medir texto do menu", "criar linha do menu", "buscar botões do jogo" };
 
         private const double LimiteMinimoMs = 50.0;   // abaixo disso não é travada perceptível
         private const double FatorTravada = 2.5;      // e precisa ser bem maior que o quadro normal

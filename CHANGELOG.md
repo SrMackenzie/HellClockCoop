@@ -4,6 +4,16 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.26.0 — Nome da sala digitável, menu mais leve e opacidade do dano 🧪
+_23/11/2026_
+
+- Corrigido: dá para digitar o nome da sala (o jogo não entrega o teclado ao Input System; as letras vêm agora pelos eventos de tecla, com acento e maiúscula)
+- Menu do coop sem os picos de ~55 ms por segundo em jogo: a busca do ouvinte do Esc da tela de saves roda uma vez por abertura (antes, a cada 0,5 s)
+- O menu volta a abrir na aba Sessão, com "Criar coop e convidar amigos" / "Convidar amigos (Steam)" como primeiro item
+- Ajustes: "Opacidade dos danos dos aliados" (10% a 100%, padrão 50%)
+- O Desempenho do log detalha busca do ouvinte do Esc, medição de texto e criação de linha do menu e busca dos botões do jogo
+- Exige a 0.26.0 em todos os PCs (protocolo sem mudança)
+
 ## 0.25.0 — Nome da sala e a sua sala na lista 🧪
 _23/11/2026_
 

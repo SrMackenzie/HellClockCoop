@@ -586,11 +586,14 @@ namespace HellClockCoop.Interface
                 {
                     v.Texto.text = l.Texto;
                     v.Texto.color = l.Enfase == MenuCoop.Enfase.Titulo ? CorFoco : l.Enfase == MenuCoop.Enfase.Rotulo ? CorValor : CorInfo;
-                    if (!ReferenceEquals(v.Medido, l.Texto) || !Mathf.Approximately(v.LarguraMedida, largura))
+                    // 0.26.0: pelo conteúdo (o Montar concatena textos a cada quadro: pela referência, media sempre).
+                    if (!string.Equals(v.Medido, l.Texto, StringComparison.Ordinal) || !Mathf.Approximately(v.LarguraMedida, largura))
                     {
+                        double inicio = Desempenho.Agora();
                         v.Medido = l.Texto;
                         v.LarguraMedida = largura;
                         v.AlturaMedida = Mathf.Max(30f, v.Texto.GetPreferredValues(l.Texto, largura - 4f, 0f).y + 8f);
+                        Desempenho.SomarDetalhe(Desempenho.Detalhe.MedirTextoMenu, inicio);
                     }
                     altura = v.AlturaMedida;
                 }
@@ -683,10 +686,17 @@ namespace HellClockCoop.Interface
         {
             if (i < Visuais.Count && Visuais[i].Tipo != tipo)
             {
+                double inicio = Desempenho.Agora();
                 Object.Destroy(Visuais[i].Rt.gameObject);
                 Visuais[i] = Criar(tipo);
+                Desempenho.SomarDetalhe(Desempenho.Detalhe.CriarLinhaMenu, inicio);
             }
-            else if (i >= Visuais.Count) Visuais.Add(Criar(tipo));
+            else if (i >= Visuais.Count)
+            {
+                double inicio = Desempenho.Agora();
+                Visuais.Add(Criar(tipo));
+                Desempenho.SomarDetalhe(Desempenho.Detalhe.CriarLinhaMenu, inicio);
+            }
             Visual v = Visuais[i];
             if (!v.Rt.gameObject.activeSelf) v.Rt.gameObject.SetActive(true);
             return v;
