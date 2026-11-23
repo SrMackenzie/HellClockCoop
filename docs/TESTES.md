@@ -402,6 +402,21 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.17.0 — Marcador no chão (ping)
+
+Solo com o modo eco (F8) cobre o mouse, o visual e a seta da borda; em dupla, conferir o nome na cor do aliado. Exige a
+0.17.0 em todos os PCs (protocolo 18). Só informação: não muda o balanceamento.
+
+**Teste do autor (22/11/2026, DLL 0.17.0, solo com o eco):** ping funcionando com o botão do meio do mouse; o seu
+marcador e o do Eco na cor certa, e a seta na borda com o ponto fora da tela. Falta a dupla; o controle (R3) ficou
+para depois.
+- [x] **Mouse (eco):** com o eco ligado, aperte o botão do meio do mouse. Esperado: a seta do jogo cai no ponto sob o
+  cursor, com sombra no chão, pulsa e some em 5 s; 1 s depois, a do Eco aparece verde ao lado, com o nome.
+- [ ] **Controle (pendente):** aperte o R3. Esperado: a marca sai uns 4 m à frente do personagem. Anotar se o R3 ou o
+  botão do meio já fazem alguma coisa no próprio jogo.
+- [x] **Fora da tela:** marque longe e ande até o ponto sair da tela. Esperado: a seta vai para a borda com a distância.
+- [ ] **Dupla:** o aliado vê o seu marcador com o seu nome na cor dos seus números de dano, e você vê o dele.
+
 ## 0.16.0 — Reanimação do aliado caído
 
 Só em dupla: o fantasma do modo eco não reanima. Exige a 0.16.0 nos dois PCs (protocolo 17). Dá para testar junto com
