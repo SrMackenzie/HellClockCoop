@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.10.1-e0763a?style=for-the-badge&labelColor=1c0f0b">
+  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.30.0-e0763a?style=for-the-badge&labelColor=1c0f0b">
   <img alt="Status" src="https://img.shields.io/badge/status-alpha%20jog%C3%A1vel-8a2418?style=for-the-badge&labelColor=1c0f0b">
   <img alt="Hell Clock" src="https://img.shields.io/badge/Hell%20Clock-2.1.1.1-f2b04a?style=for-the-badge&labelColor=1c0f0b">
   <img alt="Jogadores" src="https://img.shields.io/badge/jogadores-2%20a%204-5fe08a?style=for-the-badge&labelColor=1c0f0b">
@@ -87,48 +87,86 @@ arquivos ou log. Detalhes, guarda e como apagar os seus resumos em
 
 ## 🔥 O que já funciona
 
-<table>
-<tr>
-<td width="50%" valign="top">
+De 2 a 4 jogadores na mesma run, cada um no próprio save. Os itens marcados com 🧪 já estão no mod e aguardam
+confirmação no jogo com dois PCs. A lista completa, item por item, está no [ROADMAP](ROADMAP.md).
 
 ### 👥 Juntos pela Steam
-- Lobby de amigos, convite pelo overlay e entrada pelo "Entrar no jogo".
-- Checagem de versão do mod e da DLC Cursed War.
-- Avatar do aliado com animações, mira, roupas com física e aparência.
-- Nome sobre a cabeça e **seta verde no minimapa**.
+*Entrar no coop leva dois cliques, com amigos ou com quem estiver online.*
+
+- **Convite pela Steam**: pelo overlay ou pelo "Entrar no jogo" no perfil do amigo. Com o jogo fechado, ele abre e
+  entra sozinho.
+- 🧪 **Lista de salas**: o coop nasce como sala pública e aparece na aba **Salas** de quem tem a mesma versão do mod,
+  com o lugar da run, o nível do host e as vagas. Dá para entrar com a run em andamento, ou deixar a sala só para amigos.
+- 🧪 **Nome da sala**: "Sala de &lt;host&gt;" por padrão, e o host renomeia na aba Sessão.
+- 🧪 **Versão e DLC conferidas** na entrada. Com e sem a DLC Cursed War vocês jogam juntos os atos 1 a 3 e a Ascensão; o
+  Ato 4 é só para quem tem a DLC.
+- **Atualização automática**: ao abrir o jogo, o mod baixa a versão nova, assinada pelo autor e conferida arquivo por
+  arquivo. Se algo falhar, volta para a versão anterior.
 
 ### 🗺️ A mesma run
-- A run é do **host**: os convidados vão junto, automaticamente.
-- Mesmo andar, mesmo mapa, mesmo ponto de spawn.
-- O **Hell Clock é um só** — tempo ganho por qualquer um vai para ele.
-- Quem entra no meio da run cai no andar do host.
-- **Barreiras de sangue** (chefe, sobrevivência, santuário amaldiçoado) fecham para todos, e quem está longe é levado
-  para perto do host.
+*A run é do host, e o grupo vai junto.*
 
-</td>
-<td width="50%" valign="top">
+- Quando o host entra numa run, os convidados vão junto, para o **mesmo andar, o mesmo mapa e o mesmo ponto de spawn**.
+- **Um só Hell Clock**: o tempo ganho por qualquer um vai para o relógio de todos.
+- 🧪 Quem entra no meio da run cai no andar do host.
+- 🧪 **Barreiras de sangue** (chefe, sobrevivência, santuário amaldiçoado) fecham para todos, e quem está longe é levado
+  para perto do host.
+- Com alguém no coop, inventário, mapa e menus **não pausam** o jogo.
 
 ### ⚔️ Combate compartilhado
-- **Os mesmos inimigos para todos**: tipo, afixos de elite, vida, animação.
-- O dano de cada um conta; quando morre, morre para todos.
-- **Um vê as skills do outro**: tiros, projéteis, áreas, auras, orbes, facas.
-- **Números de dano dos aliados** com cor própria por jogador.
-- Inimigos atacam quem estiver mais perto — host ou convidado.
-- Baús, vasos/caixas, **santuários** e **totens** iguais para todos; o vaso que um quebra quebra também no outro PC.
-- **Chefes** com barra de vida e dano também para o convidado.
-- Passos e sons dos inimigos acompanhando o movimento também no convidado.
-- Ondas de sobrevivência e inimigos de temporada com o mesmo XP e a mesma tabela de loot nos dois PCs.
+*Os mesmos inimigos na tela de todos, e cada golpe conta.*
+
+- **Os mesmos inimigos** para todos: tipo, afixos de elite, vida e animação. O dano de cada um conta, e o inimigo que
+  morre morre para todos.
+- **Um vê as skills do outro**: tiros, projéteis, áreas, auras e orbes (🧪 facas que giram e estacas cravadas).
+- **Números de dano dos aliados** na cor de cada um, com tamanho ajustável (🧪 e opacidade).
+- 🧪 Os inimigos atacam quem estiver mais perto, host ou convidado.
+- 🧪 **Chefes** com barra de vida e dano também no convidado.
+- 🧪 **Baús, vasos, santuários e totens** iguais para todos: o vaso que um quebra quebra também no outro PC.
+- 🧪 **Sons das skills e dos golpes** dos aliados, com volume próprio.
+
+### 🤝 Em grupo
+*Ferramentas para jogar junto de verdade, sem chat de texto.*
+
+- 🧪 **Painel de grupo** à esquerda: você no topo e os aliados embaixo, com vida, convicção, skills equipadas e até
+  4 buffs e debuffs. A coroa marca o host.
+- 🧪 **Aliados na tela**: nome e barra de vida sobre a cabeça, seta verde no minimapa e uma seta na borda apontando
+  quem está fora da tela.
+- 🧪 **Caído, não morto**: quem morre fica caído e volta no andar seguinte com metade da vida. A run só acaba quando
+  todos caem.
+- 🧪 **Reanimação**: fique parado ao lado do aliado caído e ele levanta com 30% da vida.
+- 🧪 **Teleporte até o aliado**: tecla <kbd>T</kbd> ou clique no raio do painel. Só fora de combate, canaliza 2 s e tem
+  recarga de 60 s. O personagem some e reaparece com o efeito do próprio jogo.
+- 🧪 **Marcador**: o botão do meio do mouse (<kbd>R3</kbd> no controle) marca um ponto no chão que todos veem por 5 s.
+
+### 🎛️ Menu do coop
+*Tudo dentro do jogo, com a cara das Opções do Hell Clock.*
+
+- 🧪 Abre com <kbd>F7</kbd>, com <kbd>View</kbd> no controle, pelo botão **Coop** do menu do jogo ou pela pausa.
+- 🧪 Abas **Sessão** (criar, convidar, expulsar e sair), **Salas**, **Ajustes** e **Novidades**. A aba Novidades abre
+  sozinha depois de cada atualização, com o que testar.
+- Com o menu aberto, o clique não move o personagem.
+- **Modo eco** (<kbd>F8</kbd>): um fantasma seu repete tudo com 1 s de atraso, para testar o mod sem amigo.
+
+### 🛡️ Coop seguro com desconhecidos
+*A sala pública não põe o seu save em risco.*
+
+- 🧪 **Trava de progresso**: só acompanha a run quem já chegou àquela masmorra e àquele andar no próprio save. Para os
+  outros, a sala aparece travada na lista.
+- 🧪 O host **não conclui masmorras no seu save**, e quem herda o lobby no meio da run não passa a comandar a sua run.
+- 🧪 **Bloquear jogador** pela aba Sessão ou Salas: as salas dele somem da sua lista e, se você é o host, ele é expulso
+  sempre que entrar. O bloqueio da Steam também conta.
+- 🧪 Tetos para tempo ganho, inimigos e baús por andar, conferidos com os dados do próprio jogo.
 
 ### 🎒 Progressão individual
-- Loot, ouro, XP, relíquias e Bênçãos: **cada um no próprio save**.
-- Em grupo, XP, ouro, Soulstones e moedas de criação ficam perto do solo por andar; o **equipamento não tem
-  redução**: é o prêmio de jogar junto.
-- O mod **nunca escreve no save de outro jogador**.
-- Backup automático do save a cada vez que o jogo abre.
+*Cada um joga pelo próprio personagem.*
 
-</td>
-</tr>
-</table>
+- Loot, ouro, XP, relíquias e Bênçãos ficam **cada um no próprio save**.
+- O mod **nunca escreve no save de outro jogador**, e faz backup do seu save toda vez que o jogo abre.
+- 🧪 Em grupo, XP, ouro, Soulstones e moedas de criação ficam perto do solo por andar. O **equipamento não tem
+  redução**: é o prêmio de jogar junto.
+- 🧪 O grupo enfrenta mais inimigos, com mais vida, e um Hell Clock mais apertado. Fica um pouco mais difícil que no
+  solo (veja [Balanceamento](#%EF%B8%8F-balanceamento--prioridade-1)).
 
 ## 📈 Progresso
 
@@ -148,7 +186,7 @@ confirmada rodando no jogo, com dois PCs.
 | 2 | Mesma run: andar, mapa, spawn e Hell Clock do host | ✅ confirmada no jogo |
 | 3 | Combate: inimigos, skills, dano, baús e quebráveis | 🧪 em teste (3a confirmada) |
 | 4 | Loot individual | 🧪 parcial |
-| 5 | Polimento: menu de coop, reconexão, sons, dificuldade, tradução | ⬜ planejada |
+| 5 | Polimento: menu do coop, salas, painel de grupo, teleporte, sons; depois reconexão e tradução | 🧪 em andamento |
 
 ## ⚖️ Balanceamento — prioridade 1
 
@@ -241,6 +279,7 @@ Requisito: overlay da Steam ligado (*Steam → Configurações → No jogo*).
 | <kbd>F9</kbd> | Diagnóstico: salva a estrutura do personagem |
 | <kbd>F10</kbd> | **Novidades**: o que mudou nas últimas versões do mod, na aba Novidades do menu do coop (abre sozinha uma vez depois de cada atualização) |
 | Botão do meio do mouse ou <kbd>R3</kbd> no controle | **Marcador** (0.17.0): marca um ponto no chão (sob o cursor; no controle, à sua frente) que todo o grupo vê por 5 s, com o seu nome na sua cor |
+| <kbd>T</kbd> ou <kbd>D-pad ←</kbd> no controle | **Teleporte até o aliado** (0.29.0): com um aliado de pé no seu andar, fora de combate, canaliza 2 s parado e leva você até ele (recarga de 60 s). Com dois ou mais aliados, mostra 1/2/3 no painel de grupo e o número escolhe. Também pelo clique no raio da linha do aliado |
 
 **Host** (quem convida): entre num save, aperte <kbd>F7</kbd> e escolha **Criar coop e convidar amigos**. **Convidado**:
 aceite o convite na Steam (com o jogo fechado, ele abre e entra sozinho). Quando o host entra numa run, todos vão junto.
