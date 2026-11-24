@@ -372,7 +372,9 @@ namespace HellClockCoop.Interface
             if (ligar == _cinzaAplicado) return; // só desfaz o que o mod aplicou
             try
             {
+                double inicio = Desempenho.Agora(); // busca na cena na queda e ao levantar: medida desde a 0.30.3, ainda sem número
                 CameraPostEffectController efeito = Object.FindAnyObjectByType<CameraPostEffectController>();
+                Desempenho.SomarDetalhe(Desempenho.Detalhe.BuscarPecasHud, inicio);
                 if (efeito == null) { _cinzaAplicado = false; return; }
                 efeito.LerpToGrayscale(ligar ? 1f : 0f, ligar ? 0.5f : 0.25f, Ease.OutQuad);
                 _cinzaAplicado = ligar;
@@ -431,7 +433,9 @@ namespace HellClockCoop.Interface
             {
                 if (ligar)
                 {
+                    double inicio = Desempenho.Agora(); // idem: medida desde a 0.30.3
                     _vidaUI = Object.FindAnyObjectByType<LowLifeUIController>();
+                    Desempenho.SomarDetalhe(Desempenho.Detalhe.BuscarPecasHud, inicio);
                     _vinheta = _vidaUI != null && CampoVinheta != null ? CampoVinheta.GetValue(_vidaUI) as FullScreenHealthUI : null;
                     if (_vinheta != null && CampoFeedback != null && !(bool)CampoFeedback.GetValue(_vidaUI)) _vinheta = null; // opção desligada
                     if (_vinheta == null) return;

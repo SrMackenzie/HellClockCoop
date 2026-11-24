@@ -408,6 +408,33 @@ namespace HellClockCoop
             }
         }
 
+        /// <summary>
+        /// O primeiro texto que o OnGUI desenha no jogo carrega a fonte: 105 ms (0.30.2) a 484 ms (0.30.1) medidos em jogo,
+        /// no primeiro aviso do canto (criar o coop, ligar o eco). Feito aqui uma vez, no primeiro desenho do OnGUI, que
+        /// acontece na abertura do jogo, antes de existir personagem: mede e desenha transparente os dois estilos do canto.
+        /// </summary>
+        private void PrepararTexto()
+        {
+            double inicio = Desempenho.Agora();
+            Color antes = GUI.color;
+            try
+            {
+                var amostra = new GUIContent("» Modo eco (F8): 0123456789 bytes por snapshot, 20/s. ÁÉÍÓÚÂÊÔÃÕÇ áéíóúâêôãõç");
+                GUI.color = Color.clear;
+                float altura = _estiloCaixa.CalcHeight(amostra, 560f);
+                GUI.Box(new Rect(12f, 12f, 560f, altura), amostra, _estiloCaixa);
+                GUI.Label(new Rect(12f, 12f, 560f, 24f), amostra, _estiloNome);
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Interface] Não deu para preparar o texto do OnGUI (o primeiro aviso em jogo pode travar um instante): {e.Message}");
+            }
+            GUI.color = antes;
+            Plugin.Log.LogInfo($"[Interface] Texto do OnGUI preparado em {(Desempenho.Agora() - inicio) * 1000.0:0} ms, na abertura do jogo (antes saía no primeiro aviso em jogo).");
+        }
+
+        private bool _textoPreparado;
+
         private void DesenharInterface()
         {
             if (_estiloCaixa == null)
@@ -417,6 +444,11 @@ namespace HellClockCoop
                 _estiloCaixa.padding.left = 8; _estiloCaixa.padding.right = 8;
                 _estiloCaixa.padding.top = 6; _estiloCaixa.padding.bottom = 6;
                 _estiloNome = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 15, fontStyle = FontStyle.Bold };
+            }
+            if (!_textoPreparado && Event.current.type == EventType.Repaint)
+            {
+                _textoPreparado = true;
+                PrepararTexto();
             }
 
             var linhas = new List<string>();

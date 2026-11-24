@@ -23,7 +23,10 @@ namespace HellClockCoop.Interface
     ///   (SurvivalView._arrowSprite ou, sem ela, QuestTabBar._foldoutArrow) e o nome sai na fonte da barra do jogo.
     ///   As cópias perdem os scripts (como no PainelNativo) e vão para GenericHUD.LifeBars, onde o jogo põe as barras dele:
     ///   somem junto com a HUD (cinemáticas, tela preta). Quem posiciona e preenche é este módulo, a cada quadro.
-    /// - GenericHUD.Instance é Guaranteed (criaria uma HUD): a HUD e o pool são achados com Resources.FindObjectsOfTypeAll.
+    /// - GenericHUD.Instance é Guaranteed (criaria uma HUD). Desde a 0.30.3 as peças vêm por referência direta, sem varrer a
+    ///   cena: a HUD pelo registro do jogo (HudDoJogo), o pool por UIObjectPoolController.Instance (só consulta o dicionário
+    ///   do jogo, não cria) e as setas de dentro da própria HUD. O Resources.FindObjectsOfTypeAll (50 a 90 ms por busca em
+    ///   jogo: 272 ms em 4 buscas na primeira aparição do aliado) fica só de reserva, quando a referência direta vem vazia.
     /// - Peça ausente ou erro: reserva no OnGUI (barra e seta desenhadas à mão), como o menu antigo.
     /// - Modo eco: o fantasma entra como aliado "Eco" (chave 0). DistanciaDoEco no .cfg afasta o fantasma para testar a seta.
     /// - Reanimação (0.16.0, opção B "barra do aliado"): com alguém ao lado do aliado caído, uma barra fina verde de
@@ -113,6 +116,7 @@ namespace HellClockCoop.Interface
         }
 
         private static bool _desativado, _avisouSemPeca, _reservaComErro;
+        private static int _buscasNaCena; // varreduras de reserva feitas (o log da montagem diz quantas foram precisas)
         private static float _proximaBusca;
         private static GenericHUD _hud;
         private static RectTransform _camada;              // GenericHUD.LifeBars
@@ -460,12 +464,13 @@ namespace HellClockCoop.Interface
         {
             if (Time.unscaledTime < _proximaBusca) return false;
             _proximaBusca = Time.unscaledTime + IntervaloBusca;
+            int buscasAntes = _buscasNaCena;
             try
             {
                 if (_camada == null) // a HUD anterior morreu com a cena (as cópias foram junto) ou ainda não existe
                 {
                     EsconderTudo();
-                    _hud = Achar<GenericHUD>();
+                    _hud = HudDoJogo.Atual() ?? Achar<GenericHUD>();
                     _camada = _hud != null ? _hud.LifeBars : null;
                     Canvas perto = _camada != null ? _camada.GetComponentInParent<Canvas>(true) : null; // a HUD pode estar inativa
                     _canvas = perto != null ? perto.rootCanvas : null; // o modo (e a câmera) vale o do canvas raiz
@@ -474,7 +479,8 @@ namespace HellClockCoop.Interface
                 if (_camada == null || _desativado) return false;
                 if (_modeloBarra != null) return true;
 
-                UIObjectPoolController pool = Achar<UIObjectPoolController>(qualquer: true);
+                UIObjectPoolController pool = UIObjectPoolController.Instance; // nulo sem registro: não cria (ObjectPoolController.GetInstance)
+                if (pool == null) pool = Achar<UIObjectPoolController>(qualquer: true);
                 GameObject prefab = pool != null && BarraCompanheiroRef != null ? BarraCompanheiroRef(pool) : null;
                 if (prefab == null || !AcharSeta())
                 {
@@ -486,7 +492,7 @@ namespace HellClockCoop.Interface
                     return false;
                 }
                 MontarModelo(prefab);
-                Plugin.Log.LogInfo($"[Aliados] Barra de vida e seta montadas com a interface do jogo (seta: {_spriteSeta.name}, {_tamanhoSeta.x:0}x{_tamanhoSeta.y:0}).");
+                Plugin.Log.LogInfo($"[Aliados] Barra de vida e seta montadas com a interface do jogo (seta: {_spriteSeta.name}, {_tamanhoSeta.x:0}x{_tamanhoSeta.y:0}; buscas na cena: {_buscasNaCena - buscasAntes}).");
                 return true;
             }
             catch (Exception e)
@@ -512,7 +518,8 @@ namespace HellClockCoop.Interface
         /// </summary>
         private static T Achar<T>(bool qualquer = false) where T : Component
         {
-            double inicio = Desempenho.Agora(); // varre todos os objetos carregados: suspeita de travada (medidor, 0.30.1)
+            double inicio = Desempenho.Agora(); // varre todos os objetos carregados: 50 a 90 ms em jogo (reserva desde a 0.30.3)
+            _buscasNaCena++;
             try { return Varrer<T>(qualquer); }
             finally { Desempenho.SomarDetalhe(Desempenho.Detalhe.BuscarPecasHud, inicio); }
         }
@@ -536,8 +543,11 @@ namespace HellClockCoop.Interface
         private static bool AcharSeta()
         {
             if (_spriteSeta != null) return true;
-            Image img = (SetaSobrevivenciaRef != null ? ImagemDe(Achar<SurvivalView>(qualquer: true), v => SetaSobrevivenciaRef(v)) : null)
-                        ?? (SetaMissoesRef != null ? ImagemDe(Achar<QuestTabBar>(qualquer: true), q => SetaMissoesRef(q)) : null);
+            // As duas ficam dentro da HUD (a SurvivalView é uma página da barra de missões); a varredura é só a reserva.
+            SurvivalView sobrevivencia = _hud != null ? _hud.GetComponentInChildren<SurvivalView>(true) : null;
+            QuestTabBar missoes = _hud != null ? _hud.QuestTabBar : null;
+            Image img = (SetaSobrevivenciaRef != null ? ImagemDe(sobrevivencia != null ? sobrevivencia : Achar<SurvivalView>(qualquer: true), v => SetaSobrevivenciaRef(v)) : null)
+                        ?? (SetaMissoesRef != null ? ImagemDe(missoes != null ? missoes : Achar<QuestTabBar>(qualquer: true), q => SetaMissoesRef(q)) : null);
             if (img == null || img.sprite == null) return false;
             _spriteSeta = img.sprite;
             _corSeta = img.color.a > 0.05f ? img.color : Color.white;

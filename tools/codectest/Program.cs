@@ -739,6 +739,11 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Checar(P(1, 1, false, true, false) == 1, "Menu: um item só fica com o foco");
     Checar(!C(10f, -1f) && C(10f, 12f) && C(12f, 12f) && !C(12.1f, 12f), "Menu: sair do coop só no segundo aperto, dentro do prazo");
     Checar(!L(100, 100) && !L(100, 101) && L(100, 102) && L(-10, 0), "Entrada: libera o jogo só dois quadros depois do último pedido do painel");
+    // 0.30.3: o Esc da tela de saves é segurado pelo patch no ouvinte, pelo mesmo tempo da trava completa
+    var esc = T("HellClockCoop.Interface.BloqueioEntrada").GetMethod("DeveSegurarEsc", BindingFlags.Static | BindingFlags.NonPublic);
+    bool E(bool leve, int pedido, int quadro) => (bool)esc.Invoke(null, new object[] { leve, pedido, quadro });
+    Checar(E(false, 100, 100) && E(false, 100, 101) && !E(false, 100, 102) && !E(false, -10, 0), "Entrada: o Esc da tela de saves fica seguro até a trava do painel ser liberada");
+    Checar(!E(true, 100, 100) && !E(true, 100, 101), "Entrada: a trava leve (TP até o aliado) não segura o Esc da tela de saves");
 
     // 0.12.0: abas e deslizantes do menu com a interface do jogo
     var aba = tM.GetMethod("ProximaAba", BindingFlags.Static | BindingFlags.NonPublic);

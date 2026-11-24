@@ -184,13 +184,13 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
 4. **Determinismo de VFX e projéteis.** Projéteis dos inimigos (`HellClock.Skill.Projectile`) colidem localmente. Nas réplicas, desligar dano de projétil e confiar no host.
 5. **Pooling** (`HellClock.Pool`, `ObjectPoolService`): réplicas e avatares precisam vir dos mesmos pools ou ser excluídos deles, para não serem reciclados por engano.
 6. **Unity 6 + BepInEx 5.** Usamos o BepInEx 5.4.23.6 oficial. **Confirmado no primeiro teste:** o `mscorlib.dll` do jogo é enxuto (2.072 tipos, sem `Module.GetPEKind`) e o preloader do BepInEx quebra. Faltam também APIs essenciais ao Harmony e ao MonoMod (`MethodBody`, `RuntimeMethodHandle.GetFunctionPointer`, `RuntimeHelpers.PrepareMethod`), então contornar só o `GetPEKind` não basta. A correção é um corlib completo **de Windows**, de `swyf-modding/Setup` (Unity 6000.3.10f1), em `BepInEx\unstripped_corlib`, via `dll_search_path_override`. O zip 6000.0.60 do unity.bepinex.dev é a variante Unix e trava o jogo no "Carregando". Compatibilidade conferida: zero referências ausentes e mesmas chamadas nativas do runtime. Há relatos de que o *listener* do log da Unity precisou de ajuste no Unity 6 em outros jogos. Se o `LogOutput.log` não mostrar as mensagens da Unity, os logs do próprio plugin continuam funcionando.
-7. **Desempenho (0.9.7).** Travadinhas esporádicas na sessão de 21/11/2026, sem número no log. Antes de otimizar, `Desempenho.cs` mede: cada parte do laço do mod (`Update`, `LateUpdate`, `OnGUI`) e os ganchos por golpe, número de dano e efeito somam o próprio tempo no quadro; criar avatar, carregar prefab de efeito (`WaitForCompletion`, síncrono) e copiar efeito são medidos à parte (desde a 0.26.0 também buscar ouvintes do Esc, medir texto do menu, criar linha do menu e buscar botões do jogo; o painel mede de novo a linha de informação só quando o texto muda de conteúdo, não de referência). Quadro ≥ 50 ms e ≥ 2,5× o normal vira linha `[Desempenho] Travada` (até 40 por janela), com coleta de lixo (`GC.CollectionCount`), mensagens recebidas e linhas de log do quadro; a cada 5 min em jogo, ou na troca solo/eco/coop, sai o `[Desempenho] Resumo`. Carregamento (sem personagem ou troca de cena) fica fora da conta. O mscorlib não tem `GC.GetTotalMemory`: a memória vem de `Profiler.GetMonoUsedSizeLong`.
+7. **Desempenho (0.9.7).** Travadinhas esporádicas na sessão de 21/11/2026, sem número no log. Antes de otimizar, `Desempenho.cs` mede: cada parte do laço do mod (`Update`, `LateUpdate`, `OnGUI`) e os ganchos por golpe, número de dano e efeito somam o próprio tempo no quadro; criar avatar, carregar prefab de efeito (até a 0.30.2 com `WaitForCompletion`, síncrono; desde a 0.30.3 só o pedido, sem espera) e copiar efeito são medidos à parte (desde a 0.26.0 também medir texto do menu, criar linha do menu e buscar botões do jogo; "buscar ouvintes do Esc" foi medido da 0.26.0 à 0.30.2 e saiu junto com a busca; o painel mede de novo a linha de informação só quando o texto muda de conteúdo, não de referência). Quadro ≥ 50 ms e ≥ 2,5× o normal vira linha `[Desempenho] Travada` (até 40 por janela), com coleta de lixo (`GC.CollectionCount`), mensagens recebidas e linhas de log do quadro; a cada 5 min em jogo, ou na troca solo/eco/coop, sai o `[Desempenho] Resumo`. Carregamento (sem personagem ou troca de cena) fica fora da conta. O mscorlib não tem `GC.GetTotalMemory`: a memória vem de `Profiler.GetMonoUsedSizeLong`.
    **Ampliado na 0.30.1** (etapa 2 do trabalho de desempenho; só mede):
    - **Carregamento de andar:** quadro com cena `-1` (o personagem já existe, o andar ainda não) também fica fora da conta. Antes só o quadro em que a cena *mudava* saía, e os quadros longos seguintes viravam `Travada` (58 das 69 linhas do log de 23/11/2026). O resumo diz quantos quadros longos ficaram de fora e o maior tempo do mod num deles, com a parte.
    - **Chamadas à Steam por quadro:** `SteamUtils.GetIPCCallCount()`, lido uma vez por quadro (devolve a contagem desde a leitura anterior), com média e pior no resumo e o valor do quadro na linha da travada. Conta o jogo e o mod juntos: o peso do mod sai da comparação entre solo e coop. Primeira medição (hub, 24/11/2026): solo 0,0 por quadro; host de sala vazia 19,0 (pior 31), com o mod em 0,80 ms/quadro contra 0,10 a 0,16 no solo.
    - **Partes novas:** `OnGUI` (antes somado em Interface), `Avatares` (o `LateUpdate` de cada `RemotePlayerAvatar`, que roda fora do laço do `CoopRuntime`) e `Medidor` (o custo do próprio `NovoQuadro`).
    - **Ganchos que estavam fora da conta:** `EnemyController.CheckForSpawn`, `TimerManager.Update` e o contexto de som inteiro (inclusive as chamadas que saem logo no começo). Cada um tem um detalhe com o número de chamadas e o tempo; na linha da travada só aparecem com 0,5 ms ou mais.
-   - **Detalhe novo:** buscar peças da HUD (`AliadosNaTela.Achar` e a busca do `StatusIconsView` em `PainelGrupo.LerCores`). Os detalhes do resumo mostram chamadas, tempo total e o pior quadro.
+   - **Detalhe novo:** buscar peças da HUD (`AliadosNaTela.Achar` e a busca do `StatusIconsView` em `PainelGrupo.LerCores`; desde a 0.30.3 essas duas só rodam como reserva, e o detalhe conta também as duas buscas da tela do caído, `CaidoNaTela.Cinza` e `Vinheta`, ainda sem número). Os detalhes do resumo mostram chamadas, tempo total e o pior quadro.
    - **Memória:** além da leitura no resumo, a memória gerenciada é lida no primeiro quadro depois de cada coleta de lixo (o piso: mínimo, máximo e último do período).
    - **Rede:** segunda linha, `[Desempenho] Rede no período`, quando houve tráfego: mensagens e bytes enviados por tipo (1º byte do pacote, com o nome lido das constantes `Tipo*` do `Protocolo`; cada destinatário conta uma vez), o total recebido e em quantos quadros a leitura de um canal chegou ao limite do buffer de 64 mensagens (o que não coube fica para o quadro seguinte). A rede, o piso de memória e os detalhes contam também nos quadros de carregamento de andar; com a janela fechada (menu, carregamento do save) nada conta.
    - **Contexto:** em sala, o eco (F8) entra no nome do contexto (`host com 0 aliado(s) e eco`) e abre janela própria.
@@ -207,6 +207,18 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
    | Run, solo | 0,0 → 0,0 | 0,07 → 0,07 | 197 → 200 |
 
    O gancho de `TimerManager.Update` caiu de 60 a 85 µs para ~0,5 µs por chamada em sala (igual ao solo), e as partes Run, Inimigos, Portas e Ganchos saíram da lista do resumo (pior quadro abaixo de 0,5 ms). Sobra a parte Rede, ~0,10 ms por quadro: a releitura do dono e as duas leituras de mensagens. O `[Desempenho] Resumo` sai normalmente dentro da run. `CheckForSpawn` não apareceu em `detalhes` com o personagem parado no começo do andar (o jogo não chamou o método nenhuma vez); falta conferir andando pelo andar.
+
+   **Etapa 4 (0.30.3): travadas pontuais.** Medido antes (0.30.2, 24/11/2026, PC do autor, ~200 fps), linhas `[Desempenho] Travada`:
+
+   | Momento | Antes (0.30.2) | Causa | O que mudou |
+   |---|---|---|---|
+   | Abrir o menu do coop em jogo | 79 a 92 ms a cada abertura | busca do ouvinte do Esc (`FindObjectsOfTypeAll`) | patch em `AndroidBackButtonListener.Update`, sem busca (§12.2) |
+   | Primeira aparição do aliado (ou eco) | 326 ms | 4 buscas de peças da HUD (272 ms) + criar avatar (12 ms) | referência direta à HUD, ao pool e às setas (§12.3, §12.15) |
+   | Primeiro aviso do canto em jogo | 105 ms (484 ms na 0.30.1) | o primeiro texto do `OnGUI` carrega a fonte | `CoopRuntime.PrepararTexto` no primeiro desenho do `OnGUI`, na abertura do jogo |
+   | Item "Coop" da pausa | 50 ms, uma vez | busca da `PauseHUD` | `GenericHUD.PauseHUD` |
+   | Efeito do aliado ainda não carregado | sem número (só com aliado em combate) | `WaitForCompletion` e limpeza a cada cópia | pedido sem espera, cópia pendente e modelo limpo por prefab (§11.2) |
+
+   Depois (0.30.3): na abertura do jogo, com a tela do PC bloqueada, o log mostrou `Texto do OnGUI preparado em 203 ms` (o custo saiu do jogo e foi para a abertura), 103/103 alvos e 61 patches aplicados. **A medição em jogo com o mesmo roteiro (hub e run, ligar o eco 2 vezes, abrir o menu 2 vezes) ainda não foi feita**; o roteiro está em `docs/TESTES.md`, 0.30.3. O carregamento sem espera e a cópia pendente só rodam com um aliado de verdade usando um efeito que este PC não carregou: o eco usa os efeitos do próprio jogador, que já estão na memória.
 
 ---
 
@@ -530,10 +542,17 @@ a partir de um prefab do Addressables (`_vfxPrefab`, AssetReferenceGameObject). 
 lançador é o jogador local (ou `SourceOrSelf` é ele), o objeto é guardado e, no LateUpdate, anunciado
 (tipo 50 FxNovo: GUID do prefab, caminho do osso se estiver preso no jogador, posição/rotação/escala e os
 pontos do primeiro LineRenderer, para os tiros). Efeitos soltos que se movem mandam posição a 20 Hz (51,
-não confiável); quando o objeto sai de cena (volta ao pool), 52 FxFim. Quem recebe carrega o prefab com
-`Addressables.LoadAssetAsync(guid)` (handle mantido aberto), instancia sob um pai desativado, remove todo
+não confiável); quando o objeto sai de cena (volta ao pool), 52 FxFim. Quem recebe pede o prefab com
+`Addressables.LoadAssetAsync(guid)` (handle mantido aberto) já na chegada do anúncio e não espera por ele (0.30.3; até a
+0.30.2 havia um `WaitForCompletion` que segurava o quadro no primeiro uso de um efeito ainda não carregado neste PC). Se
+o prefab ainda não chegou quando a cópia deveria nascer, ela fica pendente (até 96 no total e 32 por aliado; até 64 prefabs a caminho; o pedido adiantado só vale para aliado com
+avatar no andar): as partes (54) que chegam nesse meio-tempo são guardadas (até 16 mensagens por cópia, cada uma com no
+máximo as 48 partes que quem lança manda), o movimento (51) atualiza a posição em que ela vai nascer e o fim (52) a
+cancela; o laço confere a cada quadro os prefabs que chegaram. Do prefab sai um modelo limpo, um por prefab, guardado
+inativo: instancia sob um pai desativado, remove todo
 componente fora do namespace UnityEngine e também colisores, Rigidbody, áudio, câmera e NavMesh (fica o
-visual) e prende no avatar (mesma hierarquia de ossos) ou solta no mundo com extrapolação. Animators da cópia:
+visual). Cada cópia é um `Instantiate` desse modelo, sem repetir a limpeza, presa no avatar (mesma hierarquia de ossos)
+ou solta no mundo com extrapolação. Animators de cada cópia (o `fireEvents` não passa do modelo para a cópia):
 `fireEvents = false` e guarda de StateMachineBehaviours. Validade: 30 s solto sem atualização, 120 s preso.
 O modo eco também recebe as cópias. Efeitos de inimigos não vão pela rede (a réplica os cria ao repetir a skill).
 
@@ -889,7 +908,8 @@ nem para o pacote.
   ficam `Button` (com `ButtonClickedEvent` novo), `BaseButtonBehaviour` (destaque), `UIElementSounds`, `ButtonHitZone`,
   `CanvasGroup` (espelha o do original a cada quadro) e `JoystickFocusPoint`. O clique só marca o pedido; o `Update` do
   runtime abre o menu (na pausa, antes chama `PauseHUD.Unpause`, como o "Continuar"). Busca a cada 2 s enquanto a cópia da
-  tela atual não existe (troca de cena recria). Falha na cópia do menu: volta o botão do canto descrito abaixo; na pausa,
+  tela atual não existe (troca de cena recria). Desde a 0.30.3 a pausa vem de `GenericHUD.PauseHUD`, com a HUD lida do
+  registro do jogo (`HudDoJogo`, §12.3), sem varrer a cena (50 ms em jogo); a varredura fica de reserva. Falha na cópia do menu: volta o botão do canto descrito abaixo; na pausa,
   fica só a F7/View.
 - Reserva do botão do menu (desde a 0.13.0, só com a cópia acima falhando): "Menu do coop (F7)" abaixo do painel do
   canto, outra cópia do botão de aba, num segundo canvas (`HellClockCoop.BotaoDoMenu`, ordem 890). O `MenuCoop.DesenharBotaoMenu` (OnGUI) chama `PainelNativo.BotaoDoMenu`, que o põe nos pixels do OnGUI
@@ -935,9 +955,15 @@ atualizador foi para a aba Sessão.
   `BloqueioEntrada_InputHandler_Update` (Alvo `InputHandler.Update`, fase 5 em `PatchTargets.cs`, fora das fases ativas)
   zera `MovementDirection` e `AimDirection` depois da leitura. WASD e o analógico ficam parados.
 - Desliga também `EventSystem.currentInputModule` (o `RewiredStandaloneInputModule` da UI do jogo).
-- Desde a 0.13.0 desliga também o `HellClock.UI.AndroidBackButtonListener` da tela de saves (procurado na abertura e, desde a 0.13.1, de novo a cada 0,5 s enquanto travado — desde a 0.26.0 só sem personagem: em jogo o `Resources.FindObjectsOfTypeAll` custava ~55 ms por busca e a busca é uma por abertura, repetida se o personagem sumir com o painel aberto —, porque a janela do aceite abre antes de a cena com ele carregar; religado na liberação; antes, procurado uma vez por
-  abertura, religado na liberação): ele lê o Esc direto (`Input.GetKeyDown(Escape)`, por fora do semáforo) e, no mesmo
-  quadro em que o Esc fechava o menu do coop, abria "Você realmente quer fechar o jogo?".
+- Desde a 0.13.0 segura também o `HellClock.UI.AndroidBackButtonListener` da tela de saves: ele lê o Esc direto
+  (`Input.GetKeyDown(Escape)`, por fora do semáforo) e, no mesmo quadro em que o Esc fechava o menu do coop, abria "Você
+  realmente quer fechar o jogo?". **Desde a 0.30.3 por patch:** prefixo em `AndroidBackButtonListener.Update` (fase 5 do
+  `PatchTargets`), que não deixa o método rodar enquanto `SeguraOEsc` (`DeveSegurarEsc`, testada: um `Pedir()` completo
+  ainda não liberado; a trava leve do TP não segura). Vale para o ouvinte que nascer depois de o painel abrir (a janela do
+  aceite abre antes de a cena dele carregar). Até a 0.30.2 o ouvinte era procurado com `Resources.FindObjectsOfTypeAll` e
+  desligado (a cada abertura; sem personagem, de novo a cada 0,5 s), o que em jogo custava 70 a 90 ms por abertura do
+  menu. Se o patch cair numa atualização do jogo, o log mostra `[Patch] Falha em BloqueioEntrada_AndroidBackButtonListener_Update`
+  e o Esc da tela de saves volta a abrir a pergunta com o painel aberto (não há mais a busca de reserva).
 - O painel chama `Pedir()` a cada quadro aberto; o `Update` do runtime chama `Atualizar()` antes de tudo, que libera só
   dois quadros depois do último pedido (`DeveLiberar`, testada): o Esc ou o clique que fechou não chega ao jogo.
 - Nunca usa `InputHandler.Instance`: o getter cria um `InputHandler` se não houver (como o `PlayerController.Instance`).
@@ -1005,7 +1031,14 @@ Entrega 1 de 4 da etapa "aliados na tela e reanimação" (as próximas: jogador 
   devagar (`_backgroundFill`). A seta é a imagem de seta da HUD (`SurvivalView._arrowSprite` ou `QuestTabBar._foldoutArrow`; no teste veio
   `UI_Icon_DropDownArrow`, que aponta para baixo, em 44 unidades), girada para o aliado e presa a 56 px (em 1080p) da borda, com o nome do aliado na fonte da barra do jogo, para dentro da tela.
   Tudo vai para `GenericHUD.LifeBars`, onde o jogo põe as barras dele, e some com a HUD. `GenericHUD.Instance` é
-  Guaranteed: HUD e pool são achados com `Resources.FindObjectsOfTypeAll`. Posição e preenchimento no `LateUpdate` do
+  Guaranteed (criaria uma HUD) e `Singleton<T>.Instance` procura na cena quando está vazio. Desde a 0.30.3 as peças vêm
+  por referência direta: a HUD pelo registro que ela faz no `Awake` (`HudDoJogo.Atual`: `Singleton<GenericHUD>.IsValid`, que
+  só lê o registro, e só depois dele `GetInstance`, que então devolve a referência sem procurar; com o registro vazio o
+  `GetInstance` varreria as cenas, por isso o `IsValid` antes não pode sair), o pool por `UIObjectPoolController.Instance` (só consulta o dicionário
+  `ObjectPoolController.Instances`; não é Guaranteed), a `SurvivalView` com `GetComponentInChildren` na HUD e a
+  `QuestTabBar` pela propriedade da HUD. O `Resources.FindObjectsOfTypeAll` (50 a 90 ms por busca em jogo; eram 4 buscas,
+  272 ms, na primeira aparição do aliado) fica só de reserva, e o log da montagem diz quantas buscas foram precisas
+  (`buscas na cena: 0`). Posição e preenchimento no `LateUpdate` do
   `CoopRuntime`, depois dos avatares (medidor: parte Interface).
 - **Quando aparece:** barra com o corpo do aliado na tela (20 px abaixo do centro do nome; sem nome, no lugar dele);
   seta com o corpo fora da tela ou atrás da câmera. Só aliados com avatar ativo, isto é, no mesmo andar.
@@ -1587,7 +1620,8 @@ quem te reanima (`Reanimacao.MeuProgresso`). Ela só aparece com algum aliado ou
 - **Visual (`Interface/PainelGrupo`):** filho de `GenericHUD.LifeBars` (some com a HUD), montado com as peças do
   `AliadosNaTela` (`PecasDoPainel`, `ImagensDaBarra`: fonte e sprites da barra do companheiro). Medidas em px de 1080p,
   convertidas para a camada do jogo a cada quadro pela distância de 100 px na tela (vale para qualquer modo de canvas).
-  Moldura dos status nas cores `_buffIconColor`/`_debuffIconColor` do `StatusIconsView`. Host primeiro, com a coroa do
+  Moldura dos status nas cores `_buffIconColor`/`_debuffIconColor` do `StatusIconsView` (desde a 0.30.3 o do jogador,
+  `GenericHUD._statusIconsView`; antes o primeiro achado numa varredura, que fica de reserva). Host primeiro, com a coroa do
   Streamline (`icons/streamline/`, PNG embutido em base64 em `IconesStreamline.cs`, crédito no `LICENCAS.txt`).
 - **Estados:** caído → linha a 55%, barra vazia, "caído" ou o progresso da reanimação (`Reanimacao.ProgressoDe`), sem
   skills nem status; sem avatar no seu andar → 40% com "hub", "outro andar" ou "sem sinal" (mesmo andar sem pacote há 5 s).

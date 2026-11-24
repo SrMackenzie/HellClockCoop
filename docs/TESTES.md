@@ -402,6 +402,37 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.30.3 — Travadas pontuais (menu, primeira aparição do aliado, primeiro aviso, efeitos)
+
+Não muda regra de jogo, rede nem save. O ouvinte do Esc da tela de saves passa a ser segurado por patch, as peças da
+interface do jogo vêm por referência direta, o texto do `OnGUI` é preparado na abertura do jogo e o prefab de efeito do
+aliado carrega sem segurar o quadro (ARQUITETURA, riscos, item 7, etapa 4; §11.2, §12.2, §12.3). Conferido em 24/11/2026
+só a abertura do jogo (103/103 alvos, 61 patches, `Texto do OnGUI preparado em 203 ms`); o roteiro em jogo ainda não foi
+feito:
+
+- [ ] **Esc na tela de saves:** com o menu do coop (ou a Novidades) aberto na tela de saves, apertar Esc. Esperado: só o
+  painel fecha, sem "Você realmente quer fechar o jogo?"; com o painel fechado, o Esc volta a abrir a pergunta.
+- [ ] **Abrir o menu em jogo:** no hub e na run, abrir e fechar o menu (F7) 2 vezes. Esperado: nenhuma linha
+  `[Desempenho] Travada` na abertura (eram 79 a 92 ms em "buscar ouvintes do Esc") e o detalhe não aparece mais no resumo.
+- [ ] **Primeira aparição do aliado:** no hub, ligar o eco (F8) 2 vezes. Esperado: `[Aliados] Barra de vida e seta
+  montadas ... buscas na cena: 0`, o painel de grupo com as mesmas cores de status de antes
+  (`cores de status: RGBA(1.000, 1.000, 1.000, 1.000)/RGBA(1.000, 1.000, 1.000, 1.000)`), nenhuma `Travada` (eram 326 ms)
+  e, no resumo, `buscar peças da HUD` ausente; a seta continua `UI_Icon_DropDownArrow`.
+- [ ] **Primeiro aviso do canto:** o primeiro aviso em jogo (ligar o eco, criar o coop). Esperado: sem `Travada` com
+  `OnGUI` alto (eram 105 a 484 ms); na abertura do jogo, `[Interface] Texto do OnGUI preparado em N ms`.
+- [ ] **Item "Coop" da pausa:** Esc em jogo. Esperado: o item "Coop" continua abaixo de "Opções" e abre o menu; no
+  resumo, `buscar botões do jogo` ausente em jogo.
+- [ ] **Efeitos com o eco:** na run, com o eco ligado, usar as skills. Esperado: as cópias aparecem no fantasma como
+  antes (`[Fx] Cópia de ...`), com `copiar efeito` no resumo abaixo de 1 ms por cópia depois da primeira.
+- [ ] **Efeitos em dupla:** cada um usa todas as skills perto do outro. Esperado: os efeitos aparecem no aliado, sem
+  `Travada` com `carregar prefab de efeito` no primeiro uso de cada skill; efeito que termina antes de o prefab chegar não
+  fica parado na tela.
+- [ ] **Tela do caído (medição):** cair numa run em dupla. Esperado: o resumo mostra `buscar peças da HUD` com 2× por queda
+  (o cinza e a vinheta) e mais 1× ao levantar (o cinza é desfeito com outra busca), com o tempo delas (ainda sem número;
+  se for alto, vira etapa própria).
+- [ ] **CheckForSpawn (pendência da 0.30.1):** numa run como host, andar pelo andar até achar inimigos. Esperado: o
+  resumo lista `CheckForSpawn N×` em `detalhes`.
+
 ## 0.30.2 — Dono do lobby guardado (menos chamadas à Steam)
 
 Não muda regra de jogo, rede nem save. `SouHost`/`IdDoHost` leem o dono guardado, relido da Steam uma vez por quadro

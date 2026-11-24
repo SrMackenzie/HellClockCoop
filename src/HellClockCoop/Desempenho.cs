@@ -18,12 +18,12 @@ namespace HellClockCoop
         internal enum Parte { Menus, Rede, Run, Inimigos, Objetos, Santuarios, Portas, Alvos, Fx, Danos, Sons, Balanceamento, Personagem, Interface, Ganchos, Gui, Avatares, Medidor, Quantidade }
 
         /// <summary>Trechos suspeitos medidos por dentro das partes (não entram na soma). Os de gancho ficam por último.</summary>
-        internal enum Detalhe { CriarAvatar, CarregarPrefabFx, CopiarFx, BuscarOuvintesEsc, MedirTextoMenu, CriarLinhaMenu, BuscarBotoesJogo, BuscarPecasHud, ChecarSpawn, TimerUpdate, ContextoSom, Quantidade }
+        internal enum Detalhe { CriarAvatar, CarregarPrefabFx, CopiarFx, MedirTextoMenu, CriarLinhaMenu, BuscarBotoesJogo, BuscarPecasHud, ChecarSpawn, TimerUpdate, ContextoSom, Quantidade }
 
         private static readonly string[] NomesParte =
             { "Menus", "Rede", "Run", "Inimigos", "Objetos", "Santuários", "Portas", "Alvos", "Efeitos", "Danos", "Sons", "Balanceamento", "Personagem", "Interface", "Ganchos", "OnGUI", "Avatares", "Medidor" };
         private static readonly string[] NomesDetalhe =
-            { "criar avatar", "carregar prefab de efeito", "copiar efeito", "buscar ouvintes do Esc", "medir texto do menu", "criar linha do menu", "buscar botões do jogo",
+            { "criar avatar", "carregar prefab de efeito", "copiar efeito", "medir texto do menu", "criar linha do menu", "buscar botões do jogo",
               "buscar peças da HUD", "CheckForSpawn", "TimerManager.Update", "contexto de som" };
 
         private const int PrimeiroDetalheDeGancho = (int)Detalhe.ChecarSpawn; // chamados a cada quadro: na linha da travada só com tempo relevante

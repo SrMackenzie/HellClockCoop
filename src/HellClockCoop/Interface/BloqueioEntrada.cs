@@ -16,8 +16,9 @@ namespace HellClockCoop.Interface
     ///   poção, pausa (PauseGame), Back e as janelas do jogo.
     /// - O semáforo não segura os eixos (WASD e analógico, lidos por GetAxisRaw): o patch em InputHandler.Update zera
     ///   MovementDirection e AimDirection enquanto travado.
-    /// - Desliga o módulo de entrada da UI do jogo (EventSystem.currentInputModule) e o
-    ///   AndroidBackButtonListener da tela de saves, que lê o Esc por fora do semáforo (0.13.0).
+    /// - Desliga o módulo de entrada da UI do jogo (EventSystem.currentInputModule).
+    /// - O AndroidBackButtonListener da tela de saves lê o Esc por fora do semáforo (0.13.0): o patch no Update dele não o
+    ///   deixa rodar enquanto um painel pede a trava (0.30.3; antes era procurado e desligado a cada abertura, 70 a 90 ms em jogo).
     /// - O painel chama Pedir() a cada quadro em que está aberto; o runtime chama Atualizar() no começo do Update, que
     ///   libera tudo só dois quadros depois do último pedido (o Esc ou o clique que fechou não chega ao jogo).
     /// - Nunca usa InputHandler.Instance: o getter cria um InputHandler se não houver (como o PlayerController.Instance);
@@ -27,22 +28,28 @@ namespace HellClockCoop.Interface
     {
         private static readonly object Dono = new object(); // chave do mod no semáforo do jogo
         private static readonly List<BaseInputModule> Desligados = new List<BaseInputModule>();
-        private static readonly List<Behaviour> OuvintesDoEsc = new List<Behaviour>();
         private static global::Semaphore _travado;
         private static int _ultimoPedido = -10;
         private static FieldInfo _campoInstancia;
         private static bool _campoProcurado, _avisouSemJogo;
-        private static bool _leve; // trava leve do TP (0.29.0): sem log
-        private static float _proximaBuscaOuvintes; // 0 = procurar já (na abertura)
-        private const float IntervaloBuscaOuvintes = 0.5f;
+        private static bool _leve; // trava leve do TP (0.29.0): sem log e sem segurar o Esc da tela de saves
 
         /// <summary>O semáforo do jogo está travado pelo mod: mouse, teclado e controle não chegam ao personagem.</summary>
         internal static bool SeguraOJogo => _travado != null;
 
-        // ---------- Regra pura (testada no tools/codectest) ----------
+        /// <summary>
+        /// Um painel do mod pediu a trava completa e ela ainda não foi liberada: o ouvinte do Esc da tela de saves não roda
+        /// (BloqueioEntrada_AndroidBackButtonListener_Update). Vale também sem o InputHandler do jogo (telas de abertura).
+        /// </summary>
+        internal static bool SeguraOEsc => DeveSegurarEsc(_leve, _ultimoPedido, Time.frameCount);
+
+        // ---------- Regras puras (testadas no tools/codectest) ----------
 
         /// <summary>Libera só quando passou mais de um quadro desde o último pedido.</summary>
         internal static bool DeveLiberar(int ultimoPedido, int quadro) => quadro - ultimoPedido > 1;
+
+        /// <summary>O Esc da tela de saves fica seguro pelo mesmo tempo da trava completa; a trava leve não o segura.</summary>
+        internal static bool DeveSegurarEsc(bool leve, int ultimoPedido, int quadro) => !leve && !DeveLiberar(ultimoPedido, quadro);
 
         // ---------- Uso ----------
 
@@ -52,16 +59,13 @@ namespace HellClockCoop.Interface
             _leve = false;
             _ultimoPedido = Time.frameCount;
             DesligarModulo();
-            // Em jogo a busca não se repete (3.4e38); se o personagem sumir com o painel aberto (volta aos saves), procura de novo.
-            if (Time.unscaledTime >= _proximaBuscaOuvintes || (_proximaBuscaOuvintes > 1e38f && CoopRuntime.JogadorLocal() == null))
-                DesligarOuvintesDoEsc();
             Travar();
         }
 
         /// <summary>
         /// Trava leve (0.29.0, TP até o aliado): mouse sobre o símbolo do painel de grupo ou escolha do aliado com a tecla. Só o
-        /// semáforo e o módulo de entrada da UI, sem a busca do ouvinte do Esc da tela de saves (~55 ms em jogo) e sem log
-        /// (o mouse passa pelo símbolo muitas vezes). Um Pedir() no mesmo período continua completo.
+        /// semáforo e o módulo de entrada da UI, sem segurar o ouvinte do Esc da tela de saves e sem log (o mouse passa pelo
+        /// símbolo muitas vezes). Um Pedir() no mesmo período continua completo.
         /// </summary>
         internal static void PedirLeve()
         {
@@ -80,46 +84,12 @@ namespace HellClockCoop.Interface
                 Soltar();
                 if (!_leve) Plugin.Log.LogInfo("[Entrada] Entrada do jogo liberada.");
             }
-            _proximaBuscaOuvintes = 0f; // a próxima abertura procura de novo na hora
-            if (OuvintesDoEsc.Count > 0)
-            {
-                foreach (Behaviour ouvinte in OuvintesDoEsc)
-                {
-                    if (ouvinte != null) ouvinte.enabled = true;
-                }
-                OuvintesDoEsc.Clear();
-            }
             if (Desligados.Count == 0) return;
             foreach (BaseInputModule modulo in Desligados)
             {
                 if (modulo != null) modulo.enabled = true;
             }
             Desligados.Clear();
-        }
-
-        /// <summary>
-        /// O AndroidBackButtonListener da tela de saves lê o Esc direto (Input.GetKeyDown(Escape), sem passar pelo semáforo) e
-        /// pede "Você realmente quer fechar o jogo?": fica desligado enquanto o painel está aberto e até a liberação (0.13.0).
-        /// Procurado na abertura e de novo a cada 0,5 s enquanto travado (0.13.1): a janela do aceite abre nas telas de
-        /// abertura, antes de a cena com o ouvinte carregar, e uma busca só na abertura não o achava. Desde a 0.26.0 a
-        /// repetição é só sem personagem: em jogo, uma busca por abertura (de novo se o personagem sumir com o painel aberto).
-        /// </summary>
-        private static void DesligarOuvintesDoEsc()
-        {
-            // 0.26.0: o FindObjectsOfTypeAll varre todos os objetos carregados e, em jogo, custa ~55 ms (picos de "Menus" no
-            // Desempenho com o menu aberto). O ouvinte é da tela de saves: com personagem, uma busca na abertura basta.
-            _proximaBuscaOuvintes = CoopRuntime.JogadorLocal() != null ? 3.4e38f : Time.unscaledTime + IntervaloBuscaOuvintes;
-            double inicio = Desempenho.Agora();
-            int novos = 0;
-            foreach (AndroidBackButtonListener ouvinte in Resources.FindObjectsOfTypeAll<AndroidBackButtonListener>())
-            {
-                if (ouvinte == null || !ouvinte.gameObject.scene.IsValid() || !ouvinte.enabled) continue; // fora prefabs e os já desligados
-                ouvinte.enabled = false;
-                OuvintesDoEsc.Add(ouvinte);
-                novos++;
-            }
-            Desempenho.SomarDetalhe(Desempenho.Detalhe.BuscarOuvintesEsc, inicio);
-            if (novos > 0) Plugin.Log.LogInfo($"[Entrada] Ouvinte do Esc da tela de saves desligado ({novos}; {OuvintesDoEsc.Count} no total).");
         }
 
         private static void DesligarModulo()
@@ -200,5 +170,17 @@ namespace HellClockCoop.Interface
                 _avisou = true;
             }
         }
+    }
+
+    /// <summary>
+    /// Alvo: HellClock.UI.AndroidBackButtonListener.Update() — na tela de saves, lê o Esc direto (Input.GetKeyDown(Escape), sem
+    /// passar pelo semáforo) e pede "Você realmente quer fechar o jogo?" (SaveSelectionScreen.ShowCloseGamePopup). Com um painel
+    /// do mod aberto (menu do coop, Novidades, janela do aceite) o método não roda, e o Esc só fecha o painel (0.30.3). Vale para
+    /// o ouvinte que nascer depois de o painel abrir (a janela do aceite abre antes de a cena dele carregar).
+    /// </summary>
+    [HarmonyPatch(typeof(AndroidBackButtonListener), "Update")]
+    internal static class BloqueioEntrada_AndroidBackButtonListener_Update
+    {
+        private static bool Prefix() => !BloqueioEntrada.SeguraOEsc;
     }
 }

@@ -330,7 +330,11 @@ namespace HellClockCoop.Fase3
                 lr.GetPositions(m.Linha);
             }
             if (m.TipoPai != FxNovo.PaiInimigo || m.InimigoId != 0) Sessao?.EnviarParaMesmoAndar(m.Serializar(), confiavel: true);
-            if (AvatarEco != null) NaFilaDoEco(() => Criar(Eco, m));
+            if (AvatarEco != null)
+            {
+                ObterModelo(m.Guid, out _); // como na rede: o modelo fica pronto durante o atraso da fila
+                NaFilaDoEco(() => Criar(Eco, m));
+            }
         }
 
         private static bool DentroDeOutroEfeito(Transform pai, Transform raizJogador)
@@ -396,7 +400,14 @@ namespace HellClockCoop.Fase3
 
         private static void AplicarNos(Remetente de, FxNos m)
         {
-            if (!Copias.TryGetValue(de.Chave, out var dele) || !dele.TryGetValue(m.Id, out Copia c) || c.Go == null) return;
+            if (!Copias.TryGetValue(de.Chave, out var dele) || !dele.TryGetValue(m.Id, out Copia c) || c.Go == null)
+            {
+                // A cópia espera o prefab: guarda para depois. Quem lança nunca manda mais que MaximoNos partes por efeito:
+                // mensagem maior que isso não é guardada (seria aplicada de uma vez no quadro em que o prefab chega).
+                Pendente p = _pendentes > 0 ? AcharPendente(de.Chave, m.Id) : null;
+                if (p != null && p.Nos.Count < MaximoNosPendentes && m.Nos.Count <= MaximoNos) p.Nos.Add(m);
+                return;
+            }
             foreach (FxNos.No n in m.Nos)
             {
                 Transform t = AcharNo(c, n.Caminho);
@@ -436,11 +447,35 @@ namespace HellClockCoop.Fase3
 
         /// <summary>Cópias por remetente (a chave do eco é 0).</summary>
         private static readonly Dictionary<ulong, Dictionary<ushort, Copia>> Copias = new Dictionary<ulong, Dictionary<ushort, Copia>>();
-        private static readonly Dictionary<string, GameObject> Prefabs = new Dictionary<string, GameObject>();
+        // 0.30.3: um modelo por prefab, já limpo (sem scripts, colisores e som), guardado inativo no estacionamento. A cópia
+        // de cada efeito sai dele, sem repetir a limpeza; o prefab chega do Addressables sem segurar o quadro (Carregando).
+        private static readonly Dictionary<string, GameObject> Modelos = new Dictionary<string, GameObject>();
         private static readonly HashSet<string> PrefabsRuins = new HashSet<string>();
+        private static readonly Dictionary<string, AsyncOperationHandle<GameObject>> Carregando = new Dictionary<string, AsyncOperationHandle<GameObject>>();
+        private static readonly List<string> Chegaram = new List<string>();
+        // Cópias à espera do prefab, por remetente e id (a busca é direta: o movimento chega com até 255 itens por mensagem).
+        private static readonly Dictionary<ulong, Dictionary<ushort, Pendente>> Pendentes = new Dictionary<ulong, Dictionary<ushort, Pendente>>();
+        private static readonly List<Pendente> Prontos = new List<Pendente>();
+        private static readonly List<ulong> ChavesPendentes = new List<ulong>();
+        private static int _pendentes;            // total, de todos os remetentes
+        private const int MaximoCarregando = 64;  // prefabs a caminho ao mesmo tempo; acima disso o efeito novo é ignorado
+        private const int MaximoPendentes = 96;   // cópias à espera do prefab (o mesmo teto dos efeitos ativos de quem lança)
+        private const int MaximoPendentesPorPar = 32; // um par sozinho não ocupa as vagas dos outros
+        private const int MaximoNosPendentes = 16; // mensagens de partes guardadas por cópia à espera
         private static GameObject _estacionamento;
         private static int _copiasLogadas;
         private static readonly Remetente Eco = new Remetente { Chave = 0 };
+
+        /// <summary>
+        /// Cópia à espera do prefab: o que chega para ela nesse meio-tempo (partes, posição, fim) fica guardado aqui e vale
+        /// quando ela nasce. Sem isso, o primeiro estado das partes, que chega logo depois do anúncio, se perderia.
+        /// </summary>
+        private sealed class Pendente
+        {
+            public Remetente De;
+            public FxNovo Novo;
+            public readonly List<FxNos> Nos = new List<FxNos>();
+        }
 
         private sealed class Remetente
         {
@@ -451,45 +486,164 @@ namespace HellClockCoop.Fase3
 
         private static Remetente DePar(Par p) => new Remetente { Chave = p.Id.m_SteamID, Avatar = p.Avatar };
 
-        private static GameObject ObterPrefab(string guid)
+        private static Transform Estacionamento()
         {
-            if (Prefabs.TryGetValue(guid, out GameObject pf)) return pf;
+            if (_estacionamento == null)
+            {
+                _estacionamento = new GameObject("HellClockCoop_FxEstacionamento");
+                _estacionamento.SetActive(false); // nada acorda aqui dentro: os scripts do jogo saem antes de a cópia ir para a cena
+                UnityEngine.Object.DontDestroyOnLoad(_estacionamento);
+            }
+            return _estacionamento.transform;
+        }
+
+        /// <summary>
+        /// Modelo limpo do efeito. Prefab ainda não pedido: pede ao Addressables sem esperar (até a 0.30.2 era
+        /// WaitForCompletion, que segurava o quadro quando o aliado usava um efeito que este PC ainda não tinha carregado).
+        /// Null com <paramref name="carregando"/> = true: o prefab está a caminho e a cópia deve esperar (Adiar).
+        /// </summary>
+        private static GameObject ObterModelo(string guid, out bool carregando)
+        {
+            carregando = false;
             if (PrefabsRuins.Contains(guid)) return null;
+            if (Modelos.TryGetValue(guid, out GameObject modelo) && modelo != null) return modelo;
+            if (Carregando.ContainsKey(guid)) { carregando = true; return null; }
+            if (Carregando.Count >= MaximoCarregando) return null;
+            AsyncOperationHandle<GameObject> h;
             try
             {
-                double inicio = Desempenho.Agora(); // carga síncrona: suspeita de travada (medidor, 0.9.7)
-                AsyncOperationHandle<GameObject> h = Addressables.LoadAssetAsync<GameObject>(guid);
-                if (!h.IsDone) h.WaitForCompletion();
+                double inicio = Desempenho.Agora();
+                h = Addressables.LoadAssetAsync<GameObject>(guid);
                 Desempenho.SomarDetalhe(Desempenho.Detalhe.CarregarPrefabFx, inicio);
-                pf = h.Status == AsyncOperationStatus.Succeeded ? h.Result : null; // o handle fica aberto: o prefab é reusado
             }
             catch (Exception e)
             {
                 Plugin.Log.LogWarning($"[Fx] Prefab {guid} não carregou: {(e.InnerException ?? e).Message}");
-                pf = null;
+                PrefabsRuins.Add(guid);
+                return null;
             }
-            if (pf == null) { PrefabsRuins.Add(guid); Plugin.Log.LogWarning($"[Fx] Prefab {guid} indisponível neste jogo."); }
-            else Prefabs[guid] = pf;
-            return pf;
+            if (h.IsDone) return MontarModelo(guid, h); // já estava na memória (o jogo usa o mesmo efeito): sai na hora
+            Carregando[guid] = h;
+            carregando = true;
+            return null;
+        }
+
+        /// <summary>Prefab chegou: faz o modelo limpo (uma vez por prefab). Null: prefab indisponível ou cópia com erro.</summary>
+        private static GameObject MontarModelo(string guid, AsyncOperationHandle<GameObject> h)
+        {
+            GameObject prefab = null;
+            try
+            {
+                prefab = h.Status == AsyncOperationStatus.Succeeded ? h.Result : null; // o handle fica aberto: o prefab é reusado
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Fx] Prefab {guid} não carregou: {(e.InnerException ?? e).Message}");
+            }
+            if (prefab == null)
+            {
+                PrefabsRuins.Add(guid);
+                Plugin.Log.LogWarning($"[Fx] Prefab {guid} indisponível neste jogo.");
+                return null;
+            }
+            GameObject modelo = null;
+            try
+            {
+                double inicio = Desempenho.Agora();
+                modelo = UnityEngine.Object.Instantiate(prefab, Estacionamento());
+                modelo.name = prefab.name;
+                LimparParaVisual(modelo);
+                Desempenho.SomarDetalhe(Desempenho.Detalhe.CopiarFx, inicio);
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Fx] Cópia de {guid} falhou: {(e.InnerException ?? e).Message}");
+                if (modelo != null) UnityEngine.Object.Destroy(modelo);
+                PrefabsRuins.Add(guid);
+                return null;
+            }
+            Modelos[guid] = modelo;
+            return modelo;
+        }
+
+        /// <summary>No laço: prefabs que chegaram viram modelo e as cópias que esperavam por eles nascem, na ordem de chegada.</summary>
+        private static void ConcluirCargas()
+        {
+            if (Carregando.Count == 0) return;
+            Chegaram.Clear();
+            foreach (KeyValuePair<string, AsyncOperationHandle<GameObject>> kv in Carregando) if (kv.Value.IsDone) Chegaram.Add(kv.Key);
+            foreach (string guid in Chegaram)
+            {
+                AsyncOperationHandle<GameObject> h = Carregando[guid];
+                Carregando.Remove(guid);
+                bool pronto = MontarModelo(guid, h) != null;
+                Prontos.Clear();
+                foreach (Dictionary<ushort, Pendente> dele in Pendentes.Values)
+                {
+                    foreach (Pendente p in dele.Values) if (p.Novo.Guid == guid) Prontos.Add(p);
+                }
+                foreach (Pendente p in Prontos)
+                {
+                    TirarPendente(p.De.Chave, p.Novo.Id);
+                    if (!pronto) continue;
+                    try
+                    {
+                        if (p.De != Eco) p.De.Avatar = AvatarDe(p.De.Chave); // o aliado pode ter saído do andar enquanto o prefab vinha
+                        Criar(p.De, p.Novo);
+                        foreach (FxNos nos in p.Nos) AplicarNos(p.De, nos);
+                    }
+                    catch (Exception e)
+                    {
+                        Plugin.Log.LogWarning($"[Fx] {(e.InnerException ?? e).Message}");
+                    }
+                }
+            }
+        }
+
+        private static Pendente AcharPendente(ulong chave, ushort id) =>
+            Pendentes.TryGetValue(chave, out Dictionary<ushort, Pendente> dele) && dele.TryGetValue(id, out Pendente p) ? p : null;
+
+        private static void TirarPendente(ulong chave, ushort id)
+        {
+            if (!Pendentes.TryGetValue(chave, out Dictionary<ushort, Pendente> dele) || !dele.Remove(id)) return;
+            _pendentes--;
+            if (dele.Count == 0) Pendentes.Remove(chave);
+        }
+
+        private static void TirarPendentesDe(ulong chave)
+        {
+            if (!Pendentes.TryGetValue(chave, out Dictionary<ushort, Pendente> dele)) return;
+            _pendentes -= dele.Count;
+            Pendentes.Remove(chave);
+        }
+
+        private static void Adiar(Remetente de, FxNovo m)
+        {
+            TirarPendente(de.Chave, m.Id); // o mesmo efeito anunciado de novo: vale o último anúncio
+            if (_pendentes >= MaximoPendentes) return;
+            if (!Pendentes.TryGetValue(de.Chave, out Dictionary<ushort, Pendente> dele)) Pendentes[de.Chave] = dele = new Dictionary<ushort, Pendente>();
+            if (dele.Count >= MaximoPendentesPorPar) return;
+            dele[m.Id] = new Pendente { De = de, Novo = m };
+            _pendentes++;
         }
 
         private static void Criar(Remetente de, FxNovo m)
         {
             if (de.Avatar == null || !de.Avatar.gameObject.activeInHierarchy) return;
-            GameObject prefab = ObterPrefab(m.Guid);
-            if (prefab == null) return;
-            if (_estacionamento == null)
+            GameObject prefab = ObterModelo(m.Guid, out bool carregando);
+            if (prefab == null)
             {
-                _estacionamento = new GameObject("HellClockCoop_FxEstacionamento");
-                _estacionamento.SetActive(false);
-                UnityEngine.Object.DontDestroyOnLoad(_estacionamento);
+                if (carregando) Adiar(de, m);
+                return;
             }
             GameObject go;
             try
             {
                 double inicio = Desempenho.Agora();
-                go = UnityEngine.Object.Instantiate(prefab, _estacionamento.transform);
-                LimparParaVisual(go);
+                go = UnityEngine.Object.Instantiate(prefab, Estacionamento());
+                Animator[] animators = go.GetComponentsInChildren<Animator>(true);
+                foreach (Animator a in animators) a.fireEvents = false; // os receptores dos eventos saíram na limpeza do modelo
+                AvatarAnimatorGuard.Registrar(animators);
                 Desempenho.SomarDetalhe(Desempenho.Detalhe.CopiarFx, inicio);
             }
             catch (Exception e)
@@ -572,11 +726,19 @@ namespace HellClockCoop.Fase3
 
         private static void AplicarMovimento(Remetente de, FxMovimento m)
         {
-            if (!Copias.TryGetValue(de.Chave, out var dele)) return;
+            Copias.TryGetValue(de.Chave, out var dele);
+            if (dele == null && _pendentes == 0) return;
             float agora = Time.unscaledTime;
             foreach (FxMovimento.Item i in m.Itens)
             {
-                if (!dele.TryGetValue(i.Id, out Copia c) || c.Go == null || !c.Solta) continue;
+                if (dele == null || !dele.TryGetValue(i.Id, out Copia c) || c.Go == null)
+                {
+                    // A cópia espera o prefab: quando nascer, nasce na posição mais nova (só efeito solto recebe movimento).
+                    Pendente p = _pendentes > 0 ? AcharPendente(de.Chave, i.Id) : null;
+                    if (p != null && p.Novo.TipoPai == FxNovo.PaiMundo) { p.Novo.Posicao = i.Posicao; p.Novo.Rotacao = i.Rotacao; }
+                    continue;
+                }
+                if (!c.Solta) continue;
                 c.Amostras.Add(new Amostra { T = agora, Pos = i.Posicao + de.Deslocamento, Rot = i.Rotacao });
                 if (c.Amostras.Count > 8) c.Amostras.RemoveAt(0);
                 c.Expira = agora + VidaSolto;
@@ -608,6 +770,7 @@ namespace HellClockCoop.Fase3
 
         private static void Remover(Remetente de, ushort id)
         {
+            if (_pendentes > 0) TirarPendente(de.Chave, id); // acabou antes de o prefab chegar: a cópia nem nasce
             if (!Copias.TryGetValue(de.Chave, out var dele) || !dele.TryGetValue(id, out Copia c)) return;
             dele.Remove(id);
             if (c.Go != null) UnityEngine.Object.Destroy(c.Go);
@@ -653,6 +816,7 @@ namespace HellClockCoop.Fase3
 
         private static void DestruirDe(ulong chave)
         {
+            TirarPendentesDe(chave);
             if (!Copias.TryGetValue(chave, out var dele)) return;
             foreach (Copia c in dele.Values) if (c.Go != null) UnityEngine.Object.Destroy(c.Go);
             Copias.Remove(chave);
@@ -709,9 +873,7 @@ namespace HellClockCoop.Fase3
                 }
                 if (nesta == 0) break;
             }
-            Animator[] animators = go.GetComponentsInChildren<Animator>(true);
-            foreach (Animator a in animators) a.fireEvents = false; // os receptores dos eventos foram removidos
-            AvatarAnimatorGuard.Registrar(animators);
+            // (os Animators são preparados em cada cópia, no Criar: fireEvents não passa do modelo para a cópia)
         }
 
         // ---------------- Atraso (o efeito aparece junto com o avatar, que mostra o passado) ----------------
@@ -746,6 +908,7 @@ namespace HellClockCoop.Fase3
                 if (AvatarEco != null) Eco.Avatar = AvatarEco;
                 Eco.Deslocamento = AvatarEco != null ? AvatarEco.DeslocamentoMundo : Vector3.zero;
                 AtualizarLocais();
+                ConcluirCargas(); // antes das filas: a cópia que vence agora já acha o modelo que chegou
                 ProcessarFilas();
                 AtualizarCopias();
             }
@@ -766,6 +929,7 @@ namespace HellClockCoop.Fase3
                 {
                     case Protocolo.TipoFxNovo:
                         FxNovo n = FxNovo.Desserializar(dados);
+                        if (AvatarDe(r.Chave) != null) ObterModelo(n.Guid, out _); // já pede o prefab (ele vem durante o atraso da fila), só de quem tem avatar no andar
                         NaFilaDaRede(() => { r.Avatar = AvatarDe(r.Chave); if (r.Avatar != null) Criar(r, n); });
                         break;
                     case Protocolo.TipoFxMovimento:
@@ -791,6 +955,9 @@ namespace HellClockCoop.Fase3
         public static void Encerrar()
         {
             foreach (ulong k in new List<ulong>(Copias.Keys)) if (k != 0) DestruirDe(k);
+            ChavesPendentes.Clear();
+            foreach (ulong k in Pendentes.Keys) if (k != 0) ChavesPendentes.Add(k);
+            foreach (ulong k in ChavesPendentes) TirarPendentesDe(k);
             FilaRede.Clear();
         }
     }

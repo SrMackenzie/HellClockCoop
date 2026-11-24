@@ -266,6 +266,10 @@ ESTADO ATUAL (versão de teste, Fase 3)
 - (0.30.2): em coop o mod ficou mais leve. Ele perguntava à Steam quem é o dono da sala
   dezenas de vezes por quadro; agora pergunta uma vez e guarda a resposta. Nada muda no jogo
   nem nas regras da sala. Exige a 0.30.2 em todos os PCs.
+- (0.30.3): saíram as travadas de um instante ao abrir o menu do coop em jogo, na primeira vez
+  que um aliado aparece e no primeiro aviso do canto da tela; efeito de skill do aliado que o
+  seu PC ainda não carregou não segura mais a tela. Nada muda no jogo. Exige a 0.30.3 em todos
+  os PCs.
 - A Deluxe Edition (cosmética) não importa.
 
 

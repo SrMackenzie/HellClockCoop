@@ -95,7 +95,10 @@ namespace HellClockCoop.Interface
 
         private static void CriarNaPausa()
         {
-            PauseHUD hud = NaCena<PauseHUD>(false, out _);
+            // 0.30.3: a pausa vem da própria HUD do jogo (GenericHUD.PauseHUD), sem varrer a cena (50 ms em jogo); a varredura
+            // fica só de reserva.
+            GenericHUD hudDoJogo = HudDoJogo.Atual();
+            PauseHUD hud = hudDoJogo != null && hudDoJogo.PauseHUD != null ? hudDoJogo.PauseHUD : NaCena<PauseHUD>(false, out _);
             if (hud == null) return; // cena sem HUD (carregamento, vídeo)
             try
             {
