@@ -254,6 +254,8 @@ ESTADO ATUAL (versão de teste, Fase 3)
   mesmo andar, com os dois de pé e fora de combate (5 s sem dar nem levar dano): canaliza 2 s
   parado (mover ou levar dano cancela) e tem recarga de 60 s, conferida pelo host. Exige a
   0.29.0 em todos os PCs.
+- (0.29.1): o teleporte até o eco (F8) vale também para o host de uma sala sem ninguém, para
+  testar sozinho. Lembre: o teleporte só aparece dentro da run, não no hub.
 - A Deluxe Edition (cosmética) não importa.
 
 

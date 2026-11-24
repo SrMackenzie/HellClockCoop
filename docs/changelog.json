@@ -2,6 +2,21 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.29.1",
+      "data": "23/11/2026",
+      "testado": false,
+      "titulo": "Teleporte até o eco com a sala vazia",
+      "itens": [
+        "O teleporte até o eco (F8) também vale para o host de uma sala sem ninguém, para testar sozinho; com alguém na sala, o eco não vale",
+        "O teleporte continua só dentro da run (no hub o símbolo não aparece)"
+      ],
+      "testar": [
+        "Crie a sala, ligue o eco (F8) e entre numa run: o símbolo aparece na linha do Eco",
+        "Aperte T fora de combate: 2 s parado e você aparece ao lado do Eco",
+        "Com um amigo na sala, a linha do Eco fica sem o símbolo"
+      ]
+    },
+    {
       "v": "0.29.0",
       "data": "23/11/2026",
       "testado": false,

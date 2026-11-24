@@ -22,7 +22,8 @@ namespace HellClockCoop.Fase2
     ///   convidado visto pelos Golpes e pela vida do snapshot), guarda a recarga e responde RespostaTp; com "ok", o convidado
     ///   teleporta até o aliado. O host decide o próprio TP pela mesma regra, sem rede.
     /// - Balanceamento: o TP serve para reagrupar, não para fugir da luta; não muda a escala nem o tempo.
-    /// - Modo eco (F8): o fantasma vale como aliado só fora de sessão, para testar sozinho (sem rede, só a regra local).
+    /// - Modo eco (F8): o fantasma vale como aliado só para quem joga sozinho (fora de sessão, ou host de sala vazia), para testar
+    ///   (sem rede, só a regra local).
     /// - Destino: a posição do avatar do aliado, levada ao chão andável mais próximo (NavMesh, até 2 m); sem chão, não teleporta.
     /// </summary>
     internal static class TpAliado
@@ -137,13 +138,15 @@ namespace HellClockCoop.Fase2
         }
 
         /// <summary>
-        /// O eco só vale como alvo fora de sessão (teste sozinho): numa sessão o TP até ele seria decidido sem o host, e o eco
-        /// pode estar deslocado até 60 m (além das paredes e do mapa).
+        /// O eco só vale como alvo para quem joga sozinho (teste): fora de sessão, ou host de uma sala sem ninguém (0.29.1). Com
+        /// alguém na sala, o TP até ele seria decidido sem o host (no convidado) e o eco pode estar deslocado até 60 m (além das
+        /// paredes e do mapa).
         /// </summary>
         private static bool EcoValeComoAlvo()
         {
             SessaoCoop s = Sessao;
-            return (s == null || !s.EmSessao) && _eco != null && _eco.gameObject.activeInHierarchy;
+            bool sozinho = s == null || !s.EmSessao || (s.SouHost && s.Pares.Count == 0);
+            return sozinho && _eco != null && _eco.gameObject.activeInHierarchy;
         }
 
         /// <summary>Dano causado pelo jogador local (DanosVisiveis.NumeroCriado): conta como combate.</summary>

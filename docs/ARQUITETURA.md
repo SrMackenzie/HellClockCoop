@@ -1611,8 +1611,9 @@ no código (`Validacao.Tp*`), não no .cfg; só a tecla vai para o .cfg (`[Tecla
   aliado; cinza com os segundos em recarga, cinza em combate, pulsando com o que falta da canalização, "..." aguardando o
   host e 1/2/3 na escolha. Some com o aliado caído, fora do andar ou sem você poder teleportar. A ordem dos números é a
   ordem do painel (`TpAliado.OrdemDoPainel`).
-- **Modo eco:** o fantasma vale como aliado só fora de sessão (regra local, sem rede), para testar sozinho; numa sessão o
-  TP até ele passaria por cima do host, e o eco pode estar deslocado até 60 m.
+- **Modo eco:** o fantasma vale como aliado só para quem joga sozinho (fora de sessão, ou host de sala sem ninguém, desde a
+  0.29.1), com a regra local e sem rede; com alguém na sala o TP até ele passaria por cima do host, e o eco pode estar
+  deslocado até 60 m.
 - **Destino:** a posição do avatar do aliado, levada ao ponto andável mais próximo (`NavMesh.SamplePosition`, até 2 m);
   sem chão por perto (aliado fora do mapa), não teleporta. O host descarta do dicionário as recargas vencidas e só registra
   no log padrão os TPs autorizados (as recusas vão para o Debug).

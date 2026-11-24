@@ -4,6 +4,12 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.29.1 — Teleporte até o eco com a sala vazia 🧪
+_23/11/2026_
+
+- O teleporte até o eco (F8) também vale para o host de uma sala sem ninguém, para testar sozinho; com alguém na sala, o eco não vale
+- O teleporte continua só dentro da run (no hub o símbolo não aparece)
+
 ## 0.29.0 — Teleporte até o aliado 🧪
 _23/11/2026_
 
