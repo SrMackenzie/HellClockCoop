@@ -402,6 +402,31 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.30.1 — Medidor de desempenho ampliado
+
+Só mede: nada muda no jogo, na rede ou no save. Completa a seção 0.9.7. O "normal" de lá é uma média móvel dos quadros
+em jogo (anda devagar também nas travadas), e o carregamento que fica fora da conta agora inclui o andar ainda
+carregando (cena -1), não só o quadro da troca de cena. Um resumo sai quando o contexto muda (solo, eco, coop) ou a
+cada 5 min, se o trecho tiver 30 s ou mais; dá para fazer sozinho, com o eco (F8).
+
+- [ ] **Chamadas à Steam, solo x sala:** jogar 1 min sozinho, criar o coop (sala privada), jogar mais 1 min e sair do
+  coop. Esperado: no resumo `(solo; contexto mudou ...)`, `chamadas à Steam por quadro (jogo e mod): média` perto de 0;
+  no resumo `(host com 0 aliado(s); ...)`, bem mais (19 por quadro no hub, em 24/11/2026).
+- [ ] **Carregamento não é travada:** numa run, trocar de andar algumas vezes. Esperado: nenhuma linha
+  `[Desempenho] Travada` com `cena -1`; o resumo conta os quadros em `quadros longos em carregamento (fora da conta)`,
+  com o maior tempo do mod e a parte.
+- [ ] **Ganchos na conta:** numa run como host com um aliado (ou o eco em sala), o resumo lista em `detalhes` as linhas
+  `CheckForSpawn N×`, `TimerManager.Update N×` e `contexto de som N×`, e a parte `Ganchos` em `partes`.
+- [ ] **Partes novas:** com o eco ligado, `partes` pode trazer `OnGUI` e `Avatares` (só aparecem com pior quadro de
+  0,5 ms ou mais). `buscar peças da HUD` sai em `detalhes` do resumo que fecha ao ligar o eco pela primeira vez (o do
+  trecho solo; jogue 30 s ou mais antes de ligar).
+- [ ] **Memória:** o resumo traz `memória gerenciada N MB agora, piso depois de coleta: mínimo ..., máximo ..., último ...`
+  (ou `sem coleta no período`).
+- [ ] **Rede (sessão em dupla):** depois do resumo vem `[Desempenho] Rede no período (...)`, com `enviou N msg` e a
+  lista por tipo (`Snapshot`, `InimigosEstado`, ...), `recebeu N msg` e `buffer de recepção (64 msg) cheio em N quadro(s)`.
+  Sozinho (sem aliado) essa linha não sai.
+- Depois da sessão em dupla, mandar o `LogOutput.log` dos dois PCs: são os números de "antes" das próximas etapas.
+
 ## 0.22.0 — Balanceamento só do autor e teto de inimigos por andar
 
 Exige a 0.22.0 em todos os PCs (o protocolo não muda). O teto só age no convidado.

@@ -512,6 +512,13 @@ namespace HellClockCoop.Interface
         /// </summary>
         private static T Achar<T>(bool qualquer = false) where T : Component
         {
+            double inicio = Desempenho.Agora(); // varre todos os objetos carregados: suspeita de travada (medidor, 0.30.1)
+            try { return Varrer<T>(qualquer); }
+            finally { Desempenho.SomarDetalhe(Desempenho.Detalhe.BuscarPecasHud, inicio); }
+        }
+
+        private static T Varrer<T>(bool qualquer) where T : Component
+        {
             T daCena = null, reserva = null;
             foreach (T o in Resources.FindObjectsOfTypeAll<T>())
             {

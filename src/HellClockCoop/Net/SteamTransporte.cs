@@ -37,6 +37,7 @@ namespace HellClockCoop.Net
                 if (r == EResult.k_EResultOK)
                 {
                     BytesEnviados += dados.Length;
+                    if (dados.Length > 0) Desempenho.MensagemEnviada(dados[0], dados.Length); // por tipo, no resumo do medidor
                     return true;
                 }
                 return false;
@@ -52,6 +53,7 @@ namespace HellClockCoop.Net
         public static void Receber(int canal, Action<CSteamID, byte[]> tratar)
         {
             int n = SteamNetworkingMessages.ReceiveMessagesOnChannel(canal, Buffer, Buffer.Length);
+            if (n >= Buffer.Length) Desempenho.BufferCheio(); // no limite: o que não coube fica para o quadro seguinte (medidor, 0.30.1)
             for (int i = 0; i < n; i++)
             {
                 CSteamID de;

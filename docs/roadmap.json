@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
-  "atualizado": "23/11/2026",
-  "versao": "0.30.0",
+  "atualizado": "24/11/2026",
+  "versao": "0.30.1",
   "fases": [
     {
       "id": "B",
@@ -367,7 +367,7 @@
           "Resumo da run em grupo: dano, abates e tempo ganho de cada jogador no fim da run"
         ],
         [
-          "planejado",
+          "fazendo",
           "Correção das travadas esporádicas, com os números do medidor de travadas"
         ],
         [

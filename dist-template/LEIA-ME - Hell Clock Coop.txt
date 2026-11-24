@@ -260,6 +260,9 @@ ESTADO ATUAL (versão de teste, Fase 3)
   cor do aliado (em recarga o anel cinza vai enchendo). Durante os 2 s seu personagem ganha um
   contorno na cor do aliado, e no teleporte some e reaparece com o efeito do jogo. Só na sua
   tela; as regras não mudaram. Exige a 0.30.0 em todos os PCs.
+- (0.30.1): o medidor de desempenho do log (linhas [Desempenho]) mede mais coisas e não conta
+  mais o carregamento de andar como travada. Só mede: nada muda no jogo. Exige a 0.30.1 em
+  todos os PCs.
 - A Deluxe Edition (cosmética) não importa.
 
 

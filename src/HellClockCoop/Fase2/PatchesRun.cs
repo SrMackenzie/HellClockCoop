@@ -190,12 +190,20 @@ namespace HellClockCoop.Fase2
 
         private static bool Prefix(TimerManager __instance)
         {
-            DungeonProgressManager dpm = DungeonProgressManager.Instance;
-            if (RunCompartilhada.Convidado && dpm.RunStarted.Value) return false;
-            if (!JogadorCaido.Caido) return true;
-            if (__instance.PauseTimer.Free && dpm.RunStarted.Value && !HellClock.Cheat.CheatInputs.CheatInfiniteTimer.Value && !dpm.EndingExecuted.Value)
-                (__instance.RelaxedModeEnabled ? ModoRelaxado : ModoPadrao).Invoke(__instance, null);
-            return false;
+            double inicio = Desempenho.InicioGancho(); // com o host caído, o tempo do modo do jogo chamado aqui entra junto
+            try
+            {
+                DungeonProgressManager dpm = DungeonProgressManager.Instance;
+                if (RunCompartilhada.Convidado && dpm.RunStarted.Value) return false;
+                if (!JogadorCaido.Caido) return true;
+                if (__instance.PauseTimer.Free && dpm.RunStarted.Value && !HellClock.Cheat.CheatInputs.CheatInfiniteTimer.Value && !dpm.EndingExecuted.Value)
+                    (__instance.RelaxedModeEnabled ? ModoRelaxado : ModoPadrao).Invoke(__instance, null);
+                return false;
+            }
+            finally
+            {
+                Desempenho.FimGancho(inicio, Desempenho.Detalhe.TimerUpdate);
+            }
         }
     }
 

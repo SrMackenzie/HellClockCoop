@@ -52,8 +52,12 @@ namespace HellClockCoop.Fase3
     [HarmonyPatch(typeof(EnemyController), "CheckForSpawn")]
     internal static class Inimigos_CheckForSpawn
     {
-        private static bool Prefix(EnemyController __instance, Vector3 ____spawnOrigin) =>
-            !InimigosCompartilhados.HostAcordarPorAliado(__instance, ____spawnOrigin);
+        private static bool Prefix(EnemyController __instance, Vector3 ____spawnOrigin)
+        {
+            double inicio = Desempenho.InicioGancho(); // o jogo chama a cada quadro por inimigo que ainda não acordou
+            try { return !InimigosCompartilhados.HostAcordarPorAliado(__instance, ____spawnOrigin); }
+            finally { Desempenho.FimGancho(inicio, Desempenho.Detalhe.ChecarSpawn); }
+        }
     }
 
     /// <summary>

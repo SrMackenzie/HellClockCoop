@@ -158,10 +158,10 @@ namespace HellClockCoop.Fase3
         /// <summary>Prefixo dos métodos de contexto: NoContexto ou EmSilencio quando entrou (o finalizador sai), senão ForaDoContexto.</summary>
         internal static int EntrarContexto(MethodBase m, object instancia, object[] args)
         {
-            if (Calado || m == null || !HaQuemOuca) return ForaDoContexto;
-            double inicio = Desempenho.InicioGancho();
+            double inicio = Desempenho.InicioGancho(); // desde o começo: conta todas as chamadas, inclusive as que saem logo (0.30.1)
             try
             {
+                if (Calado || m == null || !HaQuemOuca) return ForaDoContexto;
                 // Som de um efeito só deste PC (TpEfeito) ativado depois do CreateFx (GameplaySfxConfig.ActivateSfx(vfx, …)).
                 if (args != null && args.Length > 0 && args[0] is GameObject vfx && FxCompartilhados.SoLocal(vfx))
                 {
@@ -178,7 +178,7 @@ namespace HellClockCoop.Fase3
             }
             finally
             {
-                Desempenho.FimGancho(inicio);
+                Desempenho.FimGancho(inicio, Desempenho.Detalhe.ContextoSom);
             }
         }
 

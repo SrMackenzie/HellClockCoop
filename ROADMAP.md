@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 23/11/2026 · versão 0.30.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 24/11/2026 · versão 0.30.1. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -100,7 +100,7 @@ _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio s
 | 🧪 | Revisar drops de invocações, ondas de sobrevivência e temporadas (convidado com o XP e o tesouro próprio do host; equipamento sem redução, decisão do autor) |
 | ✅ | Auditoria: o mod nunca escreve no save de outro jogador |
 
-## Fase 5 — Polimento · 55%
+## Fase 5 — Polimento · 56%
 
 _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 
@@ -135,6 +135,6 @@ _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 | ⬜ | Ir até o aliado: botão que leva para perto do host quem ficou para trás, com tempo de recarga |
 | ⬜ | Ver a build do aliado: aba só de leitura com as skills e o nível de cada jogador da sessão |
 | ⬜ | Resumo da run em grupo: dano, abates e tempo ganho de cada jogador no fim da run |
-| ⬜ | Correção das travadas esporádicas, com os números do medidor de travadas |
+| 🔨 | Correção das travadas esporádicas, com os números do medidor de travadas |
 | ⬜ | Desempenho com 4 jogadores e muitos inimigos |
 | ⬜ | Tradução para inglês e instalador |

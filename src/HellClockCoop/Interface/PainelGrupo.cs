@@ -517,6 +517,7 @@ namespace HellClockCoop.Interface
             if (preenche != null) { _spritePreenche = preenche.sprite; _corPreenche = preenche.color; }
             if (atraso != null) { _spriteAtraso = atraso.sprite; _corAtraso = atraso.color; }
             if (barreira != null && barreira.sprite != null) { _spriteBarreira = barreira.sprite; _corBarreira = barreira.color; }
+            double inicio = Desempenho.Agora(); // varre todos os objetos carregados: suspeita de travada (medidor, 0.30.1)
             foreach (StatusIconsView v in Resources.FindObjectsOfTypeAll<StatusIconsView>())
             {
                 if (v == null) continue;
@@ -525,6 +526,7 @@ namespace HellClockCoop.Interface
                 if (d.HasValue && d.Value.a > 0.05f) _corDebuff = d.Value;
                 break;
             }
+            Desempenho.SomarDetalhe(Desempenho.Detalhe.BuscarPecasHud, inicio);
             Plugin.Log.LogInfo($"[Painel] Painel de grupo montado (barra: {(preenche != null ? "do jogo" : "simples")}, barreira: {(_spriteBarreira != null ? _spriteBarreira.name : "simples")}, cores de status: {_corBuff}/{_corDebuff}).");
         }
 

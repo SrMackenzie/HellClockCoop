@@ -78,6 +78,7 @@ namespace HellClockCoop
         private void Update()
         {
             bool semPersonagem = JogadorLocal() == null;
+            double inicio = Desempenho.Agora();
             try
             {
                 Desempenho.NovoQuadro(semPersonagem, LocalPlayerSampler.CenaAtual()); // fecha o quadro anterior (medidor de travadas)
@@ -86,7 +87,7 @@ namespace HellClockCoop
             {
                 if (_errosMedidor++ < 3) Plugin.Log.LogWarning($"[Desempenho] Erro no medidor (os menus seguem): {e.Message}");
             }
-            double inicio = Desempenho.Agora();
+            inicio = Desempenho.Somar(Desempenho.Parte.Medidor, inicio); // o custo do próprio medidor entra no quadro que começa
             Desempenho.NoLaco = true;
             try
             {
@@ -403,7 +404,7 @@ namespace HellClockCoop
             finally
             {
                 Desempenho.NoLaco = false;
-                Desempenho.Somar(Desempenho.Parte.Interface, inicio);
+                Desempenho.Somar(Desempenho.Parte.Gui, inicio); // 0.30.1: separado da Interface do LateUpdate
             }
         }
 

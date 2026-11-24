@@ -4,6 +4,14 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.30.1 — Medidor de desempenho ampliado 🧪
+_24/11/2026_
+
+- O medidor do log ficou mais confiável: o carregamento de andar deixou de aparecer como travada
+- O resumo do log agora mostra as chamadas à Steam por quadro, a memória logo depois de cada coleta de lixo, o que o mod enviou por tipo de mensagem e os quadros em que a leitura da rede bateu no limite de 64 mensagens
+- Entram na conta trechos que estavam de fora: os ganchos que rodam a cada quadro, os avatares dos aliados, o desenho na tela e a busca das peças da interface do jogo
+- Só mede: nada muda no jogo, na rede ou no save. Balanceamento: sem efeito na dificuldade. Protocolo não muda (24). Exige a 0.30.1 em todos os PCs (a mesma versão do mod)
+
 ## 0.30.0 — Visual do teleporte 🧪
 _23/11/2026_
 

@@ -93,6 +93,13 @@ namespace HellClockCoop.Avatar
 
         private void LateUpdate()
         {
+            double inicio = Desempenho.Agora(); // fora do laço do CoopRuntime: parte própria no medidor (0.30.1)
+            try { Interpolar(); }
+            finally { Desempenho.Somar(Desempenho.Parte.Avatares, inicio); }
+        }
+
+        private void Interpolar()
+        {
             if (!_temOffset || _buffer.Count == 0 || _modelo == null)
             {
                 return;
