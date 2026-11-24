@@ -263,6 +263,9 @@ ESTADO ATUAL (versão de teste, Fase 3)
 - (0.30.1): o medidor de desempenho do log (linhas [Desempenho]) mede mais coisas e não conta
   mais o carregamento de andar como travada. Só mede: nada muda no jogo. Exige a 0.30.1 em
   todos os PCs.
+- (0.30.2): em coop o mod ficou mais leve. Ele perguntava à Steam quem é o dono da sala
+  dezenas de vezes por quadro; agora pergunta uma vez e guarda a resposta. Nada muda no jogo
+  nem nas regras da sala. Exige a 0.30.2 em todos os PCs.
 - A Deluxe Edition (cosmética) não importa.
 
 

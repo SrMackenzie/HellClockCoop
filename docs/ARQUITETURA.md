@@ -195,6 +195,19 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
    - **Rede:** segunda linha, `[Desempenho] Rede no período`, quando houve tráfego: mensagens e bytes enviados por tipo (1º byte do pacote, com o nome lido das constantes `Tipo*` do `Protocolo`; cada destinatário conta uma vez), o total recebido e em quantos quadros a leitura de um canal chegou ao limite do buffer de 64 mensagens (o que não coube fica para o quadro seguinte). A rede, o piso de memória e os detalhes contam também nos quadros de carregamento de andar; com a janela fechada (menu, carregamento do save) nada conta.
    - **Contexto:** em sala, o eco (F8) entra no nome do contexto (`host com 0 aliado(s) e eco`) e abre janela própria.
 
+   **Etapa 3 (0.30.2): dono do lobby guardado** (§12.11). Medido em 24/11/2026 no PC do autor, com o mesmo roteiro antes (0.30.1) e depois, trechos de 45 a 90 s, personagem parado (na run, no começo do andar 1 do Ato II):
+
+   | Contexto | Chamadas à Steam por quadro | Mod (ms por quadro) | fps |
+   |---|---|---|---|
+   | Hub, solo | 0,0 → 0,0 | 0,08 → 0,08 | 202 → 201 |
+   | Hub, host de sala vazia | 17,5 → 1,4 | 0,77 → 0,23 | 186 → 196 |
+   | Hub, sala vazia com eco | 14,0 → 1,0 | 0,73 → 0,27 | 186 → 195 |
+   | Run, sala vazia com eco | 20,0 → 1,0 | 0,81 → 0,25 | 174 → 190 |
+   | Run, host de sala vazia | 21,5 → 1,6 | 0,77 → 0,20 | 173 → 196 |
+   | Run, solo | 0,0 → 0,0 | 0,07 → 0,07 | 197 → 200 |
+
+   O gancho de `TimerManager.Update` caiu de 60 a 85 µs para ~0,5 µs por chamada em sala (igual ao solo), e as partes Run, Inimigos, Portas e Ganchos saíram da lista do resumo (pior quadro abaixo de 0,5 ms). Sobra a parte Rede, ~0,10 ms por quadro: a releitura do dono e as duas leituras de mensagens. O `[Desempenho] Resumo` sai normalmente dentro da run. `CheckForSpawn` não apareceu em `detalhes` com o personagem parado no começo do andar (o jogo não chamou o método nenhuma vez); falta conferir andando pelo andar.
+
 ---
 
 ## 7. Teste da Fase 0 no jogo (20/11/2026) — confirmado
@@ -1374,6 +1387,16 @@ no meio e a Steam passa o lobby a outro membro (até a um expulso que ignorou o 
 aberta de ninguém, e o host original que sai e volta como membro comum também não (auditoria: ele poderia expulsar o
 novo dono); a run segue sem novos andares do host e, na volta ao hub, vale o dono do lobby de novo. Se a Steam passa o
 lobby a um expulso, o convidado recebe um aviso único para sair e entrar em outra sala.
+
+**Dono do lobby guardado (0.30.2).** `SouHost` e `IdDoHost` leem `SessaoCoop._donoDoLobby` em vez de chamar
+`SteamMatchmaking.GetLobbyOwner` a cada leitura (etapa 3 do trabalho de desempenho: eram de 14 a 21 chamadas à Steam por quadro
+como host de sala vazia). O campo é relido da Steam em três pontos: no início de `SessaoCoop.Atualizar` (todo quadro, no
+`LateUpdate`, antes do reenvio do `Expulso`, da checagem do dono expulso e do `Receber`), em `OnEntrouNoLobby` (antes de
+o estado virar `NoLobby`) e em `OnMembrosMudaram` (antes do `AtualizarMembros`); `Sair` zera. Para a segurança: `Expulso`,
+`ExpulsoAviso`, planos e ordens são conferidos contra o dono lido no mesmo quadro em que chegam, como antes; fora do
+`Atualizar` (ganchos e menus, no `Update`) o valor tem no máximo um quadro. Não há callback de `LobbyDataUpdate_t`: a
+releitura por quadro não depende de qual aviso a Steam manda quando o dono muda. Trocar por um cache só de eventos
+(zero chamadas por quadro) abre uma janela maior que um quadro e pede nova auditoria deste trecho.
 
 **Expulsão avisada.** Mensagem nova `ExpulsoAviso` (tipo 14, 8 bytes do SteamID): o host manda aos outros convidados
 compatíveis ao expulsar, a quem chega depois (Hello) e de novo a cada 2 s, junto com o reenvio do `Expulso`, enquanto

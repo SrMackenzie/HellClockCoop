@@ -2,6 +2,24 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.30.2",
+      "data": "24/11/2026",
+      "testado": false,
+      "titulo": "Coop mais leve: menos chamadas à Steam",
+      "itens": [
+        "Em coop, o mod perguntava à Steam quem é o dono da sala a cada vez que precisava saber quem é o host: cerca de 20 vezes por quadro como host de uma sala vazia. Agora pergunta uma vez por quadro e guarda a resposta",
+        "Medido no PC do autor como host de uma sala vazia: as chamadas à Steam por quadro caíram de 17,5 para 1,4 no hub e de 21,5 para 1,6 dentro da run, e o tempo do mod por quadro caiu de 0,77 para cerca de 0,2 ms nos dois lugares (na run, de 173 para 196 fps). Jogando sozinho nada muda",
+        "A segurança das salas é a mesma: toda decisão sobre quem é o host usa o dono lido naquele mesmo quadro (host fixo da run, expulsão e a sala que passa a um expulso)",
+        "Balanceamento: sem efeito na dificuldade. Protocolo não muda (24). Exige a 0.30.2 em todos os PCs (a mesma versão do mod)"
+      ],
+      "testar": [
+        "Crie o coop e jogue 1 min: no log, o resumo [Desempenho] do host mostra poucas chamadas à Steam por quadro (antes eram de 14 a 21)",
+        "Na sessão em dupla, o host expulsa o convidado: ele sai da sala e não consegue voltar",
+        "Na sessão em dupla, o host sai do coop no hub: o convidado vira o host e consegue começar uma run",
+        "Na sessão em dupla, o host sai no meio da run: o convidado termina a run sozinho, sem ninguém comandar"
+      ]
+    },
+    {
       "v": "0.30.1",
       "data": "24/11/2026",
       "testado": false,

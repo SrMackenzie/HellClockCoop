@@ -69,7 +69,18 @@ namespace HellClockCoop.Net
         }
 
         public bool EmSessao => EstadoAtual == Estado.NoLobby;
-        public bool SouHost => EmSessao && SteamMatchmaking.GetLobbyOwner(Lobby) == Eu;
+        public bool SouHost => EmSessao && _donoDoLobby == Eu.m_SteamID;
+
+        /// <summary>
+        /// 0.30.2: dono do lobby guardado (0 fora do coop). SteamMatchmaking.GetLobbyOwner é uma chamada ao cliente da Steam, e
+        /// SouHost, IdDoHost, Host, ModoHost e ModoConvidado são lidos dezenas de vezes por quadro (14 a 21 chamadas por quadro como
+        /// host de sala vazia na 0.30.1). Relido da Steam no início de cada Atualizar, antes de qualquer mensagem ser tratada,
+        /// e nos callbacks do lobby (entrada e mudança de membros): nenhuma decisão de autoridade usa um dono mais velho que
+        /// um quadro, e as mensagens recebidas são conferidas contra o dono lido naquele mesmo quadro, como antes.
+        /// </summary>
+        private ulong _donoDoLobby;
+
+        private void LerDonoDoLobby() => _donoDoLobby = SteamMatchmaking.GetLobbyOwner(Lobby).m_SteamID;
 
         /// <summary>DLCs deste PC (lidas uma vez, quando o Steam fica pronto).</summary>
         public bool MinhaDeluxe { get; private set; }
@@ -87,7 +98,7 @@ namespace HellClockCoop.Net
         /// ainda é o dono. Se o lobby trocou de dono no meio da run, ninguém (0) até a run acabar: nem o novo dono nem o host
         /// que saiu e voltou como membro comum.
         /// </summary>
-        public ulong IdDoHost => Validacao.HostEfetivo(_hostDaRun, SteamMatchmaking.GetLobbyOwner(Lobby).m_SteamID);
+        public ulong IdDoHost => Validacao.HostEfetivo(_hostDaRun, _donoDoLobby);
 
         /// <summary>O host (o da run aberta ou o dono do lobby), se já trocou Hello conosco.</summary>
         public Par Host => EmSessao && !SouHost && Pares.TryGetValue(IdDoHost, out Par h) ? h : null;
@@ -250,7 +261,7 @@ namespace HellClockCoop.Net
 
         /// <summary>Nome na Steam do dono do lobby (o host agora), limpo. Null fora do coop.</summary>
         public string HostDaSalaAtual() =>
-            EmSessao ? Salas.LimparNome(SteamFriends.GetFriendPersonaName(SteamMatchmaking.GetLobbyOwner(Lobby))) : null;
+            EmSessao ? Salas.LimparNome(SteamFriends.GetFriendPersonaName(new CSteamID(_donoDoLobby))) : null;
 
         public int JogadoresNaSala => EmSessao ? SteamMatchmaking.GetNumLobbyMembers(Lobby) : 0;
 
@@ -389,6 +400,7 @@ namespace HellClockCoop.Net
             Fase3.GolpesVisiveis.Encerrar();
             Fase3.AlvosAliados.Encerrar();
             Lobby = CSteamID.Nil;
+            _donoDoLobby = 0;
             _ultimaAparenciaEnviada = null;
             _expulsos.Clear();
             _hostDaRun = 0;
@@ -566,9 +578,10 @@ namespace HellClockCoop.Net
             }
 
             Lobby = lobby;
+            LerDonoDoLobby(); // antes da primeira leitura de SouHost nesta sala
             EstadoAtual = Estado.NoLobby;
             SteamFriends.SetRichPresence("connect", "+connect_lobby " + lobby.m_SteamID);
-            string dono = Salas.LimparNome(SteamFriends.GetFriendPersonaName(SteamMatchmaking.GetLobbyOwner(lobby))); // sala pública: pode ser desconhecido
+            string dono = HostDaSalaAtual(); // sala pública: pode ser desconhecido
             Plugin.Log.LogInfo($"[Sessão] No coop (lobby {lobby.m_SteamID}, host {dono}, {(SouHost ? "você é o host" : "você é convidado")}).");
             Avisar(SouHost ? "Coop criado! Convide amigos pelo overlay (o menu do coop abre de novo)." : $"Você entrou no coop de {dono}.");
             AtualizarMembros();
@@ -577,6 +590,7 @@ namespace HellClockCoop.Net
         private void OnMembrosMudaram(LobbyChatUpdate_t u)
         {
             if (u.m_ulSteamIDLobby != Lobby.m_SteamID) return;
+            LerDonoDoLobby(); // quem saiu pode ser o dono: o AtualizarMembros (expulsar o bloqueado) já vê o novo
             AtualizarMembros();
         }
 
@@ -738,6 +752,7 @@ namespace HellClockCoop.Net
             }
             if (!EmSessao) return;
 
+            LerDonoDoLobby(); // uma leitura por quadro, antes de tudo o que decide por SouHost/IdDoHost abaixo (expulsão, mensagens)
             AtualizarDadosDaSala(jogadorLocal);
             if (_expulsos.Count > 0 && SouHost && Time.unscaledTime >= _proximoReenvioExpulso)
             {
@@ -752,13 +767,15 @@ namespace HellClockCoop.Net
                     foreach (Par outro in Pares.Values) if (outro.Compativel) SteamTransporte.Enviar(outro.Id, aviso, confiavel: true, Protocolo.CanalConfiavel);
                 }
             }
-            if (!_avisouDonoExpulso && !SouHost && _expulsos.Contains(SteamMatchmaking.GetLobbyOwner(Lobby).m_SteamID))
+            if (!_avisouDonoExpulso && !SouHost && _expulsos.Contains(_donoDoLobby))
             {
                 _avisouDonoExpulso = true; // 0.21.1: a Steam passou a sala a um expulso; ninguém comanda a sua run
                 Plugin.Log.LogWarning("[Sessão] A sala passou a um jogador que o host anterior expulsou; ele não comanda a sua run.");
                 Avisar("A sala passou a um jogador que o host anterior expulsou. Saia do coop e entre em outra sala.");
             }
 
+            // Sempre depois do LerDonoDoLobby acima: as validações de autoridade (Expulso, planos, ordens) usam o dono deste
+            // quadro. Tratar mensagem em outro ponto (Update, callback) exige reler o dono antes.
             SteamTransporte.Receber(Protocolo.CanalConfiavel, (de, dados) => TratarConfiavel(de, dados, jogadorLocal));
             SteamTransporte.Receber(Protocolo.CanalSnapshots, (de, dados) => TratarSnapshot(de, dados, jogadorLocal, cenaLocal));
 

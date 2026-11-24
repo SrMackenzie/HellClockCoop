@@ -4,6 +4,14 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.30.2 — Coop mais leve: menos chamadas à Steam 🧪
+_24/11/2026_
+
+- Em coop, o mod perguntava à Steam quem é o dono da sala a cada vez que precisava saber quem é o host: cerca de 20 vezes por quadro como host de uma sala vazia. Agora pergunta uma vez por quadro e guarda a resposta
+- Medido no PC do autor como host de uma sala vazia: as chamadas à Steam por quadro caíram de 17,5 para 1,4 no hub e de 21,5 para 1,6 dentro da run, e o tempo do mod por quadro caiu de 0,77 para cerca de 0,2 ms nos dois lugares (na run, de 173 para 196 fps). Jogando sozinho nada muda
+- A segurança das salas é a mesma: toda decisão sobre quem é o host usa o dono lido naquele mesmo quadro (host fixo da run, expulsão e a sala que passa a um expulso)
+- Balanceamento: sem efeito na dificuldade. Protocolo não muda (24). Exige a 0.30.2 em todos os PCs (a mesma versão do mod)
+
 ## 0.30.1 — Medidor de desempenho ampliado 🧪
 _24/11/2026_
 

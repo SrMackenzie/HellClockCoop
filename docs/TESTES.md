@@ -402,12 +402,36 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.30.2 — Dono do lobby guardado (menos chamadas à Steam)
+
+Não muda regra de jogo, rede nem save. `SouHost`/`IdDoHost` leem o dono guardado, relido da Steam uma vez por quadro
+(ARQUITETURA §12.11). Medido sozinho em 24/11/2026 (hub e run, solo, sala vazia e sala com eco; tabela na ARQUITETURA,
+riscos, item 7). O que depende de um segundo jogador ainda não foi testado no jogo:
+
+- [x] **Chamadas à Steam (sozinho):** criar o coop (sala privada) e ficar 1 min; ligar o eco (F8) por 1 min; repetir
+  dentro da run. Esperado: no resumo `(host com 0 aliado(s); ...)`, `chamadas à Steam por quadro (jogo e mod): média`
+  entre 1 e 2 (eram 14 a 21 na 0.30.1) e `mod: média` perto de 0,25 ms (era 0,77). Feito em 24/11/2026.
+- [ ] **Expulsão:** na sessão em dupla, o host expulsa o convidado. Esperado: o convidado sai (`Saiu do coop (expulso
+  pelo host)`), a sala some da lista dele e ele não consegue voltar.
+- [ ] **Host sai no hub:** o host sai do coop no hub. Esperado: o convidado passa a ver `Você é o host` no menu e
+  consegue começar uma run; o resumo seguinte dele sai como `host com 0 aliado(s)`.
+- [ ] **Host sai no meio da run:** o host sai do coop com a run aberta. Esperado: o convidado termina a run sozinho, sem
+  receber plano de andar de ninguém; na volta ao hub ele é o host.
+- [ ] **Bloqueado ao entrar:** o host bloqueia um jogador, que tenta entrar pela lista. Esperado: `[Bloqueio] ... está
+  bloqueado e foi expulso ao entrar`.
+- [ ] **CheckForSpawn (pendência da 0.30.1):** numa run como host, andar pelo andar até achar inimigos. Esperado: o
+  resumo lista `CheckForSpawn N×` em `detalhes` (parado no começo do andar 1 não apareceu).
+
 ## 0.30.1 — Medidor de desempenho ampliado
 
 Só mede: nada muda no jogo, na rede ou no save. Completa a seção 0.9.7. O "normal" de lá é uma média móvel dos quadros
 em jogo (anda devagar também nas travadas), e o carregamento que fica fora da conta agora inclui o andar ainda
 carregando (cena -1), não só o quadro da troca de cena. Um resumo sai quando o contexto muda (solo, eco, coop) ou a
 cada 5 min, se o trecho tiver 30 s ou mais; dá para fazer sozinho, com o eco (F8).
+
+**A partir da 0.30.2** os números esperados em sala mudaram: as chamadas à Steam do host ficam entre 1 e 2 por quadro
+(não mais 19) e a parte `Ganchos` deixa de aparecer em `partes` em sala vazia. Para esses dois itens vale o roteiro da
+seção 0.30.2, acima.
 
 - [ ] **Chamadas à Steam, solo x sala:** jogar 1 min sozinho, criar o coop (sala privada), jogar mais 1 min e sair do
   coop. Esperado: no resumo `(solo; contexto mudou ...)`, `chamadas à Steam por quadro (jogo e mod): média` perto de 0;
