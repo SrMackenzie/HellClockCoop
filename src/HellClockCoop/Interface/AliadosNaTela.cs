@@ -165,6 +165,39 @@ namespace HellClockCoop.Interface
             return seta != null;
         }
 
+        /// <summary>
+        /// Peças para o painel de grupo (0.27.0): camada de barras e câmera da interface, depois de montada a barra dos
+        /// aliados (a fonte do jogo vem dela). False: sem a HUD do jogo ou sem as peças; o painel não aparece.
+        /// </summary>
+        internal static bool PecasDoPainel(out RectTransform camada, out Camera camUi)
+        {
+            camada = null;
+            camUi = null;
+            if (!Nativo && !Preparar()) return false;
+            camada = _camada;
+            camUi = _canvas != null && _canvas.renderMode != RenderMode.ScreenSpaceOverlay ? _canvas.worldCamera : null;
+            return true;
+        }
+
+        /// <summary>Imagens da barra do companheiro (fundo, preenchimento e faixa clara) para o painel copiar sprite e cor; nulas sem o modelo.</summary>
+        internal static void ImagensDaBarra(out Image fundo, out Image preenche, out Image atraso)
+        {
+            fundo = preenche = atraso = null;
+            if (_modeloBarra == null) return;
+            preenche = Peca(_modeloBarra.transform, _caminhoPreenche);
+            atraso = _caminhoAtraso != null ? Peca(_modeloBarra.transform, _caminhoAtraso) : null;
+            foreach (Image i in _modeloBarra.GetComponentsInChildren<Image>(true))
+            {
+                if (i == preenche || i == atraso || !i.enabled || i.sprite == null) continue;
+                fundo = i; // a primeira imagem visível que não é preenchimento: a moldura/fundo da barra
+                break;
+            }
+        }
+
+        /// <summary>Rótulo e cor do aliado caído com alguém reanimando (os mesmos da barra sobre a cabeça).</summary>
+        internal static string TextoReanimacao(Fase2.Reanimacao.Estado e) => TextoEstado(e);
+        internal static Color CorReanimacao(Fase2.Reanimacao.Estado e) => CorEstado(e);
+
         /// <summary>Põe o centro da peça no ponto da tela (pixels, y para cima), na camada de barras do jogo.</summary>
         internal static void ColocarNaCamada(RectTransform rt, Vector2 tela, Camera camUi) => Colocar(rt, tela, camUi);
 

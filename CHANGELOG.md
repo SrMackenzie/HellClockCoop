@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.27.0 — Painel de grupo 🧪
+_23/11/2026_
+
+- Painel à esquerda com você no topo e cada aliado embaixo: nome na cor de cada um (coroa no host), barra de vida, as skills equipadas embaixo e até 4 buffs/debuffs em cima
+- Sem recarga das skills nem duração dos status dos aliados, para o grupo não ficar mais fácil que o solo
+- Aliado caído aparece apagado com "caído" ou o progresso da reanimação; em outro andar ou no hub, a linha fica a 40% com o lugar
+- Desliga em MostrarPainelDeGrupo no .cfg; no modo eco (F8) o fantasma aparece no painel com as suas skills
+- Exige a 0.27.0 em todos os PCs (protocolo 22)
+
 ## 0.26.1 — Lista de salas só quando você pede 🧪
 _23/11/2026_
 

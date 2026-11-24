@@ -55,6 +55,7 @@ namespace HellClockCoop
             MostrarNomes = config.Bind("Interface", "MostrarNomesDosAliados", true, "Mostra o nome da Steam sobre a cabeça dos aliados.");
             DistanciaEco = config.Bind("Teste", "DistanciaDoEco", 2.5f, "Distância em metros do fantasma do modo eco, para o lado. Com 30 ele fica fora da tela (teste da seta do aliado). Limite: 60 para cada lado. Longe, o fantasma ignora paredes e o fim do mapa (só repete você deslocado) e o dano dele continua aparecendo no seu alvo: use só para ver a seta.");
             Interface.AliadosNaTela.Configurar(config);
+            Interface.PainelGrupo.Configurar(config);
             Interface.Marcadores.Configurar(config);
             Fase3.DanosVisiveis.Configurar(config);
             Fase3.SonsAliados.Configurar(config);
@@ -189,6 +190,7 @@ namespace HellClockCoop
                 t = Desempenho.Somar(Desempenho.Parte.Personagem, t);
             }
             Interface.AliadosNaTela.Atualizar(_sessao, _avatarEco); // depois dos avatares: barra de vida e seta (0.14.0)
+            Interface.PainelGrupo.Atualizar(_sessao, _avatarEco); // painel de grupo à esquerda (0.27.0), com as peças do AliadosNaTela
             Interface.Marcadores.Atualizar(_sessao, _avatarEco); // marcador no chão (0.17.0), com as peças do AliadosNaTela
             Interface.CaidoNaTela.Atualizar(); // faixa do jogador caído e aviso de queda (0.15.0)
             Desempenho.Somar(Desempenho.Parte.Interface, t);

@@ -17,4 +17,8 @@ Componentes de terceiros redistribuídos neste pacote, sem modificação:
   Origem: https://github.com/swyf-modding/Setup (vendor/corlib), extraídas do editor
   Unity 6000.3.10f1 para Windows x64.
 
+- Ícone "Crown" (Core Solid - Free), por Streamline — https://www.streamlinehq.com
+  Licença gratuita com crédito: https://home.streamlinehq.com/license-free
+  Embutido na HellClockCoop.dll (coroa do host no painel de grupo).
+
 Hell Clock Coop (HellClockCoop.dll): mod de fã gratuito, sem fins lucrativos.

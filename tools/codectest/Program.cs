@@ -862,9 +862,10 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
            && (ulong)Sm("LerSteamId", "12345") == 0ul && (ulong)Sm("LerSteamId", "-1") == 0ul && (ulong)Sm("LerSteamId", idA + "000") == 0ul,
         "Salas: dono do lobby (hcc_dono) só vale se for SteamID de jogador");
     var tp = T("HellClockCoop.Net.Protocolo");
-    Checar((int)tp.GetField("Versao").GetValue(null) == 21 && (byte)tp.GetField("TipoExpulso").GetValue(null) == 13
-           && (byte)tp.GetField("TipoExpulsoAviso").GetValue(null) == 14 && (byte)tp.GetField("TipoForaDaRun").GetValue(null) == 29,
-        "Protocolo 21 com Expulso tipo=13 (1 byte), ExpulsoAviso tipo=14 (0.21.1) e ForaDaRun tipo=29 (0.19.0)");
+    Checar((int)tp.GetField("Versao").GetValue(null) == 22 && (byte)tp.GetField("TipoExpulso").GetValue(null) == 13
+           && (byte)tp.GetField("TipoExpulsoAviso").GetValue(null) == 14 && (byte)tp.GetField("TipoForaDaRun").GetValue(null) == 29
+           && (byte)tp.GetField("TipoPainelAliado").GetValue(null) == 15,
+        "Protocolo 22 com Expulso tipo=13 (1 byte), ExpulsoAviso tipo=14 (0.21.1), ForaDaRun tipo=29 (0.19.0) e PainelAliado tipo=15 (0.27.0)");
 
     // 0.19.0: trava pelo progresso (maxFloorReached conta a partir de 1, como o andar do lobby)
     Checar((int)Sm("LerHash", "-123456789") == -123456789 && (int)Sm("LerHash", "2147483647") == 2147483647
@@ -1040,6 +1041,40 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
         "Snapshot: float de animator NaN recusado");
     Checar(!SV(Snap(o => { tSn.GetField("MascaraOssos").SetValue(o, (byte)1); ((UnityEngine.Quaternion[])tSn.GetField("RotacoesOssos").GetValue(o))[0] = new UnityEngine.Quaternion(0, float.NegativeInfinity, 0, 1); })),
         "Snapshot: rotação de osso infinita recusada");
+}
+
+// PainelAliado (0.27.0): skills equipadas e até 4 status do painel de grupo
+{
+    var t = T("HellClockCoop.Net.PainelAliado");
+    var ts = T("HellClockCoop.Net.PainelAliado+Status");
+    object Ler(byte[] b) => t.GetMethod("Desserializar").Invoke(null, new object[] { b });
+    byte[] Ser(object o) => (byte[])t.GetMethod("Serializar").Invoke(o, null);
+    System.Collections.IList Skills(object o) => (System.Collections.IList)t.GetField("Skills").GetValue(o);
+    System.Collections.IList Efeitos(object o) => (System.Collections.IList)t.GetField("Efeitos").GetValue(o);
+    object St(int h, byte a) { var s = Activator.CreateInstance(ts); ts.GetField("Hash").SetValue(s, h); ts.GetField("Acumulos").SetValue(s, a); return s; }
+    bool Recusa(byte[] bytes) { try { Ler(bytes); return false; } catch (TargetInvocationException e) when (e.InnerException is FormatException) { return true; } }
+
+    var o = Activator.CreateInstance(t);
+    Skills(o).Add(123456789); Skills(o).Add(0); Skills(o).Add(-42);
+    Efeitos(o).Add(St(-987654321, 1)); Efeitos(o).Add(St(55, 255));
+    var b = Ser(o);
+    var pa2 = Ler(b);
+    Checar(b[0] == 15 && Skills(pa2).Count == 3 && (int)Skills(pa2)[0] == 123456789 && (int)Skills(pa2)[1] == 0 && (int)Skills(pa2)[2] == -42
+        && Efeitos(pa2).Count == 2 && (int)ts.GetField("Hash").GetValue(Efeitos(pa2)[0]) == -987654321 && (byte)ts.GetField("Acumulos").GetValue(Efeitos(pa2)[1]) == 255,
+        $"PainelAliado ida e volta ({b.Length} bytes)");
+    Checar((bool)t.GetMethod("IgualA").Invoke(o, new[] { pa2 }), "PainelAliado: IgualA depois da ida e volta");
+    Efeitos(pa2).RemoveAt(1);
+    Checar(!(bool)t.GetMethod("IgualA").Invoke(o, new[] { pa2 }) && !(bool)t.GetMethod("IgualA").Invoke(o, new object[] { null }), "PainelAliado: IgualA vê status a menos e nulo");
+    var pVazio = Ler(Ser(Activator.CreateInstance(t)));
+    Checar(Skills(pVazio).Count == 0 && Efeitos(pVazio).Count == 0, "PainelAliado vazio (sem personagem) ida e volta");
+    var pMuitos = Activator.CreateInstance(t);
+    for (int k = 0; k < 12; k++) { Skills(pMuitos).Add(k + 1); Efeitos(pMuitos).Add(St(k + 1, 1)); }
+    var pMv = Ler(Ser(pMuitos));
+    Checar(Skills(pMv).Count == 8 && Efeitos(pMv).Count == 4, "PainelAliado: Serializar corta em 8 skills e 4 status");
+    Checar(Recusa(new byte[] { 15, 9 }), "PainelAliado: 9 skills no cabeçalho derrubam a mensagem");
+    Checar(Recusa(new byte[] { 15, 0, 5 }), "PainelAliado: 5 status no cabeçalho derrubam a mensagem");
+    bool cortada; try { Ler(new byte[] { 15, 1, 1, 2 }); cortada = false; } catch (TargetInvocationException e) when (e.InnerException is System.IO.EndOfStreamException) { cortada = true; }
+    Checar(cortada, "PainelAliado: mensagem cortada no meio recusada (fim do fluxo, como os outros codecs; o transporte descarta)");
 }
 
 Console.WriteLine(falhas == 0 ? "\nTODOS OS TESTES PASSARAM" : $"\n{falhas} FALHA(S)");

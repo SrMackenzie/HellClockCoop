@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "23/11/2026",
-  "versao": "0.26.1",
+  "versao": "0.27.0",
   "fases": [
     {
       "id": "B",
@@ -287,8 +287,12 @@
           "Nome da sala digitável no jogo, menu abrindo na Sessão com Criar/Convidar em primeiro, menu sem picos em jogo e opacidade dos danos dos aliados (0.26.0)"
         ],
         [
+          "testar",
+          "Painel de grupo à esquerda: você no topo e os aliados embaixo, nome com a coroa do host, barra de vida, skills equipadas embaixo e até 4 buffs/debuffs em cima, sem recarga nem duração (0.27.0)"
+        ],
+        [
           "planejado",
-          "Painel de grupo à esquerda: participantes, barra de vida, skills da barra e buffs/debuffs"
+          "Teleporte até um aliado: símbolo de TP ao lado da linha dele no painel de grupo"
         ],
         [
           "planejado",

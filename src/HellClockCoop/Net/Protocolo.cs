@@ -11,7 +11,7 @@ namespace HellClockCoop.Net
     internal static class Protocolo
     {
         /// <summary>Muda sempre que o formato de qualquer mensagem mudar. Pares com versões diferentes não conversam.</summary>
-        public const int Versao = 21; // 21: ExpulsoAviso (o host conta aos outros convidados quem expulsou, 0.21.1)
+        public const int Versao = 22; // 22: PainelAliado (skills e status do painel de grupo, 0.27.0)
 
         public const int CanalConfiavel = 0;
         public const int CanalSnapshots = 1;
@@ -22,6 +22,7 @@ namespace HellClockCoop.Net
         public const byte TipoTchau = 12;
         public const byte TipoExpulso = 13;      // host → um convidado: saia da sala (só 1 byte; 0.18.0)
         public const byte TipoExpulsoAviso = 14; // host → os outros convidados: fulano foi expulso, cortem a conversa com ele (0.21.1)
+        public const byte TipoPainelAliado = 15; // todos → todos: skills equipadas e status para o painel de grupo (0.27.0)
 
         // Fase 2 — run compartilhada (host → convidados, salvo TimerBonus)
         public const byte TipoPlanoAndar = 20;

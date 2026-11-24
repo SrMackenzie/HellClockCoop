@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 23/11/2026 · versão 0.26.1. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 23/11/2026 · versão 0.27.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -100,7 +100,7 @@ _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio s
 | 🧪 | Revisar drops de invocações, ondas de sobrevivência e temporadas (convidado com o XP e o tesouro próprio do host; equipamento sem redução, decisão do autor) |
 | ✅ | Auditoria: o mod nunca escreve no save de outro jogador |
 
-## Fase 5 — Polimento · 49%
+## Fase 5 — Polimento · 50%
 
 _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 
@@ -115,7 +115,8 @@ _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 | 🧪 | Menu do coop colado à direita, na altura toda, com a animação de abertura das Opções do jogo (0.24.0) |
 | 🧪 | Nome da sala (padrão "Sala de <host>", o host renomeia na aba Sessão) e a sua sala no topo da aba Salas (0.25.0) |
 | 🧪 | Nome da sala digitável no jogo, menu abrindo na Sessão com Criar/Convidar em primeiro, menu sem picos em jogo e opacidade dos danos dos aliados (0.26.0) |
-| ⬜ | Painel de grupo à esquerda: participantes, barra de vida, skills da barra e buffs/debuffs |
+| 🧪 | Painel de grupo à esquerda: você no topo e os aliados embaixo, nome com a coroa do host, barra de vida, skills equipadas embaixo e até 4 buffs/debuffs em cima, sem recarga nem duração (0.27.0) |
+| ⬜ | Teleporte até um aliado: símbolo de TP ao lado da linha dele no painel de grupo |
 | ⬜ | Reconexão e troca de host sem perder a run |
 | 🧪 | Sons das skills e dos golpes dos aliados |
 | 🧪 | Aliados na tela: barra de vida sobre o aliado e seta apontando quem está fora da tela |

@@ -856,6 +856,9 @@ namespace HellClockCoop.Net
                 case Protocolo.TipoMarcador: // 0.17.0
                     Interface.Marcadores.Receber(this, p, dados);
                     break;
+                case Protocolo.TipoPainelAliado: // 0.27.0
+                    Interface.PainelGrupo.Receber(p, dados);
+                    break;
                 case Protocolo.TipoInimigoSpawn:
                 case Protocolo.TipoInimigoMorte:
                 case Protocolo.TipoInimigoSumiu:

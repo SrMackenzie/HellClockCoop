@@ -240,6 +240,11 @@ ESTADO ATUAL (versão de teste, Fase 3)
   aliados" (padrão 50%; OpacidadeDanoDosAliados no .cfg). Exige a 0.26.0 em todos os PCs.
 - (0.26.1): a aba Salas busca a lista uma vez ao entrar nela; depois, só no "Atualizar lista".
   Exige a 0.26.1 em todos os PCs.
+- NOVO (0.27.0): painel de grupo à esquerda, com você no topo e cada aliado embaixo. Cada um
+  tem o nome na cor dele (coroa no host), a barra de vida, as skills equipadas embaixo e até 4 buffs/debuffs em cima. Não mostra
+  a recarga das skills nem a duração dos status dos aliados. Caído aparece apagado; em outro
+  andar ou no hub, a linha fica clara com o lugar. Desliga em MostrarPainelDeGrupo no .cfg.
+  Exige a 0.27.0 em todos os PCs.
 - A Deluxe Edition (cosmética) não importa.
 
 

@@ -278,6 +278,7 @@ No fantasma, a troca de estado usa `CrossFade` curto, e o mesmo estado com mais 
 | 12 | `Tchau` | saída voluntária |
 | 13 | `Expulso` (0.18.0) | sem campos: o host tira o convidado da sala |
 | 14 | `ExpulsoAviso` (0.21.1) | SteamID do expulso, aos outros convidados |
+| 15 | `PainelAliado` (0.27.0) | HashID das skills da barra (até 8) e até 4 status (HashID e acúmulos), para o painel de grupo (§12.15) |
 
 **Visibilidade:** o avatar de um aliado só aparece se `CenaHash` for igual nos dois lados e válida (-1 = carregando). Ao reaparecer, o buffer de interpolação é zerado para não "voar" de um andar a outro. Sem pacote por 5 s, o avatar some.
 
@@ -1532,6 +1533,36 @@ nome vale só para a sala atual (não vai para o `.cfg`).
 **Protocolo 21, sem mudança** (dado do lobby novo, como o `hcc_dono`). codectest: `NomePadrao`, `NomeDigitado`,
 `NomeDaSalaListada` e as linhas da sala com o nome.
 
+### 12.15 Painel de grupo (versão 0.27.0, protocolo 22)
+
+Pedido do autor (item 6 do roadmap): painel à esquerda com os participantes, a vida, as skills da barra embaixo e os
+buffs/debuffs em cima. Entre 3 opções, o autor escolheu a **A "cartão compacto"**, em X = 24 e Y = 300 px de 1080p,
+linha de 300 de largura; status e skills só com o ícone. A opção A deixava o jogador local de fora; depois da escolha o
+autor pediu a própria linha também, no topo (o grupo inteiro num lugar só, mesmo com a vida já na HUD): nome da Steam na
+cor do seu marcador (`AliadosNaTela.CorSeta`), vida do `LifeController`, caído pelo `JogadorCaido.Caido` e o progresso de
+quem te reanima (`Reanimacao.MeuProgresso`). Ela só aparece com algum aliado ou o eco no painel.
+
+- **Balanceamento:** sem recarga das skills e sem duração dos status dos aliados. Saber quando o aliado está sem a skill
+  de defesa daria coordenação de graça ao grupo, que deve ficar um pouco mais difícil que o solo.
+- **Mensagem `PainelAliado`** (tipo 15, `Net/MensagensPainel.cs`): o `HashID` de cada slot de `SkillSlotController.SkillSlots`
+  (estático no jogo, 0 = vazio, até 8) e os 4 status mais recentes de `StatusController.StatusEffects` que o jogo mostra na HUD
+  (sem `HideFromHud`, com ícone, sem repetir a definição), com `StackOrInstanceAmount`. Lida a cada 0,5 s; vai a todos os pares
+  compatíveis só quando muda e a cada 5 s (quem chega depois recebe sem gancho no Hello). A vida segue no `PlayerSnapshot`.
+- **Ícones:** quem recebe resolve pelo `SKILL_DEFINITION_COLLECTION` (`SkillDefinition.Icon`) e pelo
+  `STATUS_DEFINITION_COLLECTION` (`StatusDisplayInfo.Icon`, `IsBuff`), com cache (zera aos 512 hashes).
+- **Visual (`Interface/PainelGrupo`):** filho de `GenericHUD.LifeBars` (some com a HUD), montado com as peças do
+  `AliadosNaTela` (`PecasDoPainel`, `ImagensDaBarra`: fonte e sprites da barra do companheiro). Medidas em px de 1080p,
+  convertidas para a camada do jogo a cada quadro pela distância de 100 px na tela (vale para qualquer modo de canvas).
+  Moldura dos status nas cores `_buffIconColor`/`_debuffIconColor` do `StatusIconsView`. Host primeiro, com a coroa do
+  Streamline (`icons/streamline/`, PNG embutido em base64 em `IconesStreamline.cs`, crédito no `LICENCAS.txt`).
+- **Estados:** caído → linha a 55%, barra vazia, "caído" ou o progresso da reanimação (`Reanimacao.ProgressoDe`), sem
+  skills nem status; sem avatar no seu andar → 40% com "hub", "outro andar" ou "sem sinal" (mesmo andar sem pacote há 5 s).
+- **Modo eco (F8):** o fantasma entra como "Eco" com as suas próprias skills e status.
+- `MostrarPainelDeGrupo` no `.cfg` (seção Interface) desliga. Erro: o painel desliga até reabrir o jogo, com aviso no log.
+
+**Protocolo 22.** codectest: ida e volta do `PainelAliado`, `IgualA`, cortes em 8 skills e 4 status, cabeçalhos acima do
+teto e mensagem cortada recusados.
+
 ## 13. Atualizador automático (versão 0.8.0)
 
 **Onde roda.** `BepInEx\patchers\HellClockCoop.Atualizador.dll`, um preloader patcher do BepInEx 5 sem DLL alvo: só o
@@ -1625,6 +1656,7 @@ filtros puros ficam em `Net/Validacao.cs` e têm casos no `tools/codectest`.
 | `Marcador` (0.17.0) | todos, de par compatível, no mesmo andar (pela cena do snapshot), com o seu personagem no mundo | cena conhecida e igual à sua, mesmo índice de andar (fora da run, 4294967295 dos dois lados), coordenadas finitas até 100 000 e o ponto a até 30 m + 10 m de folga do avatar de quem marcou no chão e até 10 m de desnível (`Validacao.MarcadorValido`; sem avatar, recusa). Do mesmo par, um marcador a cada 0,5 s no máximo, e só 1 guardado por par. Só aparece na tela; não muda nada do jogo |
 | `Expulso` (0.18.0) | convidado, só do dono do lobby (nunca de si mesmo); desde a 0.21.1, com a run aberta, só do host dela e enquanto ele é o dono (`SessaoCoop.IdDoHost`) | sem campos; sai do coop e esconde a sala da lista (`Salas.ExpulsaoValida`) |
 | `ExpulsoAviso` (0.21.1) | convidado, só do host (`IdDoHost`) | o SteamID é de um terceiro (nem de quem manda nem de quem recebe; `Validacao.AvisoExpulsaoValido`); o expulso sai dos pares e fica sem conversa (§12.11) |
+| `PainelAliado` (0.27.0) | todos, de par compatível | até 8 skills e 4 status (acima disso a mensagem cai); hash desconhecido só não aparece, e o cache de ícones zera aos 512 hashes (§12.15). Só aparece na tela; não muda nada do jogo |
 | `TimerBonus` | host; desde a 0.21.1, só com a run aberta e de par compatível dentro da escala (`Validacao.BonusDoParAceito`) | finito, `> 0` e `<= 120 s`; desde a 0.8.5, também no máximo 120 s e 120 bônus somados por convidado (chave: SteamID, para sair e voltar ao lobby não zerar) numa janela fixa de 60 s (`Validacao.AceitarBonusNaJanela`; o recusado não conta; na virada da janela até o dobro passa em sequência, a média fica no teto). Um aviso de recusa por janela |
 | `TimerSync` | convidado, só do host | os dois campos finitos e `>= 0` (4 Hz: descarte sem log) |
 | `PlayerSnapshot` | qualquer par compatível | desde a 0.21.1, tempo, posição (teto de 100 000), rotações, tempos e floats dos animators e ossos finitos (`Validacao.SnapshotValido`, §12.11; 20 Hz: descarte sem log) |

@@ -2,6 +2,26 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.27.0",
+      "data": "23/11/2026",
+      "testado": false,
+      "titulo": "Painel de grupo",
+      "itens": [
+        "Painel à esquerda com você no topo e cada aliado embaixo: nome na cor de cada um (coroa no host), barra de vida, as skills equipadas embaixo e até 4 buffs/debuffs em cima",
+        "Sem recarga das skills nem duração dos status dos aliados, para o grupo não ficar mais fácil que o solo",
+        "Aliado caído aparece apagado com \"caído\" ou o progresso da reanimação; em outro andar ou no hub, a linha fica a 40% com o lugar",
+        "Desliga em MostrarPainelDeGrupo no .cfg; no modo eco (F8) o fantasma aparece no painel com as suas skills",
+        "Exige a 0.27.0 em todos os PCs (protocolo 22)"
+      ],
+      "testar": [
+        "Em coop (ou com o eco, F8), o painel aparece à esquerda abaixo das missões, sem cobrir nada do jogo",
+        "Troque uma skill da barra: em até 1 s o ícone muda no painel do outro PC",
+        "Pegue um buff ou debuff: o ícone aparece em cima do nome, com moldura de buff ou debuff",
+        "Aliado caído: linha apagada com \"caído\"/\"reanimando\"; aliado no hub: \"hub\" a 40%",
+        "Cinemática ou tela preta: o painel some junto com a HUD do jogo"
+      ]
+    },
+    {
       "v": "0.26.1",
       "data": "23/11/2026",
       "testado": false,
