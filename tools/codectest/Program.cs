@@ -157,39 +157,144 @@ IdaVolta("InimigoMorte", new (string, object)[] { ("Id", (ushort)65000), ("SemDr
 IdaVolta("InimigoSumiu", new (string, object)[] { ("Id", (ushort)9) }, 32);
 IdaVolta("AndarLimpo", new (string, object)[] { ("Andar", 12u) }, 35);
 {
-    // Estado: 2 itens, um com animação
+    // Estado (protocolo 25): cada item traz só os campos da máscara; as marcas nasceu/agressivo vão sempre
     var tE = T("HellClockCoop.Net.InimigosEstado"); var tI = T("HellClockCoop.Net.InimigosEstado+Item");
-    var e = Activator.CreateInstance(tE); tE.GetField("Sequencia").SetValue(e, 77u);
-    var lista = (System.Collections.IList)tE.GetField("Itens").GetValue(e);
     var tFr = T("HellClockCoop.Net.AnimatorFrame");
-    for (int k = 0; k < 2; k++)
+    byte K(string n) => (byte)tE.GetField(n).GetValue(null);
+    byte POS = K("TemPosicao"), YAW = K("TemYaw"), VIDA = K("TemVida"), ANIM = K("TemAnimacao"), TODOS = K("TodosOsCampos");
+    object Quadro(int estado, float tempo, float peso, float[] floats, int[] ints = null, bool[] bools = null)
+    {
+        var fr = Activator.CreateInstance(tFr);
+        tFr.GetField("StateHashes").SetValue(fr, new[] { estado }); tFr.GetField("NormalizedTimes").SetValue(fr, new[] { tempo });
+        tFr.GetField("LayerWeights").SetValue(fr, new[] { peso }); tFr.GetField("Floats").SetValue(fr, floats);
+        if (ints != null) tFr.GetField("Ints").SetValue(fr, ints);
+        if (bools != null) tFr.GetField("Bools").SetValue(fr, bools);
+        return fr;
+    }
+    object Item(ushort id, byte campos, UnityEngine.Vector3 pos, float yaw, float vida, bool nasceu, bool agressivo, object anim)
     {
         var i = Activator.CreateInstance(tI);
-        tI.GetField("Id").SetValue(i, (ushort)(100 + k));
-        tI.GetField("Posicao").SetValue(i, new UnityEngine.Vector3(k, 2f, -3.5f));
-        tI.GetField("Yaw").SetValue(i, 90f);
-        tI.GetField("Vida").SetValue(i, 0.5f);
-        tI.GetField("JaNasceu").SetValue(i, k == 1);
-        tI.GetField("Agressivo").SetValue(i, k == 1);
-        if (k == 1)
-        {
-            var fr = Activator.CreateInstance(tFr);
-            tFr.GetField("StateHashes").SetValue(fr, new[] { 42 }); tFr.GetField("NormalizedTimes").SetValue(fr, new[] { 0.3f });
-            tFr.GetField("LayerWeights").SetValue(fr, new[] { 1f }); tFr.GetField("Floats").SetValue(fr, new[] { 0.9f });
-            tI.GetField("Animacao").SetValue(i, fr);
-        }
-        lista.Add(i);
+        tI.GetField("Id").SetValue(i, id); tI.GetField("Campos").SetValue(i, campos);
+        tI.GetField("Posicao").SetValue(i, pos); tI.GetField("Yaw").SetValue(i, yaw); tI.GetField("Vida").SetValue(i, vida);
+        tI.GetField("JaNasceu").SetValue(i, nasceu); tI.GetField("Agressivo").SetValue(i, agressivo); tI.GetField("Animacao").SetValue(i, anim);
+        return i;
     }
+    object C(object item, string campo) => tI.GetField(campo).GetValue(item);
+    var e = Activator.CreateInstance(tE); tE.GetField("Sequencia").SetValue(e, (ushort)65535);
+    var lista = (System.Collections.IList)tE.GetField("Itens").GetValue(e);
+    var p1 = new UnityEngine.Vector3(1, 2f, -3.5f);
+    lista.Add(Item(100, TODOS, p1, 90f, 0.5f, true, true, Quadro(42, 0.3f, 1f, new[] { 0.9f })));   // completo: 2+1+12+2+2+21
+    lista.Add(Item(101, POS, p1, 90f, 0.5f, false, false, null));                                  // só posição: 2+1+12
+    lista.Add(Item(102, (byte)(YAW | VIDA), p1, 270f, 0.25f, true, false, null));                  // giro e vida: 2+1+2+2
+    lista.Add(Item(103, 0, p1, 90f, 0.5f, false, true, null));                                     // só as marcas: 2+1
+    lista.Add(Item(104, TODOS, p1, 90f, 0.5f, true, false, null));                                 // sem Animator: a animação não vai
     var b = (byte[])tE.GetMethod("Serializar").Invoke(e, null);
     var e2 = tE.GetMethod("Desserializar").Invoke(null, new object[] { b });
     var l2 = (System.Collections.IList)tE.GetField("Itens").GetValue(e2);
-    var ia = l2[0]; var ic = l2[1];
-    Checar(b[0] == 33 && (uint)tE.GetField("Sequencia").GetValue(e2) == 77u && l2.Count == 2, $"InimigosEstado tipo=33, 2 itens ({b.Length} bytes)");
-    Checar((ushort)tI.GetField("Id").GetValue(ic) == 101 && ((UnityEngine.Vector3)tI.GetField("Posicao").GetValue(ic)).Equals(new UnityEngine.Vector3(1, 2f, -3.5f)), "InimigosEstado.Item Id/Posição");
-    Checar(Math.Abs((float)tI.GetField("Yaw").GetValue(ic) - 90f) < 0.01f && Math.Abs((float)tI.GetField("Vida").GetValue(ic) - 0.5f) < 0.0001f, "InimigosEstado.Item Yaw/Vida (16 bits)");
-    Checar(!(bool)tI.GetField("JaNasceu").GetValue(ia) && (bool)tI.GetField("JaNasceu").GetValue(ic), "InimigosEstado.Item JaNasceu");
-    Checar(!(bool)tI.GetField("Agressivo").GetValue(ia) && (bool)tI.GetField("Agressivo").GetValue(ic), "InimigosEstado.Item Agressivo");
-    Checar(tI.GetField("Animacao").GetValue(ia) == null && ((int[])tFr.GetField("StateHashes").GetValue(tI.GetField("Animacao").GetValue(ic))).SequenceEqual(new[] { 42 }), "InimigosEstado.Item Animação opcional");
+    int contagem = (int)tE.GetField("PosicaoDaContagem").GetValue(null);
+    Checar(b[0] == 33 && (ushort)tE.GetField("Sequencia").GetValue(e2) == 65535 && l2.Count == 5 && b[contagem] == 5, $"InimigosEstado tipo=33, sequência de 16 bits, 5 itens e a contagem no byte {contagem} ({b.Length} bytes)");
+    Checar(b.Length == 4 + 40 + 15 + 7 + 3 + 19, "InimigosEstado: item completo 40 bytes, só posição 15, giro e vida 7, só marcas 3, sem Animator 19");
+    Checar((byte)C(l2[0], "Campos") == TODOS && ((UnityEngine.Vector3)C(l2[0], "Posicao")).Equals(p1) && Math.Abs((float)C(l2[0], "Yaw") - 90f) < 0.01f
+        && Math.Abs((float)C(l2[0], "Vida") - 0.5f) < 0.0001f && (bool)C(l2[0], "JaNasceu") && (bool)C(l2[0], "Agressivo")
+        && ((int[])tFr.GetField("StateHashes").GetValue(C(l2[0], "Animacao"))).SequenceEqual(new[] { 42 }), "InimigosEstado.Item completo: posição, giro e vida (16 bits), marcas e animação");
+    Checar((byte)C(l2[1], "Campos") == POS && ((UnityEngine.Vector3)C(l2[1], "Posicao")).Equals(p1) && C(l2[1], "Animacao") == null
+        && !(bool)C(l2[1], "JaNasceu") && !(bool)C(l2[1], "Agressivo"), "InimigosEstado.Item só com posição");
+    Checar((byte)C(l2[2], "Campos") == (byte)(YAW | VIDA) && Math.Abs((float)C(l2[2], "Yaw") - 270f) < 0.01f && Math.Abs((float)C(l2[2], "Vida") - 0.25f) < 0.0001f
+        && (bool)C(l2[2], "JaNasceu") && !(bool)C(l2[2], "Agressivo"), "InimigosEstado.Item só com giro e vida");
+    Checar((byte)C(l2[3], "Campos") == 0 && !(bool)C(l2[3], "JaNasceu") && (bool)C(l2[3], "Agressivo"), "InimigosEstado.Item só com as marcas (agressivo)");
+    Checar((byte)C(l2[4], "Campos") == (byte)(TODOS & ~ANIM) && C(l2[4], "Animacao") == null, "InimigosEstado.Item completo sem Animator: a máscara chega sem animação");
+    // Pacote forjado: bits que o protocolo não usa são ignorados; item cortado no meio não é aceito
+    var forjado = new byte[] { 33, 1, 0, 1, 9, 0, (byte)(64 | 128 | 1) };
+    var ef = (System.Collections.IList)tE.GetField("Itens").GetValue(tE.GetMethod("Desserializar").Invoke(null, new object[] { forjado }));
+    Checar(ef.Count == 1 && (ushort)C(ef[0], "Id") == 9 && (byte)C(ef[0], "Campos") == 0 && (bool)C(ef[0], "JaNasceu") && !(bool)C(ef[0], "Agressivo"), "InimigosEstado: bits 64 e 128 do byte de marcas são ignorados (item só com a marca nasceu)");
+    bool recusou = false;
+    try { tE.GetMethod("Desserializar").Invoke(null, new object[] { new byte[] { 33, 1, 0, 2, 9, 0, POS, 1, 2, 3 } }); }
+    catch (TargetInvocationException ex) when (ex.InnerException is System.IO.EndOfStreamException) { recusou = true; }
+    Checar(recusou, "InimigosEstado: pacote cortado no meio de um item (ou com menos itens que a contagem) dá EndOfStreamException, que o Receber trata");
+
+    // EstadoEnviado: o que o host manda de um inimigo a cada envio
+    var tEn = T("HellClockCoop.Net.EstadoEnviado");
+    (byte campos, bool enviar) Decidir(object memoria, object item, bool completo)
+    {
+        var a = new object[] { item, completo, false };
+        byte c = (byte)tEn.GetMethod("Decidir").Invoke(memoria, a);
+        return (c, (bool)a[2]);
+    }
+    var m = Activator.CreateInstance(tEn);
+    object At(UnityEngine.Vector3 pos, float yaw, float vida, bool nasceu, bool agressivo, object anim) => Item(7, 0, pos, yaw, vida, nasceu, agressivo, anim);
+    var q0 = new UnityEngine.Vector3(10f, 0f, 10f);
+    var r1 = Decidir(m, At(q0, 90f, 1f, false, false, Quadro(42, 0.3f, 1f, new[] { 0.5f })), false);
+    Checar(r1.enviar && r1.campos == TODOS, "EstadoEnviado: o primeiro envio de um inimigo leva tudo");
+    var r2 = Decidir(m, At(q0, 90f, 1f, false, false, Quadro(42, 0.4f, 1f, new[] { 0.5f })), false);
+    Checar(r2.enviar && r2.campos == TODOS, "EstadoEnviado: o que acabou de ir é repetido no envio seguinte (pacote perdido)");
+    var r3 = Decidir(m, At(q0, 90f, 1f, false, false, Quadro(42, 0.5f, 1f, new[] { 0.5f })), false);
+    Checar(!r3.enviar && r3.campos == 0, "EstadoEnviado: parado, na mesma animação (só o tempo andou), fica fora do pacote");
+    var r4 = Decidir(m, At(q0 + new UnityEngine.Vector3(0.01f, 0f, 0f), 90.5f, 1f, false, false, Quadro(42, 0.6f, 1f, new[] { 0.51f })), false);
+    Checar(!r4.enviar, "EstadoEnviado: 1 cm, meio grau e 0,01 no parâmetro ficam abaixo do mínimo");
+    var q1 = q0 + new UnityEngine.Vector3(0.5f, 0f, 0f);
+    var r5 = Decidir(m, At(q1, 90f, 1f, false, false, Quadro(42, 0.7f, 1f, new[] { 0.5f })), false);
+    Checar(r5.enviar && r5.campos == POS, "EstadoEnviado: andou 50 cm, vai só a posição");
+    var r6 = Decidir(m, At(q1, 90f, 1f, false, false, Quadro(42, 0.8f, 1f, new[] { 0.5f })), false);
+    var r7 = Decidir(m, At(q1, 90f, 1f, false, false, Quadro(42, 0.9f, 1f, new[] { 0.5f })), false);
+    Checar(r6.enviar && r6.campos == POS && !r7.enviar, "EstadoEnviado: parou, a posição vai mais uma vez e depois nada");
+    // deriva lenta: 1 cm por envio não passa do mínimo a cada envio, mas passa em relação ao último valor enviado
+    bool derivou = false;
+    for (int k = 1; k <= 3; k++) derivou |= Decidir(m, At(q1 + new UnityEngine.Vector3(0.01f * k, 0f, 0f), 90f, 1f, false, false, Quadro(42, 1f, 1f, new[] { 0.5f })), false).campos == POS;
+    Checar(derivou, "EstadoEnviado: deriva lenta (1 cm por envio) vai quando soma mais de 2 cm desde a última posição enviada");
+    Decidir(m, At(q1, 90f, 1f, false, false, Quadro(42, 1f, 1f, new[] { 0.5f })), true); // completo: põe a memória em q1
+    Decidir(m, At(q1, 90f, 1f, false, false, Quadro(42, 1f, 1f, new[] { 0.5f })), false);
+    var r8 = Decidir(m, At(q1, 359.8f, 0.75f, false, false, Quadro(42, 1.1f, 1f, new[] { 0.5f })), false);
+    Checar(r8.enviar && r8.campos == (byte)(YAW | VIDA), "EstadoEnviado: girou e perdeu vida, vão giro e vida");
+    Decidir(m, At(q1, 359.8f, 0.75f, false, false, Quadro(42, 1.2f, 1f, new[] { 0.5f })), false);
+    var r9 = Decidir(m, At(q1, 0.2f, 0.75f, false, false, Quadro(42, 1.3f, 1f, new[] { 0.5f })), false);
+    var r9b = Decidir(m, At(q1, 2f, 0.75f, false, false, Quadro(42, 1.3f, 1f, new[] { 0.5f })), false);
+    Checar(!r9.enviar && r9b.enviar && r9b.campos == YAW, "EstadoEnviado: de 359,8 para 0,2 graus é 0,4 grau pelo caminho curto (não vai); para 2 graus, vai");
+    Decidir(m, At(q1, 359f, 0.75f, false, false, Quadro(42, 1.3f, 1f, new[] { 0.5f })), true); // completo: põe o giro em 359
+    Decidir(m, At(q1, 359f, 0.75f, false, false, Quadro(42, 1.3f, 1f, new[] { 0.5f })), false); // e a repetição do giro
+    var r10 = Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(42, 1.4f, 1f, new[] { 0.5f })), false);
+    Checar(r10.enviar && r10.campos == 0, "EstadoEnviado: só a marca mudou (nasceu), o item vai sem campos");
+    var r11 = Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(42, 1.5f, 1f, new[] { 0.5f })), false);
+    var r12 = Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(42, 1.6f, 1f, new[] { 0.5f })), false);
+    Checar(r11.enviar && r11.campos == 0 && !r12.enviar, "EstadoEnviado: a marca é repetida uma vez e depois nada");
+    var r13 = Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 0.02f, 1f, new[] { 0.5f })), false);
+    Checar(r13.enviar && r13.campos == ANIM, "EstadoEnviado: trocou de estado no Animator, vai só a animação");
+    Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 0.2f, 1f, new[] { 0.5f })), false);
+    var r14 = Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 0.9f, 1f, new[] { 0.5f })), false);
+    var r15 = Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 0.05f, 1f, new[] { 0.5f })), false);
+    Checar(!r14.enviar && r15.enviar && r15.campos == ANIM, "EstadoEnviado: o mesmo estado recomeçado (o tempo voltou) vai de novo");
+    Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 0.1f, 1f, new[] { 0.5f })), false);
+    var r16 = Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 0.2f, 1f, new[] { 0.6f })), false);
+    Checar(r16.enviar && r16.campos == ANIM, "EstadoEnviado: parâmetro do Animator mudou 0,1, vai a animação");
+    Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 0.3f, 1f, new[] { 0.6f })), false);
+    Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 0.4f, 1f, new[] { 0.015f })), false);
+    Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 0.5f, 1f, new[] { 0.015f })), false);
+    var r17 = Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 0.6f, 1f, new[] { 0f })), false);
+    Checar(r17.enviar && r17.campos == ANIM, "EstadoEnviado: parâmetro que chega a zero vai mesmo abaixo do mínimo (0,015 → 0)");
+    Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 0.7f, 1f, new[] { 0f })), false);
+    var r18 = Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 0.8f, 0.97f, new[] { 0f })), false);
+    Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 0.9f, 0.6f, new[] { 0f })), false);
+    Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 1.0f, 0.03f, new[] { 0f })), false);
+    Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 1.1f, 0.03f, new[] { 0f })), false);
+    var r19 = Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 1.2f, 0f, new[] { 0f })), false);
+    Checar(!r18.enviar && r19.enviar && r19.campos == ANIM, "EstadoEnviado: peso de camada 1 → 0,97 não vai; chegar a 0 vai mesmo abaixo do mínimo (0,03 → 0)");
+    Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 1.3f, 0f, new[] { 0f })), false);
+    var r20 = Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 1.4f, 0f, new[] { 0f }, new[] { 3 }, new[] { true })), false);
+    Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 1.5f, 0f, new[] { 0f }, new[] { 3 }, new[] { true })), false);
+    var r21 = Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 1.6f, 0f, new[] { 0f }, new[] { 3 }, new[] { false })), false);
+    Checar(r20.enviar && r20.campos == ANIM && r21.enviar && r21.campos == ANIM, "EstadoEnviado: parâmetros int e bool (quantidade ou valor) mudando levam a animação");
+    Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 1.7f, 0f, new[] { 0f }, new[] { 3 }, new[] { false })), false);
+    var r22 = Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 1.8f, 0f, new[] { 0f }, new[] { 3 }, new[] { false })), false);
+    var r23 = Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 1.9f, 0f, new[] { 0f }, new[] { 3 }, new[] { false })), true);
+    var r24 = Decidir(m, At(q1, 359f, 0.75f, true, false, Quadro(43, 2.0f, 0f, new[] { 0f }, new[] { 3 }, new[] { false })), false);
+    Checar(!r22.enviar && r23.enviar && r23.campos == TODOS && !r24.enviar, "EstadoEnviado: o envio completo leva tudo mesmo sem mudança, e não gera repetição");
+    var r25 = Decidir(m, At(q1, 359f, 0.75f, true, false, null), true);
+    Checar(r25.enviar && r25.campos == (byte)(TODOS & ~ANIM), "EstadoEnviado: completo de inimigo sem Animator vai sem a animação");
+    var m2 = Activator.CreateInstance(tEn);
+    var r26 = Decidir(m2, At(q0, 0f, 1f, false, false, null), false);
+    var r27 = Decidir(m2, At(q0, 0f, 1f, false, false, null), false);
+    var r28 = Decidir(m2, At(q0, 0f, 1f, false, false, null), false);
+    var r29 = Decidir(m2, At(q0, 0f, 1f, false, false, Quadro(5, 0f, 1f, new float[0])), false);
+    Checar(r26.campos == (byte)(TODOS & ~ANIM) && r27.enviar && !r28.enviar && r29.campos == ANIM, "EstadoEnviado: inimigo sem Animator (primeiro envio, repetição, nada) e a primeira animação quando o Animator aparece");
 }
 {
     var tG = T("HellClockCoop.Net.Golpes"); var tGi = T("HellClockCoop.Net.Golpes+Item");
@@ -901,11 +1006,11 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
            && (ulong)Sm("LerSteamId", "12345") == 0ul && (ulong)Sm("LerSteamId", "-1") == 0ul && (ulong)Sm("LerSteamId", idA + "000") == 0ul,
         "Salas: dono do lobby (hcc_dono) só vale se for SteamID de jogador");
     var tp = T("HellClockCoop.Net.Protocolo");
-    Checar((int)tp.GetField("Versao").GetValue(null) == 24 && (byte)tp.GetField("TipoExpulso").GetValue(null) == 13
+    Checar((int)tp.GetField("Versao").GetValue(null) == 25 && (byte)tp.GetField("TipoExpulso").GetValue(null) == 13
            && (byte)tp.GetField("TipoExpulsoAviso").GetValue(null) == 14 && (byte)tp.GetField("TipoForaDaRun").GetValue(null) == 29
            && (byte)tp.GetField("TipoPainelAliado").GetValue(null) == 15 && (byte)tp.GetField("TipoPedidoTp").GetValue(null) == 16
            && (byte)tp.GetField("TipoRespostaTp").GetValue(null) == 17,
-        "Protocolo 24 (TP até o aliado, 0.29.0) com Expulso tipo=13 (1 byte), ExpulsoAviso tipo=14 (0.21.1), ForaDaRun tipo=29 (0.19.0), PainelAliado tipo=15 (0.27.0) e PedidoTp/RespostaTp tipo=16/17");
+        "Protocolo 25 (InimigosEstado só com o que mudou, 0.31.0) com Expulso tipo=13 (1 byte), ExpulsoAviso tipo=14 (0.21.1), ForaDaRun tipo=29 (0.19.0), PainelAliado tipo=15 (0.27.0) e PedidoTp/RespostaTp tipo=16/17");
 
     // 0.19.0: trava pelo progresso (maxFloorReached conta a partir de 1, como o andar do lobby)
     Checar((int)Sm("LerHash", "-123456789") == -123456789 && (int)Sm("LerHash", "2147483647") == 2147483647

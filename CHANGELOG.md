@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.31.0 — Rede dos inimigos mais leve: o host manda só o que mudou em cada inimigo 🧪
+_24/11/2026_
+
+- Dez vezes por segundo o host mandava a cada convidado a posição, o giro, a vida e a animação inteira de todo inimigo a até 45 m de um aliado, mesmo dos que estavam parados. Agora manda só o que mudou em cada inimigo; quem não mudou fica fora do pacote
+- Como a rede pode perder pacote, cada mudança vai em dois envios seguidos e, uma vez por segundo, o estado inteiro de cada inimigo vai de novo. O convidado passa a ignorar pacote de inimigos que chega fora de ordem
+- O medidor do log passou a contar esse tráfego (inimigos perto de aliado, quantos entraram no pacote, bytes por convidado) e dá para medir sozinho: o dono de uma sala vazia com o eco ligado monta os pacotes como se o eco fosse um convidado e só conta, sem enviar nada
+- Medido no PC do autor, sozinho, no andar 1 do Sertão: antes, 51 bytes por inimigo a cada envio; agora, de 10 a 22, conforme quantos estão se movendo (de 2,4 a 5 vezes menos tráfego por convidado). Com aliado de verdade ainda não foi testado
+- Balanceamento: sem efeito na dificuldade (vida, dano e morte dos inimigos seguem decididos pelo host). Protocolo 25: exige a 0.31.0 em todos os PCs; quem ficar na 0.30.3 não conecta
+
 ## 0.30.3 — Menu do coop abre sem travar e o aliado aparece com travada bem menor 🧪
 _24/11/2026_
 

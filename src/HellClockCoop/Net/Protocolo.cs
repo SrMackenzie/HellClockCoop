@@ -11,7 +11,7 @@ namespace HellClockCoop.Net
     internal static class Protocolo
     {
         /// <summary>Muda sempre que o formato de qualquer mensagem mudar. Pares com versões diferentes não conversam.</summary>
-        public const int Versao = 24; // 22: PainelAliado (skills e status do painel de grupo, 0.27.0); 23: barreira no PlayerSnapshot (formato 5, 0.28.0); 24: PedidoTp/RespostaTp (0.29.0)
+        public const int Versao = 25; // 23: barreira no PlayerSnapshot (formato 5, 0.28.0); 24: PedidoTp/RespostaTp (0.29.0); 25: InimigosEstado só com o que mudou (máscara por item, sequência de 16 bits, 0.31.0)
 
         public const int CanalConfiavel = 0;
         public const int CanalSnapshots = 1;
@@ -42,7 +42,7 @@ namespace HellClockCoop.Net
         public const byte TipoInimigoSpawn = 30;
         public const byte TipoInimigoMorte = 31;
         public const byte TipoInimigoSumiu = 32;
-        public const byte TipoInimigosEstado = 33; // canal não confiável
+        public const byte TipoInimigosEstado = 33; // canal não confiável; só os campos que mudaram (protocolo 25)
         public const byte TipoGolpes = 34;         // convidado → host
         public const byte TipoAndarLimpo = 35;
         public const byte TipoInimigoAjuste = 36;

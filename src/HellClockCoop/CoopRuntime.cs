@@ -263,6 +263,8 @@ namespace HellClockCoop
 
         internal SessaoCoop Sessao => _sessao;
         internal bool EcoAtivo => _ecoAtivo;
+        /// <summary>Fantasma do eco (null com o eco desligado): vale como convidado na contagem simulada do estado dos inimigos.</summary>
+        internal RemotePlayerAvatar AvatarDoEco => _ecoAtivo ? _avatarEco : null;
 
         // ---------- Modo eco ----------
 

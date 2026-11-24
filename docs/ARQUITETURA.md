@@ -192,7 +192,7 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
    - **Ganchos que estavam fora da conta:** `EnemyController.CheckForSpawn`, `TimerManager.Update` e o contexto de som inteiro (inclusive as chamadas que saem logo no começo). Cada um tem um detalhe com o número de chamadas e o tempo; na linha da travada só aparecem com 0,5 ms ou mais.
    - **Detalhe novo:** buscar peças da HUD (`AliadosNaTela.Achar` e a busca do `StatusIconsView` em `PainelGrupo.LerCores`; desde a 0.30.3 essas duas só rodam como reserva, e o detalhe conta também as duas buscas da tela do caído, `CaidoNaTela.Cinza` e `Vinheta`, ainda sem número). Os detalhes do resumo mostram chamadas, tempo total e o pior quadro.
    - **Memória:** além da leitura no resumo, a memória gerenciada é lida no primeiro quadro depois de cada coleta de lixo (o piso: mínimo, máximo e último do período).
-   - **Rede:** segunda linha, `[Desempenho] Rede no período`, quando houve tráfego: mensagens e bytes enviados por tipo (1º byte do pacote, com o nome lido das constantes `Tipo*` do `Protocolo`; cada destinatário conta uma vez), o total recebido e em quantos quadros a leitura de um canal chegou ao limite do buffer de 64 mensagens (o que não coube fica para o quadro seguinte). A rede, o piso de memória e os detalhes contam também nos quadros de carregamento de andar; com a janela fechada (menu, carregamento do save) nada conta.
+   - **Rede:** segunda linha, `[Desempenho] Rede no período`, quando houve tráfego: mensagens e bytes enviados por tipo (1º byte do pacote, com o nome lido das constantes `Tipo*` do `Protocolo`; cada destinatário conta uma vez), o total recebido e em quantos quadros a leitura de um canal chegou ao limite do buffer de 64 mensagens (o que não coube fica para o quadro seguinte). A rede, o piso de memória e os detalhes contam também nos quadros de carregamento de andar; com a janela fechada (menu, carregamento do save) nada conta. Desde a 0.31.0 a linha traz também o estado dos inimigos (etapa 5, abaixo) e sai para o dono de sala vazia com o eco, que não envia nada.
    - **Contexto:** em sala, o eco (F8) entra no nome do contexto (`host com 0 aliado(s) e eco`) e abre janela própria.
 
    **Etapa 3 (0.30.2): dono do lobby guardado** (§12.11). Medido em 24/11/2026 no PC do autor, com o mesmo roteiro antes (0.30.1) e depois, trechos de 45 a 90 s, personagem parado (na run, no começo do andar 1 do Ato II):
@@ -207,6 +207,44 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
    | Run, solo | 0,0 → 0,0 | 0,07 → 0,07 | 197 → 200 |
 
    O gancho de `TimerManager.Update` caiu de 60 a 85 µs para ~0,5 µs por chamada em sala (igual ao solo), e as partes Run, Inimigos, Portas e Ganchos saíram da lista do resumo (pior quadro abaixo de 0,5 ms). Sobra a parte Rede, ~0,10 ms por quadro: a releitura do dono e as duas leituras de mensagens. O `[Desempenho] Resumo` sai normalmente dentro da run. `CheckForSpawn` não apareceu em `detalhes` com o personagem parado no começo do andar (o jogo não chamou o método nenhuma vez); falta conferir andando pelo andar.
+
+   **Etapa 5 (0.31.0): estado dos inimigos só com o que mudou** (§11, protocolo 25). O eco não gera tráfego e o host
+   de sala vazia nem montava o estado (sem aliado, saía antes), então a linha "Rede no período" nunca tinha número de
+   inimigos. O medidor ganhou:
+   - **Contagem simulada:** dono de sala sem ninguém, com o eco ligado antes de entrar no andar. O lado do host dos
+     inimigos roda como se o eco fosse um convidado (numera os inimigos que nascem, monta o estado a 10 Hz com a
+     posição do eco) e cada pacote é só contado; nada sai pela rede (`InimigosCompartilhados.Simulado`). Dá o tráfego
+     **por convidado**; com 3 convidados o host envia 3 vezes isso. Não mede o lado do convidado.
+   - **Linha de rede:** `estado dos inimigos: N envio(s); por envio, X inimigo(s) perto de aliado, Y no pacote
+     (Z completo(s), W com animação), P pacote(s) e B bytes por convidado (K KB/s a 10 envios por segundo)`, também
+     na sessão de verdade (o pacote é contado uma vez, não por destinatário).
+   - **Detalhe** `montar estado dos inimigos` (chamadas e tempo).
+
+   Medido em 24/11/2026 no PC do autor, sozinho (sala privada, eco, andar 1 do Sertão, `CaatingaA1LevelDefinition`),
+   mesmo roteiro por script nas duas vezes: 50 s parado no começo do andar, caminhada até o primeiro grupo e ~1 min
+   de combate. "Antes" é o código da 0.30.3 só com a contagem acrescentada. As duas runs não têm os mesmos inimigos
+   por perto, então a comparação é por inimigo e por envio:
+
+   | Trecho | Envios | Inimigos perto de aliado (por envio) | No pacote (por envio) | Bytes por envio, por convidado | Bytes por inimigo perto (com o cabeçalho) |
+   |---|---|---|---|---|---|
+   | Antes, caminhada e combate | 968 | 5,4 | 5,4 (todos completos) | 282 (2,8 KB/s) | 52 |
+   | Antes, trecho curto com mais inimigos | 13 | 10,3 | 10,3 (todos completos) | 524 (5,1 KB/s) | 51 |
+   | Depois, parado no começo do andar | 465 | 4,6 | 4,2 (0,5 completo, 0,6 com animação) | 100 (1,0 KB/s) | 22 |
+   | Depois, caminhada e combate | 796 | 14,6 | 4,6 (1,5 completo, 2,0 com animação) | 149 (1,5 KB/s) | 10 |
+
+   No formato antigo os dois trechos de "depois" custariam 241 e 751 bytes por envio (51 por inimigo, o tamanho
+   médio do item medido no "antes", mais 6 de cabeçalho): o tráfego por convidado caiu 2,4 e 5,0 vezes. A diferença entre os dois vem de quem está se movendo:
+   uma leitura à parte (contadores provisórios, fora da versão publicada) mostrou que quem manda posição e giro em
+   todo envio são 2 ou 3 inimigos que não param (1,0 m e 7 graus por envio, criaturas que circulam pelo andar); os
+   parados não mandam nada entre um completo e outro. Parado no começo do andar quase só há esses por perto, por
+   isso o ganho ali é menor. O
+   tempo de montar o estado ficou igual em ordem de grandeza (0,063 ms por envio antes; 0,049 e 0,059 depois, com
+   mais inimigos): menos de 1 ms por segundo nos dois casos. Projeção, não medição: com 100 inimigos perto de aliados
+   eram ~50 KB/s por convidado (~150 KB/s de envio do host com 3 convidados); na proporção medida ficam de 10 a 21.
+   Falta em dupla: ver as réplicas no convidado (movimento, animação depois de skill, chefe agressivo, chegada
+   atrasada ao andar) e os números reais dos dois lados; o roteiro está em `docs/TESTES.md`, 0.31.0. Uma `Travada`
+   de 59 ms saiu na run de "depois" em `copiar efeito` (3 cópias, 51 ms), que esta etapa não toca: fica anotada
+   para a etapa de efeitos/interface.
 
    **Etapa 4 (0.30.3): travadas pontuais.** Medido antes (0.30.2, 24/11/2026, PC do autor, ~200 fps), linhas `[Desempenho] Travada`:
 
@@ -465,13 +503,47 @@ definição, tipo, arquétipo de campeão e afixos já sorteados no host. Na ré
 | 30 | InimigoSpawn | confiável | host → convidados | netId (u16), andar, HashID da definição, EEnemyType, arquétipo, afixos, SpawnBehaviourConfig, posição, yaw, vida, ajustes |
 | 31 | InimigoMorte | confiável | host → convidados | netId, sem drop (limpeza dos opcionais com `IgnoreAllDrops`) |
 | 32 | InimigoSumiu | confiável | host → convidados | netId (descarte sem morte fora da troca de andar) |
-| 33 | InimigosEstado | não confiável, 10 Hz | host → convidados | vários itens por pacote (≤1100 bytes): netId, posição, yaw e vida em 16 bits, nasceu, AnimatorFrame opcional |
+| 33 | InimigosEstado | não confiável, 10 Hz | host → convidados | sequência de 16 bits e vários itens por pacote (≤1100 bytes): netId, um byte de marcas (nasceu, agressivo e quais campos vêm) e, só os que mudaram, posição, yaw e vida em 16 bits e o AnimatorFrame (protocolo 25; até o 24 ia tudo em todo envio) |
 | 34 | Golpes | confiável, 20 Hz | convidado → host | dano somado por inimigo e máscara de tipos, nº de críticos |
 | 35 | AndarLimpo | confiável | host → convidados | andar (o convidado dispara o próprio `OnAllEnemiesCleared`) |
 | 36 | InimigoAjuste | confiável | host → convidados | `SetupSummon`/`SetupDisposable`, `SetExperienceMultiplier` e `SetInstanceTreasureClassOverride` feitos logo após o spawn (invocações sem XP/loot; XP das ondas de sobrevivência; tesouro próprio da sobrevivência e das temporadas, protocolo 13) |
 
 **Relevância.** O estado só vai para inimigos a até 45 m de algum aliado (no máximo 160 por tick, os mais
 próximos primeiro). Os demais ficam parados na última posição conhecida.
+
+**Só o que mudou (0.31.0, protocolo 25).** Até o protocolo 24 cada inimigo relevante ia inteiro em todo envio (19 bytes
+mais a animação; 51 bytes em média no andar medido), mesmo parado. Agora o host guarda, por inimigo, o que já mandou
+(`EstadoEnviado`, em `Net/MensagensInimigos.cs`) e a cada envio decide campo a campo:
+
+- **Posição:** mais de 2 cm desde a última enviada. **Yaw:** mais de ~1 grau. **Vida:** qualquer mudança no valor de
+  16 bits. **Marcas** (nasceu, agressivo): vão em todo item; se só elas mudaram, o item vai sem campos (3 bytes).
+- **Animação:** outro estado em alguma camada, o mesmo estado recomeçado (o tempo voltou em relação ao envio anterior),
+  peso de camada mudando mais de 0,05 (ou chegando a 0 ou 1), parâmetro float mudando mais de 0,02 (ou chegando a 0),
+  parâmetro int ou bool diferente. O tempo do estado avançando sozinho não conta: a réplica toca o mesmo estado por
+  conta própria.
+- **Repetição:** o canal não é confiável, então o que mudou num envio vai de novo no seguinte (com o valor da hora).
+- **Completo:** uma vez por segundo (`IntervaloCompleto`), e quando o inimigo não estava no envio anterior (voltou a
+  ficar perto de um aliado), vai tudo. É o que corrige duas perdas seguidas e acerta o tempo da animação. O segundo
+  completo de cada inimigo atrasa de 0 a 0,9 s a mais, pelo netId, para os que nasceram juntos não irem todos no
+  mesmo envio dali em diante.
+- Inimigo sem nada a mandar fica fora do pacote. O pacote é montado num buffer reaproveitado (uma alocação por pacote,
+  não por inimigo), e a ordenação por distância só roda quando há mais de 160 relevantes.
+
+No convidado, o item aplica só os campos que trouxe (na réplica e no spawn ainda pendente). Um pacote que chega fora de
+ordem é descartado pela sequência (`Validacao.SequenciaAtrasada`, a mesma regra do snapshot do jogador): com o estado em
+pedaços, um valor velho chegando depois de um novo ficaria até o próximo completo. A animação que chega enquanto a
+réplica executa a própria skill não é mais descartada na hora (outra não vem em 0,1 s): fica guardada e, quando a skill
+acaba, entra se chegou há menos de 0,3 s (o fim do golpe no host, que termina um instante antes da réplica), trocando
+estado e parâmetros sem acertar o tempo do estado (`AnimatorSync.Aplicar` com `acertarTempo` falso); a mais velha é o
+começo do golpe e o repetiria, então é descartada. Na contagem simulada do medidor (riscos, item 7, etapa 5) o lado do
+host roda sem convidado, mas não registra o "andar limpo" (que levantaria o host caído): o jogo fica como sem o medidor. Consequência aceita: réplica criada na hora (convidado chegando ao andar) fica até 1 s (2 s no pior caso, com o
+atraso do segundo completo) na animação padrão e sem a marca de agressivo, até o primeiro item dela; antes eram 0,1 s.
+
+**Protocolo 25.** codectest: ida e volta do `InimigosEstado` com item completo, só posição, só giro e vida, só marcas e
+completo sem Animator (tamanhos 40, 15, 7, 3 e 19 bytes), sequência de 16 bits e o byte da contagem; `EstadoEnviado`:
+primeiro envio completo, repetição, parado fora do pacote, mínimos de posição, giro (pelo caminho curto) e parâmetro,
+deriva lenta, marcas, troca e recomeço de estado, zero e peso de camada, int e bool, completo sem repetição, inimigo
+sem Animator.
 
 **Andar.** O spawn leva o índice do andar do host. O convidado guarda os spawns de andares que ainda não
 carregou e cria as réplicas quando chega lá (até 25 por quadro). Spawns nunca criados expiram em 90 s.
@@ -1457,6 +1529,8 @@ aos expulsos que ainda estão nele.
   `RunCompartilhada.AjustarSpawn` (`Validacao.SpawnValido`), que agora devolve se ajustou; fora dele, fica o spawn
   sorteado aqui e o reposicionamento não roda.
 - `InimigosEstado`: posição finita e dentro do teto (`PosicaoValida`) também para a réplica viva, não só a pendente.
+  Desde a 0.31.0 a conferência vale quando a posição vem no item (o item traz só o que mudou), e o pacote com sequência
+  igual ou até 64 atrás da última aceita é descartado inteiro (§11).
 - `AndarLimpo`: o jogo dispara `_onAllEnemiesCleared` toda vez que os inimigos não opcionais chegam a 0
   (`EnemyManager.RemoveEnemy`; escutam o `ClearFloorTrigger` e o portal de chefe). No convidado, repetido no mesmo
   andar só vale se o host criou inimigos depois do último (`Validacao.AndarLimpoNovo`; zera no hub e ao sair).
@@ -1814,7 +1888,7 @@ filtros puros ficam em `Net/Validacao.cs` e têm casos no `tools/codectest`.
 | `TimerSync` | convidado, só do host | os dois campos finitos e `>= 0` (4 Hz: descarte sem log) |
 | `PlayerSnapshot` | qualquer par compatível | desde a 0.21.1, tempo, posição (teto de 100 000), rotações, tempos e floats dos animators e ossos finitos (`Validacao.SnapshotValido`, §12.11; 20 Hz: descarte sem log) |
 | `FxNovo`, `FxMovimento`, `FxNos`, `DanosVistos` | qualquer par compatível; desde a 0.21.1, só do mesmo andar (o `FxFim` passa sempre) | §12.11 |
-| `InimigoSpawn`, `InimigosEstado`, `InimigoMorte`, `InimigoSumiu`, `AndarLimpo`, `InimigoAjuste` | convidado, só do host | valores do spawn e do ajuste (0.20.0, §12.9); desde a 0.21.1: teto de inimigos e 16 chefes (Boss e Unique) criados por andar (0.22.0: calculado com os dados do andar, §12.11), posição do `InimigosEstado` finita e dentro do teto também na réplica viva, `AndarLimpo` repetido no mesmo andar só com inimigos novos (§12.11) |
+| `InimigoSpawn`, `InimigosEstado`, `InimigoMorte`, `InimigoSumiu`, `AndarLimpo`, `InimigoAjuste` | convidado, só do host | valores do spawn e do ajuste (0.20.0, §12.9); desde a 0.21.1: teto de inimigos e 16 chefes (Boss e Unique) criados por andar (0.22.0: calculado com os dados do andar, §12.11), posição do `InimigosEstado` finita e dentro do teto também na réplica viva (0.31.0: quando o item traz a posição; pacote fora de ordem descartado pela sequência, §11), `AndarLimpo` repetido no mesmo andar só com inimigos novos (§12.11) |
 | `BauSpawn`, `ObjetoSpawn` | convidado, só do host | `ObjetoSpawn`: valores e teto por andar (0.20.0); `BauSpawn`: teto de baús por andar (0.21.1: 32; 0.22.0: dados do andar + 4, até 32) |
 | `ObjetoUsado` | convidado, só do host; host, de quem está no mesmo andar (0.21.1; até a 0.21.0, qualquer par) | `Estado = Concluido` (purificação) só do host. Aviso no log |
 | `BauAberto`, `Quebrou`, `ObjetoUsado` (`Usado`) | convidado, só do host; host, de quem está no mesmo andar (0.21.1, `Validacao.OrdemDeObjetoAceita`; até a 0.21.0, qualquer par) | — (o host repassa) |

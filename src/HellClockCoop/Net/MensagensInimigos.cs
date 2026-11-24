@@ -8,8 +8,8 @@ namespace HellClockCoop.Net
     /// <summary>
     /// Fase 3a — inimigos do host replicados no convidado.
     /// Spawn, morte e sumiço vão pelo canal confiável; o estado (posição, vida, animação) vai a 10 Hz
-    /// pelo canal não confiável, só dos inimigos perto de algum aliado. Os golpes do convidado vão ao
-    /// host pelo canal confiável, somados por inimigo.
+    /// pelo canal não confiável, só dos inimigos perto de algum aliado e só o que mudou (protocolo 25). Os golpes
+    /// do convidado vão ao host pelo canal confiável, somados por inimigo.
     /// </summary>
     internal sealed class InimigoSpawn
     {
@@ -133,22 +133,39 @@ namespace HellClockCoop.Net
         public static AndarLimpo Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoAndarLimpo, r => new AndarLimpo { Andar = r.ReadUInt32() });
     }
 
-    /// <summary>Estado de vários inimigos num pacote (canal não confiável, até ~1100 bytes).</summary>
+    /// <summary>
+    /// Estado de vários inimigos num pacote (canal não confiável, até ~1100 bytes). Desde o protocolo 25 cada item traz
+    /// só os campos que mudaram desde o último envio (a máscara do item diz quais); as marcas "nasceu" e "agressivo" vão
+    /// em todo item. Quem decide o que vai é o <see cref="EstadoEnviado"/> de cada inimigo, no host.
+    /// </summary>
     internal sealed class InimigosEstado
     {
+        // Byte de marcas do item: duas marcas do inimigo e quais campos vêm a seguir, nesta ordem.
+        public const byte MarcaNasceu = 1, MarcaAgressivo = 2;
+        public const byte TemPosicao = 4, TemYaw = 8, TemVida = 16, TemAnimacao = 32;
+        public const byte TodosOsCampos = TemPosicao | TemYaw | TemVida | TemAnimacao;
+
+        /// <summary>Onde fica, no pacote, o byte com a quantidade de itens (depois do tipo e da sequência).</summary>
+        public const int PosicaoDaContagem = 3;
+
         internal sealed class Item
         {
             public ushort Id;
+            public byte Campos;            // Tem*: quais dos campos abaixo estão no pacote
             public Vector3 Posicao;
             public float Yaw;
             public float Vida;
             public bool JaNasceu;
             public bool Agressivo;        // EnemyAIController.IsAggressive (chefe libera o dano e a barra)
-            public AnimatorFrame Animacao; // null = sem Animator
+            public AnimatorFrame Animacao; // só com TemAnimacao (null = sem Animator ou não veio)
         }
 
-        public uint Sequencia;
+        /// <summary>Cresce a cada pacote; o convidado descarta o que chega fora de ordem (Validacao.SequenciaAtrasada).</summary>
+        public ushort Sequencia;
         public readonly List<Item> Itens = new List<Item>();
+
+        public static ushort YawEm16(float yaw) => (ushort)Mathf.RoundToInt(Mathf.Repeat(yaw, 360f) / 360f * 65535f);
+        public static ushort VidaEm16(float vida) => (ushort)Mathf.RoundToInt(Mathf.Clamp01(vida) * 65535f);
 
         public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoInimigosEstado, w =>
         {
@@ -159,35 +176,150 @@ namespace HellClockCoop.Net
 
         public static void EscreverItem(BinaryWriter w, Item i)
         {
+            byte campos = (byte)(i.Campos & TodosOsCampos);
+            if (i.Animacao == null) campos = (byte)(campos & ~TemAnimacao);
             w.Write(i.Id);
-            Bin.Escrever(w, i.Posicao);
-            w.Write((ushort)Mathf.RoundToInt(Mathf.Repeat(i.Yaw, 360f) / 360f * 65535f));
-            w.Write((ushort)Mathf.RoundToInt(Mathf.Clamp01(i.Vida) * 65535f));
-            w.Write((byte)((i.JaNasceu ? 1 : 0) | (i.Animacao != null ? 2 : 0) | (i.Agressivo ? 4 : 0)));
-            i.Animacao?.Escrever(w);
+            w.Write((byte)(campos | (i.JaNasceu ? MarcaNasceu : 0) | (i.Agressivo ? MarcaAgressivo : 0)));
+            if ((campos & TemPosicao) != 0) Bin.Escrever(w, i.Posicao);
+            if ((campos & TemYaw) != 0) w.Write(YawEm16(i.Yaw));
+            if ((campos & TemVida) != 0) w.Write(VidaEm16(i.Vida));
+            if ((campos & TemAnimacao) != 0) i.Animacao.Escrever(w);
         }
 
         public static InimigosEstado Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoInimigosEstado, r =>
         {
-            var e = new InimigosEstado { Sequencia = r.ReadUInt32() };
+            var e = new InimigosEstado { Sequencia = r.ReadUInt16() };
             int n = r.ReadByte();
             for (int k = 0; k < n; k++)
             {
-                var i = new Item
-                {
-                    Id = r.ReadUInt16(),
-                    Posicao = Bin.LerVetor(r),
-                    Yaw = r.ReadUInt16() / 65535f * 360f,
-                    Vida = r.ReadUInt16() / 65535f,
-                };
+                var i = new Item { Id = r.ReadUInt16() };
                 byte f = r.ReadByte();
-                i.JaNasceu = (f & 1) != 0;
-                i.Agressivo = (f & 4) != 0;
-                if ((f & 2) != 0) i.Animacao = AnimatorFrame.Ler(r);
+                i.Campos = (byte)(f & TodosOsCampos);
+                i.JaNasceu = (f & MarcaNasceu) != 0;
+                i.Agressivo = (f & MarcaAgressivo) != 0;
+                if ((f & TemPosicao) != 0) i.Posicao = Bin.LerVetor(r);
+                if ((f & TemYaw) != 0) i.Yaw = r.ReadUInt16() / 65535f * 360f;
+                if ((f & TemVida) != 0) i.Vida = r.ReadUInt16() / 65535f;
+                if ((f & TemAnimacao) != 0) i.Animacao = AnimatorFrame.Ler(r);
                 e.Itens.Add(i);
             }
             return e;
         });
+    }
+
+    /// <summary>
+    /// O que o host já mandou de um inimigo (protocolo 25). A cada envio (10 por segundo) decide quais campos vão:
+    /// o que mudou desde o último valor enviado vai neste envio e no seguinte (o canal não é confiável: a repetição
+    /// cobre um pacote perdido), e o envio "completo" manda tudo (a cada segundo, e quando o inimigo volta a ficar perto
+    /// de um aliado), para corrigir o que duas perdas seguidas deixaram para trás. Inimigo sem nada a mandar fica fora
+    /// do pacote. Sem chamadas à Unity: testado no codectest.
+    /// </summary>
+    internal sealed class EstadoEnviado
+    {
+        public const float PosicaoMinima = 0.02f; // metros desde a última posição enviada
+        public const int YawMinimo = 182;         // ~1 grau, na escala de 16 bits
+        public const float PesoMinimo = 0.05f;    // peso de camada do Animator (0 a 1)
+        public const float FloatMinimo = 0.02f;   // parâmetro float do Animator
+        public const float RecuoDeTempo = 0.05f;  // tempo do estado menor que o do envio anterior: o estado recomeçou
+
+        private bool _temBase, _temAnimacao, _repetirMarcas;
+        private Vector3 _posicao;
+        private ushort _yaw, _vida;
+        private byte _marcas, _repetir;
+        private readonly AnimatorFrame _animacao = new AnimatorFrame();
+        private float[] _temposVistos = Array.Empty<float>(); // tempo de cada camada no envio anterior (foi ou não no pacote)
+
+        /// <summary>
+        /// Campos (InimigosEstado.Tem*) a mandar agora e, em <paramref name="enviar"/>, se o inimigo entra no pacote
+        /// (falso = nada mudou). Guarda como enviado o que devolveu: só chamar quando o item for mesmo para o pacote.
+        /// </summary>
+        public byte Decidir(InimigosEstado.Item atual, bool completo, out bool enviar)
+        {
+            ushort yaw = InimigosEstado.YawEm16(atual.Yaw), vida = InimigosEstado.VidaEm16(atual.Vida);
+            byte marcas = (byte)((atual.JaNasceu ? InimigosEstado.MarcaNasceu : 0) | (atual.Agressivo ? InimigosEstado.MarcaAgressivo : 0));
+            bool temAnimacao = atual.Animacao != null;
+            byte presentes = temAnimacao ? InimigosEstado.TodosOsCampos : (byte)(InimigosEstado.TodosOsCampos & ~InimigosEstado.TemAnimacao);
+
+            byte mudou = 0;
+            bool marcasMudaram = !_temBase || marcas != _marcas;
+            if (!_temBase) mudou = presentes;
+            else
+            {
+                if ((atual.Posicao - _posicao).sqrMagnitude > PosicaoMinima * PosicaoMinima) mudou |= InimigosEstado.TemPosicao;
+                int giro = Math.Abs(yaw - _yaw);
+                if (giro > 32768) giro = 65536 - giro;
+                if (giro > YawMinimo) mudou |= InimigosEstado.TemYaw;
+                if (vida != _vida) mudou |= InimigosEstado.TemVida;
+                if (temAnimacao && (!_temAnimacao || AnimacaoMudou(_animacao, atual.Animacao, _temposVistos))) mudou |= InimigosEstado.TemAnimacao;
+            }
+            if (temAnimacao) _temposVistos = Copia(atual.Animacao.NormalizedTimes, _temposVistos);
+
+            byte campos = (byte)((completo ? presentes : (byte)(mudou | _repetir)) & presentes);
+            enviar = campos != 0 || marcasMudaram || _repetirMarcas;
+            _repetir = mudou;
+            _repetirMarcas = marcasMudaram;
+            if (!enviar) return 0;
+
+            _temBase = true;
+            _marcas = marcas;
+            if ((campos & InimigosEstado.TemPosicao) != 0) _posicao = atual.Posicao;
+            if ((campos & InimigosEstado.TemYaw) != 0) _yaw = yaw;
+            if ((campos & InimigosEstado.TemVida) != 0) _vida = vida;
+            if ((campos & InimigosEstado.TemAnimacao) != 0)
+            {
+                Copiar(atual.Animacao, _animacao);
+                _temAnimacao = true;
+            }
+            return campos;
+        }
+
+        /// <summary>
+        /// A animação mudou de um jeito que o convidado precisa saber: outro estado, o mesmo estado recomeçado, peso de
+        /// camada ou parâmetro diferente. O tempo do estado avançando sozinho não conta: a réplica toca o mesmo estado
+        /// por conta própria, e o envio completo acerta o tempo. <paramref name="temposVistos"/>: o tempo de cada camada
+        /// no envio anterior (o recomeço se vê contra ele, não contra o último tempo enviado, que pode ser bem mais antigo).
+        /// </summary>
+        public static bool AnimacaoMudou(AnimatorFrame enviada, AnimatorFrame atual, float[] temposVistos)
+        {
+            if (enviada.StateHashes.Length != atual.StateHashes.Length || enviada.Floats.Length != atual.Floats.Length
+                || enviada.Ints.Length != atual.Ints.Length || enviada.Bools.Length != atual.Bools.Length) return true;
+            for (int l = 0; l < atual.StateHashes.Length; l++)
+            {
+                if (atual.StateHashes[l] != enviada.StateHashes[l]) return true;
+                if (l < temposVistos.Length && atual.NormalizedTimes[l] < temposVistos[l] - RecuoDeTempo) return true;
+                if (Distante(atual.LayerWeights[l], enviada.LayerWeights[l], PesoMinimo)) return true;
+                // Chegar a 0 ou a 1 vai sempre: uma camada de ataque com um resto de peso fica visível na réplica.
+                float peso = atual.LayerWeights[l];
+                if (peso != enviada.LayerWeights[l] && (peso <= 0f || peso >= 1f)) return true;
+            }
+            for (int k = 0; k < atual.Floats.Length; k++)
+            {
+                if (Distante(atual.Floats[k], enviada.Floats[k], FloatMinimo)) return true;
+                if (atual.Floats[k] != enviada.Floats[k] && atual.Floats[k] == 0f) return true; // parou: o zero vai sempre
+            }
+            for (int k = 0; k < atual.Ints.Length; k++) if (atual.Ints[k] != enviada.Ints[k]) return true;
+            for (int k = 0; k < atual.Bools.Length; k++) if (atual.Bools[k] != enviada.Bools[k]) return true;
+            return false;
+        }
+
+        private static bool Distante(float a, float b, float minimo) => Math.Abs(a - b) > minimo;
+
+        private static void Copiar(AnimatorFrame de, AnimatorFrame para)
+        {
+            para.StateHashes = Copia(de.StateHashes, para.StateHashes);
+            para.NormalizedTimes = Copia(de.NormalizedTimes, para.NormalizedTimes);
+            para.LayerWeights = Copia(de.LayerWeights, para.LayerWeights);
+            para.Floats = Copia(de.Floats, para.Floats);
+            para.Ints = Copia(de.Ints, para.Ints);
+            para.Bools = Copia(de.Bools, para.Bools);
+        }
+
+        private static T[] Copia<T>(T[] de, T[] para)
+        {
+            if (para.Length != de.Length) para = new T[de.Length];
+            Array.Copy(de, para, de.Length);
+            return para;
+        }
     }
 
     /// <summary>Dano do convidado nas réplicas, somado por inimigo e tipo de dano (convidado → host).</summary>

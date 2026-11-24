@@ -2,6 +2,26 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.31.0",
+      "data": "24/11/2026",
+      "testado": false,
+      "titulo": "Rede dos inimigos mais leve: o host manda só o que mudou em cada inimigo",
+      "itens": [
+        "Dez vezes por segundo o host mandava a cada convidado a posição, o giro, a vida e a animação inteira de todo inimigo a até 45 m de um aliado, mesmo dos que estavam parados. Agora manda só o que mudou em cada inimigo; quem não mudou fica fora do pacote",
+        "Como a rede pode perder pacote, cada mudança vai em dois envios seguidos e, uma vez por segundo, o estado inteiro de cada inimigo vai de novo. O convidado passa a ignorar pacote de inimigos que chega fora de ordem",
+        "O medidor do log passou a contar esse tráfego (inimigos perto de aliado, quantos entraram no pacote, bytes por convidado) e dá para medir sozinho: o dono de uma sala vazia com o eco ligado monta os pacotes como se o eco fosse um convidado e só conta, sem enviar nada",
+        "Medido no PC do autor, sozinho, no andar 1 do Sertão: antes, 51 bytes por inimigo a cada envio; agora, de 10 a 22, conforme quantos estão se movendo (de 2,4 a 5 vezes menos tráfego por convidado). Com aliado de verdade ainda não foi testado",
+        "Balanceamento: sem efeito na dificuldade (vida, dano e morte dos inimigos seguem decididos pelo host). Protocolo 25: exige a 0.31.0 em todos os PCs; quem ficar na 0.30.3 não conecta"
+      ],
+      "testar": [
+        "Em dupla, numa run: os inimigos andam, viram, atacam e perdem vida no convidado como antes, sem inimigo deslizando parado nem preso numa pose",
+        "O convidado chega ao andar depois do host: os inimigos aparecem no lugar certo e, em 1 ou 2 s, na animação certa",
+        "Chefe: a barra de vida e o dano liberam no convidado quando ele fica agressivo no host",
+        "No log do host, a linha [Desempenho] Rede no período traz \"estado dos inimigos: ... no pacote ... bytes por convidado\": mande o log dos dois PCs",
+        "Com 0.30.3 de um lado e 0.31.0 do outro, o coop recusa a conexão (protocolo 24 × 25)"
+      ]
+    },
+    {
       "v": "0.30.3",
       "data": "24/11/2026",
       "testado": false,

@@ -90,9 +90,10 @@ namespace HellClockCoop.Avatar
 
         /// <summary>
         /// Aplica no Animator do fantasma. Troca de estado com CrossFade curto; se o mesmo estado
-        /// estiver muito fora de tempo (>15%), ressincroniza.
+        /// estiver muito fora de tempo (>15%), ressincroniza. <paramref name="acertarTempo"/> falso pula esse acerto:
+        /// para um quadro que ficou guardado (o tempo dele já passou), que só deve trocar estado e parâmetros.
         /// </summary>
-        public static void Aplicar(Animator animator, AnimatorFrame origem)
+        public static void Aplicar(Animator animator, AnimatorFrame origem, bool acertarTempo = true)
         {
             if (animator == null || !animator.isActiveAndEnabled || animator.runtimeAnimatorController == null)
             {
@@ -130,7 +131,7 @@ namespace HellClockCoop.Avatar
                     // CrossFade(hash, duração normalizada da transição, layer, offset normalizado no estado de destino)
                     animator.CrossFade(hash, 0.1f, l, fracaoAlvo);
                 }
-                else
+                else if (acertarTempo)
                 {
                     float d = Mathf.Abs(Mathf.Repeat(atual.normalizedTime, 1f) - fracaoAlvo);
                     if (Mathf.Min(d, 1f - d) > 0.15f)

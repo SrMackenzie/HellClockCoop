@@ -17,14 +17,14 @@ namespace HellClockCoop
         /// <summary>Partes do mod que não se sobrepõem: a soma é o tempo do mod no quadro.</summary>
         internal enum Parte { Menus, Rede, Run, Inimigos, Objetos, Santuarios, Portas, Alvos, Fx, Danos, Sons, Balanceamento, Personagem, Interface, Ganchos, Gui, Avatares, Medidor, Quantidade }
 
-        /// <summary>Trechos suspeitos medidos por dentro das partes (não entram na soma). Os de gancho ficam por último.</summary>
-        internal enum Detalhe { CriarAvatar, CarregarPrefabFx, CopiarFx, MedirTextoMenu, CriarLinhaMenu, BuscarBotoesJogo, BuscarPecasHud, ChecarSpawn, TimerUpdate, ContextoSom, Quantidade }
+        /// <summary>Trechos suspeitos medidos por dentro das partes (não entram na soma). Os chamados o tempo todo (ganchos e o estado dos inimigos) ficam por último.</summary>
+        internal enum Detalhe { CriarAvatar, CarregarPrefabFx, CopiarFx, MedirTextoMenu, CriarLinhaMenu, BuscarBotoesJogo, BuscarPecasHud, ChecarSpawn, TimerUpdate, ContextoSom, MontarEstado, Quantidade }
 
         private static readonly string[] NomesParte =
             { "Menus", "Rede", "Run", "Inimigos", "Objetos", "Santuários", "Portas", "Alvos", "Efeitos", "Danos", "Sons", "Balanceamento", "Personagem", "Interface", "Ganchos", "OnGUI", "Avatares", "Medidor" };
         private static readonly string[] NomesDetalhe =
             { "criar avatar", "carregar prefab de efeito", "copiar efeito", "medir texto do menu", "criar linha do menu", "buscar botões do jogo",
-              "buscar peças da HUD", "CheckForSpawn", "TimerManager.Update", "contexto de som" };
+              "buscar peças da HUD", "CheckForSpawn", "TimerManager.Update", "contexto de som", "montar estado dos inimigos" };
 
         private const int PrimeiroDetalheDeGancho = (int)Detalhe.ChecarSpawn; // chamados a cada quadro: na linha da travada só com tempo relevante
         private const double LimiteMinimoMs = 50.0;   // abaixo disso não é travada perceptível
@@ -71,6 +71,9 @@ namespace HellClockCoop
         private static readonly long[] _bytesTipo = new long[256];
         private static int _recebidasJanela, _quadrosBufferCheio;
         private static long _bytesRecebidosJanela;
+        private static int _enviosEstado, _pacotesEstado;
+        private static long _relevantesEstado, _itensEstado, _completosEstado, _comAnimacaoEstado, _bytesEstado;
+        private static bool _estadoSimulado;
         private static string[] _nomesTipo;
 
         internal static double Agora() => Time.realtimeSinceStartupAsDouble;
@@ -128,6 +131,33 @@ namespace HellClockCoop
             if (_inicioJanela < 0f) return;
             _enviadasTipo[tipo]++;
             _bytesTipo[tipo] += bytes;
+        }
+
+        /// <summary>
+        /// Um pacote de estado dos inimigos, contado uma vez (é o mesmo para cada convidado). <paramref name="simulado"/>:
+        /// montado e não enviado, com o host sozinho na sala e o eco ligado (o eco vale como convidado), o que dá o
+        /// tráfego por convidado sem um segundo jogador.
+        /// </summary>
+        internal static void PacoteDeEstado(int bytes, bool simulado)
+        {
+            if (_inicioJanela < 0f) return;
+            _pacotesEstado++;
+            _bytesEstado += bytes;
+            _estadoSimulado |= simulado;
+        }
+
+        /// <summary>
+        /// Um envio de estado dos inimigos (10 por segundo): quantos estavam perto de um aliado, quantos entraram no pacote
+        /// (os outros não tinham mudança), quantos desses foram completos e quantos levaram a animação.
+        /// </summary>
+        internal static void EstadoDeInimigos(int relevantes, int itens, int completos, int comAnimacao)
+        {
+            if (_inicioJanela < 0f) return;
+            _enviosEstado++;
+            _relevantesEstado += relevantes;
+            _itensEstado += itens;
+            _completosEstado += completos;
+            _comAnimacaoEstado += comAnimacao;
         }
 
         /// <summary>A leitura de um canal chegou ao limite do buffer de recepção: pode ter ficado mensagem para o quadro seguinte.</summary>
@@ -378,7 +408,7 @@ namespace HellClockCoop
                 mensagens += _enviadasTipo[i];
                 bytes += _bytesTipo[i];
             }
-            if (mensagens == 0 && _recebidasJanela == 0 && _quadrosBufferCheio == 0) return; // solo: sem linha de rede
+            if (mensagens == 0 && _recebidasJanela == 0 && _quadrosBufferCheio == 0 && _enviosEstado == 0) return; // solo: sem linha de rede
             tipos.Sort((a, b) => _bytesTipo[b].CompareTo(_bytesTipo[a]));
             var pedacos = new List<string>();
             foreach (int t in tipos) pedacos.Add($"{NomeDoTipo(t)} {_enviadasTipo[t]} msg/{_bytesTipo[t] / 1024.0:0.0} KB");
@@ -386,7 +416,14 @@ namespace HellClockCoop
                 $"[Desempenho] Rede no período ({_contexto}): enviou {mensagens} msg, {bytes / 1024.0:0.0} KB ({bytes / 1024.0 / duracao:0.0} KB/s)" +
                 $"{(pedacos.Count > 0 ? ": " + string.Join(" · ", pedacos.ToArray()) : "")}; " +
                 $"recebeu {_recebidasJanela} msg, {_bytesRecebidosJanela / 1024.0:0.0} KB ({_bytesRecebidosJanela / 1024.0 / duracao:0.0} KB/s); " +
-                $"buffer de recepção (64 msg) cheio em {_quadrosBufferCheio} quadro(s).");
+                $"buffer de recepção (64 msg) cheio em {_quadrosBufferCheio} quadro(s)" +
+                (_enviosEstado > 0
+                    ? $"; estado dos inimigos{(_estadoSimulado ? " (simulado: eco como convidado, montado e não enviado)" : "")}: {_enviosEstado} envio(s); " +
+                      $"por envio, {(double)_relevantesEstado / _enviosEstado:0.0} inimigo(s) perto de aliado, {(double)_itensEstado / _enviosEstado:0.0} no pacote " +
+                      $"({(double)_completosEstado / _enviosEstado:0.0} completo(s), {(double)_comAnimacaoEstado / _enviosEstado:0.0} com animação), " +
+                      $"{(double)_pacotesEstado / _enviosEstado:0.00} pacote(s) e {(double)_bytesEstado / _enviosEstado:0} bytes por convidado " +
+                      $"({_bytesEstado * 10.0 / _enviosEstado / 1024.0:0.0} KB/s a 10 envios por segundo)"
+                    : "") + ".");
         }
 
         /// <summary>Escreve o resumo da janela (se tiver tempo suficiente) e abre outra.</summary>
@@ -425,8 +462,10 @@ namespace HellClockCoop
             _quadros = _travadas = _travadasGc = _travadasMod = _linhasEscritas = _suprimidas = _carregamentos = _coletas = 0;
             _somaQuadro = _piorQuadro = _somaMod = _piorMod = _piorModCarregando = 0;
             _piorModParte = _piorModCarregandoParte = null;
-            _quadrosSteam = _piorSteam = _pisos = _recebidasJanela = _quadrosBufferCheio = 0;
+            _quadrosSteam = _piorSteam = _pisos = _recebidasJanela = _quadrosBufferCheio = _enviosEstado = _pacotesEstado = 0;
             _somaSteam = _pisoMinimo = _pisoMaximo = _pisoUltimo = _bytesRecebidosJanela = 0;
+            _relevantesEstado = _itensEstado = _completosEstado = _comAnimacaoEstado = _bytesEstado = 0;
+            _estadoSimulado = false;
             Array.Clear(_somaParte, 0, _somaParte.Length);
             Array.Clear(_piorParte, 0, _piorParte.Length);
             Array.Clear(_somaDet, 0, _somaDet.Length);

@@ -25,7 +25,8 @@ namespace HellClockCoop.Fase3
     ///
     /// Host: dá um número (netId) a cada inimigo que nasce na run (EnemyManager.SpawnEnemy) e manda
     /// aos convidados a definição, o tipo e os afixos já sorteados. A 10 Hz manda posição, rotação,
-    /// vida e animação dos inimigos perto de algum aliado. Morte e sumiço vão na hora. Aplica nos seus
+    /// vida e animação dos inimigos perto de algum aliado: só os campos que mudaram, e tudo uma vez por
+    /// segundo (0.31.0, protocolo 25). Morte e sumiço vão na hora. Aplica nos seus
     /// inimigos o dano que os convidados relatam e acorda inimigos quando um aliado chega perto.
     ///
     /// Convidado: cria a réplica pelo próprio EnemyManager.SpawnEnemy (liberado só para isso), sem
@@ -36,6 +37,9 @@ namespace HellClockCoop.Fase3
     internal static class InimigosCompartilhados
     {
         private const float IntervaloEstado = 0.1f;      // 10 Hz
+        private const float IntervaloCompleto = 1f;      // estado completo de cada inimigo; entre um e outro, só o que mudou
+        private const float AnimacaoFresca = 0.15f;      // animação aplicada até este tempo depois de chegar ainda acerta o tempo do estado
+        private const float AnimacaoGuardada = 0.3f;     // a que esperou a skill da réplica mais que isto é descartada (era o começo do golpe)
         private const float IntervaloGolpes = 0.05f;     // 20 Hz
         private const float RaioRelevancia = 45f;
         private const int MaximoPorTick = 160;
@@ -44,9 +48,26 @@ namespace HellClockCoop.Fase3
         private const float JanelaGolpeLocal = 0.5f;     // depois de um golpe local, só aceita vida menor do host
 
         public static SessaoCoop Sessao => RunCompartilhada.Sessao;
-        private static bool Host => RunCompartilhada.Host;
+        private static bool Host => RunCompartilhada.Host || Simulado;
         private static bool Convidado => RunCompartilhada.Convidado;
         private const float ValidadePendente = 90f;      // spawn recebido e nunca criado (run que não começou) expira
+
+        /// <summary>
+        /// Contagem simulada do medidor (0.31.0): dono de sala sem ninguém, com o eco (F8) ligado. O lado do host roda como
+        /// se o eco fosse um convidado (numera os inimigos que nascem e monta o estado a 10 Hz) e nada sai pela rede: todo
+        /// envio deste arquivo exige <c>Sessao.ComAliados</c>, e os pacotes de estado são só contados (<c>_simulando</c>).
+        /// Serve para medir o tráfego por convidado sem um segundo jogador; o eco precisa estar ligado antes do andar nascer.
+        /// </summary>
+        private static bool Simulado
+        {
+            get
+            {
+                SessaoCoop s = Sessao;
+                if (s == null || !s.SouHost || s.Pares.Count > 0) return false;
+                CoopRuntime r = CoopRuntime.Instancia;
+                return !ReferenceEquals(r, null) && r.EcoAtivo;
+            }
+        }
 
         /// <summary>
         /// Run em andamento no host. O primeiro andar nasce antes de RunStarted virar true (StartRun só
@@ -58,7 +79,8 @@ namespace HellClockCoop.Fase3
             {
                 DungeonProgressManager d = DungeonProgressManager.Instance;
                 if (d == null) return false;
-                return d.RunStarted.Value || (RunCompartilhada.TemPlano && ClassSingleton<LevelChanger>.Instance.IsChangingLevel.Value);
+                // Na contagem simulada não há plano (ninguém para receber): vale qualquer carregamento de andar.
+                return d.RunStarted.Value || ((RunCompartilhada.TemPlano || Simulado) && ClassSingleton<LevelChanger>.Instance.IsChangingLevel.Value);
             }
         }
 
@@ -108,6 +130,9 @@ namespace HellClockCoop.Fase3
             public EnemyController C;
             public InimigoSpawn Spawn;
             public readonly AnimatorFrame Animacao = new AnimatorFrame();
+            public readonly EstadoEnviado Enviado = new EstadoEnviado(); // o que os convidados já receberam (protocolo 25)
+            public float ProximoCompleto;                                // quando mandar tudo de novo
+            public uint UltimoEnvio;                                     // último envio em que esteve perto de um aliado
         }
 
         private static readonly Dictionary<EnemyController, InimigoHost> HostPorControle = new Dictionary<EnemyController, InimigoHost>();
@@ -123,7 +148,17 @@ namespace HellClockCoop.Fase3
         private static long _andarLimpoDisparado = -1;
         private static int _criadosNoUltimoLimpo;
         private static float _proximoEstado;
-        private static uint _sequencia;
+        private static ushort _sequencia;
+        private static uint _envio;     // conta os envios de estado (para saber quem estava no anterior)
+        private static bool _simulando; // contagem simulada do medidor: monta os pacotes e não envia
+        private static bool _numerouNaSimulacao; // há inimigos numerados só para a contagem simulada
+        // Montagem do pacote de estado, reaproveitada a cada envio (10 por segundo).
+        private static readonly InimigosEstado.Item ItemEstado = new InimigosEstado.Item();
+        private static readonly MemoryStream ItemMs = new MemoryStream(256);
+        private static readonly BinaryWriter ItemW = new BinaryWriter(ItemMs);
+        private static readonly MemoryStream PacoteMs = new MemoryStream(BytesPorPacote + 256);
+        private static readonly BinaryWriter PacoteW = new BinaryWriter(PacoteMs);
+        private static int _itensNoPacote;
         private static EnemyManager _emComLimpeza;
         private static readonly List<Vector3> PosicoesAliados = new List<Vector3>(3);
         private static readonly List<KeyValuePair<float, InimigoHost>> Relevantes = new List<KeyValuePair<float, InimigoHost>>(256);
@@ -166,6 +201,7 @@ namespace HellClockCoop.Fase3
             var h = new InimigoHost { Id = id, C = c, Spawn = s };
             HostPorControle[c] = h;
             HostPorId[id] = h;
+            if (!RunCompartilhada.Host) _numerouNaSimulacao = true;
             if (Sessao.ComAliados) Sessao.EnviarParaConvidados(s.Serializar(), confiavel: true);
         }
 
@@ -234,6 +270,7 @@ namespace HellClockCoop.Fase3
                 if (h.C == null || h.C.LifeController.IsDead) continue;
                 AtualizarSpawn(h);
                 sessao.EnviarPara(p, h.Spawn.Serializar());
+                h.ProximoCompleto = 0f; // o próximo estado vai completo: quem entrou não tem o que os outros já receberam
                 n++;
             }
             Plugin.Log.LogInfo($"[Inimigos] {n} inimigos enviados a {p.Nome} (entrada no meio da run).");
@@ -287,7 +324,8 @@ namespace HellClockCoop.Fase3
         private static void AtualizarHost()
         {
             EnemyManager em = EnemyManager.Instance;
-            if (em != null && em != _emComLimpeza)
+            // Só com convidado de verdade: na contagem simulada o andar limpo não pode mexer no jogo (levantar o host caído).
+            if (em != null && em != _emComLimpeza && RunCompartilhada.Host)
             {
                 _emComLimpeza = em;
                 em.OnAllEnemiesCleared.Register(HostAndarLimpo);
@@ -297,14 +335,20 @@ namespace HellClockCoop.Fase3
                 if (HostPorId.Count > 0) { HostPorId.Clear(); HostPorControle.Clear(); }
                 return;
             }
-            if (Time.unscaledTime < _proximoEstado || !Sessao.ComAliados) return;
+            if (Time.unscaledTime < _proximoEstado) return;
+            // Contagem simulada (ver Simulado): o eco entra como a posição do convidado e os pacotes são só contados.
+            RemotePlayerAvatar eco = Sessao.ComAliados ? null : CoopRuntime.Instancia?.AvatarDoEco;
+            _simulando = eco != null;
+            if (!Sessao.ComAliados && !_simulando) return;
             _proximoEstado = Time.unscaledTime + IntervaloEstado;
+            double inicio = Desempenho.Agora();
 
             PosicoesAliados.Clear();
             foreach (Par p in Sessao.Pares.Values)
             {
                 if (p.Compativel && p.MesmoAndar && p.Avatar != null && p.Avatar.gameObject.activeSelf) PosicoesAliados.Add(p.Avatar.transform.position);
             }
+            if (_simulando && eco.gameObject.activeSelf) PosicoesAliados.Add(eco.transform.position);
             if (PosicoesAliados.Count == 0) return;
 
             Relevantes.Clear();
@@ -330,63 +374,72 @@ namespace HellClockCoop.Fase3
                 }
             }
             if (Relevantes.Count == 0) return;
-            Relevantes.Sort((a, b) => a.Key.CompareTo(b.Key));
+            // A ordem só importa para o corte: acima do teto, ficam os mais próximos.
+            if (Relevantes.Count > MaximoPorTick) Relevantes.Sort((a, b) => a.Key.CompareTo(b.Key));
 
-            var itens = new List<byte[]>(Mathf.Min(Relevantes.Count, MaximoPorTick));
-            var item = new InimigosEstado.Item();
-            using (var ms = new MemoryStream(64))
-            using (var w = new BinaryWriter(ms))
+            _envio++;
+            float agora = Time.unscaledTime;
+            int itens = 0, completos = 0, comAnimacao = 0;
+            InimigosEstado.Item item = ItemEstado;
+            _itensNoPacote = 0;
+            for (int k = 0; k < Relevantes.Count && k < MaximoPorTick; k++)
             {
-                for (int k = 0; k < Relevantes.Count && k < MaximoPorTick; k++)
+                InimigoHost h = Relevantes[k].Value;
+                item.Id = h.Id;
+                item.Posicao = h.C.transform.position;
+                item.Yaw = h.C.transform.eulerAngles.y;
+                item.Vida = h.C.LifeController.CurrentRatio;
+                item.JaNasceu = NasceuRef(h.C);
+                item.Agressivo = EstaAgressivo(h.C);
+                Animator an = h.C.Animator;
+                if (an != null && an.isActiveAndEnabled && an.runtimeAnimatorController != null)
                 {
-                    InimigoHost h = Relevantes[k].Value;
-                    item.Id = h.Id;
-                    item.Posicao = h.C.transform.position;
-                    item.Yaw = h.C.transform.eulerAngles.y;
-                    item.Vida = h.C.LifeController.CurrentRatio;
-                    item.JaNasceu = NasceuRef(h.C);
-                    item.Agressivo = EstaAgressivo(h.C);
-                    Animator an = h.C.Animator;
-                    if (an != null && an.isActiveAndEnabled && an.runtimeAnimatorController != null)
-                    {
-                        AnimatorSync.Ler(an, h.Animacao);
-                        item.Animacao = h.Animacao;
-                    }
-                    else item.Animacao = null;
-                    ms.SetLength(0);
-                    InimigosEstado.EscreverItem(w, item);
-                    w.Flush();
-                    itens.Add(ms.ToArray());
+                    AnimatorSync.Ler(an, h.Animacao);
+                    item.Animacao = h.Animacao;
                 }
+                else item.Animacao = null;
+
+                // Completo: de tempos em tempos e quando o inimigo não estava no envio anterior (voltou a ficar perto de
+                // um aliado). Depois do primeiro, um atraso por inimigo espalha os completos de quem nasceu junto pelos envios.
+                bool completo = h.UltimoEnvio != _envio - 1 || agora >= h.ProximoCompleto;
+                if (completo) h.ProximoCompleto = agora + IntervaloCompleto + (h.UltimoEnvio == 0 ? (h.Id % 10) * IntervaloEstado : 0f);
+                h.UltimoEnvio = _envio;
+                item.Campos = h.Enviado.Decidir(item, completo, out bool enviar);
+                if (!enviar) continue; // nada mudou: o inimigo fica fora do pacote
+
+                ItemMs.SetLength(0);
+                InimigosEstado.EscreverItem(ItemW, item);
+                ItemW.Flush();
+                int tamanho = (int)ItemMs.Length;
+                if (_itensNoPacote > 0 && (_itensNoPacote == 255 || PacoteMs.Length + tamanho > BytesPorPacote)) FecharPacote();
+                if (_itensNoPacote == 0)
+                {
+                    PacoteMs.SetLength(0);
+                    PacoteW.Write(Protocolo.TipoInimigosEstado);
+                    PacoteW.Write(_sequencia++);
+                    PacoteW.Write((byte)0); // quantidade de itens: preenchida ao fechar (InimigosEstado.PosicaoDaContagem)
+                }
+                PacoteW.Write(ItemMs.GetBuffer(), 0, tamanho);
+                _itensNoPacote++;
+                itens++;
+                if (completo) completos++;
+                if ((item.Campos & InimigosEstado.TemAnimacao) != 0) comAnimacao++;
             }
-            EnviarEmPacotes(itens);
+            FecharPacote();
+            Desempenho.EstadoDeInimigos(Mathf.Min(Relevantes.Count, MaximoPorTick), itens, completos, comAnimacao);
+            Desempenho.SomarDetalhe(Desempenho.Detalhe.MontarEstado, inicio);
         }
 
-        private static void EnviarEmPacotes(List<byte[]> itens)
+        /// <summary>Envia o pacote de estado em montagem (ou só conta, na contagem simulada do medidor).</summary>
+        private static void FecharPacote()
         {
-            int i = 0;
-            while (i < itens.Count)
-            {
-                using (var ms = new MemoryStream(BytesPorPacote + 64))
-                using (var w = new BinaryWriter(ms))
-                {
-                    w.Write(Protocolo.TipoInimigosEstado);
-                    w.Write(_sequencia++);
-                    long posContagem = ms.Position;
-                    w.Write((byte)0);
-                    int n = 0;
-                    while (i < itens.Count && n < 255 && (n == 0 || ms.Length + itens[i].Length <= BytesPorPacote))
-                    {
-                        w.Write(itens[i]);
-                        i++;
-                        n++;
-                    }
-                    w.Flush();
-                    ms.Position = posContagem;
-                    ms.WriteByte((byte)n);
-                    Sessao.EnviarParaConvidados(ms.ToArray(), confiavel: false);
-                }
-            }
+            if (_itensNoPacote == 0) return;
+            PacoteW.Flush();
+            byte[] pacote = PacoteMs.ToArray();
+            pacote[InimigosEstado.PosicaoDaContagem] = (byte)_itensNoPacote;
+            _itensNoPacote = 0;
+            Desempenho.PacoteDeEstado(pacote.Length, _simulando);
+            if (!_simulando) Sessao.EnviarParaConvidados(pacote, confiavel: false);
         }
 
         private static void LimparNulos()
@@ -524,6 +577,7 @@ namespace HellClockCoop.Fase3
             public float UltimoGolpe = -10f;
             public AnimatorFrame Animacao;
             public bool AnimacaoNova;
+            public float AnimacaoEm;      // quando a animação chegou (a que espera a skill da réplica acabar já chega velha)
             public bool RootMotionOriginal;
             // 0.22.0: contagem do teto por andar em que a réplica entrou (Validacao.ContagemDoSpawn) e os ajustes já juntados.
             public byte Contagem;
@@ -549,6 +603,7 @@ namespace HellClockCoop.Fase3
         private static readonly object ChaveSemAfixoExtra = new object();
         private static readonly object ChaveSemDrop = new object();
         private static float _proximosGolpes;
+        private static int _ultimaSequenciaEstado = -1; // sequência do último pacote de estado aceito (-1 = nenhum)
         private static bool _limpezaDesligada;
         private static bool _avisouDefinicao;
 
@@ -619,11 +674,19 @@ namespace HellClockCoop.Fase3
                 Mover(r, dt);
                 if (r.AnimacaoNova && r.Animacao != null)
                 {
-                    r.AnimacaoNova = false;
                     // Enquanto a réplica executa a própria skill, a animação é dela (o golpe sai dos eventos).
                     // (no máximo 3 s: uma skill que nunca termina na réplica não pode congelar a animação)
                     bool usandoSkill = Time.unscaledTime < r.SkillAte || (r.UltimaSkill != null && r.UltimaSkill.IsUsing.Value && Time.unscaledTime < r.SkillAte + 3f);
-                    if (!usandoSkill) AnimatorSync.Aplicar(r.C.Animator, r.Animacao);
+                    // Protocolo 25: a animação só vem quando muda, então a que chega durante a skill fica guardada (antes
+                    // era descartada: outra vinha em 0,1 s). Quando a skill acaba, entra só a que chegou há pouco (o fim do
+                    // golpe no host, que termina um instante antes da réplica); a mais velha é o começo do golpe e o
+                    // repetiria. Guardada, ela troca estado e parâmetros sem acertar o tempo do estado, que já passou.
+                    if (!usandoSkill)
+                    {
+                        r.AnimacaoNova = false;
+                        float idade = Time.unscaledTime - r.AnimacaoEm;
+                        if (idade < AnimacaoGuardada) AnimatorSync.Aplicar(r.C.Animator, r.Animacao, idade < AnimacaoFresca);
+                    }
                 }
                 AplicarVida(r);
                 if (r.QuerAgressivo && !r.Agressivo) TornarAgressivo(r);
@@ -1143,6 +1206,7 @@ namespace HellClockCoop.Fase3
         private static void LimparConvidado(string motivo)
         {
             LimparReplicas(motivo);
+            _ultimaSequenciaEstado = -1; // outro host (ou o mesmo, de volta) recomeça a contagem
             ContarAndar(-1);
             _andarLimpoDisparado = -1;
             Pendentes.Clear();
@@ -1178,6 +1242,14 @@ namespace HellClockCoop.Fase3
         {
             if (Sessao == null) return;
             if (Host) AtualizarHost();
+            else if (_numerouNaSimulacao)
+            {
+                // A contagem simulada acabou (eco desligado) sem convidado: sem o lado do host rodando, ninguém tiraria
+                // da lista os inimigos que morrem, e um convidado que entrasse depois receberia inimigos que já não existem.
+                _numerouNaSimulacao = false;
+                HostPorId.Clear();
+                HostPorControle.Clear();
+            }
             AtualizarConvidado();
         }
 
@@ -1205,24 +1277,30 @@ namespace HellClockCoop.Fase3
                         break;
                     case Protocolo.TipoInimigosEstado:
                         if (!Convidado || de != sessao.Host) return;
-                        foreach (InimigosEstado.Item i in InimigosEstado.Desserializar(dados).Itens)
+                        InimigosEstado estado = InimigosEstado.Desserializar(dados);
+                        // Protocolo 25: cada item traz só o que mudou. Um pacote velho chegando depois de um novo poria de
+                        // volta um valor antigo, que só o próximo completo corrigiria: fora de ordem é descartado.
+                        if (Validacao.SequenciaAtrasada(estado.Sequencia, _ultimaSequenciaEstado)) return;
+                        _ultimaSequenciaEstado = estado.Sequencia;
+                        foreach (InimigosEstado.Item i in estado.Itens)
                         {
+                            bool temPosicao = (i.Campos & InimigosEstado.TemPosicao) != 0;
                             // 0.21.1: posição finita e dentro do teto também na réplica viva (Yaw e Vida chegam em 16 bits, sempre finitos).
-                            if (!Validacao.PosicaoValida(i.Posicao.x, i.Posicao.y, i.Posicao.z)) continue;
+                            if (temPosicao && !Validacao.PosicaoValida(i.Posicao.x, i.Posicao.y, i.Posicao.z)) continue;
                             if (Replicas.TryGetValue(i.Id, out Replica r))
                             {
-                                r.Posicao = i.Posicao;
-                                r.Yaw = i.Yaw;
-                                r.VidaHost = i.Vida;
+                                if (temPosicao) r.Posicao = i.Posicao;
+                                if ((i.Campos & InimigosEstado.TemYaw) != 0) r.Yaw = i.Yaw;
+                                if ((i.Campos & InimigosEstado.TemVida) != 0) r.VidaHost = i.Vida;
                                 r.Nasceu |= i.JaNasceu;
                                 r.QuerAgressivo |= i.Agressivo;
-                                if (i.Animacao != null) { r.Animacao = i.Animacao; r.AnimacaoNova = true; }
+                                if (i.Animacao != null) { r.Animacao = i.Animacao; r.AnimacaoNova = true; r.AnimacaoEm = Time.unscaledTime; }
                             }
                             else if (Pendentes.TryGetValue(i.Id, out InimigoSpawn p))
                             {
-                                p.Posicao = i.Posicao;
-                                p.Yaw = i.Yaw;
-                                p.Vida = i.Vida;
+                                if (temPosicao) p.Posicao = i.Posicao;
+                                if ((i.Campos & InimigosEstado.TemYaw) != 0) p.Yaw = i.Yaw;
+                                if ((i.Campos & InimigosEstado.TemVida) != 0) p.Vida = i.Vida;
                                 p.JaNasceu |= i.JaNasceu;
                             }
                         }

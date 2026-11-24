@@ -402,6 +402,36 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.31.0 — Rede dos inimigos: o host manda só o que mudou (protocolo 25)
+
+Muda a mensagem `InimigosEstado` (host → convidados): cada inimigo leva só os campos que mudaram, cada mudança vai em
+dois envios seguidos e o estado inteiro vai uma vez por segundo; o convidado descarta pacote fora de ordem (ARQUITETURA,
+§11 "Só o que mudou" e riscos, item 7, etapa 5). Não muda regra de jogo nem save. Medido sozinho em 24/11/2026 com a
+contagem simulada (tabela na ARQUITETURA). As réplicas no convidado ainda não foram vistas no jogo com esta versão:
+
+- [x] **Contagem simulada (sozinho, 24/11/2026):** crie o coop com "Sala pública" desmarcada, ligue o eco (F8) **antes**
+  de entrar no portal, jogue 1 min ou mais e desligue o eco (fecha a janela do medidor). No log sai
+  `[Desempenho] Rede no período (host com 0 aliado(s) e eco): ... estado dos inimigos (simulado: eco como convidado,
+  montado e não enviado): N envio(s); por envio, X inimigo(s) perto de aliado, Y no pacote (...) e B bytes por convidado`.
+  Medido: 100 bytes por envio parado (4,6 inimigos perto) e 149 com combate (14,6 perto); antes eram 51 bytes por inimigo.
+- [ ] **Inimigos no convidado (dupla):** numa run, os inimigos andam, viram para o alvo, atacam e perdem vida no
+  convidado como na 0.30.3. Nenhum fica deslizando parado, preso numa pose ou repetindo o golpe.
+- [ ] **Depois do golpe:** inimigo que ataca volta para a animação de andar ou de parado no convidado, sem repetir o
+  golpe (a animação que chega durante a skill da réplica fica guardada e entra quando a skill acaba, se chegou há menos
+  de 0,3 s).
+- [ ] **Vida:** a barra de vida dos inimigos no convidado acompanha os golpes do host e os do próprio convidado, sem
+  "voltar" para cima depois de um golpe.
+- [ ] **Chegada atrasada:** o convidado chega ao andar depois do host (ou entra no meio da run): os inimigos aparecem no
+  lugar certo; a animação e, no chefe, a barra e o dano podem levar 1 ou 2 s para acertar (antes era na hora). Se
+  passar disso, anotar.
+- [ ] **Chefe:** a barra de vida, o dano e a câmera do chefe liberam no convidado quando ele fica agressivo no host.
+- [ ] **Rede no log:** o host tem `estado dos inimigos: ... no pacote ... bytes por convidado` (sem "simulado") e
+  `InimigosEstado N msg/X KB` na lista por tipo; o convidado tem `recebeu N msg`. Mandar o `LogOutput.log` dos dois PCs:
+  são os números reais desta etapa e o "antes" da etapa 6 (recepção com teto por quadro).
+- [ ] **Versão:** com 0.30.3 de um lado e 0.31.0 do outro, o coop recusa a conexão (protocolo 24 × 25).
+- Se falhar, mandar: o `LogOutput.log` dos dois PCs e o que o convidado viu (qual inimigo, parado ou andando, em que
+  momento da luta).
+
 ## 0.30.3 — Travadas pontuais (menu, primeira aparição do aliado, primeiro aviso, efeitos)
 
 Não muda regra de jogo, rede nem save. O ouvinte do Esc da tela de saves passa a ser segurado por patch, as peças da
@@ -486,7 +516,8 @@ seção 0.30.2, acima.
   (ou `sem coleta no período`).
 - [ ] **Rede (sessão em dupla):** depois do resumo vem `[Desempenho] Rede no período (...)`, com `enviou N msg` e a
   lista por tipo (`Snapshot`, `InimigosEstado`, ...), `recebeu N msg` e `buffer de recepção (64 msg) cheio em N quadro(s)`.
-  Sozinho (sem aliado) essa linha não sai.
+  Sozinho (sem aliado) essa linha não sai; desde a 0.31.0 sai também para o dono de sala vazia com o eco ligado, com a
+  contagem simulada do estado dos inimigos (seção 0.31.0).
 - Depois da sessão em dupla, mandar o `LogOutput.log` dos dois PCs: são os números de "antes" das próximas etapas.
 
 ## 0.22.0 — Balanceamento só do autor e teto de inimigos por andar

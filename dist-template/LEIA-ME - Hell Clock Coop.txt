@@ -270,6 +270,10 @@ ESTADO ATUAL (versão de teste, Fase 3)
   do canto da tela; a da primeira vez que um aliado aparece ficou bem menor (de 0,3 s para
   0,06 s); efeito de skill do aliado que o seu PC ainda não carregou não segura mais a tela.
   Nada muda no jogo. Exige a 0.30.3 em todos os PCs.
+- (0.31.0): a rede dos inimigos ficou mais leve: o host manda aos convidados só o que mudou
+  em cada inimigo (antes mandava tudo, dez vezes por segundo, mesmo dos parados). Medido
+  sozinho: de 2,4 a 5 vezes menos tráfego por convidado. Nada muda no jogo. Exige a 0.31.0
+  em todos os PCs (protocolo 25).
 - A Deluxe Edition (cosmética) não importa.
 
 
