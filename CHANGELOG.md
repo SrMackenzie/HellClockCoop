@@ -4,13 +4,14 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
-## 0.30.3 — Sem as travadas ao abrir o menu e quando o aliado aparece 🧪
+## 0.30.3 — Menu do coop abre sem travar e o aliado aparece com travada bem menor 🧪
 _24/11/2026_
 
 - Abrir o menu do coop em jogo travava a tela por um instante (70 a 90 ms a cada abertura): o mod procurava, entre todos os objetos do jogo, o botão de voltar da tela de saves. Agora não procura mais nada
-- A primeira vez que um aliado (ou o eco) aparecia travava cerca de 0,3 s: o mod procurava as peças da interface do jogo quatro vezes. Agora pega cada peça direto, sem procurar
+- A primeira vez que um aliado (ou o eco) aparecia travava cerca de 0,3 s: o mod procurava as peças da interface do jogo quatro vezes. Agora pega cada peça direto, sem procurar: sobra um soluço de cerca de 0,06 s, só na primeira vez (montar a barra de vida, a seta e o painel de grupo)
 - O primeiro aviso do canto da tela (criar o coop, ligar o eco) travava de 0,1 a 0,5 s para carregar a letra. Isso passou para a abertura do jogo, antes de existir personagem
 - Efeito de skill do aliado que o seu PC ainda não tinha carregado não segura mais a tela: carrega em segundo plano e aparece assim que chega. As cópias seguintes do mesmo efeito também ficaram mais baratas
+- Medido no PC do autor, sozinho com o eco: abrir o menu não gera mais travada (eram 79 a 92 ms), a primeira aparição do aliado caiu de 326 para 60 ms e não trava da segunda vez em diante, e o primeiro aviso caiu de 105 para 5,5 ms. Os efeitos de um aliado de verdade ficam para a sessão em dupla
 - Balanceamento: sem efeito na dificuldade. Protocolo não muda (24). Exige a 0.30.3 em todos os PCs (a mesma versão do mod)
 
 ## 0.30.2 — Coop mais leve: menos chamadas à Steam 🧪

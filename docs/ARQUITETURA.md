@@ -218,7 +218,17 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
    | Item "Coop" da pausa | 50 ms, uma vez | busca da `PauseHUD` | `GenericHUD.PauseHUD` |
    | Efeito do aliado ainda não carregado | sem número (só com aliado em combate) | `WaitForCompletion` e limpeza a cada cópia | pedido sem espera, cópia pendente e modelo limpo por prefab (§11.2) |
 
-   Depois (0.30.3): na abertura do jogo, com a tela do PC bloqueada, o log mostrou `Texto do OnGUI preparado em 203 ms` (o custo saiu do jogo e foi para a abertura), 103/103 alvos e 61 patches aplicados. **A medição em jogo com o mesmo roteiro (hub e run, ligar o eco 2 vezes, abrir o menu 2 vezes) ainda não foi feita**; o roteiro está em `docs/TESTES.md`, 0.30.3. O carregamento sem espera e a cópia pendente só rodam com um aliado de verdade usando um efeito que este PC não carregou: o eco usa os efeitos do próprio jogador, que já estão na memória.
+   Depois (0.30.3, 24/11/2026, mesmo PC, sozinho com o eco, hub e andar 1 do Sertão; roteiro em `docs/TESTES.md`, 0.30.3):
+
+   | Momento | Antes (0.30.2) | Depois (0.30.3) |
+   |---|---|---|
+   | Abrir o menu do coop em jogo | 79 a 92 ms a cada abertura | nenhuma `Travada` em 5 aberturas (2 no hub, 1 pela pausa, 2 na run); parte Menus com pior quadro de 1,3 ms no trecho da abertura pela pausa |
+   | Primeira aparição do aliado (eco) | 326 ms | 60 ms, uma vez por sessão de jogo (mod 52,0 ms: Interface 26,3 · criar avatar 11,0 · OnGUI 5,5 · Efeitos 4,2 · Personagem 3,9); `buscas na cena: 0`. Da segunda vez em diante (hub e run) nenhuma `Travada`; criar avatar 5,6 ms na run |
+   | Primeiro aviso do canto em jogo | 105 ms (484 ms na 0.30.1) | OnGUI 5,5 ms no quadro do primeiro aviso; na abertura do jogo, `Texto do OnGUI preparado em 106 ms` (203 ms com a tela do PC bloqueada) |
+   | Item "Coop" da pausa | 50 ms, uma vez | montado no carregamento do hub, sem `Travada`; `buscar botões do jogo` fora do resumo; o item abre o menu |
+   | Efeitos com o eco na run (1,1 min com combate) | sem número | carregar prefab de efeito 8× (0,7 ms no total) · copiar efeito 53× (37,3 ms no total, 0,70 ms por cópia, pior quadro 4,2 ms); 0 travadas no trecho; mod 0,20 ms por quadro |
+
+   Os detalhes `buscar ouvintes do Esc`, `buscar peças da HUD` e `buscar botões do jogo` não aparecem em nenhum resumo. Sobra a travada de 60 ms da primeira aparição do aliado: não é mais busca, é a montagem da barra de vida, da seta e do painel de grupo (Interface 26,3 ms) somada à criação do avatar, tudo no mesmo quadro; fica para uma etapa seguinte (interface com aliados), que pode montar essas peças antes ou em quadros separados. No hub saiu uma `Travada` de 115 ms com o mod em 0,2 ms na primeira abertura da pausa (é do jogo; na run, abrir a pausa 2 vezes não gerou linha). `CheckForSpawn` continuou fora de `detalhes` mesmo andando e lutando no andar 1 do Sertão (`CaatingaA1LevelDefinition`): o jogo não chamou o método nesse andar; falta ver em outros andares, na sessão em dupla. O resumo de fechamento do jogo de novo não saiu ao fechar pela janela. O carregamento sem espera e a cópia pendente só rodam com um aliado de verdade usando um efeito que este PC não carregou: o eco usa os efeitos do próprio jogador, que já estão na memória.
 
 ---
 

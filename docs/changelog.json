@@ -5,20 +5,21 @@
       "v": "0.30.3",
       "data": "24/11/2026",
       "testado": false,
-      "titulo": "Sem as travadas ao abrir o menu e quando o aliado aparece",
+      "titulo": "Menu do coop abre sem travar e o aliado aparece com travada bem menor",
       "itens": [
         "Abrir o menu do coop em jogo travava a tela por um instante (70 a 90 ms a cada abertura): o mod procurava, entre todos os objetos do jogo, o botão de voltar da tela de saves. Agora não procura mais nada",
-        "A primeira vez que um aliado (ou o eco) aparecia travava cerca de 0,3 s: o mod procurava as peças da interface do jogo quatro vezes. Agora pega cada peça direto, sem procurar",
+        "A primeira vez que um aliado (ou o eco) aparecia travava cerca de 0,3 s: o mod procurava as peças da interface do jogo quatro vezes. Agora pega cada peça direto, sem procurar: sobra um soluço de cerca de 0,06 s, só na primeira vez (montar a barra de vida, a seta e o painel de grupo)",
         "O primeiro aviso do canto da tela (criar o coop, ligar o eco) travava de 0,1 a 0,5 s para carregar a letra. Isso passou para a abertura do jogo, antes de existir personagem",
         "Efeito de skill do aliado que o seu PC ainda não tinha carregado não segura mais a tela: carrega em segundo plano e aparece assim que chega. As cópias seguintes do mesmo efeito também ficaram mais baratas",
+        "Medido no PC do autor, sozinho com o eco: abrir o menu não gera mais travada (eram 79 a 92 ms), a primeira aparição do aliado caiu de 326 para 60 ms e não trava da segunda vez em diante, e o primeiro aviso caiu de 105 para 5,5 ms. Os efeitos de um aliado de verdade ficam para a sessão em dupla",
         "Balanceamento: sem efeito na dificuldade. Protocolo não muda (24). Exige a 0.30.3 em todos os PCs (a mesma versão do mod)"
       ],
       "testar": [
         "Em jogo, abra e feche o menu do coop (F7) algumas vezes: abre sem o soluço de antes",
         "Na tela de saves, com o menu do coop aberto, aperte Esc: só o menu fecha, sem a pergunta de fechar o jogo",
-        "Ligue o eco (F8) ou receba um aliado: ele aparece sem travar, com a barra de vida, a seta e o painel de grupo como antes",
+        "Ligue o eco (F8) ou receba um aliado: ele aparece com um soluço bem menor na primeira vez e sem nenhum depois, com a barra de vida, a seta e o painel de grupo como antes",
         "Na sessão em dupla, cada um usa todas as skills perto do outro: os efeitos aparecem no aliado como antes, sem travada no primeiro uso de cada skill",
-        "No log, não aparece mais linha [Desempenho] Travada ao abrir o menu nem quando o aliado aparece"
+        "No log, não aparece mais linha [Desempenho] Travada ao abrir o menu; na primeira aparição do aliado ela ainda pode sair, perto de 60 ms (eram 326)"
       ]
     },
     {
