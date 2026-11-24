@@ -2,9 +2,27 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
-      "v": "0.27.0",
+      "v": "0.28.0",
       "data": "23/11/2026",
       "testado": false,
+      "titulo": "Convicção no painel de grupo",
+      "itens": [
+        "A barra de convicção (barreira) aparece por cima da vida no painel de grupo, para você e para os aliados, com o visual da barra do jogo",
+        "A barra sobre a cabeça dos aliados também mostra a convicção, com o brilho do jogo enquanto ela dura",
+        "Só mostra o que o aliado já tem, como a vida: não muda dano, vida nem convicção de ninguém",
+        "Exige a 0.28.0 em todos os PCs (protocolo 23)"
+      ],
+      "testar": [
+        "Ganhe convicção: a faixa aparece por cima da sua vida no painel e some quando a convicção acaba",
+        "No outro PC (ou com o eco, F8), a convicção aparece na sua linha do painel e na barra sobre a sua cabeça",
+        "Tome dano com convicção: a faixa diminui junto com a do jogo",
+        "Caído: sem faixa de convicção na linha nem sobre a cabeça"
+      ]
+    },
+    {
+      "v": "0.27.0",
+      "data": "23/11/2026",
+      "testado": true,
       "titulo": "Painel de grupo",
       "itens": [
         "Painel à esquerda com você no topo e cada aliado embaixo: nome na cor de cada um (coroa no host), barra de vida, as skills equipadas embaixo e até 4 buffs/debuffs em cima",

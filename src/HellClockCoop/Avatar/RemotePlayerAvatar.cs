@@ -36,6 +36,8 @@ namespace HellClockCoop.Avatar
 
         /// <summary>Fração da vida no último snapshot aceito (0..1), para a barra sobre o aliado (0.14.0).</summary>
         public float Vida { get; private set; } = 1f;
+        /// <summary>Fração da barreira (convicção) do último snapshot, para a barra sobre a cabeça e o painel (0.28.0).</summary>
+        public float Barreira { get; private set; }
 
         public void Inicializar(Transform modelo, Animator[] animators, Transform[] ossosTronco, Animator[] todosAnimators)
         {
@@ -70,6 +72,7 @@ namespace HellClockCoop.Avatar
             _ultimaSequencia = s.Sequencia;
             Recebidos++;
             Vida = s.Vida;
+            Barreira = s.Barreira;
 
             float amostra = s.Tempo - Time.unscaledTime;
             // O menor offset visto é o mais próximo do real (o resto é atraso de rede); deriva devagar.

@@ -34,6 +34,7 @@ var s = Activator.CreateInstance(tS);
 tS.GetField("Sequencia").SetValue(s, (ushort)65535); tS.GetField("Tempo").SetValue(s, 123.5f);
 tS.GetField("CenaHash").SetValue(s, 8); tS.GetField("Andar").SetValue(s, 3u); tS.GetField("Morto").SetValue(s, true);
 tS.GetField("Vida").SetValue(s, 0.375f);
+tS.GetField("Barreira").SetValue(s, 0.625f);
 tS.GetField("Posicao").SetValue(s, new UnityEngine.Vector3(1, 2, 3));
 tS.GetField("Rotacao").SetValue(s, new UnityEngine.Quaternion(0, 0.7071f, 0, 0.7071f));
 tS.GetField("RotacaoModelo").SetValue(s, new UnityEngine.Quaternion(0, 0, 0, 1));
@@ -54,11 +55,22 @@ var ossos = (UnityEngine.Quaternion[])tS.GetField("RotacoesOssos").GetValue(s);
 ossos[0] = new UnityEngine.Quaternion(0.1f, 0.2f, 0.3f, 0.9f); ossos[2] = new UnityEngine.Quaternion(0, 0, 0.5f, 0.86f); ossos[4] = new UnityEngine.Quaternion(0, 0, 0, 1);
 var bs = (byte[])tS.GetMethod("Serializar").Invoke(s, null);
 var s2 = tS.GetMethod("Desserializar").Invoke(null, new object[] { bs });
-Checar(bs[0] == 1 && bs[1] == 4, $"Snapshot tipo=1 versão=4 ({bs.Length} bytes)");
+Checar(bs[0] == 1 && bs[1] == 5, $"Snapshot tipo=1 versão=5 ({bs.Length} bytes)");
 Checar(Math.Abs((float)tS.GetField("Vida").GetValue(s2) - 0.375f) < 1f / 65535f, "Snapshot.Vida (fração em ushort)");
 var sVida = Activator.CreateInstance(tS); tS.GetField("Vida").SetValue(sVida, 1.7f); // fora de 0..1: chega presa em 1
 var sVida2 = tS.GetMethod("Desserializar").Invoke(null, new object[] { (byte[])tS.GetMethod("Serializar").Invoke(sVida, null) });
 Checar((float)tS.GetField("Vida").GetValue(sVida2) == 1f, "Snapshot.Vida presa em 0..1");
+Checar(Math.Abs((float)tS.GetField("Barreira").GetValue(s2) - 0.625f) < 1f / 65535f, "Snapshot.Barreira (convicção, fração em ushort, 0.28.0)");
+Checar((float)tS.GetField("Barreira").GetValue(sVida2) == 0f, "Snapshot.Barreira começa em 0 (sem barreira)");
+var sBar = Activator.CreateInstance(tS); tS.GetField("Barreira").SetValue(sBar, 2.5f);
+var sBar2 = tS.GetMethod("Desserializar").Invoke(null, new object[] { (byte[])tS.GetMethod("Serializar").Invoke(sBar, null) });
+Checar((float)tS.GetField("Barreira").GetValue(sBar2) == 1f, "Snapshot.Barreira presa em 0..1");
+var sBar3 = Activator.CreateInstance(tS); tS.GetField("Barreira").SetValue(sBar3, -0.4f);
+var sBar4 = tS.GetMethod("Desserializar").Invoke(null, new object[] { (byte[])tS.GetMethod("Serializar").Invoke(sBar3, null) });
+Checar((float)tS.GetField("Barreira").GetValue(sBar4) == 0f, "Snapshot.Barreira negativa chega 0");
+var bsAntigo = (byte[])bs.Clone(); bsAntigo[1] = 4;
+try { tS.GetMethod("Desserializar").Invoke(null, new object[] { bsAntigo }); Checar(false, "Snapshot formato 4 recusado"); }
+catch (System.Reflection.TargetInvocationException e) { Checar(e.InnerException is FormatException, "Snapshot formato 4 (sem barreira) recusado"); }
 foreach (var f in new[] { "Sequencia", "Tempo", "CenaHash", "Andar", "Morto", "Posicao", "Rotacao", "RotacaoModelo", "MascaraOssos" })
     Checar(Equals(tS.GetField(f).GetValue(s), tS.GetField(f).GetValue(s2)), "Snapshot." + f);
 Checar(((bool[])tS.GetField("AnimatorAtivo").GetValue(s2)).SequenceEqual(new[] { true, false, true }), "Snapshot.AnimatorAtivo");
@@ -862,10 +874,10 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
            && (ulong)Sm("LerSteamId", "12345") == 0ul && (ulong)Sm("LerSteamId", "-1") == 0ul && (ulong)Sm("LerSteamId", idA + "000") == 0ul,
         "Salas: dono do lobby (hcc_dono) só vale se for SteamID de jogador");
     var tp = T("HellClockCoop.Net.Protocolo");
-    Checar((int)tp.GetField("Versao").GetValue(null) == 22 && (byte)tp.GetField("TipoExpulso").GetValue(null) == 13
+    Checar((int)tp.GetField("Versao").GetValue(null) == 23 && (byte)tp.GetField("TipoExpulso").GetValue(null) == 13
            && (byte)tp.GetField("TipoExpulsoAviso").GetValue(null) == 14 && (byte)tp.GetField("TipoForaDaRun").GetValue(null) == 29
            && (byte)tp.GetField("TipoPainelAliado").GetValue(null) == 15,
-        "Protocolo 22 com Expulso tipo=13 (1 byte), ExpulsoAviso tipo=14 (0.21.1), ForaDaRun tipo=29 (0.19.0) e PainelAliado tipo=15 (0.27.0)");
+        "Protocolo 23 (barreira no snapshot, 0.28.0) com Expulso tipo=13 (1 byte), ExpulsoAviso tipo=14 (0.21.1), ForaDaRun tipo=29 (0.19.0) e PainelAliado tipo=15 (0.27.0)");
 
     // 0.19.0: trava pelo progresso (maxFloorReached conta a partir de 1, como o andar do lobby)
     Checar((int)Sm("LerHash", "-123456789") == -123456789 && (int)Sm("LerHash", "2147483647") == 2147483647

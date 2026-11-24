@@ -11,7 +11,7 @@ namespace HellClockCoop.Net
     internal static class Protocolo
     {
         /// <summary>Muda sempre que o formato de qualquer mensagem mudar. Pares com versões diferentes não conversam.</summary>
-        public const int Versao = 22; // 22: PainelAliado (skills e status do painel de grupo, 0.27.0)
+        public const int Versao = 23; // 22: PainelAliado (skills e status do painel de grupo, 0.27.0); 23: barreira no PlayerSnapshot (formato 5, 0.28.0)
 
         public const int CanalConfiavel = 0;
         public const int CanalSnapshots = 1;

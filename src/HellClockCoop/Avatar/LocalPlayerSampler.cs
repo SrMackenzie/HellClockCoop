@@ -1,3 +1,4 @@
+using HellClock.Character;
 using HellClock.Level;
 using HellClock.Player;
 using HellClockCoop.Net;
@@ -29,6 +30,17 @@ namespace HellClockCoop.Avatar
             return andar?.LevelDefinition != null ? andar.LevelDefinition.HashID : -1;
         }
 
+        /// <summary>
+        /// Fração da barreira (convicção) do jogador, a mesma que a barra de vida do jogo desenha
+        /// (LifeView.UpdateBarrier lê BarrierController.CurrentRatio). 0 sem barreira.
+        /// </summary>
+        public static float Barreira(PlayerController jogador)
+        {
+            BarrierController b = jogador != null && jogador.LifeController != null ? jogador.LifeController.BarrierController : null;
+            float r = b == null ? 0f : b.CurrentRatio; // CurrentValue / MaxValue: NaN com MaxValue 0
+            return r > 0f ? Mathf.Clamp01(r) : 0f;    // como o jogo (> 1E-45); NaN > 0 é falso
+        }
+
         /// <summary>Retorna false se o jogador ainda não está numa posição válida do mundo.</summary>
         public bool TentarAmostrar(PlayerController jogador, PlayerSnapshot destino)
         {
@@ -48,6 +60,7 @@ namespace HellClockCoop.Avatar
             destino.Andar = AndarAtual()?.LevelIndex ?? 0;
             destino.Morto = jogador.LifeController != null && jogador.LifeController.IsDead;
             destino.Vida = jogador.LifeController == null ? 1f : destino.Morto ? 0f : jogador.LifeController.CurrentRatio;
+            destino.Barreira = destino.Morto ? 0f : Barreira(jogador);
             destino.Posicao = pos;
             destino.Rotacao = jogador.transform.rotation;
             // Rotação do modelo relativa à raiz (identidade se o Animator estiver na própria raiz).

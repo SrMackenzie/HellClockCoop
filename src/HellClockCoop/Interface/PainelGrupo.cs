@@ -24,7 +24,7 @@ namespace HellClockCoop.Interface
     ///   recarga: ver a recarga dos aliados facilitaria o grupo, e o balanceamento quer o grupo um pouco mais difícil).
     /// - Caído: linha a 55%, barra vazia com "caído" (ou o progresso da reanimação), sem skills nem status.
     ///   Fora do andar (outro andar ou hub): etiqueta "outro andar"/"hub" e o resto a 40% (dado parado, não engana).
-    /// - Vida: do PlayerSnapshot (já existia). Skills e status: mensagem PainelAliado, enviada só quando muda e a cada 5 s
+    /// - Vida e barreira (convicção, 0.28.0, por cima da vida com o sprite do _barrierFill do jogo): do PlayerSnapshot. Skills e status: mensagem PainelAliado, enviada só quando muda e a cada 5 s
     ///   (quem chegou depois recebe sem gancho no Hello). Ícones resolvidos pelas coleções do jogo pelo HashID.
     /// - Peças: filho de GenericHUD.LifeBars (some com a HUD em cinemática e tela preta), fonte e sprites da barra do
     ///   companheiro que o AliadosNaTela já copia; cores de buff/debuff do StatusIconsView do jogo. Coroa: Streamline.
@@ -64,7 +64,7 @@ namespace HellClockCoop.Interface
             public CanvasGroup Grupo;
             public TextMeshProUGUI Nome, Estado;
             public Image Coroa;
-            public RectTransform Barra, Preenche, Atraso, Reanima;
+            public RectTransform Barra, Preenche, Atraso, Barreira, Reanima;
             public Image ReanimaCor;
             public readonly Image[] StatusMoldura = new Image[PainelAliado.MaximoStatus];
             public readonly Image[] StatusIcone = new Image[PainelAliado.MaximoStatus];
@@ -78,7 +78,7 @@ namespace HellClockCoop.Interface
         {
             public ulong Chave;
             public string Nome;
-            public float Vida;
+            public float Vida, Barreira;
             public bool Voce, Caido, Fora, SemSinal, Hub, Host;
             public PainelAliado Dados;
         }
@@ -97,8 +97,8 @@ namespace HellClockCoop.Interface
         private static float _proximaLeitura, _ultimoEnvio = -100f;
         private static bool _desativado;
         private static RectTransform _raiz;
-        private static Sprite _coroa, _spriteFundo, _spritePreenche, _spriteAtraso;
-        private static Color _corFundo = FundoBarraReserva, _corPreenche = VidaReserva, _corAtraso = AtrasoReserva;
+        private static Sprite _coroa, _spriteFundo, _spritePreenche, _spriteAtraso, _spriteBarreira;
+        private static Color _corFundo = FundoBarraReserva, _corPreenche = VidaReserva, _corAtraso = AtrasoReserva, _corBarreira = AliadosNaTela.BarreiraReserva;
         private static Color _corBuff = BuffReserva, _corDebuff = DebuffReserva;
         private static bool _coresLidas;
 
@@ -216,7 +216,7 @@ namespace HellClockCoop.Interface
                     Recebidos.TryGetValue(p.Id.m_SteamID, out PainelAliado d);
                     DoQuadro.Add(new Aliado
                     {
-                        Chave = p.Id.m_SteamID, Nome = p.Nome, Vida = p.Avatar != null ? p.Avatar.Vida : 1f, Caido = p.Morto,
+                        Chave = p.Id.m_SteamID, Nome = p.Nome, Vida = p.Avatar != null ? p.Avatar.Vida : 1f, Barreira = p.Avatar != null ? p.Avatar.Barreira : 0f, Caido = p.Morto,
                         Fora = !presente, SemSinal = !presente && p.MesmoAndar, Hub = p.CenaRemota == 0, Host = p.Id.m_SteamID == host, Dados = d,
                     });
                 }
@@ -228,7 +228,7 @@ namespace HellClockCoop.Interface
             }
             else Recebidos.Clear();
             if (eco != null && eco.gameObject.activeInHierarchy)
-                DoQuadro.Add(new Aliado { Chave = 0, Nome = "Eco", Vida = eco.Vida, Dados = _meu });
+                DoQuadro.Add(new Aliado { Chave = 0, Nome = "Eco", Vida = eco.Vida, Barreira = eco.Barreira, Dados = _meu });
 
             // Você no topo (pedido do autor depois da escolha da opção A: o grupo inteiro num lugar só), só com alguém no painel.
             if (DoQuadro.Count == 0) return;
@@ -239,6 +239,7 @@ namespace HellClockCoop.Interface
             {
                 Chave = ChaveVoce, Voce = true, Nome = MeuNome(),
                 Vida = caido || jogador.LifeController == null ? (caido ? 0f : 1f) : jogador.LifeController.CurrentRatio,
+                Barreira = caido ? 0f : LocalPlayerSampler.Barreira(jogador),
                 Caido = caido, Host = sessao != null && sessao.EmSessao && sessao.SouHost, Dados = _meu,
             });
         }
@@ -311,6 +312,10 @@ namespace HellClockCoop.Interface
             l.ValorAtraso = a.Caido ? 0f : vida >= l.ValorAtraso || l.ValorAtraso < 0f ? vida : Mathf.Max(vida, l.ValorAtraso - AtrasoQueda * Time.unscaledDeltaTime);
             l.Preenche.anchorMax = new Vector2(vida, 1f);
             l.Atraso.anchorMax = new Vector2(l.ValorAtraso, 1f);
+            // Barreira (convicção) por cima da vida, como na barra do jogo (0.28.0).
+            float barreira = a.Caido ? 0f : Mathf.Clamp01(a.Barreira);
+            if (l.Barreira.gameObject.activeSelf != barreira > 0f) l.Barreira.gameObject.SetActive(barreira > 0f);
+            l.Barreira.anchorMax = new Vector2(barreira, 1f);
             if (l.Reanima.gameObject.activeSelf != reanimando) l.Reanima.gameObject.SetActive(reanimando);
             if (reanimando)
             {
@@ -393,10 +398,11 @@ namespace HellClockCoop.Interface
         {
             if (_coresLidas) return;
             _coresLidas = true;
-            AliadosNaTela.ImagensDaBarra(out Image fundo, out Image preenche, out Image atraso);
+            AliadosNaTela.ImagensDaBarra(out Image fundo, out Image preenche, out Image atraso, out Image barreira);
             if (fundo != null) { _spriteFundo = fundo.sprite; _corFundo = fundo.color; }
             if (preenche != null) { _spritePreenche = preenche.sprite; _corPreenche = preenche.color; }
             if (atraso != null) { _spriteAtraso = atraso.sprite; _corAtraso = atraso.color; }
+            if (barreira != null && barreira.sprite != null) { _spriteBarreira = barreira.sprite; _corBarreira = barreira.color; }
             foreach (StatusIconsView v in Resources.FindObjectsOfTypeAll<StatusIconsView>())
             {
                 if (v == null) continue;
@@ -405,7 +411,7 @@ namespace HellClockCoop.Interface
                 if (d.HasValue && d.Value.a > 0.05f) _corDebuff = d.Value;
                 break;
             }
-            Plugin.Log.LogInfo($"[Painel] Painel de grupo montado (barra: {(preenche != null ? "do jogo" : "simples")}, cores de status: {_corBuff}/{_corDebuff}).");
+            Plugin.Log.LogInfo($"[Painel] Painel de grupo montado (barra: {(preenche != null ? "do jogo" : "simples")}, barreira: {(_spriteBarreira != null ? _spriteBarreira.name : "simples")}, cores de status: {_corBuff}/{_corDebuff}).");
         }
 
         private static Color? Cor(object dono, string campo)
@@ -455,12 +461,14 @@ namespace HellClockCoop.Interface
             l.Nome = Texto(Retangulo("Nome", l.Raiz, 0f, yNome, Largura - 110f, AlturaNome), 20f, Color.white, TextAlignmentOptions.MidlineLeft);
             l.Estado = Texto(Retangulo("Estado", l.Raiz, Largura - 120f, yNome, 120f, AlturaNome), 16f, CinzaEstado, TextAlignmentOptions.MidlineRight);
 
-            // Barra de vida: fundo, faixa clara, vida e progresso da reanimação (preenchimento pela âncora).
+            // Barra de vida: fundo, faixa clara, vida, barreira e progresso da reanimação (preenchimento pela âncora).
             float yBarra = yNome - AlturaNome - EspacoNomeBarra;
             l.Barra = Retangulo("Barra", l.Raiz, 0f, yBarra, Largura, AlturaBarra);
             Imagem(l.Barra, _spriteFundo, _spriteFundo != null ? _corFundo : FundoBarraReserva);
             l.Atraso = Preenchimento("Atraso", l.Barra, _spriteAtraso, _spriteAtraso != null ? _corAtraso : AtrasoReserva);
             l.Preenche = Preenchimento("Vida", l.Barra, _spritePreenche, _spritePreenche != null ? _corPreenche : VidaReserva);
+            l.Barreira = Preenchimento("Barreira", l.Barra, _spriteBarreira, _corBarreira);
+            l.Barreira.gameObject.SetActive(false);
             l.Reanima = Preenchimento("Reanimacao", l.Barra, null, AliadosNaTela.VerdeReanimar);
             l.ReanimaCor = l.Reanima.GetComponent<Image>();
             l.Reanima.gameObject.SetActive(false);

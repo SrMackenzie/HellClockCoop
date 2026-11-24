@@ -67,7 +67,7 @@ namespace HellClockCoop.Net
     internal sealed class PlayerSnapshot
     {
         public const byte TipoMensagem = 1;
-        public const byte VersaoFormato = 4; // 4: fração da vida (0.14.0)
+        public const byte VersaoFormato = 5; // 4: fração da vida (0.14.0); 5: fração da barreira/convicção (0.28.0)
         public const int QuantidadeAnimators = 3;
 
         /// <summary>
@@ -82,6 +82,7 @@ namespace HellClockCoop.Net
         public uint Andar;                     // índice do andar na run
         public bool Morto;
         public float Vida = 1f;                // fração da vida máxima (0..1), para a barra sobre o aliado (0.14.0)
+        public float Barreira;                 // fração da barreira (convicção) em 0..1, como a barra do jogo (BarrierController.CurrentRatio, 0.28.0)
         public Vector3 Posicao;
         public Quaternion Rotacao;             // rotação da raiz do jogador
         public Quaternion RotacaoModelo;       // rotação local do objeto com o Animator do corpo
@@ -103,6 +104,7 @@ namespace HellClockCoop.Net
                 w.Write(Andar);
                 w.Write(Morto);
                 w.Write((ushort)Mathf.RoundToInt(Mathf.Clamp01(Vida) * 65535f));
+                w.Write((ushort)Mathf.RoundToInt(Mathf.Clamp01(Barreira) * 65535f));
                 Escrever(w, Posicao);
                 Escrever(w, Rotacao);
                 Escrever(w, RotacaoModelo);
@@ -149,6 +151,7 @@ namespace HellClockCoop.Net
                     Andar = r.ReadUInt32(),
                     Morto = r.ReadBoolean(),
                     Vida = r.ReadUInt16() / 65535f,
+                    Barreira = r.ReadUInt16() / 65535f,
                     Posicao = LerVetor(r),
                     Rotacao = LerQuaternion(r),
                     RotacaoModelo = LerQuaternion(r),

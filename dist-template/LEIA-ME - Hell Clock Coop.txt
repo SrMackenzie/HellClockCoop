@@ -245,6 +245,9 @@ ESTADO ATUAL (versão de teste, Fase 3)
   a recarga das skills nem a duração dos status dos aliados. Caído aparece apagado; em outro
   andar ou no hub, a linha fica clara com o lugar. Desliga em MostrarPainelDeGrupo no .cfg.
   Exige a 0.27.0 em todos os PCs.
+- NOVO (0.28.0): a barra de convicção aparece por cima da vida no painel de grupo (sua e dos
+  aliados) e na barra sobre a cabeça dos aliados, como na barra do jogo. Exige a 0.28.0 em
+  todos os PCs.
 - A Deluxe Edition (cosmética) não importa.
 
 

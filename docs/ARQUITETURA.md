@@ -272,7 +272,7 @@ No fantasma, a troca de estado usa `CrossFade` curto, e o mesmo estado com mais 
 
 | Tipo | Mensagem | Conteúdo |
 |---|---|---|
-| 1 | `PlayerSnapshot` (formato 4 desde a 0.14.0) | sequência, tempo, andar (`HashID` da LevelDefinition e índice), morto, vida (fração 0..1 em 16 bits, 0.14.0), posição, rotações, 3 Animators (estado, tempo e peso por layer; parâmetros), 5 ossos do tronco |
+| 1 | `PlayerSnapshot` (formato 5 desde a 0.28.0) | sequência, tempo, andar (`HashID` da LevelDefinition e índice), morto, vida (fração 0..1 em 16 bits, 0.14.0), barreira/convicção (fração 0..1 em 16 bits, 0.28.0, §12.16), posição, rotações, 3 Animators (estado, tempo e peso por layer; parâmetros), 5 ossos do tronco |
 | 10 | `Hello` | protocolo, versão do mod e do jogo, nome, `JaTeOuvi` |
 | 11 | `Aparencia` | ativo/inativo dos nós até 2 níveis sob `Pajeu_RIG_360/Mesh` |
 | 12 | `Tchau` | saída voluntária |
@@ -972,7 +972,7 @@ jogo segue (em coop não há pausa), o que só deixa o jogo mais difícil para q
 ### 12.3 Aliados na tela: barra de vida e seta (versão 0.14.0, protocolo 15)
 
 Entrega 1 de 4 da etapa "aliados na tela e reanimação" (as próximas: jogador caído, reanimação, calibragem).
-- **Rede:** o `PlayerSnapshot` (formato 4) leva a fração da vida do remetente (`LifeController.CurrentRatio`, 0 se morto)
+- **Rede:** o `PlayerSnapshot` (formato 4; 5 desde a 0.28.0, com a barreira) leva a fração da vida do remetente (`LifeController.CurrentRatio`, 0 se morto)
   em 16 bits, logo depois de `Morto`. Não há mensagem nova: a vida vai nos 20 snapshots por segundo, no canal não
   confiável. O `RemotePlayerAvatar` guarda a do último pacote aceito (`Vida`). `codectest`: ida e volta e o valor preso em 0..1.
 - **Visual (`Interface/AliadosNaTela`, opção A do autor: peças do jogo):** a barra é uma cópia da barra flutuante que o
@@ -1562,6 +1562,28 @@ quem te reanima (`Reanimacao.MeuProgresso`). Ela só aparece com algum aliado ou
 
 **Protocolo 22.** codectest: ida e volta do `PainelAliado`, `IgualA`, cortes em 8 skills e 4 status, cabeçalhos acima do
 teto e mensagem cortada recusados.
+
+### 12.16 Convicção (barreira) no painel e sobre a cabeça (versão 0.28.0, protocolo 23)
+
+Pedido do autor: a barra de convicção do jogo também no painel de grupo, para você e para os aliados. Decisões com o autor:
+o dado vai no **`PlayerSnapshot` (formato 5)**, não no `PainelAliado` (a barreira muda a cada golpe, como a vida, e o
+`PainelAliado` é confiável e só vai quando muda); o visual é o **mesmo da barra do jogo**, sem 3 opções; e a barreira também
+aparece na **barra sobre a cabeça** dos aliados.
+
+- **No jogo (IL):** `LifeView.UpdateBarrier` lê `LifeController.BarrierController.CurrentRatio` (0 sem barreira); o
+  `Update` põe no `_barrierFill.fillAmount` o `Map(0, 1, conv.x, conv.y, fração)` com `_barrierMapConversion`, e o
+  `_barrierGlow` (CanvasGroup) acende enquanto a fração é maior que zero.
+- **Rede:** `LocalPlayerSampler.Barreira` amostra a fração (0 se morto) e o snapshot leva 2 bytes a mais (ushort, presa em
+  0..1). `RemotePlayerAvatar.Barreira` guarda a do último snapshot aceito.
+- **Sobre a cabeça (`AliadosNaTela`):** o modelo copiado da barra do companheiro mantém o `_barrierFill` (antes desligado) e o
+  `_barrierGlow`; o fillAmount usa o mesmo mapa do jogo e o brilho acende/apaga em 0,25 s. Sem a barra do jogo, a reserva
+  por OnGUI desenha uma faixa clara por cima da vida.
+- **Painel (`PainelGrupo`):** preenchimento "Barreira" por cima da vida, com o sprite e a cor do `_barrierFill` (reserva em
+  `AliadosNaTela.BarreiraReserva`), escondido sem barreira e no caído. A sua linha lê o `BarrierController` local.
+- **Balanceamento:** só mostra o que o aliado já tem, como a vida; não muda dano, vida nem convicção.
+
+**Protocolo 23.** codectest: ida e volta da barreira, presa em 0..1 (acima de 1 e negativa), 0 por padrão e snapshot de
+formato 4 recusado.
 
 ## 13. Atualizador automático (versão 0.8.0)
 

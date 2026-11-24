@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "23/11/2026",
-  "versao": "0.27.0",
+  "versao": "0.28.0",
   "fases": [
     {
       "id": "B",
@@ -287,8 +287,12 @@
           "Nome da sala digitável no jogo, menu abrindo na Sessão com Criar/Convidar em primeiro, menu sem picos em jogo e opacidade dos danos dos aliados (0.26.0)"
         ],
         [
-          "testar",
+          "feito",
           "Painel de grupo à esquerda: você no topo e os aliados embaixo, nome com a coroa do host, barra de vida, skills equipadas embaixo e até 4 buffs/debuffs em cima, sem recarga nem duração (0.27.0)"
+        ],
+        [
+          "testar",
+          "Barra de convicção (barreira) por cima da vida no painel de grupo e na barra sobre a cabeça dos aliados, igual à barra do jogo (0.28.0)"
         ],
         [
           "planejado",

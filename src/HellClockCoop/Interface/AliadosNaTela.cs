@@ -17,7 +17,7 @@ namespace HellClockCoop.Interface
     /// <summary>
     /// Aliados na tela (0.14.0): barra de vida sob o nome de cada aliado e seta na borda da tela apontando o aliado que
     /// está fora dela. Só informação: não muda nada do jogo nem a dificuldade.
-    /// - A vida vem do PlayerSnapshot (fração 0..1, formato 4); o RemotePlayerAvatar guarda a do último pacote.
+    /// - A vida e a barreira (convicção, 0.28.0) vêm do PlayerSnapshot (frações 0..1, formato 5); o RemotePlayerAvatar guarda as do último pacote.
     /// - Visual com as peças do jogo (escolha A do autor): a barra é uma cópia da barra flutuante que o jogo põe sobre o
     ///   companheiro (UIObjectPoolController._companionFloatingLifeView); a seta usa a imagem de seta da HUD do jogo
     ///   (SurvivalView._arrowSprite ou, sem ela, QuestTabBar._foldoutArrow) e o nome sai na fonte da barra do jogo.
@@ -38,6 +38,9 @@ namespace HellClockCoop.Interface
         private const float AbaixoDoNome = 20f;           // pixels entre o centro do nome e o centro da barra
         private const float MargemBorda = 56f;            // pixels da seta até a borda (em 1080p; escala pela altura)
         private const float AtrasoQueda = 0.6f;           // fração por segundo com que a faixa clara alcança a vida
+        /// <summary>Cor da barreira quando não há sprite do jogo (reserva do painel e da barra desenhada por OnGUI).</summary>
+        internal static readonly Color BarreiraReserva = new Color(0.92f, 0.86f, 0.62f, 0.85f);
+        private const float DuracaoBrilho = 0.25f;        // segundos para o brilho da barreira aparecer ou sumir
         private const float LarguraReserva = 90f, AlturaReserva = 7f;
 
         /// <summary>
@@ -52,6 +55,8 @@ namespace HellClockCoop.Interface
         {
             public RectTransform Barra, Seta, SetaNome;
             public Image Preenche, Atraso, SetaImagem;
+            public Image Barreira;   // _barrierFill do jogo: a convicção por cima da vida (0.28.0)
+            public CanvasGroup Brilho; // _barrierGlow do jogo: aparece enquanto há barreira
             public TMP_Text SetaTexto, Rotulo; // Rotulo: "caído" sobre a moldura da barra (0.15.0)
             public RectTransform Progresso, ProgressoEnche; // reanimação, abaixo da barra (0.16.0)
             public Image ProgressoCor;
@@ -113,7 +118,8 @@ namespace HellClockCoop.Interface
         private static RectTransform _camada;              // GenericHUD.LifeBars
         private static Canvas _canvas;
         private static GameObject _deposito, _modeloBarra;
-        private static string _caminhoPreenche, _caminhoAtraso;
+        private static string _caminhoPreenche, _caminhoAtraso, _caminhoBarreira, _caminhoBrilho;
+        private static Vector2 _mapaBarreira = new Vector2(0f, 1f); // _barrierMapConversion: fração → fillAmount do sprite
         private static Sprite _spriteSeta;
         private static Color _corSeta = Color.white;
         private static Vector2 _tamanhoSeta = new Vector2(36f, 36f);
@@ -180,15 +186,16 @@ namespace HellClockCoop.Interface
         }
 
         /// <summary>Imagens da barra do companheiro (fundo, preenchimento e faixa clara) para o painel copiar sprite e cor; nulas sem o modelo.</summary>
-        internal static void ImagensDaBarra(out Image fundo, out Image preenche, out Image atraso)
+        internal static void ImagensDaBarra(out Image fundo, out Image preenche, out Image atraso, out Image barreira)
         {
-            fundo = preenche = atraso = null;
+            fundo = preenche = atraso = barreira = null;
             if (_modeloBarra == null) return;
             preenche = Peca(_modeloBarra.transform, _caminhoPreenche);
             atraso = _caminhoAtraso != null ? Peca(_modeloBarra.transform, _caminhoAtraso) : null;
+            barreira = _caminhoBarreira != null ? Peca(_modeloBarra.transform, _caminhoBarreira) : null;
             foreach (Image i in _modeloBarra.GetComponentsInChildren<Image>(true))
             {
-                if (i == preenche || i == atraso || !i.enabled || i.sprite == null) continue;
+                if (i == preenche || i == atraso || i == barreira || !i.enabled || i.sprite == null) continue;
                 fundo = i; // a primeira imagem visível que não é preenchimento: a moldura/fundo da barra
                 break;
             }
@@ -279,6 +286,8 @@ namespace HellClockCoop.Interface
                     GUI.DrawTexture(fundo, Texture2D.whiteTexture);
                     GUI.color = new Color(0.78f, 0.12f, 0.10f);
                     if (!a.Caido) GUI.DrawTexture(new Rect(fundo.x + 1f, fundo.y + 1f, (fundo.width - 2f) * Mathf.Clamp01(a.Avatar.Vida), fundo.height - 2f), Texture2D.whiteTexture);
+                    GUI.color = BarreiraReserva;
+                    if (!a.Caido && a.Avatar.Barreira > 0f) GUI.DrawTexture(new Rect(fundo.x + 1f, fundo.y + 1f, (fundo.width - 2f) * Mathf.Clamp01(a.Avatar.Barreira), fundo.height - 2f), Texture2D.whiteTexture);
                     Fase2.Reanimacao.Progresso pr = default;
                     bool reanimando = a.Caido && Fase2.Reanimacao.ProgressoDe(a.Chave, out pr);
                     GUI.color = reanimando ? CorEstado(pr.Estado) : CinzaCaido;
@@ -352,6 +361,9 @@ namespace HellClockCoop.Interface
                         v.ValorAtraso = a.Caido ? 0f : vida >= v.ValorAtraso || v.ValorAtraso < 0f ? vida : Mathf.Max(vida, v.ValorAtraso - AtrasoQueda * Time.unscaledDeltaTime);
                         if (v.Preenche != null) v.Preenche.fillAmount = vida;
                         if (v.Atraso != null) v.Atraso.fillAmount = v.ValorAtraso;
+                        float barreira = a.Caido ? 0f : Mathf.Clamp01(a.Avatar.Barreira);
+                        if (v.Barreira != null) v.Barreira.fillAmount = FracaoBarreira(barreira);
+                        if (v.Brilho != null) v.Brilho.alpha = Mathf.MoveTowards(v.Brilho.alpha, barreira > 0f ? 1f : 0f, Time.unscaledDeltaTime / DuracaoBrilho);
                     }
                     if (v.Rotulo != null && v.Rotulo.gameObject.activeSelf != (barra && a.Caido)) v.Rotulo.gameObject.SetActive(barra && a.Caido);
                     Fase2.Reanimacao.Progresso pr = default;
@@ -539,7 +551,8 @@ namespace HellClockCoop.Interface
 
         /// <summary>
         /// Copia a barra do companheiro para o depósito inativo, guarda onde ficam o preenchimento e a faixa clara
-        /// (_fill e _backgroundFill do StatBasedValueView), apaga nome, textos, escudo e dano atrasado e tira os scripts.
+        /// (_fill e _backgroundFill do StatBasedValueView) e a barreira (_barrierFill e _barrierGlow do LifeView, 0.28.0),
+        /// apaga nome, textos e dano atrasado e tira os scripts.
         /// </summary>
         private static void MontarModelo(GameObject prefab)
         {
@@ -569,12 +582,17 @@ namespace HellClockCoop.Interface
                 TMP_Text t = Campo<TMP_Text>(vista, f);
                 if (t != null) t.enabled = false;
             }
-            foreach (string f in new[] { "_descriptionBg", "_barrierFill", "_delayedDamageFill", "_delayedDamageBgFill" })
+            foreach (string f in new[] { "_descriptionBg", "_delayedDamageFill", "_delayedDamageBgFill" })
             {
                 Image i = Campo<Image>(vista, f);
                 if (i != null && i != preenche && i != atraso) i.enabled = false;
             }
+            Image barreira = Campo<Image>(vista, "_barrierFill");
             CanvasGroup brilho = Campo<CanvasGroup>(vista, "_barrierGlow");
+            _caminhoBarreira = barreira != null && barreira != preenche && barreira != atraso ? Caminho(m.transform, barreira.transform) : null;
+            _caminhoBrilho = brilho != null ? Caminho(m.transform, brilho.transform) : null;
+            object mapa = AccessTools.Field(vista.GetType(), "_barrierMapConversion")?.GetValue(vista);
+            if (mapa is Vector2 mp && mp.y > mp.x) _mapaBarreira = mp;
 
             PainelNativo.Limpar(m);
             foreach (CanvasGroup g in m.GetComponentsInChildren<CanvasGroup>(true))
@@ -586,6 +604,12 @@ namespace HellClockCoop.Interface
             foreach (Graphic g in m.GetComponentsInChildren<Graphic>(true)) g.raycastTarget = false;
             Preencher(preenche);
             if (atraso != null) Preencher(atraso);
+            if (_caminhoBarreira != null)
+            {
+                barreira.enabled = true;
+                Preencher(barreira);
+                barreira.fillAmount = 0f;
+            }
             _modeloBarra = m;
         }
 
@@ -618,6 +642,9 @@ namespace HellClockCoop.Interface
             v.Barra = (RectTransform)b.transform;
             v.Preenche = Peca(v.Barra, _caminhoPreenche);
             v.Atraso = _caminhoAtraso != null ? Peca(v.Barra, _caminhoAtraso) : null;
+            v.Barreira = _caminhoBarreira != null ? Peca(v.Barra, _caminhoBarreira) : null;
+            Transform brilho = _caminhoBrilho != null ? (_caminhoBrilho.Length == 0 ? v.Barra : v.Barra.Find(_caminhoBrilho)) : null;
+            v.Brilho = brilho != null ? brilho.GetComponent<CanvasGroup>() : null;
 
             var s = new GameObject("HellClockCoop.SetaAliado", typeof(RectTransform));
             v.Seta = (RectTransform)s.transform;
@@ -688,6 +715,9 @@ namespace HellClockCoop.Interface
             Visuais[chave] = v;
             return v;
         }
+
+        /// <summary>fillAmount da imagem da barreira para a fração (LifeView.Update: Map(0, 1, conv.x, conv.y, fração)).</summary>
+        internal static float FracaoBarreira(float fracao) => fracao <= 0f ? 0f : Mathf.Lerp(_mapaBarreira.x, _mapaBarreira.y, Mathf.Clamp01(fracao));
 
         private static Image Peca(Transform raiz, string caminho)
         {

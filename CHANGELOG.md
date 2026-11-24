@@ -4,7 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
-## 0.27.0 — Painel de grupo 🧪
+## 0.28.0 — Convicção no painel de grupo 🧪
+_23/11/2026_
+
+- A barra de convicção (barreira) aparece por cima da vida no painel de grupo, para você e para os aliados, com o visual da barra do jogo
+- A barra sobre a cabeça dos aliados também mostra a convicção, com o brilho do jogo enquanto ela dura
+- Só mostra o que o aliado já tem, como a vida: não muda dano, vida nem convicção de ninguém
+- Exige a 0.28.0 em todos os PCs (protocolo 23)
+
+## 0.27.0 — Painel de grupo ✅
 _23/11/2026_
 
 - Painel à esquerda com você no topo e cada aliado embaixo: nome na cor de cada um (coroa no host), barra de vida, as skills equipadas embaixo e até 4 buffs/debuffs em cima
