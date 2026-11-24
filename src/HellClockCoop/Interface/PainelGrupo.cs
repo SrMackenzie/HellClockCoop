@@ -17,7 +17,7 @@ using Object = UnityEngine.Object;
 namespace HellClockCoop.Interface
 {
     /// <summary>
-    /// Painel de grupo à esquerda (0.27.0, opção A "cartão compacto" do autor). Só informação, sem clique e sem mudar o jogo.
+    /// Painel de grupo à esquerda (0.27.0, opção A "cartão compacto" do autor). Informação, mais o símbolo de TP (0.29.0).
     /// - Uma linha por jogador, você no topo (na cor do seu marcador; pedido do autor: o grupo inteiro num lugar só, mesmo
     ///   com a sua vida já na HUD; só aparece com algum aliado ou o eco): buffs/debuffs em cima (até 4, sem
     ///   duração), nome na cor do aliado com a coroa do host, barra de vida e as skills da barra embaixo (só o ícone, sem
@@ -30,6 +30,9 @@ namespace HellClockCoop.Interface
     ///   companheiro que o AliadosNaTela já copia; cores de buff/debuff do StatusIconsView do jogo. Coroa: Streamline.
     /// - Medidas em pixels de 1080p, convertidas para a camada do jogo a cada quadro (qualquer resolução e modo do canvas).
     /// - Modo eco (F8): o fantasma entra como aliado "Eco" com as suas próprias skills e status.
+    /// - TP até o aliado (0.29.0, visual A do autor): símbolo Location Target 1 (Streamline) na ponta direita da linha do nome
+    ///   de cada aliado de pé no seu andar, na cor dele; em recarga ou em combate fica cinza (com os segundos da recarga); na
+    ///   escolha mostra 1/2/3; canalizando pulsa com o que falta. Indisponível some. Clique no símbolo pede o TP (Fase2.TpAliado).
     /// - Erro: o painel desliga até reabrir o jogo (log), sem derrubar o resto da interface.
     /// </summary>
     internal static class PainelGrupo
@@ -40,6 +43,7 @@ namespace HellClockCoop.Interface
         private const float EspacoNomeBarra = 3f, EspacoBarraSkills = 5f, EspacoLinhas = 12f, EspacoIcones = 3f;
         private const float AlturaLinha = AlturaStatus + AlturaNome + EspacoNomeBarra + AlturaBarra + EspacoBarraSkills + AlturaSkill;
         private const float LadoCoroa = 18f;
+        private const float LadoTp = 18f, LarguraTextoTp = 48f;
 
         private const float AlphaCaido = 0.55f, AlphaFora = 0.4f;
         private const float AtrasoQueda = 0.6f;            // como a barra sobre a cabeça
@@ -63,7 +67,8 @@ namespace HellClockCoop.Interface
             public RectTransform Raiz;
             public CanvasGroup Grupo;
             public TextMeshProUGUI Nome, Estado;
-            public Image Coroa;
+            public Image Coroa, Tp;
+            public TextMeshProUGUI TpTexto;
             public RectTransform Barra, Preenche, Atraso, Barreira, Reanima;
             public Image ReanimaCor;
             public readonly Image[] StatusMoldura = new Image[PainelAliado.MaximoStatus];
@@ -97,7 +102,9 @@ namespace HellClockCoop.Interface
         private static float _proximaLeitura, _ultimoEnvio = -100f;
         private static bool _desativado;
         private static RectTransform _raiz;
-        private static Sprite _coroa, _spriteFundo, _spritePreenche, _spriteAtraso, _spriteBarreira;
+        private static Camera _camUi;
+        private static readonly List<ulong> OrdemTp = new List<ulong>();
+        private static Sprite _coroa, _tp, _spriteFundo, _spritePreenche, _spriteAtraso, _spriteBarreira;
         private static Color _corFundo = FundoBarraReserva, _corPreenche = VidaReserva, _corAtraso = AtrasoReserva, _corBarreira = AliadosNaTela.BarreiraReserva;
         private static Color _corBuff = BuffReserva, _corDebuff = DebuffReserva;
         private static bool _coresLidas;
@@ -188,6 +195,9 @@ namespace HellClockCoop.Interface
             {
                 LerEEnviar(sessao);
                 Coletar(sessao, eco);
+                OrdemTp.Clear();
+                foreach (Aliado a in DoQuadro) if (!a.Voce) OrdemTp.Add(a.Chave);
+                Fase2.TpAliado.OrdemDoPainel(OrdemTp); // os números da escolha do TP seguem a ordem do painel
                 if (!Mostrar.Value || DoQuadro.Count == 0 || !AliadosNaTela.PecasDoPainel(out RectTransform camada, out Camera camUi))
                 {
                     Esconder();
@@ -258,6 +268,7 @@ namespace HellClockCoop.Interface
         private static void Desenhar(RectTransform camada, Camera camUi)
         {
             if (_raiz == null || _raiz.parent != camada) Montar(camada);
+            _camUi = camUi;
             if (!_raiz.gameObject.activeSelf) _raiz.gameObject.SetActive(true);
 
             // Escala: 1 unidade do painel = 1 px de 1080p na tela, qualquer que seja o canvas do jogo.
@@ -307,6 +318,8 @@ namespace HellClockCoop.Interface
             if (l.Estado.text != estado) l.Estado.text = estado;
             l.Estado.color = reanimando ? AliadosNaTela.CorReanimacao(pr.Estado) : CinzaEstado;
 
+            PreencherTp(l, a);
+
             // Vida com a faixa clara que alcança (como a barra sobre a cabeça).
             float vida = a.Caido ? 0f : Mathf.Clamp01(a.Vida);
             l.ValorAtraso = a.Caido ? 0f : vida >= l.ValorAtraso || l.ValorAtraso < 0f ? vida : Mathf.Max(vida, l.ValorAtraso - AtrasoQueda * Time.unscaledDeltaTime);
@@ -350,6 +363,68 @@ namespace HellClockCoop.Interface
             }
         }
 
+        /// <summary>Símbolo de TP (0.29.0): situação vinda do Fase2.TpAliado.</summary>
+        private static void PreencherTp(Linha l, Aliado a)
+        {
+            float seg = 0f;
+            Fase2.TpAliado.Situacao sit = a.Voce || a.Caido || a.Fora ? Fase2.TpAliado.Situacao.Oculto : Fase2.TpAliado.SituacaoDe(a.Chave, out seg);
+            bool tem = sit != Fase2.TpAliado.Situacao.Oculto && _tp != null;
+            if (l.Tp.gameObject.activeSelf != tem) l.Tp.gameObject.SetActive(tem);
+            if (l.TpTexto.gameObject.activeSelf != tem) l.TpTexto.gameObject.SetActive(tem);
+            if (!tem) return;
+            Color cor = Fase3.DanosVisiveis.CorDoAliado(a.Chave);
+            string txt = "";
+            Color corTexto = CinzaEstado;
+            int numero = Fase2.TpAliado.NumeroNaEscolha(a.Chave, out bool realcado);
+            switch (sit)
+            {
+                case Fase2.TpAliado.Situacao.Recarga:
+                    cor = CinzaEstado;
+                    txt = Mathf.CeilToInt(seg).ToString();
+                    break;
+                case Fase2.TpAliado.Situacao.Combate:
+                    cor = CinzaEstado;
+                    break;
+                case Fase2.TpAliado.Situacao.Canalizando:
+                    cor.a = 0.55f + 0.45f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 6f));
+                    txt = seg.ToString("0.0");
+                    corTexto = Color.white;
+                    break;
+                case Fase2.TpAliado.Situacao.Aguardando:
+                    txt = "...";
+                    corTexto = Color.white;
+                    break;
+            }
+            if (numero > 0) // escolha com a tecla: o número na frente do resto
+            {
+                txt = realcado ? $"> {numero}" : numero.ToString();
+                corTexto = Color.white;
+            }
+            l.Tp.color = cor;
+            if (l.TpTexto.text != txt) l.TpTexto.text = txt;
+            l.TpTexto.color = corTexto;
+        }
+
+        /// <summary>Painel na tela neste quadro (a escolha do TP com números só abre com ele visível).</summary>
+        internal static bool Visivel => !_desativado && _raiz != null && _raiz.gameObject.activeInHierarchy;
+
+        /// <summary>Mouse sobre o símbolo de TP de um aliado (Update do TpAliado, com o desenho do quadro anterior).</summary>
+        internal static bool SimboloTpSobMouse(out ulong chave)
+        {
+            chave = 0;
+            // Cursor escondido (controle): o mouse parado sobre o símbolo não pode prender a entrada do jogo.
+            if (_desativado || _raiz == null || !_raiz.gameObject.activeInHierarchy || !Cursor.visible || !Teclas.PosicaoMouse(out Vector2 mouse)) return false;
+            foreach (KeyValuePair<ulong, Linha> kv in Linhas)
+            {
+                Image tp = kv.Value.Tp;
+                if (tp == null || !tp.gameObject.activeInHierarchy) continue;
+                if (!RectTransformUtility.RectangleContainsScreenPoint(tp.rectTransform, mouse, _camUi)) continue;
+                chave = kv.Key;
+                return true;
+            }
+            return false;
+        }
+
         // ---------- Ícones do jogo ----------
 
         private static Sprite IconeSkill(int hash)
@@ -390,7 +465,8 @@ namespace HellClockCoop.Interface
             _raiz.anchorMin = _raiz.anchorMax = new Vector2(0.5f, 0.5f);
             _raiz.pivot = new Vector2(0f, 1f);
             _raiz.sizeDelta = new Vector2(Largura, AlturaLinha);
-            if (_coroa == null) _coroa = CriarCoroa();
+            if (_coroa == null) _coroa = CriarIcone(IconesStreamline.CoroaPng, "HellClockCoop.Coroa");
+            if (_tp == null) _tp = CriarIcone(IconesStreamline.TpPng, "HellClockCoop.Tp");
         }
 
         /// <summary>Sprites e cores da barra do companheiro e cores de buff/debuff do StatusIconsView (uma vez por jogo).</summary>
@@ -420,10 +496,10 @@ namespace HellClockCoop.Interface
             return v is Color c ? c : (Color?)null;
         }
 
-        private static Sprite CriarCoroa()
+        private static Sprite CriarIcone(string png, string nome)
         {
-            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false) { name = "HellClockCoop.Coroa" };
-            if (!ImageConversion.LoadImage(tex, Convert.FromBase64String(IconesStreamline.CoroaPng))) return null;
+            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false) { name = nome };
+            if (!ImageConversion.LoadImage(tex, Convert.FromBase64String(png))) return null;
             tex.wrapMode = TextureWrapMode.Clamp;
             return Sprite.Create(tex, new Rect(0f, 0f, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f);
         }
@@ -460,6 +536,13 @@ namespace HellClockCoop.Interface
             cr.gameObject.SetActive(false);
             l.Nome = Texto(Retangulo("Nome", l.Raiz, 0f, yNome, Largura - 110f, AlturaNome), 20f, Color.white, TextAlignmentOptions.MidlineLeft);
             l.Estado = Texto(Retangulo("Estado", l.Raiz, Largura - 120f, yNome, 120f, AlturaNome), 16f, CinzaEstado, TextAlignmentOptions.MidlineRight);
+            // Símbolo de TP na ponta direita da linha do nome (0.29.0); só aparece com o aliado de pé no andar (sem o estado).
+            RectTransform tp = Retangulo("Tp", l.Raiz, Largura - LadoTp, yNome - (AlturaNome - LadoTp) / 2f, LadoTp, LadoTp);
+            l.Tp = Imagem(tp, _tp, Color.white);
+            l.Tp.preserveAspect = true;
+            tp.gameObject.SetActive(false);
+            l.TpTexto = Texto(Retangulo("TpTexto", l.Raiz, Largura - LadoTp - 4f - LarguraTextoTp, yNome, LarguraTextoTp, AlturaNome), 16f, CinzaEstado, TextAlignmentOptions.MidlineRight);
+            l.TpTexto.gameObject.SetActive(false);
 
             // Barra de vida: fundo, faixa clara, vida, barreira e progresso da reanimação (preenchimento pela âncora).
             float yBarra = yNome - AlturaNome - EspacoNomeBarra;

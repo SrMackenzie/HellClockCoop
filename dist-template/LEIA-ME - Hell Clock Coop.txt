@@ -248,6 +248,12 @@ ESTADO ATUAL (versão de teste, Fase 3)
 - NOVO (0.28.0): a barra de convicção aparece por cima da vida no painel de grupo (sua e dos
   aliados) e na barra sobre a cabeça dos aliados, como na barra do jogo. Exige a 0.28.0 em
   todos os PCs.
+- NOVO (0.29.0): teleporte até o aliado. O símbolo na linha de cada aliado do painel de grupo
+  mostra se dá para ir até ele. Tecla T (no controle, D-pad esquerdo) ou clique no símbolo;
+  com dois ou mais aliados, T mostra 1/2/3 no painel e o número escolhe (Esc cancela). Só no
+  mesmo andar, com os dois de pé e fora de combate (5 s sem dar nem levar dano): canaliza 2 s
+  parado (mover ou levar dano cancela) e tem recarga de 60 s, conferida pelo host. Exige a
+  0.29.0 em todos os PCs.
 - A Deluxe Edition (cosmética) não importa.
 
 
@@ -296,6 +302,8 @@ Teclas (dá para trocar em BepInEx\config\br.srmackenzie.hellclockcoop.cfg):
   F10 novidades: o que mudou nas últimas versões do mod (aba Novidades do menu do coop)
   Botão do meio do mouse  marcador no chão sob o cursor (no controle: R3); a tecla fica em
       [Teclas] Marcador (Mouse2 = meio, Mouse3/Mouse4 = laterais, ou uma tecla como G)
+  T   teleporte até o aliado (no controle: D-pad esquerdo; na escolha, cima/baixo e A); a
+      tecla fica em [Teclas] TeleporteAliado. Clique no símbolo do painel também vale
 
 
 SEGURANÇA DO SAVE

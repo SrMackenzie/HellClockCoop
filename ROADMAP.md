@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 23/11/2026 · versão 0.28.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 23/11/2026 · versão 0.29.0. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -100,7 +100,7 @@ _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio s
 | 🧪 | Revisar drops de invocações, ondas de sobrevivência e temporadas (convidado com o XP e o tesouro próprio do host; equipamento sem redução, decisão do autor) |
 | ✅ | Auditoria: o mod nunca escreve no save de outro jogador |
 
-## Fase 5 — Polimento · 52%
+## Fase 5 — Polimento · 54%
 
 _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 
@@ -117,7 +117,7 @@ _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 | 🧪 | Nome da sala digitável no jogo, menu abrindo na Sessão com Criar/Convidar em primeiro, menu sem picos em jogo e opacidade dos danos dos aliados (0.26.0) |
 | ✅ | Painel de grupo à esquerda: você no topo e os aliados embaixo, nome com a coroa do host, barra de vida, skills equipadas embaixo e até 4 buffs/debuffs em cima, sem recarga nem duração (0.27.0) |
 | 🧪 | Barra de convicção (barreira) por cima da vida no painel de grupo e na barra sobre a cabeça dos aliados, igual à barra do jogo (0.28.0) |
-| ⬜ | Teleporte até um aliado: símbolo de TP ao lado da linha dele no painel de grupo |
+| 🧪 | Teleporte até um aliado: símbolo de TP na linha dele no painel de grupo, tecla T (D-pad ←) ou clique; mesmo andar, fora de combate, canaliza 2 s e recarga de 60 s (0.29.0) |
 | ⬜ | Reconexão e troca de host sem perder a run |
 | 🧪 | Sons das skills e dos golpes dos aliados |
 | 🧪 | Aliados na tela: barra de vida sobre o aliado e seta apontando quem está fora da tela |

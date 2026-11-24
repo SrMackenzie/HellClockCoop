@@ -23,6 +23,8 @@ namespace HellClockCoop.Net
         public bool MesmoAndar;
         public bool Morto;
         public int SequenciaMorto = -1; // sequência do último snapshot que decidiu Morto (0.16.0; -1 = nenhum)
+        public float UltimoCombate = -100f; // 0.29.0, no host: último golpe dado (Golpes) ou vida perdida (snapshot), para o TP
+        public float VidaVista = -1f;       // 0.29.0: vida do último snapshot (-1 = nenhum)
         public bool Deluxe, CursedWar;  // 0.21.0: DLC diferente divide a run do jogo base; o Ato 4 só com a Cursed War (ForaDaRun)
         public bool SemLiberar;         // 0.19.0: o save do convidado não chegou à run (ForaDaRun); fora da escala
         public float ProximoAvisoFora;  // 0.19.0, no host: limite do aviso de ForaDaRun (1 a cada 30 s)
@@ -859,10 +861,17 @@ namespace HellClockCoop.Net
                 case Protocolo.TipoPainelAliado: // 0.27.0
                     Interface.PainelGrupo.Receber(p, dados);
                     break;
+                case Protocolo.TipoPedidoTp: // 0.29.0
+                case Protocolo.TipoRespostaTp:
+                    Fase2.TpAliado.Receber(this, p, dados);
+                    break;
+                case Protocolo.TipoGolpes:
+                    p.UltimoCombate = Time.unscaledTime; // 0.29.0: golpe dado pelo convidado conta como combate (TP)
+                    Fase3.InimigosCompartilhados.Receber(this, p, dados);
+                    break;
                 case Protocolo.TipoInimigoSpawn:
                 case Protocolo.TipoInimigoMorte:
                 case Protocolo.TipoInimigoSumiu:
-                case Protocolo.TipoGolpes:
                 case Protocolo.TipoStatusInimigos:
                 case Protocolo.TipoAndarLimpo:
                 case Protocolo.TipoInimigoAjuste:
@@ -949,6 +958,8 @@ namespace HellClockCoop.Net
             {
                 p.Morto = s.Morto;
                 p.SequenciaMorto = s.Sequencia;
+                if (p.VidaVista >= 0f && s.Vida < p.VidaVista - 0.001f) p.UltimoCombate = Time.unscaledTime; // 0.29.0: levou dano (TP)
+                p.VidaVista = s.Vida;
             }
             p.MesmoAndar = s.CenaHash != -1 && s.CenaHash == cenaLocal;
             if (caiu && p.MesmoAndar) Fase2.JogadorCaido.AliadoCaiu(p);

@@ -116,6 +116,8 @@ IdaVolta("Reanimou", new (string, object)[] { ("Alvo", 76561198000000123UL), ("I
 IdaVolta("Marcador", new (string, object)[] { ("Cena", -123456789), ("IndiceAndar", 4294967295u), ("X", 12.5f), ("Y", -0.25f), ("Z", 99999.5f) }, 28); // 0.17.0
 IdaVolta("ForaDaRun", new (string, object)[] { ("Fora", true) }, 29); // 0.19.0
 IdaVolta("ForaDaRun", new (string, object)[] { ("Fora", false) }, 29);
+IdaVolta("PedidoTp", new (string, object)[] { ("Alvo", 76561198000000123UL), ("IndiceAndar", 6u) }, 16); // 0.29.0
+IdaVolta("RespostaTp", new (string, object)[] { ("Alvo", 76561198000000123UL), ("Motivo", (byte)5), ("Recarga", 42.5f) }, 17); // 0.29.0
 try { T("HellClockCoop.Net.FimRun").GetMethod("Desserializar").Invoke(null, new object[] { new byte[] { 20, 0, 0, 0, 0 } }); Checar(false, "PlanoAndar lido como FimRun deveria falhar"); }
 catch (TargetInvocationException e) { Checar(e.InnerException is FormatException, "Tipo errado é recusado (FimRun ≠ PlanoAndar)"); }
 
@@ -448,6 +450,26 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
         "Validação: Marcador com coordenada NaN, ∞ ou acima de 100 000 recusado");
     Checar(!mv(77, 3u, 1f, 0f, 1f, 77, 3u, 40.5f) && !mv(77, 3u, 1f, 0f, 1f, 77, 3u, 3.4e38f) && !mv(77, 3u, 1f, 0f, 1f, 77, 3u, float.NaN) && !mv(77, 3u, 1f, 0f, 1f, 77, 3u, -1f),
         "Validação: Marcador longe de quem marcou (40,5 m), sem posição dele, com distância NaN ou negativa recusado");
+
+    // Teleporte até o aliado (0.29.0): mesmo andar, os dois de pé, 5 s fora de combate, recarga de 60 s (folga de 1 s)
+    byte mtp(uint ap, uint ah, bool pn, bool pp, bool an, bool av, float c, float u) =>
+        (byte)tv.GetMethod("MotivoTp").Invoke(null, new object[] { ap, ah, pn, pp, an, av, c, u });
+    Checar(mtp(4u, 4u, true, true, true, true, 5f, 59f) == 0 && mtp(4u, 4u, true, true, true, true, 300f, 1e9f) == 0,
+        "Validação: TP no mesmo andar, de pé, 5 s sem combate e 59 s desde o último (folga de 1 s) autorizado");
+    Checar(mtp(3u, 4u, true, true, true, true, 9f, 99f) == 1 && mtp(4u, 4u, false, true, true, true, 9f, 99f) == 1,
+        "Validação: TP de outro andar (pedido ou quem pede fora do andar do host) recusado com OutroAndar");
+    Checar(mtp(4u, 4u, true, false, true, true, 9f, 99f) == 2, "Validação: TP de quem está caído recusado com VoceCaido");
+    Checar(mtp(4u, 4u, true, true, false, true, 9f, 99f) == 3 && mtp(4u, 4u, true, true, true, false, 9f, 99f) == 3,
+        "Validação: TP até aliado fora do andar ou caído recusado com AlvoIndisponivel");
+    Checar(mtp(4u, 4u, true, true, true, true, 4.9f, 99f) == 4 && mtp(4u, 4u, true, true, true, true, float.NaN, 99f) == 4
+        && mtp(4u, 4u, true, true, true, true, -1f, 99f) == 4, "Validação: TP com combate há 4,9 s, NaN ou negativo recusado com EmCombate");
+    Checar(mtp(4u, 4u, true, true, true, true, 9f, 58.9f) == 5 && mtp(4u, 4u, true, true, true, true, 9f, float.NaN) == 5
+        && mtp(4u, 4u, true, true, true, true, 9f, float.PositiveInfinity) == 5, "Validação: TP em recarga (58,9 s), NaN ou ∞ recusado com Recarga");
+    float rtp(string m, float v) => (float)tv.GetMethod(m).Invoke(null, new object[] { v });
+    Checar(rtp("RecargaTpRestante", 18f) == 42f && rtp("RecargaTpRestante", 90f) == 0f && rtp("RecargaTpRestante", float.NaN) == 60f && rtp("RecargaTpRestante", -1f) == 60f,
+        "Validação: recarga do TP que falta (18 s → 42 s; 90 s → 0; NaN/negativo → 60)");
+    Checar(rtp("RecargaTpRecebida", 42f) == 42f && rtp("RecargaTpRecebida", 1e9f) == 60f && rtp("RecargaTpRecebida", float.NaN) == 0f && rtp("RecargaTpRecebida", -3f) == 0f,
+        "Validação: recarga do TP recebida do host presa entre 0 e 60 s (NaN/negativa = 0)");
 
     // Sequência do snapshot para Morto (0.16.0): atrasado até 64 é ignorado; recomeço da contagem vale
     bool atr(ushort s, int u) => (bool)tv.GetMethod("SequenciaAtrasada").Invoke(null, new object[] { s, u });
@@ -874,10 +896,11 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
            && (ulong)Sm("LerSteamId", "12345") == 0ul && (ulong)Sm("LerSteamId", "-1") == 0ul && (ulong)Sm("LerSteamId", idA + "000") == 0ul,
         "Salas: dono do lobby (hcc_dono) só vale se for SteamID de jogador");
     var tp = T("HellClockCoop.Net.Protocolo");
-    Checar((int)tp.GetField("Versao").GetValue(null) == 23 && (byte)tp.GetField("TipoExpulso").GetValue(null) == 13
+    Checar((int)tp.GetField("Versao").GetValue(null) == 24 && (byte)tp.GetField("TipoExpulso").GetValue(null) == 13
            && (byte)tp.GetField("TipoExpulsoAviso").GetValue(null) == 14 && (byte)tp.GetField("TipoForaDaRun").GetValue(null) == 29
-           && (byte)tp.GetField("TipoPainelAliado").GetValue(null) == 15,
-        "Protocolo 23 (barreira no snapshot, 0.28.0) com Expulso tipo=13 (1 byte), ExpulsoAviso tipo=14 (0.21.1), ForaDaRun tipo=29 (0.19.0) e PainelAliado tipo=15 (0.27.0)");
+           && (byte)tp.GetField("TipoPainelAliado").GetValue(null) == 15 && (byte)tp.GetField("TipoPedidoTp").GetValue(null) == 16
+           && (byte)tp.GetField("TipoRespostaTp").GetValue(null) == 17,
+        "Protocolo 24 (TP até o aliado, 0.29.0) com Expulso tipo=13 (1 byte), ExpulsoAviso tipo=14 (0.21.1), ForaDaRun tipo=29 (0.19.0), PainelAliado tipo=15 (0.27.0) e PedidoTp/RespostaTp tipo=16/17");
 
     // 0.19.0: trava pelo progresso (maxFloorReached conta a partir de 1, como o andar do lobby)
     Checar((int)Sm("LerHash", "-123456789") == -123456789 && (int)Sm("LerHash", "2147483647") == 2147483647

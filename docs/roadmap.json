@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "23/11/2026",
-  "versao": "0.28.0",
+  "versao": "0.29.0",
   "fases": [
     {
       "id": "B",
@@ -295,8 +295,8 @@
           "Barra de convicção (barreira) por cima da vida no painel de grupo e na barra sobre a cabeça dos aliados, igual à barra do jogo (0.28.0)"
         ],
         [
-          "planejado",
-          "Teleporte até um aliado: símbolo de TP ao lado da linha dele no painel de grupo"
+          "testar",
+          "Teleporte até um aliado: símbolo de TP na linha dele no painel de grupo, tecla T (D-pad ←) ou clique; mesmo andar, fora de combate, canaliza 2 s e recarga de 60 s (0.29.0)"
         ],
         [
           "planejado",

@@ -2,6 +2,27 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.29.0",
+      "data": "23/11/2026",
+      "testado": false,
+      "titulo": "Teleporte até o aliado",
+      "itens": [
+        "Símbolo de teleporte na linha de cada aliado do painel de grupo, na cor dele: aparece com o aliado de pé no seu andar",
+        "Tecla T (no controle, D-pad esquerdo) ou clique no símbolo: com dois ou mais aliados, T mostra 1/2/3 no painel e o número escolhe",
+        "Vale só fora de combate (5 s sem dar nem levar dano): canaliza 2 s parado, e mover ou levar dano cancela",
+        "Recarga de 60 s por jogador, conferida pelo host; em recarga ou em combate o símbolo fica cinza",
+        "Serve para reagrupar, não para fugir da luta: não muda a escala, o tempo nem o dano",
+        "Exige a 0.29.0 em todos os PCs (protocolo 24)"
+      ],
+      "testar": [
+        "Com um aliado no andar e fora de combate, aperte T: a contagem de 2 s pulsa no símbolo e você aparece ao lado dele",
+        "Logo depois, o símbolo fica cinza com os segundos; apertar T avisa a recarga",
+        "Ataque ou leve dano e aperte T: aviso de fora de combate; ande durante os 2 s: cancela",
+        "Clique no símbolo: o personagem não anda e o teleporte começa",
+        "Sozinho (fora de sessão), com o eco (F8): o teleporte até o Eco também funciona"
+      ]
+    },
+    {
       "v": "0.28.0",
       "data": "23/11/2026",
       "testado": false,

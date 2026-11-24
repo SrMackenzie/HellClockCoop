@@ -11,7 +11,7 @@ namespace HellClockCoop.Net
     internal static class Protocolo
     {
         /// <summary>Muda sempre que o formato de qualquer mensagem mudar. Pares com versões diferentes não conversam.</summary>
-        public const int Versao = 23; // 22: PainelAliado (skills e status do painel de grupo, 0.27.0); 23: barreira no PlayerSnapshot (formato 5, 0.28.0)
+        public const int Versao = 24; // 22: PainelAliado (skills e status do painel de grupo, 0.27.0); 23: barreira no PlayerSnapshot (formato 5, 0.28.0); 24: PedidoTp/RespostaTp (0.29.0)
 
         public const int CanalConfiavel = 0;
         public const int CanalSnapshots = 1;
@@ -23,6 +23,8 @@ namespace HellClockCoop.Net
         public const byte TipoExpulso = 13;      // host → um convidado: saia da sala (só 1 byte; 0.18.0)
         public const byte TipoExpulsoAviso = 14; // host → os outros convidados: fulano foi expulso, cortem a conversa com ele (0.21.1)
         public const byte TipoPainelAliado = 15; // todos → todos: skills equipadas e status para o painel de grupo (0.27.0)
+        public const byte TipoPedidoTp = 16;     // convidado → host: teleporte até um aliado, depois da canalização (0.29.0)
+        public const byte TipoRespostaTp = 17;   // host → o convidado que pediu: autorizado ou o motivo da recusa (0.29.0)
 
         // Fase 2 — run compartilhada (host → convidados, salvo TimerBonus)
         public const byte TipoPlanoAndar = 20;

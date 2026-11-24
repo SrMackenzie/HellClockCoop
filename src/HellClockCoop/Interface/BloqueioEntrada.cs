@@ -32,6 +32,7 @@ namespace HellClockCoop.Interface
         private static int _ultimoPedido = -10;
         private static FieldInfo _campoInstancia;
         private static bool _campoProcurado, _avisouSemJogo;
+        private static bool _leve; // trava leve do TP (0.29.0): sem log
         private static float _proximaBuscaOuvintes; // 0 = procurar já (na abertura)
         private const float IntervaloBuscaOuvintes = 0.5f;
 
@@ -48,11 +49,25 @@ namespace HellClockCoop.Interface
         /// <summary>Painel aberto neste quadro: trava o jogo (idempotente).</summary>
         internal static void Pedir()
         {
+            _leve = false;
             _ultimoPedido = Time.frameCount;
             DesligarModulo();
             // Em jogo a busca não se repete (3.4e38); se o personagem sumir com o painel aberto (volta aos saves), procura de novo.
             if (Time.unscaledTime >= _proximaBuscaOuvintes || (_proximaBuscaOuvintes > 1e38f && CoopRuntime.JogadorLocal() == null))
                 DesligarOuvintesDoEsc();
+            Travar();
+        }
+
+        /// <summary>
+        /// Trava leve (0.29.0, TP até o aliado): mouse sobre o símbolo do painel de grupo ou escolha do aliado com a tecla. Só o
+        /// semáforo e o módulo de entrada da UI, sem a busca do ouvinte do Esc da tela de saves (~55 ms em jogo) e sem log
+        /// (o mouse passa pelo símbolo muitas vezes). Um Pedir() no mesmo período continua completo.
+        /// </summary>
+        internal static void PedirLeve()
+        {
+            if (_travado == null || _ultimoPedido < Time.frameCount - 1) _leve = true; // começo da trava: leve até um Pedir()
+            _ultimoPedido = Time.frameCount;
+            DesligarModulo();
             Travar();
         }
 
@@ -63,7 +78,7 @@ namespace HellClockCoop.Interface
             if (_travado != null)
             {
                 Soltar();
-                Plugin.Log.LogInfo("[Entrada] Entrada do jogo liberada.");
+                if (!_leve) Plugin.Log.LogInfo("[Entrada] Entrada do jogo liberada.");
             }
             _proximaBuscaOuvintes = 0f; // a próxima abertura procura de novo na hora
             if (OuvintesDoEsc.Count > 0)
@@ -136,7 +151,7 @@ namespace HellClockCoop.Interface
             if (semaforo == null) return;
             semaforo.BlockButDoNotIncrease(Dono);
             _travado = semaforo;
-            Plugin.Log.LogInfo("[Entrada] Entrada do jogo bloqueada (painel do mod aberto).");
+            if (!_leve) Plugin.Log.LogInfo("[Entrada] Entrada do jogo bloqueada (painel do mod aberto).");
         }
 
         private static void Soltar()

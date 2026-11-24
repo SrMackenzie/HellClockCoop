@@ -105,6 +105,9 @@ namespace HellClockCoop.Interface
         /// <summary>Aviso de reanimação concluída (0.16.0), em âmbar: notícia boa.</summary>
         internal static void AvisarReanimacao(string texto) => Avisar(texto, Ambar);
 
+        /// <summary>Aviso do teleporte até o aliado (0.29.0): recusa, recarga ou cancelamento, em branco.</summary>
+        internal static void AvisarTp(string texto) => Avisar(texto, Color.white);
+
         private static void Avisar(string texto, Color cor)
         {
             if (AvisoDaHud(texto, cor)) return;

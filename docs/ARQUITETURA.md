@@ -279,6 +279,8 @@ No fantasma, a troca de estado usa `CrossFade` curto, e o mesmo estado com mais 
 | 13 | `Expulso` (0.18.0) | sem campos: o host tira o convidado da sala |
 | 14 | `ExpulsoAviso` (0.21.1) | SteamID do expulso, aos outros convidados |
 | 15 | `PainelAliado` (0.27.0) | HashID das skills da barra (até 8) e até 4 status (HashID e acúmulos), para o painel de grupo (§12.15) |
+| 16 | `PedidoTp` (0.29.0) | convidado → host: SteamID do aliado e índice do andar, depois da canalização (§12.17) |
+| 17 | `RespostaTp` (0.29.0) | host → quem pediu: SteamID do aliado, motivo (0 = autorizado) e recarga restante (§12.17) |
 
 **Visibilidade:** o avatar de um aliado só aparece se `CenaHash` for igual nos dois lados e válida (-1 = carregando). Ao reaparecer, o buffer de interpolação é zerado para não "voar" de um andar a outro. Sem pacote por 5 s, o avatar some.
 
@@ -1585,6 +1587,41 @@ aparece na **barra sobre a cabeça** dos aliados.
 **Protocolo 23.** codectest: ida e volta da barreira, presa em 0..1 (acima de 1 e negativa), 0 por padrão e snapshot de
 formato 4 recusado.
 
+### 12.17 Teleporte até o aliado (versão 0.29.0, protocolo 24)
+
+Decisões do autor (23/11/2026): vale só **na run, no mesmo andar, com os dois de pé e fora de combate** (5 s sem dano
+recebido nem causado), **canaliza 2 s parado** (mover, levar ou causar dano cancela), **recarga de 60 s por jogador**,
+aciona com a **tecla T + clique no símbolo** (controle: D-pad ←) e visual **A** (símbolo à direita do nome). Valores fixos
+no código (`Validacao.Tp*`), não no .cfg; só a tecla vai para o .cfg (`[Teclas] TeleporteAliado`).
+
+- **`Fase2/TpAliado.cs`:** estado local (recarga, combate, escolha, canalização). Combate: `LifeController.OnHurt` com
+  `Value > 0` e o dano causado visto no `DanosVisiveis.NumeroCriado`. Com um aliado disponível, T canaliza direto; com dois
+  ou mais, abre a escolha (5 s): 1/2/3 no teclado (Digit e Numpad; no Input legado viram Alpha/Keypad em `Teclas`), ↑/↓ e A
+  no controle; T, Esc, B ou D-pad ← cancelam. A escolha só abre se as regras locais deixam (de pé, fora da recarga e de
+  combate) e com o painel visível. Durante a escolha e com o mouse sobre um símbolo que responde (pronto, ou o TP em
+  andamento, que o clique cancela; cinza não prende), `BloqueioEntrada.PedirLeve`
+  prende a entrada do jogo (só semáforo e módulo da UI, sem a busca do ouvinte do Esc e sem log), para o número, o A e o
+  clique não chegarem ao personagem. Cursor escondido (controle) não conta como mouse sobre o símbolo.
+- **Autoridade do host:** o convidado canaliza e manda `PedidoTp`; o host aplica `Validacao.MotivoTp` (andar do pedido e de
+  quem pede, de pé, alvo no andar e de pé, combate, recarga com 1 s de folga) e guarda o último TP autorizado por SteamID.
+  O combate do convidado, no host, é o último `Golpes` recebido dele ou a vida do snapshot caindo (`Par.UltimoCombate`).
+  Responde `RespostaTp` (uma a cada 0,5 s por par); com "ok", o convidado faz `MovementController.Warp` até o avatar do
+  aliado. Sem resposta em 3 s, o pedido expira; resposta depois disso só acerta a recarga. O host decide o próprio TP pela mesma regra, sem rede.
+- **Painel (`PainelGrupo`):** ícone Streamline "Location Target 1" (18 px) na ponta direita da linha do nome, na cor do
+  aliado; cinza com os segundos em recarga, cinza em combate, pulsando com o que falta da canalização, "..." aguardando o
+  host e 1/2/3 na escolha. Some com o aliado caído, fora do andar ou sem você poder teleportar. A ordem dos números é a
+  ordem do painel (`TpAliado.OrdemDoPainel`).
+- **Modo eco:** o fantasma vale como aliado só fora de sessão (regra local, sem rede), para testar sozinho; numa sessão o
+  TP até ele passaria por cima do host, e o eco pode estar deslocado até 60 m.
+- **Destino:** a posição do avatar do aliado, levada ao ponto andável mais próximo (`NavMesh.SamplePosition`, até 2 m);
+  sem chão por perto (aliado fora do mapa), não teleporta. O host descarta do dicionário as recargas vencidas e só registra
+  no log padrão os TPs autorizados (as recusas vão para o Debug).
+- **Balanceamento:** serve para reagrupar, não para fugir: fora de combate, canalização interrompível e recarga longa; não
+  muda a escala, o tempo nem o dano.
+
+**Protocolo 24.** codectest: ida e volta de `PedidoTp` e `RespostaTp`, cada motivo de `Validacao.MotivoTp` (inclusive NaN,
+∞ e negativos) e as recargas restante e recebida presas em 0..60 s.
+
 ## 13. Atualizador automático (versão 0.8.0)
 
 **Onde roda.** `BepInEx\patchers\HellClockCoop.Atualizador.dll`, um preloader patcher do BepInEx 5 sem DLL alvo: só o
@@ -1679,6 +1716,8 @@ filtros puros ficam em `Net/Validacao.cs` e têm casos no `tools/codectest`.
 | `Expulso` (0.18.0) | convidado, só do dono do lobby (nunca de si mesmo); desde a 0.21.1, com a run aberta, só do host dela e enquanto ele é o dono (`SessaoCoop.IdDoHost`) | sem campos; sai do coop e esconde a sala da lista (`Salas.ExpulsaoValida`) |
 | `ExpulsoAviso` (0.21.1) | convidado, só do host (`IdDoHost`) | o SteamID é de um terceiro (nem de quem manda nem de quem recebe; `Validacao.AvisoExpulsaoValido`); o expulso sai dos pares e fica sem conversa (§12.11) |
 | `PainelAliado` (0.27.0) | todos, de par compatível | até 8 skills e 4 status (acima disso a mensagem cai); hash desconhecido só não aparece, e o cache de ícones zera aos 512 hashes (§12.15). Só aparece na tela; não muda nada do jogo |
+| `PedidoTp` (0.29.0) | host, de par compatível; no máximo uma resposta a cada 0,5 s por par | `Validacao.MotivoTp`: andar do pedido igual ao do host e quem pede no andar e de pé; alvo (outro par ou o host, nunca quem pede nem o eco, chave 0) no andar e de pé; 5 s sem combate visto pelo host; recarga de 60 s (folga de 1 s). Só o autorizado grava a recarga (§12.17) |
+| `RespostaTp` (0.29.0) | convidado, só do host (`SessaoCoop.Host`) | só vale para o pedido em espera (até 3 s), com o mesmo alvo (senão só acerta a recarga); recarga presa em 0..60 s (`Validacao.RecargaTpRecebida`). Efeito: o próprio convidado teleporta até o avatar do aliado |
 | `TimerBonus` | host; desde a 0.21.1, só com a run aberta e de par compatível dentro da escala (`Validacao.BonusDoParAceito`) | finito, `> 0` e `<= 120 s`; desde a 0.8.5, também no máximo 120 s e 120 bônus somados por convidado (chave: SteamID, para sair e voltar ao lobby não zerar) numa janela fixa de 60 s (`Validacao.AceitarBonusNaJanela`; o recusado não conta; na virada da janela até o dobro passa em sequência, a média fica no teto). Um aviso de recusa por janela |
 | `TimerSync` | convidado, só do host | os dois campos finitos e `>= 0` (4 Hz: descarte sem log) |
 | `PlayerSnapshot` | qualquer par compatível | desde a 0.21.1, tempo, posição (teto de 100 000), rotações, tempos e floats dos animators e ossos finitos (`Validacao.SnapshotValido`, §12.11; 20 Hz: descarte sem log) |

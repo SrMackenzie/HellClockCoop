@@ -490,6 +490,47 @@ namespace HellClockCoop.Net
             if (!Finito(dx) || !Finito(dy) || !Finito(dz) || !Finito(ox) || !Finito(oy) || !Finito(oz)) return false;
             return ox * ox + oy * oy + oz * oz <= DeslocamentoGolpeMaximo * DeslocamentoGolpeMaximo;
         }
+
+        // ---------- Teleporte até o aliado (0.29.0; valores do autor, fixos no código) ----------
+
+        /// <summary>Segundos sem dano recebido nem causado para o TP valer.</summary>
+        public const float TpForaDeCombateSegundos = 5f;
+
+        /// <summary>Recarga do TP de cada jogador, contada no host a partir do TP autorizado.</summary>
+        public const float TpRecargaSegundos = 60f;
+
+        /// <summary>Folga do host sobre a recarga, para o atraso da rede (o convidado conta a dele pela resposta).</summary>
+        public const float TpFolgaRecargaSegundos = 1f;
+
+        /// <summary>Canalização parada antes do pedido; mover ou levar dano cancela.</summary>
+        public const float TpCanalizaSegundos = 2f;
+
+        public const byte MotivoTpOk = 0, MotivoTpOutroAndar = 1, MotivoTpVoceCaido = 2, MotivoTpAlvoIndisponivel = 3,
+                          MotivoTpEmCombate = 4, MotivoTpRecarga = 5;
+
+        /// <summary>
+        /// Decisão do host sobre um TP (0.29.0). Andar do pedido igual ao do host e quem pede no andar; quem pede de pé; alvo
+        /// no andar e de pé; quem pede sem combate há TpForaDeCombateSegundos; último TP dele há TpRecargaSegundos menos a
+        /// folga. Tempos NaN ou negativos recusam (combate/recarga). Devolve MotivoTpOk ou o primeiro motivo da recusa.
+        /// </summary>
+        public static byte MotivoTp(uint andarPedido, uint andarHost, bool pedinteNoAndar, bool pedinteDePe, bool alvoNoAndar, bool alvoDePe,
+                                    float desdeCombate, float desdeUltimoTp)
+        {
+            if (andarPedido != andarHost || !pedinteNoAndar) return MotivoTpOutroAndar;
+            if (!pedinteDePe) return MotivoTpVoceCaido;
+            if (!alvoNoAndar || !alvoDePe) return MotivoTpAlvoIndisponivel;
+            if (!Finito(desdeCombate) || !(desdeCombate >= TpForaDeCombateSegundos)) return MotivoTpEmCombate;
+            if (!Finito(desdeUltimoTp) || !(desdeUltimoTp >= TpRecargaSegundos - TpFolgaRecargaSegundos)) return MotivoTpRecarga;
+            return MotivoTpOk;
+        }
+
+        /// <summary>Recarga que falta, em segundos (0..TpRecargaSegundos), a partir do tempo desde o último TP.</summary>
+        public static float RecargaTpRestante(float desdeUltimoTp) =>
+            !Finito(desdeUltimoTp) || desdeUltimoTp < 0f ? TpRecargaSegundos : System.Math.Max(0f, TpRecargaSegundos - desdeUltimoTp);
+
+        /// <summary>Recarga recebida do host, presa entre 0 e TpRecargaSegundos (NaN/negativa = 0).</summary>
+        public static float RecargaTpRecebida(float recarga) =>
+            !Finito(recarga) || recarga <= 0f ? 0f : System.Math.Min(recarga, TpRecargaSegundos);
     }
 
     /// <summary>Estado do teto acumulado de bônus de tempo de um convidado (ver Validacao.AceitarBonusNaJanela).</summary>

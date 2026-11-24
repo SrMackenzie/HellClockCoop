@@ -7,6 +7,7 @@
 | Arquivo | Ícone | Set | Uso |
 |---|---|---|---|
 | `coroa.png` / `coroa.svg` | Crown (`ico_suzNHVVQsGrCEgaN`) | Core Solid - Free | marca o host no painel de grupo (0.27.0); PNG 64x64 branco, tingido de dourado no código |
+| `tp.png` / `tp.svg` | Location Target 1 (`ico_cFbQDASjEyZDcyZb`) | Core Solid - Free | teleporte até o aliado no painel de grupo (0.29.0); PNG 64x64 branco, tingido na cor do aliado no código |
 
 Para trocar: baixe outro ícone do mesmo Set em PNG 64x64 branco, substitua o arquivo, gere o base64
-(`base64 -w0 icons/streamline/coroa.png`) e cole em `IconesStreamline.CoroaPng`.
+(`base64 -w0 icons/streamline/coroa.png`) e cole na constante dele em `IconesStreamline` (`CoroaPng`, `TpPng`).

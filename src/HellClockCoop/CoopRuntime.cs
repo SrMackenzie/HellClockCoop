@@ -57,6 +57,7 @@ namespace HellClockCoop
             Interface.AliadosNaTela.Configurar(config);
             Interface.PainelGrupo.Configurar(config);
             Interface.Marcadores.Configurar(config);
+            Fase2.TpAliado.Configurar(config);
             Fase3.DanosVisiveis.Configurar(config);
             Fase3.SonsAliados.Configurar(config);
             Balanceamento.Escalonamento.Configurar(config);
@@ -123,6 +124,7 @@ namespace HellClockCoop
             if (Teclas.Pressionou(TeclaEco.Value)) AlternarEco();
             if (Teclas.Pressionou(TeclaHierarquia.Value)) RegistrarHierarquia(forcar: true);
             Interface.Marcadores.LerTecla(semPersonagem ? null : JogadorLocal(), _ecoAtivo); // 0.17.0: ping no chão
+            Fase2.TpAliado.LerEntrada(semPersonagem ? null : JogadorLocal(), _ecoAtivo ? _avatarEco : null); // 0.29.0: TP até o aliado
         }
 
         private void LateUpdate()
@@ -153,6 +155,7 @@ namespace HellClockCoop
                 Fase2.JogadorCaido.EcoAtivo = _ecoAtivo;
                 Fase2.JogadorCaido.Atualizar(jogador);
                 Fase2.Reanimacao.Atualizar(jogador); // 0.16.0: reanimação do aliado caído
+                Fase2.TpAliado.Atualizar(jogador); // 0.29.0: canalização e pedido do TP até o aliado
                 t = Desempenho.Somar(Desempenho.Parte.Run, t);
                 Fase3.InimigosCompartilhados.Atualizar();
                 t = Desempenho.Somar(Desempenho.Parte.Inimigos, t);
@@ -473,7 +476,11 @@ namespace HellClockCoop
             {
                 case "enter": return "Return";
                 case "numpadenter": return "KeypadEnter";
-                default: return nome;
+                default:
+                    // 0.29.0 (escolha do TP): Digit1 → Alpha1, Numpad1 → Keypad1
+                    if (nome.Length == 6 && nome.StartsWith("Digit", StringComparison.OrdinalIgnoreCase)) return "Alpha" + nome[5];
+                    if (nome.Length == 7 && nome.StartsWith("Numpad", StringComparison.OrdinalIgnoreCase)) return "Keypad" + nome[6];
+                    return nome;
             }
         }
 

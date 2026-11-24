@@ -91,6 +91,7 @@ namespace HellClockCoop.Fase3
             if (_reproduzindo || dano == null || dano.HideFromUI || dano.Ignored || alvo == null) return;
             PlayerController local = CoopRuntime.JogadorLocal();
             if (local == null || !DoJogador(dano.Attacker, local)) return;
+            Fase2.TpAliado.CausouDano(); // 0.29.0: causar dano conta como combate para o TP
             float valor = (float)dano.Value;
             byte criticos = (byte)Mathf.Clamp(dano.TotalCrits, 0, 255);
 

@@ -148,6 +148,33 @@ namespace HellClockCoop.Net
         public static ForaDaRun Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoForaDaRun, r => new ForaDaRun { Fora = r.ReadBoolean() });
     }
 
+    /// <summary>
+    /// Convidado → host (0.29.0): depois de canalizar 2 s, pede o teleporte até o aliado Alvo (SteamID; o host também vale).
+    /// IndiceAndar amarra o pedido ao andar de quem pede. O host confere (Validacao.MotivoTp) e responde com RespostaTp.
+    /// </summary>
+    internal sealed class PedidoTp
+    {
+        public ulong Alvo;
+        public uint IndiceAndar;
+
+        public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoPedidoTp, w => { w.Write(Alvo); w.Write(IndiceAndar); });
+        public static PedidoTp Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoPedidoTp, r => new PedidoTp { Alvo = r.ReadUInt64(), IndiceAndar = r.ReadUInt32() });
+    }
+
+    /// <summary>
+    /// Host → o convidado que pediu (0.29.0): Motivo 0 = autorizado (quem pediu teleporta até o Alvo e a recarga começa);
+    /// os outros são Validacao.MotivoTp*. Recarga = segundos que faltam na recarga de quem pediu, segundo o host.
+    /// </summary>
+    internal sealed class RespostaTp
+    {
+        public ulong Alvo;
+        public byte Motivo;
+        public float Recarga;
+
+        public byte[] Serializar() => Mensagem.Escrever(Protocolo.TipoRespostaTp, w => { w.Write(Alvo); w.Write(Motivo); w.Write(Recarga); });
+        public static RespostaTp Desserializar(byte[] d) => Mensagem.Ler(d, Protocolo.TipoRespostaTp, r => new RespostaTp { Alvo = r.ReadUInt64(), Motivo = r.ReadByte(), Recarga = r.ReadSingle() });
+    }
+
     internal static class Mensagem
     {
         public static byte[] Escrever(byte tipo, Action<BinaryWriter> corpo)

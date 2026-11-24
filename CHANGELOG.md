@@ -4,6 +4,16 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.29.0 — Teleporte até o aliado 🧪
+_23/11/2026_
+
+- Símbolo de teleporte na linha de cada aliado do painel de grupo, na cor dele: aparece com o aliado de pé no seu andar
+- Tecla T (no controle, D-pad esquerdo) ou clique no símbolo: com dois ou mais aliados, T mostra 1/2/3 no painel e o número escolhe
+- Vale só fora de combate (5 s sem dar nem levar dano): canaliza 2 s parado, e mover ou levar dano cancela
+- Recarga de 60 s por jogador, conferida pelo host; em recarga ou em combate o símbolo fica cinza
+- Serve para reagrupar, não para fugir da luta: não muda a escala, o tempo nem o dano
+- Exige a 0.29.0 em todos os PCs (protocolo 24)
+
 ## 0.28.0 — Convicção no painel de grupo 🧪
 _23/11/2026_
 
