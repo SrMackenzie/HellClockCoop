@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "23/11/2026",
-  "versao": "0.29.1",
+  "versao": "0.30.0",
   "fases": [
     {
       "id": "B",
@@ -297,6 +297,10 @@
         [
           "testar",
           "Teleporte até um aliado: símbolo de TP na linha dele no painel de grupo, tecla T (D-pad ←) ou clique; mesmo andar, fora de combate, canaliza 2 s e recarga de 60 s (0.29.0)"
+        ],
+        [
+          "testar",
+          "Visual do teleporte: raio com anel de recarga no painel, contorno na cor do aliado durante a canalização e o efeito de sumir e reaparecer do jogo (0.30.0)"
         ],
         [
           "planejado",

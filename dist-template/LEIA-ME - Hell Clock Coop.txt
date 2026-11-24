@@ -256,6 +256,10 @@ ESTADO ATUAL (versão de teste, Fase 3)
   0.29.0 em todos os PCs.
 - (0.29.1): o teleporte até o eco (F8) vale também para o host de uma sala sem ninguém, para
   testar sozinho. Lembre: o teleporte só aparece dentro da run, não no hub.
+- NOVO (0.30.0): visual do teleporte. No painel, o símbolo é um raio num disco com um anel na
+  cor do aliado (em recarga o anel cinza vai enchendo). Durante os 2 s seu personagem ganha um
+  contorno na cor do aliado, e no teleporte some e reaparece com o efeito do jogo. Só na sua
+  tela; as regras não mudaram. Exige a 0.30.0 em todos os PCs.
 - A Deluxe Edition (cosmética) não importa.
 
 

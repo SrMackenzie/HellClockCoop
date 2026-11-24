@@ -2,6 +2,26 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.30.0",
+      "data": "23/11/2026",
+      "testado": false,
+      "titulo": "Visual do teleporte",
+      "itens": [
+        "Novo símbolo do teleporte no painel de grupo: um raio num disco escuro com um anel na cor do aliado",
+        "Em recarga, o anel cinza vai enchendo até o teleporte voltar, com os segundos ao lado; na canalização, o anel enche em 2 s",
+        "Durante a canalização seu personagem ganha um contorno na cor do aliado, pulsando cada vez mais rápido",
+        "No teleporte, o personagem some e reaparece ao lado do aliado com o efeito de teleporte do jogo",
+        "O efeito aparece só na sua tela; as regras do teleporte não mudaram. Exige a 0.30.0 em todos os PCs (a mesma versão do mod)"
+      ],
+      "testar": [
+        "Com o eco (F8) numa run, veja o símbolo do raio na linha do Eco, com o anel cheio na cor dele",
+        "Aperte T fora de combate: o anel enche em 2 s e o contorno do personagem pulsa cada vez mais rápido",
+        "No fim, o personagem some, reaparece ao lado do Eco e o anel fica cinza, enchendo durante os 60 s",
+        "Ande durante a canalização: o contorno some e o personagem volta ao normal",
+        "Passe o mouse e clique no disco: o personagem não anda e o teleporte começa"
+      ]
+    },
+    {
       "v": "0.29.1",
       "data": "23/11/2026",
       "testado": false,

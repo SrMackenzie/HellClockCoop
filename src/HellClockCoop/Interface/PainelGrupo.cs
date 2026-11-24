@@ -30,9 +30,11 @@ namespace HellClockCoop.Interface
     ///   companheiro que o AliadosNaTela já copia; cores de buff/debuff do StatusIconsView do jogo. Coroa: Streamline.
     /// - Medidas em pixels de 1080p, convertidas para a camada do jogo a cada quadro (qualquer resolução e modo do canvas).
     /// - Modo eco (F8): o fantasma entra como aliado "Eco" com as suas próprias skills e status.
-    /// - TP até o aliado (0.29.0, visual A do autor): símbolo Location Target 1 (Streamline) na ponta direita da linha do nome
-    ///   de cada aliado de pé no seu andar, na cor dele; em recarga ou em combate fica cinza (com os segundos da recarga); na
-    ///   escolha mostra 1/2/3; canalizando pulsa com o que falta. Indisponível some. Clique no símbolo pede o TP (Fase2.TpAliado).
+    /// - TP até o aliado (0.29.0; visual 0.30.0, opção A "raio + aura" do autor): disco escuro com o raio (Flash 1, Streamline)
+    ///   e um anel radial na ponta direita da linha do nome de cada aliado de pé no seu andar. Pronto: anel cheio e raio na cor
+    ///   do aliado. Recarga: cinza, o anel varre (1 − restante/recarga) e os segundos ao lado. Combate: cinza. Canalizando: o
+    ///   anel enche com a canalização e o raio pulsa. Na escolha mostra 1/2/3. Indisponível some. Clique no disco pede o TP
+    ///   (Fase2.TpAliado).
     /// - Erro: o painel desliga até reabrir o jogo (log), sem derrubar o resto da interface.
     /// </summary>
     internal static class PainelGrupo
@@ -43,7 +45,9 @@ namespace HellClockCoop.Interface
         private const float EspacoNomeBarra = 3f, EspacoBarraSkills = 5f, EspacoLinhas = 12f, EspacoIcones = 3f;
         private const float AlturaLinha = AlturaStatus + AlturaNome + EspacoNomeBarra + AlturaBarra + EspacoBarraSkills + AlturaSkill;
         private const float LadoCoroa = 18f;
-        private const float LadoTp = 18f, LarguraTextoTp = 48f;
+        private const float LadoTp = 22f, LadoRaio = 16f, LarguraTextoTp = 48f; // disco com o anel; raio dentro do anel
+        private const int LadoTexturaTp = 64;
+        private const float EspessuraAnel = 2.5f;          // px de 1080p, no disco de LadoTp
 
         private const float AlphaCaido = 0.55f, AlphaFora = 0.4f;
         private const float AtrasoQueda = 0.6f;            // como a barra sobre a cabeça
@@ -54,6 +58,7 @@ namespace HellClockCoop.Interface
         private static readonly Color Dourado = new Color(0.91f, 0.76f, 0.35f);          // coroa do host
         private static readonly Color CinzaEstado = new Color(0.62f, 0.62f, 0.62f, 0.9f);
         private static readonly Color FundoIcone = new Color(0f, 0f, 0f, 0.55f);
+        private static readonly Color FundoDiscoTp = new Color(0.04f, 0.03f, 0.03f, 0.8f);
         private static readonly Color FundoBarraReserva = new Color(0.08f, 0.04f, 0.04f, 0.85f);
         private static readonly Color VidaReserva = new Color(0.78f, 0.12f, 0.10f);
         private static readonly Color AtrasoReserva = new Color(0.95f, 0.85f, 0.75f, 0.8f);
@@ -67,7 +72,7 @@ namespace HellClockCoop.Interface
             public RectTransform Raiz;
             public CanvasGroup Grupo;
             public TextMeshProUGUI Nome, Estado;
-            public Image Coroa, Tp;
+            public Image Coroa, Tp, TpAnel, TpRaio; // Tp = disco (o clique e o hover usam ele)
             public TextMeshProUGUI TpTexto;
             public RectTransform Barra, Preenche, Atraso, Barreira, Reanima;
             public Image ReanimaCor;
@@ -104,7 +109,7 @@ namespace HellClockCoop.Interface
         private static RectTransform _raiz;
         private static Camera _camUi;
         private static readonly List<ulong> OrdemTp = new List<ulong>();
-        private static Sprite _coroa, _tp, _spriteFundo, _spritePreenche, _spriteAtraso, _spriteBarreira;
+        private static Sprite _coroa, _tp, _disco, _anel, _spriteFundo, _spritePreenche, _spriteAtraso, _spriteBarreira;
         private static Color _corFundo = FundoBarraReserva, _corPreenche = VidaReserva, _corAtraso = AtrasoReserva, _corBarreira = AliadosNaTela.BarreiraReserva;
         private static Color _corBuff = BuffReserva, _corDebuff = DebuffReserva;
         private static bool _coresLidas;
@@ -363,7 +368,7 @@ namespace HellClockCoop.Interface
             }
         }
 
-        /// <summary>Símbolo de TP (0.29.0): situação vinda do Fase2.TpAliado.</summary>
+        /// <summary>Símbolo de TP (0.29.0; disco, anel e raio na 0.30.0): situação vinda do Fase2.TpAliado.</summary>
         private static void PreencherTp(Linha l, Aliado a)
         {
             float seg = 0f;
@@ -373,19 +378,23 @@ namespace HellClockCoop.Interface
             if (l.TpTexto.gameObject.activeSelf != tem) l.TpTexto.gameObject.SetActive(tem);
             if (!tem) return;
             Color cor = Fase3.DanosVisiveis.CorDoAliado(a.Chave);
+            Color corAnel = cor;
+            float cheio = 1f;
             string txt = "";
             Color corTexto = CinzaEstado;
             int numero = Fase2.TpAliado.NumeroNaEscolha(a.Chave, out bool realcado);
             switch (sit)
             {
                 case Fase2.TpAliado.Situacao.Recarga:
-                    cor = CinzaEstado;
+                    cor = corAnel = CinzaEstado;
+                    cheio = 1f - seg / Validacao.TpRecargaSegundos; // varre de vazio a cheio na recarga
                     txt = Mathf.CeilToInt(seg).ToString();
                     break;
                 case Fase2.TpAliado.Situacao.Combate:
-                    cor = CinzaEstado;
+                    cor = corAnel = CinzaEstado;
                     break;
                 case Fase2.TpAliado.Situacao.Canalizando:
+                    cheio = 1f - seg / Validacao.TpCanalizaSegundos; // enche com a canalização
                     cor.a = 0.55f + 0.45f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 6f));
                     txt = seg.ToString("0.0");
                     corTexto = Color.white;
@@ -400,7 +409,9 @@ namespace HellClockCoop.Interface
                 txt = realcado ? $"> {numero}" : numero.ToString();
                 corTexto = Color.white;
             }
-            l.Tp.color = cor;
+            l.TpRaio.color = cor;
+            l.TpAnel.color = corAnel;
+            l.TpAnel.fillAmount = Mathf.Clamp01(cheio);
             if (l.TpTexto.text != txt) l.TpTexto.text = txt;
             l.TpTexto.color = corTexto;
         }
@@ -467,6 +478,33 @@ namespace HellClockCoop.Interface
             _raiz.sizeDelta = new Vector2(Largura, AlturaLinha);
             if (_coroa == null) _coroa = CriarIcone(IconesStreamline.CoroaPng, "HellClockCoop.Coroa");
             if (_tp == null) _tp = CriarIcone(IconesStreamline.TpPng, "HellClockCoop.Tp");
+            if (_disco == null) _disco = CriarCirculo("HellClockCoop.TpDisco", 0f);
+            if (_anel == null) _anel = CriarCirculo("HellClockCoop.TpAnel", 1f - EspessuraAnel / (LadoTp / 2f));
+        }
+
+        /// <summary>
+        /// Círculo branco suavizado (tingido no código), gerado em textura: furo = 0 é o disco cheio; furo &gt; 0 é o anel, com o
+        /// raio de dentro nessa fração do de fora.
+        /// </summary>
+        private static Sprite CriarCirculo(string nome, float furo)
+        {
+            int n = LadoTexturaTp;
+            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { name = nome, wrapMode = TextureWrapMode.Clamp };
+            var px = new Color32[n * n];
+            float r = n / 2f, dentro = r * furo;
+            for (int y = 0; y < n; y++)
+            {
+                for (int x = 0; x < n; x++)
+                {
+                    float dx = x + 0.5f - r, dy = y + 0.5f - r;
+                    float d = Mathf.Sqrt(dx * dx + dy * dy);
+                    float a = Mathf.Clamp01(r - d) * (furo > 0f ? Mathf.Clamp01(d - dentro) : 1f); // borda de 1 texel suave
+                    px[y * n + x] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(a * 255f));
+                }
+            }
+            tex.SetPixels32(px);
+            tex.Apply(false, true);
+            return Sprite.Create(tex, new Rect(0f, 0f, n, n), new Vector2(0.5f, 0.5f), 100f);
         }
 
         /// <summary>Sprites e cores da barra do companheiro e cores de buff/debuff do StatusIconsView (uma vez por jogo).</summary>
@@ -537,9 +575,18 @@ namespace HellClockCoop.Interface
             l.Nome = Texto(Retangulo("Nome", l.Raiz, 0f, yNome, Largura - 110f, AlturaNome), 20f, Color.white, TextAlignmentOptions.MidlineLeft);
             l.Estado = Texto(Retangulo("Estado", l.Raiz, Largura - 120f, yNome, 120f, AlturaNome), 16f, CinzaEstado, TextAlignmentOptions.MidlineRight);
             // Símbolo de TP na ponta direita da linha do nome (0.29.0); só aparece com o aliado de pé no andar (sem o estado).
+            // 0.30.0: disco escuro, raio dentro e o anel radial por cima (enche a partir do topo, no sentido do relógio).
             RectTransform tp = Retangulo("Tp", l.Raiz, Largura - LadoTp, yNome - (AlturaNome - LadoTp) / 2f, LadoTp, LadoTp);
-            l.Tp = Imagem(tp, _tp, Color.white);
-            l.Tp.preserveAspect = true;
+            l.Tp = Imagem(tp, _disco, FundoDiscoTp);
+            RectTransform raio = Retangulo("Raio", tp, (LadoTp - LadoRaio) / 2f, -(LadoTp - LadoRaio) / 2f, LadoRaio, LadoRaio);
+            l.TpRaio = Imagem(raio, _tp, Color.white);
+            l.TpRaio.preserveAspect = true;
+            RectTransform anel = Retangulo("Anel", tp, 0f, 0f, LadoTp, LadoTp);
+            l.TpAnel = Imagem(anel, _anel, Color.white);
+            l.TpAnel.type = Image.Type.Filled;
+            l.TpAnel.fillMethod = Image.FillMethod.Radial360;
+            l.TpAnel.fillOrigin = (int)Image.Origin360.Top;
+            l.TpAnel.fillClockwise = true;
             tp.gameObject.SetActive(false);
             l.TpTexto = Texto(Retangulo("TpTexto", l.Raiz, Largura - LadoTp - 4f - LarguraTextoTp, yNome, LarguraTextoTp, AlturaNome), 16f, CinzaEstado, TextAlignmentOptions.MidlineRight);
             l.TpTexto.gameObject.SetActive(false);

@@ -25,6 +25,8 @@ namespace HellClockCoop.Fase2
     /// - Modo eco (F8): o fantasma vale como aliado só para quem joga sozinho (fora de sessão, ou host de sala vazia), para testar
     ///   (sem rede, só a regra local).
     /// - Destino: a posição do avatar do aliado, levada ao chão andável mais próximo (NavMesh, até 2 m); sem chão, não teleporta.
+    /// - Visual (0.30.0, TpEfeito): contorno na cor do aliado pulsando na canalização; no TP o personagem some (0,2 s), o Warp
+    ///   vem depois e ele reaparece no destino. Só neste PC.
     /// </summary>
     internal static class TpAliado
     {
@@ -42,6 +44,8 @@ namespace HellClockCoop.Fase2
         private static ulong _alvo;                       // canalizando ou aguardando; 0 com _ativo falso
         private static bool _canalizando, _aguardando, _ativo;
         private static float _inicio, _pedidoEm, _recargaAte, _ultimoCombate = -100f;
+        private static ulong _warpAlvo;                   // 0.30.0: TP autorizado, esperando o personagem sumir (TpEfeito)
+        private static float _warpEm = -1f;
         private static bool _escolhendo;
         private static float _escolhaAte;
         private static int _realce;                       // controle: índice realçado na escolha
@@ -323,6 +327,7 @@ namespace HellClockCoop.Fase2
             bool canalizando = _canalizando;
             _ativo = _canalizando = _aguardando = false;
             _alvo = 0;
+            TpEfeito.Restaurar();
             if (canalizando) Avisar($"Teleporte cancelado: {motivo}.");
         }
 
@@ -332,6 +337,7 @@ namespace HellClockCoop.Fase2
 
         internal static void Atualizar(PlayerController local)
         {
+            if (_warpEm >= 0f) AtualizarWarp();
             if (!_ativo) return;
             if (!PodeTeleportar()) { Cancelar("você não pode teleportar agora"); return; }
             if (_aguardando)
@@ -341,12 +347,15 @@ namespace HellClockCoop.Fase2
                     Plugin.Log.LogWarning("[TP] O host não respondeu ao pedido de teleporte.");
                     _ativo = _aguardando = false;
                     _alvo = 0;
+                    TpEfeito.Restaurar();
                     Avisar("O host não respondeu ao teleporte.");
                 }
                 return;
             }
             if (!AlvoDisponivel(_alvo)) { Cancelar("o aliado ficou indisponível"); return; }
             if (local.MovementController.IsMoving) { Cancelar("você se moveu"); return; }
+            // Contorno na cor do aliado, pulsando cada vez mais rápido (só neste PC); parado no máximo enquanto espera o host.
+            TpEfeito.Pulsar(local, Fase3.DanosVisiveis.CorDoAliado(_alvo), Time.unscaledTime - _inicio, Validacao.TpCanalizaSegundos);
             if (Time.unscaledTime - _inicio < Validacao.TpCanalizaSegundos) return;
 
             _canalizando = false;
@@ -367,11 +376,15 @@ namespace HellClockCoop.Fase2
             Plugin.Log.LogInfo("[TP] Pedido de teleporte enviado ao host.");
         }
 
-        /// <summary>Resultado (do host pela rede, ou o seu próprio como host): teleporta ou explica a recusa.</summary>
+        /// <summary>
+        /// Resultado (do host pela rede, ou o seu próprio como host): com "ok", o personagem some (TpEfeito) e o Warp vem
+        /// TpEfeito.DuracaoSumir depois (AtualizarWarp); senão explica a recusa.
+        /// </summary>
         private static void Resolver(ulong alvo, byte motivo, float recarga)
         {
             _ativo = _canalizando = _aguardando = false;
             _alvo = 0;
+            TpEfeito.Restaurar();
             if (motivo != Validacao.MotivoTpOk)
             {
                 if (motivo == Validacao.MotivoTpRecarga) _recargaAte = Time.unscaledTime + recarga;
@@ -381,24 +394,55 @@ namespace HellClockCoop.Fase2
             }
             _recargaAte = Time.unscaledTime + Validacao.TpRecargaSegundos;
             PlayerController local = CoopRuntime.JogadorLocal();
-            if (!PosicaoDe(alvo, out Vector3 destino, out string nome) || local == null || local.MovementController == null)
+            if (!Destino(alvo, local, out Vector3 _, out string _)) return; // confere antes de sumir: sem destino, nem some
+            TpEfeito.Sumir(local);
+            _warpAlvo = alvo;
+            _warpEm = Time.unscaledTime + TpEfeito.DuracaoSumir;
+        }
+
+        /// <summary>Warp depois de o personagem sumir; o destino é lido de novo (o aliado pode ter andado nesses 0,2 s).</summary>
+        private static void AtualizarWarp()
+        {
+            if (Time.timeScale <= 0f || Time.unscaledTime < _warpEm) return; // pausa: o dissolver também para
+            ulong alvo = _warpAlvo;
+            _warpEm = -1f;
+            _warpAlvo = 0;
+            PlayerController local = CoopRuntime.JogadorLocal();
+            if (!AlvoDisponivel(alvo)) Avisar("Teleporte perdido: o aliado ficou indisponível.");
+            if (!PodeTeleportar() || !AlvoDisponivel(alvo) || !Destino(alvo, local, out Vector3 destino, out string nome))
+            {
+                TpEfeito.Desfazer();
+                return;
+            }
+            try
+            {
+                local.MovementController.Warp(destino);
+                Plugin.Log.LogInfo($"[TP] Você teleportou até {nome}.");
+                TpEfeito.Reaparecer(local, destino);
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[TP] Teleporte falhou: {(e.InnerException ?? e).Message}");
+                TpEfeito.Desfazer();
+            }
+        }
+
+        /// <summary>Posição do aliado levada ao chão andável (NavMesh, até RaioNavMesh); avisa e devolve falso se não der.</summary>
+        private static bool Destino(ulong alvo, PlayerController local, out Vector3 destino, out string nome)
+        {
+            if (!PosicaoDe(alvo, out destino, out nome) || local == null || local.MovementController == null)
             {
                 Avisar("Teleporte perdido: o aliado sumiu da tela.");
-                return;
+                return false;
             }
             if (!UnityEngine.AI.NavMesh.SamplePosition(destino, out UnityEngine.AI.NavMeshHit ponto, RaioNavMesh, -1)) // -1 = todas as áreas (NavMesh.AllAreas não existe no Unity do jogo)
             {
                 Avisar("Teleporte perdido: o aliado está fora do chão andável.");
                 Plugin.Log.LogWarning("[TP] Destino do teleporte fora da NavMesh; ignorado.");
-                return;
+                return false;
             }
             destino = ponto.position;
-            try
-            {
-                local.MovementController.Warp(destino);
-                Plugin.Log.LogInfo($"[TP] Você teleportou até {nome}.");
-            }
-            catch (Exception e) { Plugin.Log.LogWarning($"[TP] Teleporte falhou: {(e.InnerException ?? e).Message}"); }
+            return true;
         }
 
         private static bool PosicaoDe(ulong chave, out Vector3 posicao, out string nome)

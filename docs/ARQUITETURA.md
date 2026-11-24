@@ -1607,10 +1607,25 @@ no código (`Validacao.Tp*`), não no .cfg; só a tecla vai para o .cfg (`[Tecla
   O combate do convidado, no host, é o último `Golpes` recebido dele ou a vida do snapshot caindo (`Par.UltimoCombate`).
   Responde `RespostaTp` (uma a cada 0,5 s por par); com "ok", o convidado faz `MovementController.Warp` até o avatar do
   aliado. Sem resposta em 3 s, o pedido expira; resposta depois disso só acerta a recarga. O host decide o próprio TP pela mesma regra, sem rede.
-- **Painel (`PainelGrupo`):** ícone Streamline "Location Target 1" (18 px) na ponta direita da linha do nome, na cor do
-  aliado; cinza com os segundos em recarga, cinza em combate, pulsando com o que falta da canalização, "..." aguardando o
-  host e 1/2/3 na escolha. Some com o aliado caído, fora do andar ou sem você poder teleportar. A ordem dos números é a
-  ordem do painel (`TpAliado.OrdemDoPainel`).
+- **Painel (`PainelGrupo`):** desde a 0.30.0 (opção A "raio + aura" do autor), disco escuro de 22 px na ponta direita da
+  linha do nome, com o raio Streamline "Flash 1" (16 px) dentro e um anel radial por cima (`Image` Filled Radial360, origem
+  no topo; disco e anel gerados em textura no código). Pronto: anel cheio e raio na cor do aliado; recarga: cinza, o anel
+  varre `1 − restante/60` e os segundos ao lado; combate: cinza; canalizando: o anel enche com a fração e o raio pulsa;
+  "..." aguardando o host e 1/2/3 na escolha. O clique e o hover usam o disco. Some com o aliado caído, fora do andar ou
+  sem você poder teleportar. A ordem dos números é a ordem do painel (`TpAliado.OrdemDoPainel`).
+- **Efeito no personagem (`Fase2/TpEfeito.cs`, 0.30.0):** só no PC de quem teleporta (os aliados só o veem chegar). Na
+  canalização, o fresnel adicional dos materiais do personagem (`CharacterEffectsController.AllMaterials`, não público,
+  e os ids estáticos `AdditionalFresnelColor`/`AdditionalFresnelIntensity`, por reflexão) fica na cor do aliado, com a
+  intensidade pulsando entre 0,25 e 1 numa frequência que sobe de 1,5 a 6,5 Hz nos 2 s (8 ciclos inteiros: termina no máximo); cor e intensidade de cada material
+  são guardadas e voltam no fim, no cancelamento e na recusa. Autorizado o TP: `DisappearFx` + `LerpDissolve(1, 0,2 s,
+  InQuad)`; 0,2 s depois o `TpAliado` relê o destino e faz o `Warp`, e vem `ReappearFx` + `LerpDissolve(0, 0,35 s,
+  Linear)` (sem destino ou sem poder teleportar, o dissolver volta onde está). Os efeitos são os do `TeleportConfig` da
+  primeira `TeleportSkillDefinition` da coleção de skills com os dois (o nome vai ao log); sem ela, só o dissolver. Criados
+  com `GameplayFx.CreateFx(jogador, posição, null, null)` como no `Teleport.ExecuteTeleport` do jogo, com
+  `FxCompartilhados.IgnorarCriados` ligado e o objeto marcado por 3 s (`MarcarSoLocal`): nem o efeito nem o som vão aos
+  aliados, inclusive o som ativado depois (`GameplaySfxConfig.ActivateSfx(vfx, …)` com o objeto marcado silencia a captura
+  do `SonsAliados`). O tween de sumir é morto antes de voltar (o `LerpDissolve` do jogo não mata o anterior), e o Warp
+  reconfere o aliado no andar. Erro desliga só o efeito (log).
 - **Modo eco:** o fantasma vale como aliado só para quem joga sozinho (fora de sessão, ou host de sala sem ninguém, desde a
   0.29.1), com a regra local e sem rede; com alguém na sala o TP até ele passaria por cima do host, e o eco pode estar
   deslocado até 60 m.

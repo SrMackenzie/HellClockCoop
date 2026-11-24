@@ -63,6 +63,10 @@ namespace HellClockCoop.Fase3
         private static int _contexto;      // > 0: dentro de um método de skill do jogador local
         private static int _audio;         // profundidade nos métodos do AudioController (só o de fora conta)
         private static bool _reproduzindo; // tocando um som que veio de fora: não captura
+        private static int _silencio;      // > 0: dentro do ActivateSfx de um efeito só deste PC (TpEfeito): não captura
+
+        /// <summary>Nada é capturado: som de fora tocando, efeito só local sendo criado (FxCompartilhados) ou ativado depois.</summary>
+        private static bool Calado => _reproduzindo || _silencio > 0 || FxCompartilhados.IgnorarCriados;
         private static int _dano;          // > 0: dentro do DamageDealer.PerformDamageWrapper (dor, morte: vão pelos golpes vistos e pela réplica)
         private static bool _avisouContexto;
 
@@ -149,20 +153,28 @@ namespace HellClockCoop.Fase3
             catch (Exception) { return false; }
         }
 
-        /// <summary>Prefixo dos métodos de contexto. Verdadeiro quando entrou (o finalizador sai).</summary>
-        internal static bool EntrarContexto(MethodBase m, object instancia, object[] args)
+        private const int ForaDoContexto = 0, NoContexto = 1, EmSilencio = 2;
+
+        /// <summary>Prefixo dos métodos de contexto: NoContexto ou EmSilencio quando entrou (o finalizador sai), senão ForaDoContexto.</summary>
+        internal static int EntrarContexto(MethodBase m, object instancia, object[] args)
         {
-            if (_reproduzindo || m == null || !HaQuemOuca) return false;
+            if (Calado || m == null || !HaQuemOuca) return ForaDoContexto;
             double inicio = Desempenho.InicioGancho();
             try
             {
-                if (!DoJogador(Lancador(m, instancia, args), CoopRuntime.JogadorLocal())) return false;
+                // Som de um efeito só deste PC (TpEfeito) ativado depois do CreateFx (GameplaySfxConfig.ActivateSfx(vfx, …)).
+                if (args != null && args.Length > 0 && args[0] is GameObject vfx && FxCompartilhados.SoLocal(vfx))
+                {
+                    _silencio++;
+                    return EmSilencio;
+                }
+                if (!DoJogador(Lancador(m, instancia, args), CoopRuntime.JogadorLocal())) return ForaDoContexto;
                 _contexto++;
-                return true;
+                return NoContexto;
             }
             catch (Exception)
             {
-                return false;
+                return ForaDoContexto;
             }
             finally
             {
@@ -170,9 +182,10 @@ namespace HellClockCoop.Fase3
             }
         }
 
-        internal static void SairContexto(bool entrou)
+        internal static void SairContexto(int estado)
         {
-            if (entrou && _contexto > 0) _contexto--;
+            if (estado == EmSilencio && _silencio > 0) _silencio--;
+            if (estado == NoContexto && _contexto > 0) _contexto--;
         }
 
         internal static bool EntrarAudio() => _audio++ == 0;
@@ -197,7 +210,7 @@ namespace HellClockCoop.Fase3
         {
             ParametrosCopiados.Clear();
             _temCopia = false;
-            if (_reproduzindo || _contexto <= 0 || _dano > 0 || parametros == null) return;
+            if (Calado || _contexto <= 0 || _dano > 0 || parametros == null) return;
             foreach (AudioEventParameter p in parametros)
             {
                 if (ParametrosCopiados.Count >= SonsAliado.MaximoParametros) break;
@@ -272,10 +285,10 @@ namespace HellClockCoop.Fase3
             return ok;
         }
 
-        private static void PrefixoContexto(MethodBase __originalMethod, object __instance, object[] __args, out bool __state) =>
+        private static void PrefixoContexto(MethodBase __originalMethod, object __instance, object[] __args, out int __state) =>
             __state = EntrarContexto(__originalMethod, __instance, __args);
 
-        private static void FinalizadorContexto(bool __state) => SairContexto(__state);
+        private static void FinalizadorContexto(int __state) => SairContexto(__state);
 
         // ---------------- Quem lança: captura ----------------
 
@@ -343,7 +356,7 @@ namespace HellClockCoop.Fase3
         /// <summary>Postfix de AudioController.PlaySfx (o de fora): som num ponto, dentro de uma skill do jogador local.</summary>
         internal static void TocouNoPonto(EventReference ev, Vector3? posicao, List<AudioEventParameter> parametros, bool umaVez, EventInstance instancia)
         {
-            if (_reproduzindo || _contexto <= 0 || _dano > 0 || ev.IsNull || !HaQuemOuca) return;
+            if (Calado || _contexto <= 0 || _dano > 0 || ev.IsNull || !HaQuemOuca) return;
             double inicio = Desempenho.InicioGancho();
             try
             {
@@ -365,7 +378,7 @@ namespace HellClockCoop.Fase3
         /// <summary>Postfix de AudioController.PlayAndAttachSfx(EventReference, ISkillCaster, …): som preso ao jogador local (ou a algo dele).</summary>
         internal static void TocouNoLancador(EventReference ev, ISkillCaster lancador, List<AudioEventParameter> parametros, AttachedSfx preso)
         {
-            if (_reproduzindo || _dano > 0 || ev.IsNull || lancador == null || preso == null || !HaQuemOuca) return;
+            if (Calado || _dano > 0 || ev.IsNull || lancador == null || preso == null || !HaQuemOuca) return;
             double inicio = Desempenho.InicioGancho();
             try
             {
@@ -388,7 +401,7 @@ namespace HellClockCoop.Fase3
         /// <summary>Postfix de AudioController.PlayAndAttachSfx(EventReference, GameObject, …): som preso a um efeito, dentro de uma skill do jogador local.</summary>
         internal static void TocouNoObjeto(EventReference ev, GameObject alvo, List<AudioEventParameter> parametros, AttachedSfx preso)
         {
-            if (_reproduzindo || _contexto <= 0 || _dano > 0 || ev.IsNull || alvo == null || preso == null || !HaQuemOuca) return;
+            if (Calado || _contexto <= 0 || _dano > 0 || ev.IsNull || alvo == null || preso == null || !HaQuemOuca) return;
             double inicio = Desempenho.InicioGancho();
             try
             {
@@ -800,14 +813,15 @@ namespace HellClockCoop.Fase3
         {
             try
             {
-                if (_contexto != 0 || _audio != 0 || _dano != 0)
+                if (_contexto != 0 || _audio != 0 || _dano != 0 || _silencio != 0)
                 {
-                    // Fora de qualquer método do jogo os três são 0; se não, um finalizador não rodou.
-                    if (!_avisouContexto) Plugin.Log.LogWarning($"[Sons] Contexto desalinhado ({_contexto}, {_audio}, {_dano}); zerado.");
+                    // Fora de qualquer método do jogo os quatro são 0; se não, um finalizador não rodou.
+                    if (!_avisouContexto) Plugin.Log.LogWarning($"[Sons] Contexto desalinhado ({_contexto}, {_audio}, {_dano}, {_silencio}); zerado.");
                     _avisouContexto = true;
                     _contexto = 0;
                     _audio = 0;
                     _dano = 0;
+                    _silencio = 0;
                 }
                 _temCopia = false;
                 EnviarPendentes();

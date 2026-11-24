@@ -41,6 +41,28 @@ namespace HellClockCoop.Fase3
         /// <summary>Fantasma do modo eco (ou null): recebe as próprias cópias, deslocado.</summary>
         internal static RemotePlayerAvatar AvatarEco;
 
+        /// <summary>Verdadeiro enquanto o mod cria um efeito só deste PC (TpEfeito, 0.30.0): nem o efeito nem o som vão aos aliados.</summary>
+        internal static bool IgnorarCriados;
+
+        // Efeitos só deste PC e até quando valem (o som pode ser ativado depois do CreateFx; o pool reaproveita o objeto).
+        private static readonly Dictionary<GameObject, float> SoLocais = new Dictionary<GameObject, float>();
+        private static readonly List<GameObject> SoLocaisVencidos = new List<GameObject>();
+        private const float DuracaoSoLocal = 3f;
+
+        /// <summary>Marca um efeito criado pelo mod como só deste PC por DuracaoSoLocal (SonsAliados não captura o som dele).</summary>
+        internal static void MarcarSoLocal(GameObject go)
+        {
+            if (go == null) return;
+            float agora = Time.unscaledTime;
+            SoLocaisVencidos.Clear();
+            foreach (KeyValuePair<GameObject, float> kv in SoLocais) if (kv.Key == null || kv.Value < agora) SoLocaisVencidos.Add(kv.Key);
+            foreach (GameObject g in SoLocaisVencidos) SoLocais.Remove(g);
+            SoLocais[go] = agora + DuracaoSoLocal;
+        }
+
+        internal static bool SoLocal(GameObject go) =>
+            SoLocais.Count > 0 && go != null && SoLocais.TryGetValue(go, out float ate) && Time.unscaledTime <= ate;
+
         private static readonly AccessTools.FieldRef<GameplayFx, AssetReferenceGameObject> PrefabRef =
             AccessTools.FieldRefAccess<GameplayFx, AssetReferenceGameObject>("_vfxPrefab");
 
@@ -161,7 +183,7 @@ namespace HellClockCoop.Fase3
         /// <summary>Postfix de GameplayFx.CreateFx.</summary>
         internal static void EfeitoCriado(GameplayFx fx, ISkillCaster caster, Skill skill, GameObject go)
         {
-            if (go == null) return; // rastreia sempre: quem chegar depois (ou o eco ligado depois) recebe os efeitos que já existem
+            if (go == null || IgnorarCriados) return; // rastreia sempre: quem chegar depois (ou o eco ligado depois) recebe os efeitos que já existem
             // Com sobrescrita de efeito, a chamada de dentro (o efeito de fato) é que registra.
             if (skill != null && skill.HasFxOverrides && skill.SkillFxOverrides != null && skill.SkillFxOverrides.HasOverride(fx)) return;
             PlayerController local = CoopRuntime.JogadorLocal(); // (PlayerController.Instance cria um se faltar)

@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.30.0 — Visual do teleporte 🧪
+_23/11/2026_
+
+- Novo símbolo do teleporte no painel de grupo: um raio num disco escuro com um anel na cor do aliado
+- Em recarga, o anel cinza vai enchendo até o teleporte voltar, com os segundos ao lado; na canalização, o anel enche em 2 s
+- Durante a canalização seu personagem ganha um contorno na cor do aliado, pulsando cada vez mais rápido
+- No teleporte, o personagem some e reaparece ao lado do aliado com o efeito de teleporte do jogo
+- O efeito aparece só na sua tela; as regras do teleporte não mudaram. Exige a 0.30.0 em todos os PCs (a mesma versão do mod)
+
 ## 0.29.1 — Teleporte até o eco com a sala vazia 🧪
 _23/11/2026_
 
