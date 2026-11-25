@@ -392,6 +392,7 @@ namespace HellClockCoop
         {
             _avisos.Add(new KeyValuePair<float, string>(Time.unscaledTime + 6f, texto));
             if (_avisos.Count > 5) _avisos.RemoveAt(0);
+            _versaoAvisos++;
         }
 
         private void OnGUI()
@@ -437,6 +438,33 @@ namespace HellClockCoop
 
         private bool _textoPreparado;
 
+        // 0.31.2: o texto do canto (eco e avisos) só é remontado quando muda. Antes cada chamada do OnGUI (2 ou mais por
+        // quadro) criava a lista, as linhas, o texto juntado e o GUIContent, e media a altura de novo: lixo a cada quadro.
+        private readonly GUIContent _cantoConteudo = new GUIContent();
+        private readonly System.Text.StringBuilder _cantoTexto = new System.Text.StringBuilder(256);
+        private float _cantoAltura;
+        private int _versaoAvisos, _cantoVersao = -1, _cantoBytes = -1;
+        private bool _cantoEco;
+        private string _cantoTecla;
+
+        private void AtualizarCanto()
+        {
+            string tecla = TeclaEco.Value;
+            if (_cantoVersao == _versaoAvisos && _cantoEco == _ecoAtivo && (!_ecoAtivo || _cantoBytes == _bytesUltimo)
+                && ReferenceEquals(_cantoTecla, tecla)) return;
+            _cantoVersao = _versaoAvisos; _cantoEco = _ecoAtivo; _cantoBytes = _bytesUltimo; _cantoTecla = tecla;
+            _cantoTexto.Length = 0;
+            if (_ecoAtivo) _cantoTexto.Append("Modo eco (").Append(tecla).Append("): ").Append(_bytesUltimo).Append(" bytes por snapshot, 20/s");
+            foreach (KeyValuePair<float, string> a in _avisos)
+            {
+                if (_cantoTexto.Length > 0) _cantoTexto.Append('\n');
+                _cantoTexto.Append("» ").Append(a.Value);
+            }
+            if (_cantoTexto.Length == 0) { _cantoAltura = 0f; _cantoConteudo.text = null; return; }
+            _cantoConteudo.text = _cantoTexto.ToString();
+            _cantoAltura = _estiloCaixa.CalcHeight(_cantoConteudo, 560f);
+        }
+
         private void DesenharInterface()
         {
             if (_estiloCaixa == null)
@@ -453,25 +481,20 @@ namespace HellClockCoop
                 PrepararTexto();
             }
 
-            var linhas = new List<string>();
             // 0.13.0: sem a dica "F7 abre o menu" (os botões Coop do menu e da pausa a substituem); o recado do atualizador
             // fica no menu do coop. 0.23.0: sem o estado da sessão, os aliados e o balanceamento (estão nas abas Sessão e
             // Ajustes); o canto mostra só o modo eco e os avisos curtos, que somem sozinhos.
-            if (_ecoAtivo) linhas.Add($"Modo eco ({TeclaEco.Value}): {_bytesUltimo} bytes por snapshot, 20/s");
             for (int i = _avisos.Count - 1; i >= 0; i--)
             {
-                if (_avisos[i].Key < Time.unscaledTime) _avisos.RemoveAt(i);
+                if (_avisos[i].Key < Time.unscaledTime) { _avisos.RemoveAt(i); _versaoAvisos++; }
             }
-            foreach (KeyValuePair<float, string> a in _avisos) linhas.Add("» " + a.Value);
+            AtualizarCanto();
 
             float yBotao = 12f;
-            if (linhas.Count > 0)
+            if (_cantoAltura > 0f)
             {
-                string texto = string.Join("\n", linhas);
-                var conteudo = new GUIContent(texto);
-                float altura = _estiloCaixa.CalcHeight(conteudo, 560f);
-                GUI.Box(new Rect(12, 12, 560, altura), conteudo, _estiloCaixa);
-                yBotao += altura + 8f;
+                GUI.Box(new Rect(12, 12, 560, _cantoAltura), _cantoConteudo, _estiloCaixa);
+                yBotao += _cantoAltura + 8f;
             }
             Interface.MenuCoop.DesenharBotaoMenu(yBotao); // só no menu (sem personagem)
 
@@ -501,6 +524,7 @@ namespace HellClockCoop
     internal static class Teclas
     {
         private static readonly Dictionary<string, Key> Cache = new Dictionary<string, Key>();
+        private static readonly Dictionary<string, KeyCode> CacheLegado = new Dictionary<string, KeyCode>();
         private static bool _legadoIndisponivel;
         private static int _caminhoInformado; // 1 = Input System, 2 = legado (o jogo lê o teclado pelo Rewired)
 
@@ -600,7 +624,14 @@ namespace HellClockCoop
             try
             {
                 InformarCaminho(2);
-                return Enum.TryParse(NomeLegado(nome), true, out KeyCode codigo) && Input.GetKeyDown(codigo);
+                // 0.31.2: o nome vira KeyCode uma vez só. Neste jogo o teclado é lido por aqui (Keyboard.current é nulo), e o
+                // NomeLegado + Enum.TryParse a cada tecla e a cada quadro criavam texto e caixas para o coletor de lixo.
+                if (!CacheLegado.TryGetValue(nome, out KeyCode codigo))
+                {
+                    codigo = Enum.TryParse(NomeLegado(nome), true, out KeyCode lido) ? lido : KeyCode.None;
+                    CacheLegado[nome] = codigo;
+                }
+                return codigo != KeyCode.None && Input.GetKeyDown(codigo);
             }
             catch (InvalidOperationException)
             {

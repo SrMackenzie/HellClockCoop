@@ -4,6 +4,14 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.31.2 — Menos lixo de memória a cada quadro: menos pausas do coletor 🧪
+_25/11/2026_
+
+- O mod criava pequenos objetos descartáveis em todo quadro, e o coletor de lixo do jogo precisava parar para limpá-los. Três fontes foram tiradas: a leitura das teclas do mod (o nome de cada tecla era convertido de novo a cada quadro), o texto do canto da tela (modo eco e avisos, remontado várias vezes por quadro) e os ganchos que reconhecem os sons das skills (cada skill usada copiava os seus parâmetros, mesmo jogando sozinho)
+- Medido no PC do autor, mesmo roteiro antes e depois: parado no hub sozinho, a memória que vira lixo caiu de 28 para 19 MB por minuto; no hub com o modo eco, de 52 para 28. Inclui o lixo do próprio jogo, que não muda. A comparação numa run com luta ficou para outra medição (na passada de depois o personagem caiu logo no começo)
+- O medidor do log ganhou, no resumo, a subida da memória entre coletas (MB por minuto)
+- Balanceamento: sem efeito (nada de regra de jogo muda). Protocolo não muda (25), mas a lista de salas só mostra salas da mesma versão: atualize todos os PCs para a 0.31.2
+
 ## 0.31.1 — Golpes, números, sons e efeitos dos aliados chegam aos poucos, sem acumular num quadro só 🧪
 _24/11/2026_
 

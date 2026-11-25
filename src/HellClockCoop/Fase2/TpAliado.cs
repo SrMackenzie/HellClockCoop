@@ -49,6 +49,10 @@ namespace HellClockCoop.Fase2
         private static bool _escolhendo;
         private static float _escolhaAte;
         private static int _realce;                       // controle: índice realçado na escolha
+
+        // 0.31.2: nomes prontos (antes "Digit" + n a cada quadro da escolha)
+        private static readonly string[] TeclasDigito = { "Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6", "Digit7", "Digit8", "Digit9" };
+        private static readonly string[] TeclasNumpad = { "Numpad1", "Numpad2", "Numpad3", "Numpad4", "Numpad5", "Numpad6", "Numpad7", "Numpad8", "Numpad9" };
         private static PlayerController _registrado;
         private static RemotePlayerAvatar _eco;
         private static readonly List<ulong> Alvos = new List<ulong>(); // aliados do painel na ordem dele (sem você)
@@ -270,7 +274,7 @@ namespace HellClockCoop.Fase2
             int escolhido = -1;
             for (int i = 0; i < disponiveis; i++)
             {
-                if (Teclas.Pressionou("Digit" + (i + 1)) || Teclas.Pressionou("Numpad" + (i + 1))) escolhido = i;
+                if (i < TeclasDigito.Length && (Teclas.Pressionou(TeclasDigito[i]) || Teclas.Pressionou(TeclasNumpad[i]))) escolhido = i;
             }
             if (escolhido < 0 && Teclas.Controle(c => c.buttonSouth, null)) escolhido = _realce;
             if (escolhido < 0) return;

@@ -402,6 +402,26 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.31.2 — Menos alocação por quadro (teclas, canto do OnGUI, contexto de som)
+
+Não muda mensagem (protocolo 25), regra de jogo nem save. Tira três fontes de lixo de todo quadro (ARQUITETURA, riscos,
+item 7, etapa 7, com a tabela antes/depois). Medido sozinho em 25/11/2026:
+
+- [x] **Medidor (sozinho, 25/11/2026):** no `[Desempenho] Resumo` sai `subida entre coletas X MB (Y MB/min, jogo e
+  mod)`. Roteiro por script: hub solo parado 2 min; F7, "Criar coop", Esc, F7, F8 (eco) 1 min; F8 desliga e liga;
+  portal; 14 voltas de luta; F8 desliga. Medido: hub solo 28,2 → 19,1 MB/min; hub com eco 52,3 → 28,0.
+- [ ] **Run com luta nas duas versões:** a passada de depois caiu no começo do andar (sem luta), então a run ficou sem
+  comparação; repetir o roteiro e conferir que a run termina a luta nas duas passadas.
+- [x] **Contexto de som:** o log mostra `[Sons] Contexto de som em 27 método(s) de skill (0 com falha, 0 ausente(s), 0
+  sem lançador, 0 com __args)`. Numa passada com luta (mesmo código, ainda sem o medidor de memória), `contexto de som`
+  aparece nos detalhes do resumo e a recepção simulada recebe `SonsAliado` 270 (sons das skills capturados como antes).
+- [x] **Canto da tela:** com o eco ligado, a caixa "Modo eco (F8): N bytes por snapshot" aparece e o número muda.
+- [ ] **Teclas:** F7 (menu), F8 (eco), botão do meio (marcador) e a escolha do TP até o aliado com 1/2/3 do teclado
+  normal e do numérico funcionam como antes.
+- [ ] **Aliado de verdade (dupla):** os sons das skills do aliado tocam como na 0.31.1 (tiros, facas, explosão de
+  cadáver, teleporte); avisos do canto aparecem e somem sozinhos.
+- Se falhar, mandar: o `LogOutput.log` (linhas `[Sons]` e `[Teclas]`) e qual tecla ou som faltou.
+
 ## 0.31.1 — Recepção com teto por quadro (golpes, números, sons e efeitos dos aliados)
 
 Não muda mensagem (protocolo 25), regra de jogo nem save. O que chega dos aliados e é só imagem e som passa por uma

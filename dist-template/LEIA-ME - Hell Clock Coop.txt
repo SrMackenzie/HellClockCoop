@@ -278,6 +278,9 @@ ESTADO ATUAL (versão de teste, Fase 3)
   limite por quadro, em vez de se acumularem todos de uma vez numa luta grande. Nada muda no
   jogo (dano, vida e morte seguem iguais). Use a 0.31.1 em todos os PCs: a lista de salas só
   mostra salas da mesma versão.
+- (0.31.2): o mod produz menos lixo de memória a cada quadro (teclas, texto do canto da tela
+  e reconhecimento dos sons das skills), então o jogo para menos vezes para limpar a memória.
+  Nada muda no jogo. Use a 0.31.2 em todos os PCs.
 - A Deluxe Edition (cosmética) não importa.
 
 

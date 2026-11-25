@@ -78,6 +78,7 @@ namespace HellClockCoop
         private static long _somaSteam;
         private static int _pisos;
         private static long _pisoMinimo, _pisoMaximo, _pisoUltimo;
+        private static long _usadoAnterior, _subidaMemoria; // 0.31.2: subida da memória gerenciada entre quadros sem coleta
         private static readonly int[] _enviadasTipo = new int[256];
         private static readonly long[] _bytesTipo = new long[256];
         private static int _recebidasJanela, _quadrosBufferCheio;
@@ -276,6 +277,12 @@ namespace HellClockCoop
                     if (mod > _piorModCarregando) { _piorModCarregando = mod; _piorModCarregandoParte = NomesParte[pior]; }
                 }
             }
+            // 0.31.2: quanto a memória gerenciada subiu de um quadro para o outro, fora dos quadros com coleta e do carregamento
+            // (o jogo e o mod juntos). Aproximação do lixo produzido: o coletor do Mono só tira memória livre em blocos, então
+            // conta menos que o alocado, mas da mesma forma antes e depois de uma mudança, no mesmo roteiro.
+            long usado = UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong();
+            if (!carregando && _inicioJanela >= 0f && coletas == 0 && _usadoAnterior > 0 && usado > _usadoAnterior) _subidaMemoria += usado - _usadoAnterior;
+            _usadoAnterior = usado;
             if (!carregando) Contabilizar(quadroMs, coletas, cena, steam);
             Zerar();
 
@@ -556,6 +563,7 @@ namespace HellClockCoop
                     $"detalhes: {(detalhes.Count > 0 ? string.Join(" · ", detalhes.ToArray()) : "nenhum")}; " +
                     $"chamadas à Steam por quadro (jogo e mod): {(_quadrosSteam > 0 ? $"média {(double)_somaSteam / _quadrosSteam:0.0}, pior {_piorSteam}" : "sem leitura")}; " +
                     $"coletas de lixo: {_coletas}; memória gerenciada {UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong() / Mega:0.0} MB agora, " +
+                    $"subida entre coletas {_subidaMemoria / Mega:0.0} MB ({_subidaMemoria / Mega / (duracao / 60f):0.0} MB/min, jogo e mod), " +
                     $"piso depois de coleta: {(_pisos > 0 ? $"mínimo {_pisoMinimo / Mega:0.0}, máximo {_pisoMaximo / Mega:0.0}, último {_pisoUltimo / Mega:0.0} MB em {_pisos} leitura(s)" : "sem coleta no período")}; " +
                     $"quadros longos em carregamento (fora da conta): {_carregamentos}{(_carregamentos > 0 ? $" (mod no pior: {_piorModCarregando:0.0} ms, {_piorModCarregandoParte})" : "")}.");
                 ResumirRede(duracao);
@@ -566,7 +574,7 @@ namespace HellClockCoop
             _somaQuadro = _piorQuadro = _somaMod = _piorMod = _piorModCarregando = 0;
             _piorModParte = _piorModCarregandoParte = null;
             _quadrosSteam = _piorSteam = _pisos = _recebidasJanela = _quadrosBufferCheio = _enviosEstado = _pacotesEstado = 0;
-            _somaSteam = _pisoMinimo = _pisoMaximo = _pisoUltimo = _bytesRecebidosJanela = 0;
+            _somaSteam = _pisoMinimo = _pisoMaximo = _pisoUltimo = _bytesRecebidosJanela = _subidaMemoria = 0;
             _relevantesEstado = _itensEstado = _completosEstado = _comAnimacaoEstado = _bytesEstado = 0;
             _estadoSimulado = false;
             Array.Clear(_somaParte, 0, _somaParte.Length);

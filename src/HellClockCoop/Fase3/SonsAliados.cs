@@ -126,8 +126,9 @@ namespace HellClockCoop.Fase3
             }
         }
 
-        private static ISkillCaster Lancador(MethodBase m, object instancia, object[] args)
+        private static ISkillCaster Lancador(MethodBase m, object instancia, object[] args, ISkillCaster doParametro)
         {
+            if (doParametro != null) return doParametro; // prefixo tipado: o parâmetro candidato já veio sem o __args
             if (!Resolvedores.TryGetValue(m, out Resolvedor r)) Resolvedores[m] = r = Montar(m);
             if (args != null)
             {
@@ -156,19 +157,23 @@ namespace HellClockCoop.Fase3
         private const int ForaDoContexto = 0, NoContexto = 1, EmSilencio = 2;
 
         /// <summary>Prefixo dos métodos de contexto: NoContexto ou EmSilencio quando entrou (o finalizador sai), senão ForaDoContexto.</summary>
-        internal static int EntrarContexto(MethodBase m, object instancia, object[] args)
+        /// <param name="args">Só no prefixo de reserva (__args); null nos tipados.</param>
+        /// <param name="vfx">1º parâmetro quando é GameObject (ActivateSfx); no de reserva sai do args.</param>
+        /// <param name="doParametro">Lançador tirado do parâmetro pelo prefixo tipado; null: procura no args e na instância.</param>
+        internal static int EntrarContexto(MethodBase m, object instancia, object[] args, GameObject vfx = null, ISkillCaster doParametro = null)
         {
             double inicio = Desempenho.InicioGancho(); // desde o começo: conta todas as chamadas, inclusive as que saem logo (0.30.1)
             try
             {
                 if (Calado || m == null || !HaQuemOuca) return ForaDoContexto;
+                if (vfx == null && args != null && args.Length > 0) vfx = args[0] as GameObject;
                 // Som de um efeito só deste PC (TpEfeito) ativado depois do CreateFx (GameplaySfxConfig.ActivateSfx(vfx, …)).
-                if (args != null && args.Length > 0 && args[0] is GameObject vfx && FxCompartilhados.SoLocal(vfx))
+                if (vfx != null && FxCompartilhados.SoLocal(vfx))
                 {
                     _silencio++;
                     return EmSilencio;
                 }
-                if (!DoJogador(Lancador(m, instancia, args), CoopRuntime.JogadorLocal())) return ForaDoContexto;
+                if (!DoJogador(Lancador(m, instancia, args, doParametro), CoopRuntime.JogadorLocal())) return ForaDoContexto;
                 _contexto++;
                 return NoContexto;
             }
@@ -243,9 +248,9 @@ namespace HellClockCoop.Fase3
         /// </summary>
         internal static int AplicarContextos(Harmony harmony)
         {
-            var prefixo = new HarmonyMethod(typeof(SonsAliados).GetMethod(nameof(PrefixoContexto), BindingFlags.NonPublic | BindingFlags.Static));
+            var prefixos = new Dictionary<string, HarmonyMethod>();
             var finalizador = new HarmonyMethod(typeof(SonsAliados).GetMethod(nameof(FinalizadorContexto), BindingFlags.NonPublic | BindingFlags.Static));
-            var alvos = new List<MethodBase>();
+            var alvos = new List<KeyValuePair<MethodBase, string>>();
             int semLancador = 0, ausentes = 0;
             foreach (var c in ContextosDeSom.Lista)
             {
@@ -263,30 +268,97 @@ namespace HellClockCoop.Fase3
                 if (achados.Count == 0) { ausentes++; Plugin.Log.LogWarning($"[Sons] {c.Tipo}.{c.Metodo} não encontrado: esse som não vai aos aliados."); }
                 foreach (MethodBase m in achados)
                 {
-                    if (Montar(m).Util) alvos.Add(m);
+                    Resolvedor r = Montar(m);
+                    if (r.Util) alvos.Add(new KeyValuePair<MethodBase, string>(m, PrefixoPara(m, r)));
                     else { semLancador++; Plugin.Log.LogWarning($"[Sons] {c.Tipo}.{c.Metodo}: lançador não encontrado no método."); }
                 }
             }
-            int ok = 0, falhas = 0;
-            foreach (MethodBase m in alvos)
+            int ok = 0, falhas = 0, comArgs = 0;
+            foreach (KeyValuePair<MethodBase, string> alvo in alvos)
             {
-                try
+                MethodBase m = alvo.Key;
+                string nome = alvo.Value;
+                // O tipado que falhar tenta de novo com o de reserva (__args), para o método não ficar sem contexto.
+                while (true)
                 {
-                    harmony.Patch(m, prefix: prefixo, finalizer: finalizador);
-                    ok++;
-                }
-                catch (Exception e)
-                {
-                    falhas++;
-                    Plugin.Log.LogWarning($"[Sons] Contexto em {m.DeclaringType?.FullName}.{m.Name} falhou: {(e.InnerException ?? e).Message}");
+                    try
+                    {
+                        if (!prefixos.TryGetValue(nome, out HarmonyMethod prefixo))
+                            prefixos[nome] = prefixo = new HarmonyMethod(typeof(SonsAliados).GetMethod(nome, BindingFlags.NonPublic | BindingFlags.Static));
+                        harmony.Patch(m, prefix: prefixo, finalizer: finalizador);
+                        ok++;
+                        if (nome == nameof(PrefixoContextoArgs))
+                        {
+                            comArgs++;
+                            Plugin.Log.LogInfo($"[Sons] Contexto em {m.DeclaringType?.FullName}.{m.Name} com o prefixo de reserva (__args: aloca a cada chamada).");
+                        }
+                        break;
+                    }
+                    catch (Exception e)
+                    {
+                        if (nome != nameof(PrefixoContextoArgs))
+                        {
+                            Plugin.Log.LogWarning($"[Sons] Contexto em {m.DeclaringType?.FullName}.{m.Name} com {nome} falhou ({(e.InnerException ?? e).Message}); tentando o de reserva.");
+                            nome = nameof(PrefixoContextoArgs);
+                            continue;
+                        }
+                        falhas++;
+                        Plugin.Log.LogWarning($"[Sons] Contexto em {m.DeclaringType?.FullName}.{m.Name} falhou: {(e.InnerException ?? e).Message}");
+                        break;
+                    }
                 }
             }
-            Plugin.Log.LogInfo($"[Sons] Contexto de som em {ok} método(s) de skill ({falhas} com falha, {ausentes} ausente(s), {semLancador} sem lançador).");
+            Plugin.Log.LogInfo($"[Sons] Contexto de som em {ok} método(s) de skill ({falhas} com falha, {ausentes} ausente(s), {semLancador} sem lançador, {comArgs} com __args).");
             return ok;
         }
 
-        private static void PrefixoContexto(MethodBase __originalMethod, object __instance, object[] __args, out int __state) =>
+        // 0.31.2: prefixos tipados. Com __args o Harmony cria um object[] e encaixota cada parâmetro de valor (Vector3,
+        // SkillExecutionRequest, FireProjectileInfo...) a cada chamada, mesmo no solo, onde o prefixo sai na primeira linha.
+        // Cada método recebe o prefixo que pega só o que o EntrarContexto usa; o de __args fica de reserva para formato
+        // que não se encaixe (uma atualização do jogo que mude os parâmetros continua funcionando, só alocando).
+
+        /// <summary>Lançador na instância ou nos campos (skills, corrotinas): nenhum parâmetro.</summary>
+        private static void PrefixoContexto(MethodBase __originalMethod, object __instance, out int __state) =>
+            __state = EntrarContexto(__originalMethod, __instance, null);
+
+        /// <summary>GameplaySfxConfig.ActivateSfx(GameObject vfx, ISkillCaster caster, Vector3 …).</summary>
+        private static void PrefixoContextoSfx(MethodBase __originalMethod, object __instance, GameObject __0, ISkillCaster __1, out int __state) =>
+            __state = EntrarContexto(__originalMethod, __instance, null, __0, __1);
+
+        /// <summary>RangedAttack.FireSingleBullet(SingleBulletRequest) (estático).</summary>
+        private static void PrefixoContextoTiro(MethodBase __originalMethod, SingleBulletRequest __0, out int __state) =>
+            __state = EntrarContexto(__originalMethod, null, null, null, LancadorDoTiro(__0));
+
+        /// <summary>ParabolaProjectileConfig.FireProjectile(…, IAttacker dono) (7º parâmetro).</summary>
+        private static void PrefixoContextoAtacante(MethodBase __originalMethod, object __instance, HellClock.Damage.IAttacker __6, out int __state) =>
+            __state = EntrarContexto(__originalMethod, __instance, null, null, ParaLancador(__6));
+
+        /// <summary>Reserva: qualquer outro formato, com o __args (aloca a cada chamada, como até a 0.31.1).</summary>
+        private static void PrefixoContextoArgs(MethodBase __originalMethod, object __instance, object[] __args, out int __state) =>
             __state = EntrarContexto(__originalMethod, __instance, __args);
+
+        private static ISkillCaster LancadorDoTiro(SingleBulletRequest req)
+        {
+            try { return req.SkillCaster; }
+            catch (Exception) { return null; }
+        }
+
+        private static bool SoIndice(Resolvedor r, int i) => r.Parametros.Length == 1 && r.Parametros[0] == i;
+
+        private static bool Tipo(ParameterInfo[] ps, int i, Type t) => ps.Length > i && ps[i].ParameterType == t;
+
+        /// <summary>Nome do prefixo que serve ao método (o EntrarContexto recebe o mesmo que receberia com o __args).</summary>
+        private static string PrefixoPara(MethodBase m, Resolvedor r)
+        {
+            ParameterInfo[] ps = m.GetParameters();
+            // 1º parâmetro que pode ser um GameObject: só o tipado ActivateSfx ou o __args olham o efeito só deste PC.
+            bool primeiroGo = ps.Length > 0 && ps[0].ParameterType.IsAssignableFrom(typeof(GameObject));
+            if (r.Parametros.Length == 0 && !primeiroGo) return nameof(PrefixoContexto);
+            if (Tipo(ps, 0, typeof(GameObject)) && Tipo(ps, 1, typeof(ISkillCaster)) && SoIndice(r, 1)) return nameof(PrefixoContextoSfx);
+            if (m.IsStatic && Tipo(ps, 0, typeof(SingleBulletRequest)) && SoIndice(r, 0)) return nameof(PrefixoContextoTiro);
+            if (!primeiroGo && Tipo(ps, 6, typeof(HellClock.Damage.IAttacker)) && SoIndice(r, 6)) return nameof(PrefixoContextoAtacante);
+            return nameof(PrefixoContextoArgs);
+        }
 
         private static void FinalizadorContexto(int __state) => SairContexto(__state);
 

@@ -296,6 +296,54 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
    Limitação conhecida (auditoria): as filas são uma por tipo, comuns a todos os aliados; um cliente alterado que
    inunda números de dano pode deixar os dos outros sem vez. O efeito é só visual e a fila tem teto de memória.
 
+   **Etapa 7 (0.31.2): alocação por quadro** (protocolo 25, sem mudança de mensagem nem de regra). Três fontes de lixo
+   que rodavam em todo quadro, também no solo:
+   - **Teclas no Input legado.** Neste jogo o `Keyboard.current` do Input System é nulo, então `Teclas.Pressionou` cai
+     sempre no legado, que fazia `NomeLegado` (`ToLowerInvariant`, às vezes concatenação) e `Enum.TryParse` para cada
+     tecla consultada, a cada quadro. Agora o `KeyCode` fica num dicionário por nome (`CacheLegado`), como o `Key` do
+     Input System já ficava. A escolha do TP até o aliado usa nomes prontos (`TeclasDigito`/`TeclasNumpad`) em vez de
+     `"Digit" + n`.
+   - **OnGUI do canto** (modo eco e avisos): o `OnGUI` roda duas ou mais vezes por quadro, e cada vez criava a lista
+     de linhas, as linhas, o texto juntado e um `GUIContent`, e media a altura. Agora o texto é remontado só quando
+     muda (eco ligado/desligado, bytes do snapshot, tecla, versão dos avisos) num `StringBuilder` e num `GUIContent`
+     reaproveitados; a altura é medida só então.
+   - **`__args` no contexto de som.** Com `object[] __args` o Harmony cria um vetor e encaixota cada parâmetro de
+     valor (`Vector3`, `SkillExecutionRequest`, `FireProjectileInfo`...) a cada chamada dos 27 métodos de skill, antes
+     de o prefixo sair no solo. Agora cada método recebe um prefixo tipado escolhido no patch
+     (`SonsAliados.PrefixoPara`, pelos tipos dos parâmetros conferidos no IL do 2.1.1.1): sem parâmetro (lançador na
+     instância ou nos campos da corrotina), `ActivateSfx(GameObject, ISkillCaster, …)`, `FireSingleBullet(SingleBulletRequest)`
+     e `FireProjectile(…, IAttacker)`. O de `__args` fica de reserva para formato que não se encaixe (uma atualização do
+     jogo que mude os parâmetros continua funcionando, só volta a alocar) e o log conta quantos o usam
+     (`[Sons] Contexto de som em 27 método(s) ... 0 com __args`).
+
+   O medidor ganhou no `Resumo` a **subida da memória gerenciada entre coletas**: soma de quanto
+   `Profiler.GetMonoUsedSizeLong` subiu de um quadro para o outro, fora dos quadros com coleta e do carregamento, em MB
+   e MB/min. É o jogo e o mod juntos, e conta menos que o alocado (o coletor do Mono só tira memória livre em blocos),
+   mas da mesma forma antes e depois, no mesmo roteiro.
+
+   Medido em 25/11/2026 no PC do autor, sozinho, mesmo roteiro por script nas duas passadas (hub solo parado 2 min;
+   sala vazia com eco no hub 1 min; portal, andar 1 do Sertão, 14 voltas de luta). "Antes" é o código da 0.31.1 com o
+   medidor novo (DLL montada fora do repositório; o atualizador troca uma DLL da 0.31.1 com outro conteúdo pela da
+   release ao abrir o jogo se o atualizador instalado não for o da release, então a DLL de medição precisa do
+   atualizador da 0.31.1 instalado).
+
+   | Trecho | Antes (MB/min; coletas) | Depois (MB/min; coletas) | Mod, média por quadro |
+   |---|---|---|---|
+   | Hub solo, parado (2,0 min) | 28,2; 1 | 19,1; 0 | 0,07 → 0,04 ms |
+   | Hub, sala vazia com eco (1,0 min) | 52,3; 0 | 28,0; 1 | 0,28 → 0,24 ms (OnGUI 0,05 → 0,03) |
+   | Run (1,8 min) | 73,5; 3 (luta inteira) | não comparável: caiu logo ao chegar e a run acabou | — |
+
+   Os dois trechos do hub são parados e comparáveis: o mod deixou de produzir ~9 MB/min no solo e ~24 MB/min com o eco
+   (o resto é do jogo). A run **não tem comparação**: na passada de depois o personagem caiu no começo do andar ("Ninguém
+   de pé: a run acaba") e a recepção simulada quase não recebeu nada (3 `FxNovo`, nenhum `SonsAliado`, contra 1.083 e 291
+   no antes). Fica para medir numa run com luta nas duas versões. Os prefixos tipados do contexto de som foram vistos
+   funcionando numa passada anterior do mesmo código, ainda sem o medidor de memória (0.31.2, `0 com __args`, luta
+   inteira, recepção simulada com `SonsAliado` 270 e 993 sons aplicados). Nenhuma `Travada` com coleta de lixo em
+   nenhuma das passadas. As
+   que sobraram são as de antes, nas duas versões: uma cópia de efeito de 44–49 ms no começo do andar (etapa de
+   efeitos) e, ao chegar ao andar, `buscar peças da HUD` (~37 ms ×2, 58–60 ms de quadro). Em dupla falta conferir os sons das
+   skills do aliado com os prefixos tipados (o log da sessão mostra `0 com __args`).
+
    **Etapa 4 (0.30.3): travadas pontuais.** Medido antes (0.30.2, 24/11/2026, PC do autor, ~200 fps), linhas `[Desempenho] Travada`:
 
    | Momento | Antes (0.30.2) | Causa | O que mudou |
