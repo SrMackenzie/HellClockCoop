@@ -194,7 +194,7 @@ namespace HellClockCoop.Net
 
             EstadoAtual = Estado.Livre;
             Plugin.Log.LogInfo($"[Sessão] DLCs: Deluxe={(MinhaDeluxe ? "sim" : "não")}, Cursed War={(MinhaCursedWar ? "sim" : "não")}.");
-            Plugin.Log.LogInfo($"[Sessão] Steam pronto ({SteamFriends.GetPersonaName()}). O menu do coop (F7 ou View no controle) cria, convida e sai.");
+            Plugin.Log.LogInfo($"[Sessão] Steam pronto ({LerMeuNome()}). O menu do coop (F7 ou View no controle) cria, convida e sai.");
 
             // Jogo aberto por um convite com o jogo fechado: a Steam passa "+connect_lobby <id>".
             _lobbyPendenteLinhaDeComando = LerLobby(string.Join(" ", Environment.GetCommandLineArgs()));
@@ -251,17 +251,28 @@ namespace HellClockCoop.Net
 
         private string _nomeSala; // dado pelo host a esta sala; null = "Sala de <nome na Steam>". Não fica guardado (pedido do autor).
 
+        // 0.31.3: o meu nome na Steam fica guardado. O menu do coop pedia o nome à Steam a cada montagem da lista (como host,
+        // na linha do nome da sala), e de vez em quando uma dessas chamadas demorava 9 a 17 ms. Quem relê é o que já falava
+        // com a Steam fora do quadro a quadro: a abertura, a criação da sala, os dados da sala (dono, a cada 2 s) e o Hello.
+        private string _meuNome;
+
+        /// <summary>O meu nome na Steam, lido agora (e guardado para o menu).</summary>
+        private string LerMeuNome() => _meuNome = SteamFriends.GetPersonaName();
+
+        /// <summary>O meu nome na Steam como foi lido por último (sem chamada à Steam; relido a cada 2 s por quem é dono da sala).</summary>
+        public string MeuNome => _meuNome ?? LerMeuNome();
+
         /// <summary>Nome da sala atual, limpo: o que este PC deu (host) ou o que o lobby anuncia (convidado). Null fora do coop.</summary>
         public string NomeDaSalaAtual()
         {
             if (!EmSessao) return null;
-            if (SouHost) return _nomeSala ?? Salas.NomePadrao(SteamFriends.GetPersonaName());
+            if (SouHost) return _nomeSala ?? Salas.NomePadrao(MeuNome);
             return Salas.NomeDaSalaListada(SteamMatchmaking.GetLobbyData(Lobby, Protocolo.ChaveLobbySala), HostDaSalaAtual());
         }
 
         /// <summary>Nome na Steam do dono do lobby (o host agora), limpo. Null fora do coop.</summary>
         public string HostDaSalaAtual() =>
-            EmSessao ? Salas.LimparNome(SteamFriends.GetFriendPersonaName(new CSteamID(_donoDoLobby))) : null;
+            !EmSessao ? null : Salas.LimparNome(_donoDoLobby == Eu.m_SteamID ? MeuNome : SteamFriends.GetFriendPersonaName(new CSteamID(_donoDoLobby)));
 
         public int JogadoresNaSala => EmSessao ? SteamMatchmaking.GetNumLobbyMembers(Lobby) : 0;
 
@@ -438,11 +449,11 @@ namespace HellClockCoop.Net
             SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyMod, Plugin.PluginVersion);
             SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyProtocolo, Protocolo.Versao.ToString());
             SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyJogo, Application.version);
-            SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyNome, SteamFriends.GetPersonaName());
+            SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyNome, LerMeuNome());
             SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyDono, Eu.m_SteamID.ToString()); // 0.23.0: bloquear pela aba Salas
             SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbyDlc, MinhaCursedWar ? "1" : "0");
             _nomeSala = null; // sala nova começa com o padrão
-            SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbySala, Salas.NomePadrao(SteamFriends.GetPersonaName())); // 0.25.0
+            SteamMatchmaking.SetLobbyData(lobby, Protocolo.ChaveLobbySala, Salas.NomePadrao(MeuNome)); // 0.25.0
             Plugin.Log.LogInfo($"[Sessão] Coop criado (lobby {r.m_ulSteamIDLobby}, sala {(TipoDaSala() == ELobbyType.k_ELobbyTypePublic ? "pública" : "privada")}).");
             // O LobbyEnter_t também chega para quem cria; lá o estado vira NoLobby.
             SteamFriends.ActivateGameOverlayInviteDialog(lobby);
@@ -700,7 +711,7 @@ namespace HellClockCoop.Net
             GravarDado(Protocolo.ChaveLobbyAndar, andar.ToString());
             GravarDado(Protocolo.ChaveLobbyDungeon, dungeonHash.ToString()); // 0.19.0: trava de progresso de quem entra
             GravarDado(Protocolo.ChaveLobbyNivel, nivel.ToString());
-            GravarDado(Protocolo.ChaveLobbyNome, SteamFriends.GetPersonaName());
+            GravarDado(Protocolo.ChaveLobbyNome, LerMeuNome()); // também renova o nome guardado que o menu usa
             GravarDado(Protocolo.ChaveLobbyDono, Eu.m_SteamID.ToString()); // quem herda o lobby anuncia o próprio SteamID
             GravarDado(Protocolo.ChaveLobbySala, NomeDaSalaAtual()); // 0.25.0: quem herda anuncia "Sala de <ele>"
         }
@@ -727,7 +738,7 @@ namespace HellClockCoop.Net
             var h = new Hello
             {
                 Protocolo = Protocolo.Versao, VersaoMod = Plugin.PluginVersion, VersaoJogo = Application.version,
-                Nome = SteamFriends.GetPersonaName(), JaTeOuvi = p.HelloRecebido,
+                Nome = LerMeuNome(), JaTeOuvi = p.HelloRecebido,
                 Deluxe = MinhaDeluxe, CursedWar = MinhaCursedWar,
             };
             SteamTransporte.Enviar(p.Id, h.Serializar(), confiavel: true, Protocolo.CanalConfiavel);

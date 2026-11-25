@@ -26,6 +26,7 @@ namespace HellClockCoop
             ChecarSpawn, TimerUpdate, ContextoSom, MontarEstado,
             // 0.31.3: a interface com aliados e o menu do coop por quadro (dentro das partes Interface e Menus)
             BarrasESeta, PainelDeGrupo, Marcador, TelaDoCaido, MontarMenu, MostrarMenu,
+            Aquecimento, // 0.31.3: os passos do aquecimento da interface dos aliados, ao entrar numa sala
             Quantidade
         }
 
@@ -36,7 +37,8 @@ namespace HellClockCoop
               "buscar peças da HUD", "copiar o personagem", "limpar o clone", "montar peças dos aliados", "criar barra e seta do aliado",
               "montar painel de grupo", "criar linha do painel", "montar marcador",
               "CheckForSpawn", "TimerManager.Update", "contexto de som", "montar estado dos inimigos",
-              "barras e seta dos aliados", "painel de grupo", "marcador", "tela do caído", "montar lista do menu", "mostrar menu" };
+              "barras e seta dos aliados", "painel de grupo", "marcador", "tela do caído", "montar lista do menu", "mostrar menu",
+              "aquecimento" };
 
         /// <summary>
         /// O que chega dos aliados e vira trabalho por item (0.31.1): contado e cronometrado na aplicação, com o que o teto

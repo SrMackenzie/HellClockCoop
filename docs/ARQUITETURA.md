@@ -344,6 +344,76 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
    efeitos) e, ao chegar ao andar, `buscar peças da HUD` (~37 ms ×2, 58–60 ms de quadro). Em dupla falta conferir os sons das
    skills do aliado com os prefixos tipados (o log da sessão mostra `0 com __args`).
 
+   **Etapa 8 (0.31.3): interface com aliados e menu do coop aberto** (protocolo 25, sem mudança de mensagem nem de
+   regra). O medidor ganhou o custo por peça da interface (`barras e seta dos aliados`, `painel de grupo`, `marcador`,
+   `tela do caído`, `montar lista do menu`, `mostrar menu`, `aquecimento`), o contexto `menu aberto na aba X` e a linha
+   `[Desempenho] Pico do mod` (quadro sem travada em que só o mod gastou 8 ms ou mais). O que mudou:
+   - **Aquecimento ao entrar numa sala** (`CoopRuntime.AtualizarAquecimento`). A 1ª aparição de um aliado custava uma
+     travada de 65 ms e a 2ª menos de 8 ms de mod: quase tudo era custo de primeira vez (copiar o personagem, montar a
+     barra, a seta e o painel, primeiros textos, código rodando pela primeira vez). Ao entrar numa sala, ainda sem
+     aliado, o mod faz essa primeira vez por conta própria, um passo por quadro: avatar de mentira a
+     (3000, −300, 3000) do jogador, uma amostra do personagem passada por ele (o caminho do snapshot, sem rede),
+     `AliadosNaTela.Aquecer` (barra, seta e nome) e `PainelGrupo.Aquecer` (a sua linha e a de um aliado de mentira,
+     com `Canvas.ForceUpdateCanvases`), e destrói tudo. Nada aparece na tela nem no minimapa, nada vai para a rede e o
+     avatar de mentira não é par nem eco: não conta para escala, alvo de inimigo, reanimação ou TP. Uma vez por
+     abertura do jogo; nunca com aliado presente (se um chega antes, o aquecimento para); espera o personagem e a HUD
+     sem prazo e sem cair na varredura de reserva (`AliadosNaTela.HudPronta`); depois disso, um passo que não sai em
+     5 s desiste e tenta de novo na próxima sala; erro só registra no log, sem nova tentativa, e o coop segue. O log mostra `[Aquecimento] Interface dos aliados aquecida ao entrar na sala, em N quadros`.
+   - **Menu do coop** (`MenuCoop`, `PainelNativo`). A lista era remontada duas vezes por quadro, com chamadas à Steam
+     (`GetPersonaName` na linha do nome da sala, entre outras). Agora fica guardada e é refeita depois de uma ação ou
+     a cada 0,25 s; `PainelNativo.Mostrar` não mexe nas peças quando nada mudou; o rodapé só é refeito quando muda o
+     que mostra; e o nome próprio da Steam fica guardado (`SessaoCoop.MeuNome`, relido na abertura, na criação da
+     sala, nos dados da sala que o dono grava a cada 2 s e no Hello). Para o convidado, o nome da sala e o do host
+     ainda vêm da Steam, agora a cada montagem da lista em vez de duas vezes por quadro.
+   - **Por quadro com aliados.** Cada linha do `PainelGrupo` guarda o que já pôs nas peças (ligado/desligado, âncoras,
+     alfa, ícones pelos mesmos dados) e só escreve o que mudou; os números do painel saem de tabelas de texto montadas
+     uma vez. O `AliadosNaTela` guarda o estado ligado de cada peça e lê o tamanho da tela uma vez por quadro.
+   - **OnGUI.** `useGUILayout = false` no `CoopRuntime` (o mod só desenha em retângulos fixos) e a amostra do
+     `PrepararTexto` com o alfabeto inteiro, números, pontuação e acentos.
+
+   Medido em 25/11/2026 no PC do autor, sozinho, no hub parado (~190 fps), com o mesmo roteiro por script nas duas
+   passadas (solo; menu nas 4 abas; "Criar coop"; host com o menu na Sessão e na Salas; eco, 1ª e 2ª aparição;
+   marcador; host com eco e menu). "Antes" é o código da 0.31.2 com o medidor novo (DLL montada fora do repositório).
+
+   | Momento | Antes | Depois |
+   |---|---|---|
+   | 1ª aparição do aliado (eco) em sala | `Travada` de 65 ms, mod 55,1 ms | sem travada: pico do mod de 17,0 ms num quadro de 23 ms |
+   | — criar avatar | 13,9 ms | 5,9 ms |
+   | — barras e seta (montar e posicionar) | 11,4 ms | 0,8 ms |
+   | — painel de grupo (montar e desenhar) | 16,9 ms | 2,0 ms |
+   | — OnGUI do 1º aviso | 1,4 ms | 0,6 ms |
+   | Menu aberto como host, aba Sessão | Menus 0,225 ms/quadro; 3,0 chamadas à Steam por quadro | 0,021 ms; 1,0 |
+   | Menu aberto como host, aba Salas | Menus 0,343 ms/quadro; 6,9 chamadas à Steam por quadro | 0,020 ms; 1,0 |
+   | Picos do mod com o menu aberto, host, por aba (~40 s) | 8 e 8: 7 em `montar lista do menu` (9 a 17 ms) e 1 na Rede | 9 e 7, todos na Rede (8 a 14 ms) |
+   | Menu aberto no solo (Sessão/Salas/Ajustes/Novidades) | Menus 0,032/0,037/0,069/0,055 ms | 0,020/0,019/0,020/0,019 ms |
+   | Memória com o menu aberto, solo (mesmas abas) | 19,7/25,4/54,1/21,9 MB/min | 12,1/13,4/27,9/10,8 MB/min |
+   | Memória com o menu aberto, host (Sessão/Salas) | 35,3/49,6 MB/min | 12,6/15,3 MB/min |
+   | Com o eco, por quadro: painel de grupo (2 linhas) | 26,0 µs | 11,6 µs |
+   | Com o eco, por quadro: barras e seta | 12,6 µs | 11,5 µs |
+   | Com o eco, por quadro: parte Interface | 0,040 ms | 0,024 ms |
+   | Com o eco, por quadro: parte OnGUI | 0,032 ms | 0,033 ms |
+
+   O aquecimento, ao criar a sala, levou 5 quadros: avatar 17,9 ms, amostra 6,0, barra e seta 10,7, painel 22,0; quatro
+   picos do mod em quadros de 19 a 31 ms, nenhum chegou a `Travada`. O custo saiu do quadro em que o aliado aparece e
+   foi dividido na entrada da sala, não sumiu. O que sobra na 1ª aparição (17,0 ms) é Menus 6,4, Efeitos 3,8,
+   Interface 2,8 e Inimigos 2,0. O `useGUILayout = false` não deu ganho medido (OnGUI 0,032 → 0,033 ms) e as barras e
+   a seta ficaram quase iguais (12,6 → 11,5 µs).
+
+   **O pico periódico do dono da sala continua.** Com o menu aberto como host, a quantidade de picos não caiu (8 por
+   aba antes; 9 e 7 depois): eles saíram de `montar lista do menu` e passaram para a parte Rede, com tamanho parecido
+   (o pior foi de 17,5 para 13,9 ms, em quadros de 13 a 24 ms, sem chegar a `Travada`). Como host a Rede já tinha esses
+   picos de 8 a 15 ms a cada ~5 s com o menu fechado, antes e depois (9 e 7 por janela com o eco antes, 8 e 7 depois).
+   Hipótese, não confirmada: é uma chamada à Steam que demora a cada ~5 s e pesa em quem chama a Steam primeiro no
+   quadro; antes era o menu, agora é a leitura da Rede. O que esta etapa tirou do menu foi o custo de todo quadro e a
+   alocação, não esse pico. Fica para uma etapa própria, porque mexe na leitura do dono do lobby (§12.11) e pede
+   auditoria.
+
+   Outras sobras: o passo do painel no aquecimento cai num quadro só de 31 ms (candidato a dividir). Só com o eco: com aliado de verdade falta conferir a 1ª aparição, o aquecimento de quem entra na sala
+   como convidado e o que acontece quando o aliado chega durante o aquecimento. Achado durante o teste, fora da
+   etapa: no painel de grupo os nomes dos jogadores não aparecem (a coroa, a barra, as skills e o símbolo de TP
+   aparecem); a 0.31.2 publicada mostra o mesmo em 2560×1600, então não veio desta etapa (item no roadmap, sem causa
+   apurada).
+
    **Etapa 4 (0.30.3): travadas pontuais.** Medido antes (0.30.2, 24/11/2026, PC do autor, ~200 fps), linhas `[Desempenho] Travada`:
 
    | Momento | Antes (0.30.2) | Causa | O que mudou |
@@ -1571,7 +1641,8 @@ janela maior (visual A das 3 opções: lista larga, com cada sala em 2 linhas).
   chega se ele está no menu. Sem a DLC o save nunca chega ao Ato 4, então a trava de
   progresso já barrava; a conferência explícita cobre o save que teve a DLC antes e dá o motivo certo.
 - Lista: a busca não filtra mais `hcc_dlc`, que vira `SalaListada.CursedWar` (a marca "Cursed War" ao lado do host).
-  `SessaoCoop.AtualizarTrava` roda a cada quadro da aba e de novo em `EntrarNaSala`. Ela calcula o recorde (§12.8) e
+  `SessaoCoop.AtualizarTrava` roda a cada montagem da lista da aba (ação do jogador ou a cada 0,25 s, desde a
+  0.31.3) e de novo em `EntrarNaSala`. Ela calcula o recorde (§12.8) e
   `SemDlc`: sala na run com `hcc_ato` = 4, ou masmorra do Ato 4 (`MasmorraDaDlc` no hash do lobby, conferido com os
   dados do próprio jogo), e este PC sem a DLC. Mentir no lobby só trava mais; quem decide acompanhar é o plano do host,
   conferido no convidado.

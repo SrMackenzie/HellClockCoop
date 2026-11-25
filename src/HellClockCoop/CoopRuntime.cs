@@ -70,6 +70,9 @@ namespace HellClockCoop
             DontDestroyOnLoad(go);
             go.hideFlags = HideFlags.HideAndDontSave;
             Instancia = go.AddComponent<CoopRuntime>();
+            // 0.31.3: o OnGUI do mod só desenha em retângulos fixos (nada de GUILayout), então dispensa a passada de
+            // "layout" que a Unity faz antes de cada desenho: o OnGUI roda uma vez a menos por quadro.
+            Instancia.useGUILayout = false;
             Instancia._sessao.Aviso += Instancia.Avisar;
             Instancia._avisoAtualizacao = LerAvisoDoAtualizador();
             Fase2.RunCompartilhada.Sessao = Instancia._sessao;
@@ -203,7 +206,136 @@ namespace HellClockCoop
             d = Desempenho.SomarDetalheEncadeado(Desempenho.Detalhe.Marcador, d);
             Interface.CaidoNaTela.Atualizar(); // faixa do jogador caído e aviso de queda (0.15.0)
             Desempenho.SomarDetalheEncadeado(Desempenho.Detalhe.TelaDoCaido, d);
+            AtualizarAquecimento(jogador); // 0.31.3: depois da interface do quadro (usa as listas dela)
             Desempenho.Somar(Desempenho.Parte.Interface, t);
+        }
+
+        // ---------- Aquecimento (0.31.3) ----------
+
+        // A primeira aparição de um aliado custava uma travada de ~65 ms (55 ms do mod), e a segunda, menos de 8 ms: quase
+        // tudo era custo de primeira vez (copiar o personagem, montar a barra, a seta e o painel, primeiros textos, código
+        // rodando pela primeira vez). Ao entrar numa sala, ainda sem aliado, o mod faz essa primeira vez por conta própria,
+        // um passo por quadro: cria um avatar de mentira longe do mapa, passa uma amostra do personagem por ele (o caminho
+        // do snapshot, sem rede), monta e posiciona a barra e a seta, monta e desenha o painel, e destrói tudo. Nada aparece
+        // na tela, nada vai para a rede e o avatar de mentira não é par nem eco: não conta para escala, alvo de inimigo,
+        // reanimação ou TP. Uma vez por abertura do jogo. Nunca com aliado presente: aí a primeira vez já aconteceu (ou está
+        // acontecendo), e as listas da interface estão em uso.
+        private enum PassoAquecimento { Parado, Esperando, Avatar, Amostra, Barras, Painel, Fim }
+
+        private const float EsperaDoAquecimento = 5f; // com o avatar de mentira criado, um passo que não sai nesse tempo: desiste
+        private static readonly Vector3 LongeDoMapa = new Vector3(3000f, -300f, 3000f); // fora da câmera e do minimapa
+
+        private PassoAquecimento _passoAquecimento;
+        private bool _aquecido, _emSessaoAntes;
+        private float _aquecimentoAte;
+        private int _quadrosAquecimento;
+        private RemotePlayerAvatar _avatarAquecimento;
+        private readonly double[] _msAquecimento = new double[(int)PassoAquecimento.Fim + 1];
+
+        private bool AliadoPresente()
+        {
+            if (_avatarEco != null) return true;
+            foreach (Par p in _sessao.Pares.Values) if (p.Avatar != null) return true;
+            return false;
+        }
+
+        private void AtualizarAquecimento(PlayerController jogador)
+        {
+            bool emSessao = _sessao.EmSessao;
+            if (emSessao && !_emSessaoAntes && !_aquecido && _passoAquecimento == PassoAquecimento.Parado)
+            {
+                _passoAquecimento = PassoAquecimento.Esperando;
+                _quadrosAquecimento = 0;
+                Array.Clear(_msAquecimento, 0, _msAquecimento.Length);
+            }
+            _emSessaoAntes = emSessao;
+            if (_passoAquecimento == PassoAquecimento.Parado) return;
+
+            if (!emSessao) { EncerrarAquecimento("saiu da sala", refazer: true); return; }
+            if (AliadoPresente()) { EncerrarAquecimento("um aliado chegou antes", refazer: false); return; }
+            if (_passoAquecimento > PassoAquecimento.Esperando && (jogador == null || (_passoAquecimento > PassoAquecimento.Avatar && _avatarAquecimento == null)))
+            {
+                // O personagem saiu (menu, carregamento) ou a cena trocou e levou o avatar de mentira: recomeça quando voltar.
+                if (_avatarAquecimento != null) Destroy(_avatarAquecimento.gameObject);
+                _avatarAquecimento = null;
+                _passoAquecimento = PassoAquecimento.Esperando;
+            }
+            if (_passoAquecimento == PassoAquecimento.Esperando)
+            {
+                // Sala criada no menu do jogo, carregamento: espera o personagem e a HUD (sem prazo: esperar não custa).
+                // A primeira chamada com a HUD pronta monta as peças do jogo (a barra e a seta): já é um passo.
+                if (jogador == null || LocalPlayerSampler.CenaAtual() == -1 || !Interface.AliadosNaTela.HudPronta()) return;
+                _passoAquecimento = PassoAquecimento.Avatar;
+                _aquecimentoAte = Time.unscaledTime + EsperaDoAquecimento;
+                return;
+            }
+
+            PassoAquecimento passo = _passoAquecimento;
+            double inicio = Desempenho.Agora();
+            bool feito = true;
+            try
+            {
+                feito = PassoDoAquecimento(passo, jogador);
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Aquecimento] Erro no passo {passo} (o coop segue; a primeira aparição de um aliado pode pesar): {e.Message}");
+                EncerrarAquecimento("erro", refazer: false);
+                return;
+            }
+            _msAquecimento[(int)passo] += (Desempenho.Agora() - inicio) * 1000.0;
+            Desempenho.SomarDetalhe(Desempenho.Detalhe.Aquecimento, inicio);
+            _quadrosAquecimento++;
+            if (!feito)
+            {
+                if (Time.unscaledTime > _aquecimentoAte) EncerrarAquecimento("a interface do jogo não ficou pronta", refazer: true);
+                return;
+            }
+            if (passo == PassoAquecimento.Fim)
+            {
+                Plugin.Log.LogInfo($"[Aquecimento] Interface dos aliados aquecida ao entrar na sala, em {_quadrosAquecimento} quadros: avatar {_msAquecimento[(int)PassoAquecimento.Avatar]:0.0} ms, " +
+                                   $"amostra {_msAquecimento[(int)PassoAquecimento.Amostra]:0.0} ms, barra e seta {_msAquecimento[(int)PassoAquecimento.Barras]:0.0} ms, " +
+                                   $"painel {_msAquecimento[(int)PassoAquecimento.Painel]:0.0} ms (antes, tudo isso caía no quadro em que o primeiro aliado aparecia).");
+                EncerrarAquecimento(null, refazer: false);
+                return;
+            }
+            _passoAquecimento = passo + 1;
+        }
+
+        /// <summary>Um passo por quadro. Falso: o passo ainda não pôde ser feito (HUD ou câmera indisponível); repete.</summary>
+        private bool PassoDoAquecimento(PassoAquecimento passo, PlayerController jogador)
+        {
+            switch (passo)
+            {
+                case PassoAquecimento.Avatar:
+                    double inicio = Desempenho.Agora();
+                    _avatarAquecimento = AvatarFactory.Criar(jogador, "Aquecimento");
+                    Desempenho.SomarDetalhe(Desempenho.Detalhe.CriarAvatar, inicio);
+                    _avatarAquecimento.DeslocamentoMundo = LongeDoMapa;
+                    _avatarAquecimento.transform.position = jogador.transform.position + LongeDoMapa; // já neste quadro, antes da amostra
+                    return true;
+                case PassoAquecimento.Amostra:
+                    // O caminho de um snapshot de ponta a ponta, como no eco, sem fila e sem rede.
+                    if (!_amostrador.TentarAmostrar(jogador, _snapshotLocal)) return false;
+                    _avatarAquecimento.Receber(PlayerSnapshot.Desserializar(_snapshotLocal.Serializar()));
+                    return true;
+                case PassoAquecimento.Barras:
+                    return Interface.AliadosNaTela.Aquecer(_avatarAquecimento);
+                case PassoAquecimento.Painel:
+                    return Interface.PainelGrupo.Aquecer();
+                default: // Fim: o avatar viveu alguns quadros (a pose e a animação dele já rodaram); sai de cena
+                    return true;
+            }
+        }
+
+        /// <summary>Destrói o avatar de mentira e para. refazer: tenta de novo na próxima entrada numa sala.</summary>
+        private void EncerrarAquecimento(string motivo, bool refazer)
+        {
+            if (_avatarAquecimento != null) Destroy(_avatarAquecimento.gameObject);
+            _avatarAquecimento = null;
+            _passoAquecimento = PassoAquecimento.Parado;
+            _aquecido = !refazer;
+            if (motivo != null) Plugin.Log.LogInfo($"[Aquecimento] Interrompido ({motivo}){(refazer ? "; tenta de novo na próxima sala" : "")}.");
         }
 
         private void AtualizarPersonagem(PlayerController jogador)
@@ -421,6 +553,8 @@ namespace HellClockCoop
         /// O primeiro texto que o OnGUI desenha no jogo carrega a fonte: 105 ms (0.30.2) a 484 ms (0.30.1) medidos em jogo,
         /// no primeiro aviso do canto (criar o coop, ligar o eco). Feito aqui uma vez, no primeiro desenho do OnGUI, que
         /// acontece na abertura do jogo, antes de existir personagem: mede e desenha transparente os dois estilos do canto.
+        /// 0.31.3: a amostra leva o alfabeto inteiro, os números, a pontuação e os acentos. Com a amostra curta de antes, o
+        /// primeiro aviso em jogo ainda custava 1,4 a 6 ms: as letras que faltavam eram desenhadas na fonte na hora.
         /// </summary>
         private void PrepararTexto()
         {
@@ -428,7 +562,8 @@ namespace HellClockCoop
             Color antes = GUI.color;
             try
             {
-                var amostra = new GUIContent("» Modo eco (F8): 0123456789 bytes por snapshot, 20/s. ÁÉÍÓÚÂÊÔÃÕÇ áéíóúâêôãõç");
+                var amostra = new GUIContent("» ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789 " +
+                                             "ÀÁÂÃÉÊÍÓÔÕÚÜÇ àáâãéêíóôõúüç .,;:!?()[]{}<>\"'/\\|-_+=*&%$#@ · … – — º ª °");
                 GUI.color = Color.clear;
                 float altura = _estiloCaixa.CalcHeight(amostra, 560f);
                 GUI.Box(new Rect(12f, 12f, 560f, altura), amostra, _estiloCaixa);

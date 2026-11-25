@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "25/11/2026",
-  "versao": "0.31.2",
+  "versao": "0.31.3",
   "fases": [
     {
       "id": "B",
@@ -297,6 +297,10 @@
         [
           "testar",
           "Teleporte até um aliado: símbolo de TP na linha dele no painel de grupo, tecla T (D-pad ←) ou clique; mesmo andar, fora de combate, canaliza 2 s e recarga de 60 s (0.29.0)"
+        ],
+        [
+          "planejado",
+          "Correção: no painel de grupo o nome dos jogadores não aparece (a coroa, a barra, as skills e o símbolo de TP aparecem); visto na 0.31.2 e na 0.31.3, em 2560×1600"
         ],
         [
           "testar",

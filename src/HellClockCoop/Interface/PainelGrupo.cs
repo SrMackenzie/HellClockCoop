@@ -36,6 +36,9 @@ namespace HellClockCoop.Interface
     ///   anel enche com a canalização e o raio pulsa. Na escolha mostra 1/2/3. Indisponível some. Clique no disco pede o TP
     ///   (Fase2.TpAliado).
     /// - Erro: o painel desliga até reabrir o jogo (log), sem derrubar o resto da interface.
+    /// - 0.31.3: cada linha guarda o que já pôs nas peças e só mexe no que mudou (antes, a cada quadro, todas as peças eram
+    ///   consultadas e escritas de novo: 13 µs por linha); os números saem de tabelas de texto montadas uma vez; e o
+    ///   Aquecer monta e desenha tudo uma vez ao entrar numa sala, para o primeiro aliado não pagar a primeira vez.
     /// </summary>
     internal static class PainelGrupo
     {
@@ -82,6 +85,18 @@ namespace HellClockCoop.Interface
             public readonly Image[] Skill = new Image[PainelAliado.MaximoSkills];
             public float ValorAtraso = -1f;
             public bool Vista;
+
+            // 0.31.3: os objetos que ligam e desligam (sem pedir o gameObject à Unity a cada quadro) e o que já está posto
+            // nas peças. Os valores iniciais são os da montagem (ObterLinha) ou um valor que nenhum quadro usa.
+            public GameObject CoroaGo, TpGo, TpTextoGo, BarreiraGo, ReanimaGo;
+            public readonly GameObject[] StatusGo = new GameObject[PainelAliado.MaximoStatus];
+            public readonly GameObject[] SkillGo = new GameObject[PainelAliado.MaximoSkills];
+            public readonly bool[] StatusLigado = new bool[PainelAliado.MaximoStatus];
+            public readonly bool[] SkillLigada = new bool[PainelAliado.MaximoSkills];
+            public bool CoroaLigada, TpLigado, BarreiraLigada, ReanimaLigada;
+            public float YPosto = 1f, AlfaPosto = -1f, VidaPosta = -1f, AtrasoPosto = -1f, BarreiraPosta = -1f, ReanimaPosta = -1f;
+            public PainelAliado DadosPostos;        // os ícones de skill e de status na linha são os destes dados...
+            public bool IconesPostos, ComStatus, ComSkills; // ...com o aliado nesta situação (caído, fora do andar)
         }
 
         private struct Aliado
@@ -102,11 +117,15 @@ namespace HellClockCoop.Interface
         private static readonly List<StatusEffect> Efeitos = new List<StatusEffect>();
 
         private const ulong ChaveVoce = 1; // nenhum SteamID de jogador é 1; o eco é 0
+        private const ulong ChaveAquecimento = 2; // idem: o aliado de mentira do Aquecer
         private static string _meuNome;
         private static PainelAliado _meu, _enviado;
         private static float _proximaLeitura, _ultimoEnvio = -100f;
         private static bool _desativado;
         private static RectTransform _raiz;
+        private static GameObject _raizGo;
+        private static bool _raizLigada;                 // activeSelf da raiz, sem perguntar à Unity
+        private static float _escalaPosta = -1f, _xPosto, _yPosto;
         private static Camera _camUi;
         private static readonly List<ulong> OrdemTp = new List<ulong>();
         private static Sprite _coroa, _tp, _disco, _anel, _spriteFundo, _spritePreenche, _spriteAtraso, _spriteBarreira;
@@ -136,7 +155,8 @@ namespace HellClockCoop.Interface
             _proximaLeitura = Time.unscaledTime + IntervaloLeitura;
             PlayerController jogador = CoopRuntime.JogadorLocal();
             if (jogador == null) return;
-            _meu = Capturar(jogador);
+            PainelAliado lido = Capturar(jogador);
+            if (_meu == null || !lido.IgualA(_meu)) _meu = lido; // 0.31.3: o mesmo objeto enquanto nada muda (as linhas pulam os ícones)
             if (sessao == null || !sessao.EmSessao) return;
             bool mudou = !_meu.IgualA(_enviado);
             if (!mudou && Time.unscaledTime - _ultimoEnvio < IntervaloReenvio) return;
@@ -274,7 +294,11 @@ namespace HellClockCoop.Interface
         {
             if (_raiz == null || _raiz.parent != camada) Montar(camada);
             _camUi = camUi;
-            if (!_raiz.gameObject.activeSelf) _raiz.gameObject.SetActive(true);
+            if (!_raizLigada)
+            {
+                _raizLigada = true;
+                _raizGo.SetActive(true);
+            }
 
             // Escala: 1 unidade do painel = 1 px de 1080p na tela, qualquer que seja o canvas do jogo.
             float s = Screen.height / 1080f;
@@ -284,8 +308,12 @@ namespace HellClockCoop.Interface
             float porPixel = (local2.x - local.x) / 100f;
             if (porPixel <= 0f) return;
             float k = s * porPixel;
-            _raiz.localScale = new Vector3(k, k, 1f);
-            _raiz.localPosition = new Vector3(local.x, local.y, 0f);
+            if (k != _escalaPosta || local.x != _xPosto || local.y != _yPosto)
+            {
+                _escalaPosta = k; _xPosto = local.x; _yPosto = local.y;
+                _raiz.localScale = new Vector3(k, k, 1f);
+                _raiz.localPosition = new Vector3(local.x, local.y, 0f);
+            }
             _raiz.SetAsLastSibling();
 
             foreach (Linha l in Linhas.Values) l.Vista = false;
@@ -294,7 +322,11 @@ namespace HellClockCoop.Interface
             {
                 Linha l = ObterLinha(a.Chave);
                 l.Vista = true;
-                l.Raiz.anchoredPosition = new Vector2(0f, -y);
+                if (l.YPosto != -y)
+                {
+                    l.YPosto = -y;
+                    l.Raiz.anchoredPosition = new Vector2(0f, -y);
+                }
                 Preencher(l, a);
                 y += AlturaLinha + EspacoLinhas;
             }
@@ -309,12 +341,23 @@ namespace HellClockCoop.Interface
 
         private static void Preencher(Linha l, Aliado a)
         {
-            l.Grupo.alpha = a.Caido ? AlphaCaido : a.Fora ? AlphaFora : 1f;
+            // 0.31.3: só o que mudou desde o quadro anterior chega às peças (ver os campos da Linha). Texto e cor têm a
+            // comparação dentro do próprio componente; o que custa é ligar/desligar, posição, âncora e alfa.
+            float alfa = a.Caido ? AlphaCaido : a.Fora ? AlphaFora : 1f;
+            if (l.AlfaPosto != alfa)
+            {
+                l.AlfaPosto = alfa;
+                l.Grupo.alpha = alfa;
+            }
 
             if (l.Nome.text != a.Nome) l.Nome.text = a.Nome;
             l.Nome.color = a.Voce ? AliadosNaTela.CorSeta : Fase3.DanosVisiveis.CorDoAliado(a.Chave); // você: a cor do seu marcador
-            if (l.Coroa.gameObject.activeSelf != a.Host) l.Coroa.gameObject.SetActive(a.Host);
-            l.Nome.rectTransform.anchoredPosition = new Vector2(a.Host ? LadoCoroa + 4f : 0f, l.Nome.rectTransform.anchoredPosition.y);
+            if (l.CoroaLigada != a.Host)
+            {
+                l.CoroaLigada = a.Host;
+                l.CoroaGo.SetActive(a.Host);
+                l.Nome.rectTransform.anchoredPosition = new Vector2(a.Host ? LadoCoroa + 4f : 0f, l.Nome.rectTransform.anchoredPosition.y);
+            }
 
             // Estado à direita do nome.
             Fase2.Reanimacao.Progresso pr = default;
@@ -328,45 +371,105 @@ namespace HellClockCoop.Interface
             // Vida com a faixa clara que alcança (como a barra sobre a cabeça).
             float vida = a.Caido ? 0f : Mathf.Clamp01(a.Vida);
             l.ValorAtraso = a.Caido ? 0f : vida >= l.ValorAtraso || l.ValorAtraso < 0f ? vida : Mathf.Max(vida, l.ValorAtraso - AtrasoQueda * Time.unscaledDeltaTime);
-            l.Preenche.anchorMax = new Vector2(vida, 1f);
-            l.Atraso.anchorMax = new Vector2(l.ValorAtraso, 1f);
+            if (l.VidaPosta != vida)
+            {
+                l.VidaPosta = vida;
+                l.Preenche.anchorMax = new Vector2(vida, 1f);
+            }
+            if (l.AtrasoPosto != l.ValorAtraso)
+            {
+                l.AtrasoPosto = l.ValorAtraso;
+                l.Atraso.anchorMax = new Vector2(l.ValorAtraso, 1f);
+            }
             // Barreira (convicção) por cima da vida, como na barra do jogo (0.28.0).
             float barreira = a.Caido ? 0f : Mathf.Clamp01(a.Barreira);
-            if (l.Barreira.gameObject.activeSelf != barreira > 0f) l.Barreira.gameObject.SetActive(barreira > 0f);
-            l.Barreira.anchorMax = new Vector2(barreira, 1f);
-            if (l.Reanima.gameObject.activeSelf != reanimando) l.Reanima.gameObject.SetActive(reanimando);
+            bool comBarreira = barreira > 0f;
+            if (l.BarreiraLigada != comBarreira)
+            {
+                l.BarreiraLigada = comBarreira;
+                l.BarreiraGo.SetActive(comBarreira);
+            }
+            if (l.BarreiraPosta != barreira)
+            {
+                l.BarreiraPosta = barreira;
+                l.Barreira.anchorMax = new Vector2(barreira, 1f);
+            }
+            if (l.ReanimaLigada != reanimando)
+            {
+                l.ReanimaLigada = reanimando;
+                l.ReanimaGo.SetActive(reanimando);
+            }
             if (reanimando)
             {
-                l.Reanima.anchorMax = new Vector2(pr.Fracao, 1f);
+                if (l.ReanimaPosta != pr.Fracao)
+                {
+                    l.ReanimaPosta = pr.Fracao;
+                    l.Reanima.anchorMax = new Vector2(pr.Fracao, 1f);
+                }
                 l.ReanimaCor.color = pr.Estado == Fase2.Reanimacao.Estado.Interrompido ? AliadosNaTela.VermelhoInterrompido : AliadosNaTela.VerdeReanimar;
             }
 
             // Caído ou fora do andar: sem status; caído também sem skills (fora, ficam a 40%).
+            // Os dados de um aliado são um objeto novo a cada mensagem (e os seus, a cada mudança): com os mesmos dados e a
+            // mesma situação, os ícones da linha já são estes.
             PainelAliado d = a.Dados;
+            bool comStatus = !a.Caido && !a.Fora, comSkills = !a.Caido;
+            if (l.IconesPostos && ReferenceEquals(l.DadosPostos, d) && l.ComStatus == comStatus && l.ComSkills == comSkills) return;
+            l.IconesPostos = true;
+            l.DadosPostos = d;
+            l.ComStatus = comStatus;
+            l.ComSkills = comSkills;
             for (int i = 0; i < PainelAliado.MaximoStatus; i++)
             {
                 Sprite sp = null;
                 bool eBuff = false;
-                bool tem = !a.Caido && !a.Fora && d != null && i < d.Efeitos.Count && IconeStatus(d.Efeitos[i].Hash, out sp, out eBuff);
-                Image moldura = l.StatusMoldura[i];
-                if (moldura.gameObject.activeSelf != tem) moldura.gameObject.SetActive(tem);
+                bool tem = comStatus && d != null && i < d.Efeitos.Count && IconeStatus(d.Efeitos[i].Hash, out sp, out eBuff);
+                if (l.StatusLigado[i] != tem)
+                {
+                    l.StatusLigado[i] = tem;
+                    l.StatusGo[i].SetActive(tem);
+                }
                 if (!tem) continue;
                 if (l.StatusIcone[i].sprite != sp) l.StatusIcone[i].sprite = sp;
-                moldura.color = eBuff ? _corBuff : _corDebuff;
+                l.StatusMoldura[i].color = eBuff ? _corBuff : _corDebuff;
                 int ac = d.Efeitos[i].Acumulos;
-                string txt = ac > 1 ? ac.ToString() : "";
+                string txt = ac > 1 ? Inteiro(ac) : "";
                 if (l.StatusAcumulos[i].text != txt) l.StatusAcumulos[i].text = txt;
             }
             for (int i = 0; i < PainelAliado.MaximoSkills; i++)
             {
-                Sprite icone = !a.Caido && d != null && i < d.Skills.Count && d.Skills[i] != 0 ? IconeSkill(d.Skills[i]) : null;
+                Sprite icone = comSkills && d != null && i < d.Skills.Count && d.Skills[i] != 0 ? IconeSkill(d.Skills[i]) : null;
                 bool tem = icone != null;
-                Image img = l.Skill[i];
-                GameObject slot = img.transform.parent.gameObject;
-                if (slot.activeSelf != tem) slot.SetActive(tem);
-                if (tem && img.sprite != icone) img.sprite = icone;
+                if (l.SkillLigada[i] != tem)
+                {
+                    l.SkillLigada[i] = tem;
+                    l.SkillGo[i].SetActive(tem);
+                }
+                if (tem && l.Skill[i].sprite != icone) l.Skill[i].sprite = icone;
             }
         }
+
+        // ---------- Números em texto (0.31.3) ----------
+
+        // Os números que o painel escreve (acúmulos, segundos da recarga do TP, décimos da canalização, número da escolha)
+        // são poucos e se repetem: cada texto é criado uma vez e reaproveitado, em vez de um texto novo a cada quadro em
+        // que o número aparece.
+        private static readonly string[] Inteiros = new string[256];
+        private static readonly string[] Decimos = new string[(int)(Validacao.TpCanalizaSegundos * 10f) + 2];
+        private static readonly string[] Realcados = new string[10];
+
+        private static string Inteiro(int n) =>
+            n < 0 || n >= Inteiros.Length ? n.ToString() : Inteiros[n] ?? (Inteiros[n] = n.ToString());
+
+        /// <summary>Segundos com uma casa (o "0.0" de antes, com o mesmo separador do sistema).</summary>
+        private static string Decimo(float segundos)
+        {
+            int d = (int)(segundos * 10f + 0.5f); // meio para cima, como o "0.0" (o RoundToInt arredonda o meio para o par)
+            return d < 0 || d >= Decimos.Length ? segundos.ToString("0.0") : Decimos[d] ?? (Decimos[d] = (d / 10f).ToString("0.0"));
+        }
+
+        private static string Realcado(int n) =>
+            n < 0 || n >= Realcados.Length ? "> " + n : Realcados[n] ?? (Realcados[n] = "> " + n);
 
         /// <summary>Símbolo de TP (0.29.0; disco, anel e raio na 0.30.0): situação vinda do Fase2.TpAliado.</summary>
         private static void PreencherTp(Linha l, Aliado a)
@@ -374,8 +477,12 @@ namespace HellClockCoop.Interface
             float seg = 0f;
             Fase2.TpAliado.Situacao sit = a.Voce || a.Caido || a.Fora ? Fase2.TpAliado.Situacao.Oculto : Fase2.TpAliado.SituacaoDe(a.Chave, out seg);
             bool tem = sit != Fase2.TpAliado.Situacao.Oculto && _tp != null;
-            if (l.Tp.gameObject.activeSelf != tem) l.Tp.gameObject.SetActive(tem);
-            if (l.TpTexto.gameObject.activeSelf != tem) l.TpTexto.gameObject.SetActive(tem);
+            if (l.TpLigado != tem)
+            {
+                l.TpLigado = tem;
+                l.TpGo.SetActive(tem);
+                l.TpTextoGo.SetActive(tem);
+            }
             if (!tem) return;
             Color cor = Fase3.DanosVisiveis.CorDoAliado(a.Chave);
             Color corAnel = cor;
@@ -388,7 +495,7 @@ namespace HellClockCoop.Interface
                 case Fase2.TpAliado.Situacao.Recarga:
                     cor = corAnel = CinzaEstado;
                     cheio = 1f - seg / Validacao.TpRecargaSegundos; // varre de vazio a cheio na recarga
-                    txt = Mathf.CeilToInt(seg).ToString();
+                    txt = Inteiro(Mathf.CeilToInt(seg));
                     break;
                 case Fase2.TpAliado.Situacao.Combate:
                     cor = corAnel = CinzaEstado;
@@ -396,7 +503,7 @@ namespace HellClockCoop.Interface
                 case Fase2.TpAliado.Situacao.Canalizando:
                     cheio = 1f - seg / Validacao.TpCanalizaSegundos; // enche com a canalização
                     cor.a = 0.55f + 0.45f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 6f));
-                    txt = seg.ToString("0.0");
+                    txt = Decimo(seg);
                     corTexto = Color.white;
                     break;
                 case Fase2.TpAliado.Situacao.Aguardando:
@@ -406,7 +513,7 @@ namespace HellClockCoop.Interface
             }
             if (numero > 0) // escolha com a tecla: o número na frente do resto
             {
-                txt = realcado ? $"> {numero}" : numero.ToString();
+                txt = realcado ? Realcado(numero) : Inteiro(numero);
                 corTexto = Color.white;
             }
             l.TpRaio.color = cor;
@@ -417,18 +524,18 @@ namespace HellClockCoop.Interface
         }
 
         /// <summary>Painel na tela neste quadro (a escolha do TP com números só abre com ele visível).</summary>
-        internal static bool Visivel => !_desativado && _raiz != null && _raiz.gameObject.activeInHierarchy;
+        internal static bool Visivel => !_desativado && _raizLigada && _raiz != null && _raizGo.activeInHierarchy;
 
         /// <summary>Mouse sobre o símbolo de TP de um aliado (Update do TpAliado, com o desenho do quadro anterior).</summary>
         internal static bool SimboloTpSobMouse(out ulong chave)
         {
             chave = 0;
             // Cursor escondido (controle): o mouse parado sobre o símbolo não pode prender a entrada do jogo.
-            if (_desativado || _raiz == null || !_raiz.gameObject.activeInHierarchy || !Cursor.visible || !Teclas.PosicaoMouse(out Vector2 mouse)) return false;
+            if (_desativado || !_raizLigada || _raiz == null || !_raizGo.activeInHierarchy || !Cursor.visible || !Teclas.PosicaoMouse(out Vector2 mouse)) return false;
             foreach (KeyValuePair<ulong, Linha> kv in Linhas)
             {
                 Image tp = kv.Value.Tp;
-                if (tp == null || !tp.gameObject.activeInHierarchy) continue;
+                if (!kv.Value.TpLigado || tp == null) continue; // (a raiz está à vista: o símbolo ligado está na tela)
                 if (!RectTransformUtility.RectangleContainsScreenPoint(tp.rectTransform, mouse, _camUi)) continue;
                 chave = kv.Key;
                 return true;
@@ -472,6 +579,9 @@ namespace HellClockCoop.Interface
             Destruir();
             LerCores();
             var go = new GameObject("HellClockCoop.PainelGrupo", typeof(RectTransform));
+            _raizGo = go;
+            _raizLigada = true;
+            _escalaPosta = -1f;
             _raiz = (RectTransform)go.transform;
             _raiz.SetParent(camada, false);
             _raiz.anchorMin = _raiz.anchorMax = new Vector2(0.5f, 0.5f);
@@ -579,7 +689,8 @@ namespace HellClockCoop.Interface
                 l.StatusIcone[i].preserveAspect = true;
                 RectTransform t = Retangulo("Acumulos", m, 0f, -AlturaStatus + 12f, AlturaStatus, 12f);
                 l.StatusAcumulos[i] = Texto(t, 12f, Color.white, TextAlignmentOptions.BottomRight);
-                m.gameObject.SetActive(false);
+                l.StatusGo[i] = m.gameObject;
+                l.StatusGo[i].SetActive(false);
             }
 
             // Nome (com a coroa do host) e estado à direita.
@@ -587,7 +698,8 @@ namespace HellClockCoop.Interface
             RectTransform cr = Retangulo("Coroa", l.Raiz, 0f, yNome - (AlturaNome - LadoCoroa) / 2f, LadoCoroa, LadoCoroa);
             l.Coroa = Imagem(cr, _coroa, Dourado);
             l.Coroa.preserveAspect = true;
-            cr.gameObject.SetActive(false);
+            l.CoroaGo = cr.gameObject;
+            l.CoroaGo.SetActive(false);
             l.Nome = Texto(Retangulo("Nome", l.Raiz, 0f, yNome, Largura - 110f, AlturaNome), 20f, Color.white, TextAlignmentOptions.MidlineLeft);
             l.Estado = Texto(Retangulo("Estado", l.Raiz, Largura - 120f, yNome, 120f, AlturaNome), 16f, CinzaEstado, TextAlignmentOptions.MidlineRight);
             // Símbolo de TP na ponta direita da linha do nome (0.29.0); só aparece com o aliado de pé no andar (sem o estado).
@@ -603,9 +715,11 @@ namespace HellClockCoop.Interface
             l.TpAnel.fillMethod = Image.FillMethod.Radial360;
             l.TpAnel.fillOrigin = (int)Image.Origin360.Top;
             l.TpAnel.fillClockwise = true;
-            tp.gameObject.SetActive(false);
+            l.TpGo = tp.gameObject;
+            l.TpGo.SetActive(false);
             l.TpTexto = Texto(Retangulo("TpTexto", l.Raiz, Largura - LadoTp - 4f - LarguraTextoTp, yNome, LarguraTextoTp, AlturaNome), 16f, CinzaEstado, TextAlignmentOptions.MidlineRight);
-            l.TpTexto.gameObject.SetActive(false);
+            l.TpTextoGo = l.TpTexto.gameObject;
+            l.TpTextoGo.SetActive(false);
 
             // Barra de vida: fundo, faixa clara, vida, barreira e progresso da reanimação (preenchimento pela âncora).
             float yBarra = yNome - AlturaNome - EspacoNomeBarra;
@@ -614,10 +728,12 @@ namespace HellClockCoop.Interface
             l.Atraso = Preenchimento("Atraso", l.Barra, _spriteAtraso, _spriteAtraso != null ? _corAtraso : AtrasoReserva);
             l.Preenche = Preenchimento("Vida", l.Barra, _spritePreenche, _spritePreenche != null ? _corPreenche : VidaReserva);
             l.Barreira = Preenchimento("Barreira", l.Barra, _spriteBarreira, _corBarreira);
-            l.Barreira.gameObject.SetActive(false);
+            l.BarreiraGo = l.Barreira.gameObject;
+            l.BarreiraGo.SetActive(false);
             l.Reanima = Preenchimento("Reanimacao", l.Barra, null, AliadosNaTela.VerdeReanimar);
             l.ReanimaCor = l.Reanima.GetComponent<Image>();
-            l.Reanima.gameObject.SetActive(false);
+            l.ReanimaGo = l.Reanima.gameObject;
+            l.ReanimaGo.SetActive(false);
 
             // Skills embaixo (só o ícone).
             float ySkills = yBarra - AlturaBarra - EspacoBarraSkills;
@@ -628,7 +744,8 @@ namespace HellClockCoop.Interface
                 RectTransform ic = Retangulo("Icone", f, 1f, -1f, AlturaSkill - 2f, AlturaSkill - 2f);
                 l.Skill[i] = Imagem(ic, null, Color.white);
                 l.Skill[i].preserveAspect = true;
-                f.gameObject.SetActive(false);
+                l.SkillGo[i] = f.gameObject;
+                l.SkillGo[i].SetActive(false);
             }
 
             Linhas[chave] = l;
@@ -688,14 +805,62 @@ namespace HellClockCoop.Interface
 
         private static void Esconder()
         {
-            if (_raiz != null && _raiz.gameObject.activeSelf) _raiz.gameObject.SetActive(false);
+            if (!_raizLigada) return;
+            _raizLigada = false;
+            if (_raiz != null) _raizGo.SetActive(false);
         }
 
         private static void Destruir()
         {
             if (_raiz != null) Object.Destroy(_raiz.gameObject);
             _raiz = null;
+            _raizGo = null;
+            _raizLigada = false;
             Linhas.Clear();
+        }
+
+        // ---------- Aquecimento (0.31.3) ----------
+
+        /// <summary>
+        /// Monta o painel, a sua linha e a de um aliado de mentira e passa pelo desenho uma vez, ao entrar numa sala
+        /// (CoopRuntime), fora do quadro em que o primeiro aliado aparece: nesse quadro o painel custava 16,9 ms, quase tudo
+        /// custo de primeira vez (montagem, primeiros textos, código que roda pela primeira vez). Nada chega à tela: o canvas
+        /// monta os textos aqui mesmo e o painel é escondido no mesmo passo; a linha de mentira é destruída e a sua fica
+        /// pronta. Só com o painel vazio. Falso: a HUD do jogo ainda não está pronta (tentar de novo).
+        /// </summary>
+        internal static bool Aquecer()
+        {
+            if (_desativado || !Mostrar.Value || _raizLigada) return true; // desligado, ou já na tela (nada a aquecer)
+            PlayerController jogador = CoopRuntime.JogadorLocal();
+            if (jogador == null) return false;
+            if (!AliadosNaTela.PecasDoPainel(out RectTransform camada, out Camera camUi)) return true; // sem as peças do jogo não há painel
+            try
+            {
+                if (_meu == null) _meu = Capturar(jogador);
+                DoQuadro.Clear();
+                DoQuadro.Add(new Aliado { Chave = ChaveVoce, Voce = true, Nome = MeuNome(), Vida = 1f, Dados = _meu });
+                DoQuadro.Add(new Aliado { Chave = ChaveAquecimento, Nome = "Aliado", Vida = 0.5f, Barreira = 0.5f, Host = true, Dados = _meu });
+                Desenhar(camada, camUi);
+                Canvas.ForceUpdateCanvases(); // os textos e as imagens das linhas são montados agora, não no primeiro aliado
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Painel] Aquecimento do painel de grupo falhou (o painel segue; a primeira aparição de um aliado pode pesar): {e.Message}");
+                Destruir();
+            }
+            finally
+            {
+                DoQuadro.Clear();
+                Fase3.DanosVisiveis.EsquecerCor(ChaveAquecimento); // o aliado de mentira não fica com uma cor da paleta
+                if (Linhas.TryGetValue(ChaveAquecimento, out Linha falsa))
+                {
+                    if (falsa.Raiz != null) Object.Destroy(falsa.Raiz.gameObject);
+                    Linhas.Remove(ChaveAquecimento);
+                }
+                foreach (Linha l in Linhas.Values) l.ValorAtraso = -1f; // a faixa clara da vida começa do zero quando o painel aparecer
+                Esconder();
+            }
+            return true;
         }
     }
 }

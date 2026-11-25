@@ -32,6 +32,9 @@ namespace HellClockCoop.Interface
     /// - Reanimação (0.16.0, opção B "barra do aliado"): com alguém ao lado do aliado caído, uma barra fina verde de
     ///   progresso aparece logo abaixo da barra dele e o rótulo "caído" vira "reanimando" (verde), "interrompido"
     ///   (vermelho) ou "fique parado" (branco 60%).
+    /// - 0.31.3: o que está ligado ou desligado em cada peça fica guardado (sem perguntar à Unity a cada quadro), o tamanho
+    ///   da tela e o tempo do quadro são lidos uma vez por quadro, e o Aquecer monta e posiciona uma barra e uma seta de
+    ///   mentira ao entrar numa sala, para o primeiro aliado não pagar a primeira vez.
     /// </summary>
     internal static class AliadosNaTela
     {
@@ -65,6 +68,10 @@ namespace HellClockCoop.Interface
             public Image ProgressoCor;
             public float ValorAtraso = -1f; // < 0: barra nova, começa na vida atual (sem cair de 100%)
             public bool Visto;
+            // 0.31.3: o activeSelf de cada peça e o alfa do brilho como estão agora (postos na criação, no Obter)
+            public GameObject BarraGo, SetaGo, SetaNomeGo, RotuloGo, ProgressoGo;
+            public bool BarraLigada, SetaLigada, SetaNomeLigada, RotuloLigado, ProgressoLigado;
+            public float BrilhoPosto;
         }
 
         // Um aliado do quadro: chave (SteamID; 0 = eco), nome, avatar e se está caído (o eco nunca cai: 0.15.0).
@@ -79,6 +86,7 @@ namespace HellClockCoop.Interface
         /// <summary>Aliado caído (0.15.0, opção B): seta e nome em cinza, barra sem preenchimento com o rótulo "caído".</summary>
         private static readonly Color CinzaCaido = new Color(0.62f, 0.62f, 0.62f, 0.9f);
         private const string TextoCaido = "caído";
+        private const ulong ChaveAquecimento = 2; // nenhum SteamID de jogador é 2 (o eco é 0): o aliado de mentira do Aquecer
 
         /// <summary>Reanimação (0.16.0): verde só para o progresso; vermelho para interrompido; branco 60% para a dica.</summary>
         internal static readonly Color VerdeReanimar = new Color(0.50f, 0.72f, 0.49f);      // #7FB77E
@@ -278,10 +286,11 @@ namespace HellClockCoop.Interface
                 _estiloSeta = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 30, fontStyle = FontStyle.Bold };
                 _estiloNomeSeta = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 14, fontStyle = FontStyle.Bold };
             }
+            float larguraTela = Screen.width, alturaTela = Screen.height;
             foreach (Aliado a in DoQuadro)
             {
                 Vector3 cabeca = cam.WorldToScreenPoint(a.Avatar.transform.position + Vector3.up * AlturaCabeca);
-                if (NaTela(cam, a.Avatar.transform.position))
+                if (NaTela(cam, a.Avatar.transform.position, larguraTela, alturaTela))
                 {
                     if (!MostrarVida.Value || cabeca.z <= 0f) continue;
                     float y = Screen.height - cabeca.y + (comNome && a.Chave != 0 ? AbaixoDoNome : 0f);
@@ -345,31 +354,41 @@ namespace HellClockCoop.Interface
             if (cam != null)
             {
                 Camera camUi = _canvas != null && _canvas.renderMode != RenderMode.ScreenSpaceOverlay ? _canvas.worldCamera : null;
-                float escala = Screen.height / 1080f;
-                bool comNome = CoopRuntime.MostrarNomes.Value;
+                // 0.31.3: uma leitura por quadro (antes, a cada aliado e a cada conta).
+                float larguraTela = Screen.width, alturaTela = Screen.height, dt = Time.unscaledDeltaTime;
+                float escala = alturaTela / 1080f;
+                bool comNome = CoopRuntime.MostrarNomes.Value, mostrarVida = MostrarVida.Value, mostrarSeta = MostrarSeta.Value;
                 foreach (Aliado a in DoQuadro)
                 {
                     Visual v = Obter(a.Chave);
                     v.Visto = true;
                     Vector3 pos = a.Avatar.transform.position;
-                    bool naTela = NaTela(cam, pos);
+                    bool naTela = NaTela(cam, pos, larguraTela, alturaTela);
 
                     Vector3 cabeca = cam.WorldToScreenPoint(pos + Vector3.up * AlturaCabeca);
-                    bool barra = MostrarVida.Value && naTela && cabeca.z > 0f;
-                    Ativar(v.Barra, barra);
+                    bool barra = mostrarVida && naTela && cabeca.z > 0f;
+                    Ativar(v.BarraGo, ref v.BarraLigada, barra);
                     if (barra)
                     {
                         float baixo = comNome && a.Chave != 0 ? AbaixoDoNome : 0f; // o eco não tem nome sobre a cabeça
                         Colocar(v.Barra, new Vector2(cabeca.x, cabeca.y - baixo), camUi);
                         float vida = a.Caido ? 0f : Mathf.Clamp01(a.Avatar.Vida);
-                        v.ValorAtraso = a.Caido ? 0f : vida >= v.ValorAtraso || v.ValorAtraso < 0f ? vida : Mathf.Max(vida, v.ValorAtraso - AtrasoQueda * Time.unscaledDeltaTime);
+                        v.ValorAtraso = a.Caido ? 0f : vida >= v.ValorAtraso || v.ValorAtraso < 0f ? vida : Mathf.Max(vida, v.ValorAtraso - AtrasoQueda * dt);
                         if (v.Preenche != null) v.Preenche.fillAmount = vida;
                         if (v.Atraso != null) v.Atraso.fillAmount = v.ValorAtraso;
                         float barreira = a.Caido ? 0f : Mathf.Clamp01(a.Avatar.Barreira);
                         if (v.Barreira != null) v.Barreira.fillAmount = FracaoBarreira(barreira);
-                        if (v.Brilho != null) v.Brilho.alpha = Mathf.MoveTowards(v.Brilho.alpha, barreira > 0f ? 1f : 0f, Time.unscaledDeltaTime / DuracaoBrilho);
+                        if (v.Brilho != null)
+                        {
+                            float brilho = Mathf.MoveTowards(v.BrilhoPosto, barreira > 0f ? 1f : 0f, dt / DuracaoBrilho);
+                            if (brilho != v.BrilhoPosto)
+                            {
+                                v.BrilhoPosto = brilho;
+                                v.Brilho.alpha = brilho;
+                            }
+                        }
                     }
-                    if (v.Rotulo != null && v.Rotulo.gameObject.activeSelf != (barra && a.Caido)) v.Rotulo.gameObject.SetActive(barra && a.Caido);
+                    if (v.Rotulo != null) Ativar(v.RotuloGo, ref v.RotuloLigado, barra && a.Caido);
                     Fase2.Reanimacao.Progresso pr = default;
                     bool reanimando = barra && a.Caido && Fase2.Reanimacao.ProgressoDe(a.Chave, out pr);
                     if (v.Rotulo != null && barra && a.Caido)
@@ -378,19 +397,19 @@ namespace HellClockCoop.Interface
                         if (v.Rotulo.text != texto) v.Rotulo.text = texto;
                         v.Rotulo.color = reanimando ? CorEstado(pr.Estado) : CinzaCaido;
                     }
-                    Ativar(v.Progresso, reanimando);
+                    Ativar(v.ProgressoGo, ref v.ProgressoLigado, reanimando);
                     if (reanimando)
                     {
                         v.ProgressoEnche.anchorMax = new Vector2(pr.Fracao, 1f);
                         v.ProgressoCor.color = pr.Estado == Fase2.Reanimacao.Estado.Interrompido ? VermelhoInterrompido : VerdeReanimar;
                     }
 
-                    bool seta = MostrarSeta.Value && !naTela;
-                    Ativar(v.Seta, seta);
-                    Ativar(v.SetaNome, seta);
+                    bool seta = mostrarSeta && !naTela;
+                    Ativar(v.SetaGo, ref v.SetaLigada, seta);
+                    Ativar(v.SetaNomeGo, ref v.SetaNomeLigada, seta);
                     if (seta)
                     {
-                        Borda(cam, pos, escala, out Vector2 ponto, out float angulo, out Vector2 direcao);
+                        Borda(cam, pos, escala, larguraTela, alturaTela, out Vector2 ponto, out float angulo, out Vector2 direcao);
                         Colocar(v.Seta, ponto, camUi);
                         v.Seta.localEulerAngles = new Vector3(0f, 0f, angulo + GiroBaseSeta);
                         Colocar(v.SetaNome, ponto - direcao * (_tamanhoSeta.y + 14f) * escala, camUi);
@@ -413,10 +432,10 @@ namespace HellClockCoop.Interface
         }
 
         /// <summary>O corpo do aliado (não a cabeça) está dentro da tela e na frente da câmera.</summary>
-        private static bool NaTela(Camera cam, Vector3 pos)
+        private static bool NaTela(Camera cam, Vector3 pos, float larguraTela, float alturaTela)
         {
             Vector3 t = cam.WorldToScreenPoint(pos + Vector3.up * AlturaCorpo);
-            return t.z > 0f && t.x >= 0f && t.x <= Screen.width && t.y >= 0f && t.y <= Screen.height;
+            return t.z > 0f && t.x >= 0f && t.x <= larguraTela && t.y >= 0f && t.y <= alturaTela;
         }
 
         /// <summary>
@@ -424,10 +443,14 @@ namespace HellClockCoop.Interface
         /// direção em graus (0 = direita, anti-horário). A direção sai do espaço da câmera (x, y): na frente dela é a mesma
         /// da tela (perspectiva ou ortográfica) e atrás continua com sentido, sem a divisão por z da projeção.
         /// </summary>
-        internal static void Borda(Camera cam, Vector3 pos, float escala, out Vector2 ponto, out float angulo, out Vector2 direcao)
+        internal static void Borda(Camera cam, Vector3 pos, float escala, out Vector2 ponto, out float angulo, out Vector2 direcao) =>
+            Borda(cam, pos, escala, Screen.width, Screen.height, out ponto, out angulo, out direcao);
+
+        /// <summary>A mesma conta, com o tamanho da tela já lido por quem chama (uma leitura por quadro).</summary>
+        private static void Borda(Camera cam, Vector3 pos, float escala, float larguraTela, float alturaTela, out Vector2 ponto, out float angulo, out Vector2 direcao)
         {
             Vector3 c = cam.transform.InverseTransformPoint(pos + Vector3.up * AlturaCorpo);
-            var centro = new Vector2(Screen.width / 2f, Screen.height / 2f);
+            var centro = new Vector2(larguraTela / 2f, alturaTela / 2f);
             var d = new Vector2(c.x, c.y);
             if (d.sqrMagnitude < 1e-6f) d = Vector2.down; // bem atrás da câmera, no eixo: aponta para baixo
             direcao = d.normalized;
@@ -446,9 +469,12 @@ namespace HellClockCoop.Interface
             rt.localPosition = new Vector3(local.x - meio.x, local.y - meio.y, 0f);
         }
 
-        private static void Ativar(RectTransform rt, bool ligado)
+        /// <summary>Liga ou desliga a peça só quando muda; "atual" é o estado guardado no Visual (0.31.3).</summary>
+        private static void Ativar(GameObject peca, ref bool atual, bool ligado)
         {
-            if (rt != null && rt.gameObject.activeSelf != ligado) rt.gameObject.SetActive(ligado);
+            if (atual == ligado || peca == null) return; // peça destruída fora daqui: fica como está, sem erro (como antes)
+            atual = ligado;
+            peca.SetActive(ligado);
         }
 
         private static void EsconderTudo()
@@ -665,6 +691,9 @@ namespace HellClockCoop.Interface
             v.Barreira = _caminhoBarreira != null ? Peca(v.Barra, _caminhoBarreira) : null;
             Transform brilho = _caminhoBrilho != null ? (_caminhoBrilho.Length == 0 ? v.Barra : v.Barra.Find(_caminhoBrilho)) : null;
             v.Brilho = brilho != null ? brilho.GetComponent<CanvasGroup>() : null;
+            v.BarraGo = b;
+            v.BarraLigada = b.activeSelf;
+            v.BrilhoPosto = v.Brilho != null ? v.Brilho.alpha : 0f;
 
             var s = new GameObject("HellClockCoop.SetaAliado", typeof(RectTransform));
             v.Seta = (RectTransform)s.transform;
@@ -675,6 +704,8 @@ namespace HellClockCoop.Interface
             v.SetaImagem.color = _corSeta;
             v.SetaImagem.preserveAspect = true;
             v.SetaImagem.raycastTarget = false;
+            v.SetaGo = s;
+            v.SetaLigada = true; // objeto novo nasce ligado
 
             var n = new GameObject("HellClockCoop.SetaNome", typeof(RectTransform));
             v.SetaNome = (RectTransform)n.transform;
@@ -690,6 +721,8 @@ namespace HellClockCoop.Interface
             texto.raycastTarget = false;
             texto.richText = false; // nome da Steam com <tags> sai como texto
             v.SetaTexto = texto;
+            v.SetaNomeGo = n;
+            v.SetaNomeLigada = true;
 
             var r = new GameObject("HellClockCoop.Caido", typeof(RectTransform)); // "caído" sobre a moldura da barra
             var rr = (RectTransform)r.transform;
@@ -708,6 +741,7 @@ namespace HellClockCoop.Interface
             rotulo.text = TextoCaido;
             r.SetActive(false);
             v.Rotulo = rotulo;
+            v.RotuloGo = r;
 
             // Progresso da reanimação (0.16.0): trilho preto 62% com o preenchimento pela âncora (sem sprite, o
             // Image.Filled não corta), logo abaixo da barra.
@@ -731,10 +765,63 @@ namespace HellClockCoop.Interface
             v.ProgressoCor.color = VerdeReanimar;
             v.ProgressoCor.raycastTarget = false;
             g.SetActive(false);
+            v.ProgressoGo = g;
 
             Visuais[chave] = v;
             Desempenho.SomarDetalhe(Desempenho.Detalhe.CriarBarraAliado, inicio);
             return v;
+        }
+
+        // ---------- Aquecimento (0.31.3) ----------
+
+        /// <summary>
+        /// A HUD do jogo foi achada e está na tela. Se ainda não achou, só procura quando o registro do jogo já tem a HUD
+        /// (HudDoJogo): a espera do aquecimento não pode cair na varredura de reserva do Preparar (50 a 90 ms por busca).
+        /// </summary>
+        internal static bool HudPronta()
+        {
+            if (_camada == null)
+            {
+                if (HudDoJogo.Atual() == null) return false;
+                Preparar();
+            }
+            return HudVisivel;
+        }
+
+        /// <summary>
+        /// Monta a barra, a seta e o nome de um aliado de mentira (o avatar de aquecimento, que fica longe da tela) e passa
+        /// uma vez pelo posicionamento, ao entrar numa sala (CoopRuntime), fora do quadro em que o primeiro aliado aparece:
+        /// nesse quadro esta parte custava 11,4 ms, quase tudo custo de primeira vez. Nada chega à tela: o canvas monta as
+        /// peças aqui mesmo e elas são destruídas no mesmo passo. Só sem aliado na tela. Falso: a HUD do jogo ou a câmera
+        /// ainda não estão prontas (tentar de novo).
+        /// </summary>
+        internal static bool Aquecer(RemotePlayerAvatar avatar)
+        {
+            if (_desativado || _avisouSemPeca || Visuais.Count > 0 || !(MostrarVida.Value || MostrarSeta.Value)) return true; // nada a aquecer
+            if (avatar == null || Camera.main == null || (!Nativo && !Preparar())) return _desativado || _avisouSemPeca;
+            try
+            {
+                DoQuadro.Clear();
+                DoQuadro.Add(new Aliado { Chave = ChaveAquecimento, Nome = "Aliado", Avatar = avatar });
+                Posicionar();
+                Canvas.ForceUpdateCanvases(); // a seta e o nome são montados agora, não no primeiro aliado
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Aliados] Aquecimento da barra e da seta falhou (elas seguem; a primeira aparição de um aliado pode pesar): {e.Message}");
+            }
+            finally
+            {
+                DoQuadro.Clear();
+                if (Visuais.TryGetValue(ChaveAquecimento, out Visual falso)) // desligadas já: a destruição só vale no fim do quadro
+                {
+                    if (falso.Barra != null) falso.BarraGo.SetActive(false);
+                    if (falso.Seta != null) falso.SetaGo.SetActive(false);
+                    if (falso.SetaNome != null) falso.SetaNomeGo.SetActive(false);
+                }
+                EsconderTudo(); // destrói as peças de mentira (o modelo e as peças do jogo ficam montados)
+            }
+            return true;
         }
 
         /// <summary>fillAmount da imagem da barreira para a fração (LifeView.Update: Map(0, 1, conv.x, conv.y, fração)).</summary>

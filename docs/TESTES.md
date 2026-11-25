@@ -402,6 +402,38 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.31.3 — Interface com aliados e menu do coop aberto mais leves
+
+Não muda mensagem (protocolo 25), regra de jogo nem save. Ao entrar numa sala o mod prepara, um passo por quadro e sem
+mostrar nada, o que antes era montado no quadro em que o primeiro aliado aparecia; a lista do menu do coop fica
+guardada; o painel de grupo, a barra e a seta só mexem no que mudou (ARQUITETURA, riscos, item 7, etapa 8, com a
+tabela antes/depois). Medido sozinho em 25/11/2026, no hub, com o eco:
+
+- [x] **Medidor (sozinho, 25/11/2026):** roteiro por script no hub parado: solo 40 s; F7 e as 4 abas, 35 s cada;
+  "Criar coop", Esc; menu na Sessão e na Salas como host; F7 fecha; F8 (eco) 45 s; F8 desliga e liga; marcador 6
+  vezes; F7 com o eco; F7 e F8 fecham. Medido: 1ª aparição do eco em sala de `Travada` de 65 ms (mod 55,1) para pico
+  do mod de 17,0 ms num quadro de 23 ms, sem travada; menu aberto como host de 0,225 para 0,021 ms por quadro
+  (Sessão) e de 0,343 para 0,020 (Salas), chamadas à Steam de 3,0 e 6,9 para 1,0 por quadro. Os picos do dono da
+  sala com o menu aberto continuam (8 por aba antes; 9 e 7 depois, de 8 a 14 ms): saíram de `montar lista do menu`
+  e aparecem na parte Rede, que fica para uma etapa própria.
+- [x] **Aquecimento (sozinho, 25/11/2026):** ao criar o coop, o log mostra `[Aquecimento] Interface dos aliados
+  aquecida ao entrar na sala, em 5 quadros: avatar 17,9 ms, amostra 6,0 ms, barra e seta 10,7 ms, painel 22,0 ms`;
+  nenhuma `Travada` nesses quadros (4 linhas `Pico do mod`, quadros de 19 a 31 ms).
+- [ ] **Nada pisca:** ao criar ou entrar numa sala, nada aparece na tela nem no minimapa durante o aquecimento
+  (personagem a mais, barra, seta, painel).
+- [ ] **Aliado na tela:** barra de vida, seta fora da tela, nome sobre a cabeça e painel de grupo como antes (vida
+  com a faixa clara, barreira, caído, reanimação, skills, buffs e debuffs com acúmulos, coroa do host, símbolo de TP
+  com os números da recarga e da canalização).
+- [ ] **Menu do coop (F7):** trocar de aba, mudar um ajuste, renomear a sala, lista de salas, expulsar e bloquear
+  respondem na hora (a lista guardada é refeita a cada ação e a cada 0,25 s).
+- [ ] **Convidado (dupla):** quem entra numa sala já com o host no hub: o aquecimento para sozinho quando o aliado
+  aparece antes (`[Aquecimento] Interrompido (um aliado chegou antes)`) e a interface funciona igual.
+- [ ] **Aliado de verdade (dupla):** a 1ª aparição do aliado sem `Travada` no log dos dois PCs.
+- Conhecido, fora desta versão: no painel de grupo os nomes dos jogadores não aparecem (visto na 0.31.2 publicada e na
+  0.31.3, em 2560×1600); está no roadmap.
+- Se falhar, mandar: o `LogOutput.log` (linhas `[Aquecimento]`, `[Painel]`, `[Desempenho] Travada` e `Pico do mod`) e
+  uma captura da tela.
+
 ## 0.31.2 — Menos alocação por quadro (teclas, canto do OnGUI, contexto de som)
 
 Não muda mensagem (protocolo 25), regra de jogo nem save. Tira três fontes de lixo de todo quadro (ARQUITETURA, riscos,

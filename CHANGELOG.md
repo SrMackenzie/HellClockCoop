@@ -4,6 +4,16 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.31.3 — A chegada do primeiro aliado e o menu do coop aberto ficaram mais leves 🧪
+_25/11/2026_
+
+- Quando o primeiro aliado aparecia na tela, o jogo dava uma travada curta: o mod montava ali, de uma vez, a cópia do personagem, a barra de vida, a seta, o painel de grupo e os primeiros textos. Agora, ao entrar numa sala, o mod faz essa preparação por conta própria, um pedaço por quadro, antes de alguém chegar. Nada aparece na tela durante a preparação
+- Menu do coop aberto: a lista era remontada duas vezes por quadro, com consultas à Steam. Agora a lista fica guardada e só é refeita quando algo muda (ou quatro vezes por segundo), o painel não é redesenhado quando nada mudou e, para o dono da sala, o nome da sala não consulta mais a Steam
+- Com aliados na tela, a barra de vida, a seta e o painel de grupo só mexem no que mudou desde o quadro anterior
+- Medido no PC do autor, sozinho no hub com o modo eco, mesmo roteiro antes e depois: a chegada do primeiro aliado numa sala era uma travada de 65 ms e agora é um quadro de 23 ms, sem travada (a preparação ao entrar na sala leva 5 quadros de até 31 ms). Com o menu aberto, o custo do menu por quadro para o dono da sala caiu de 0,23 para 0,02 ms na aba Sessão e de 0,34 para 0,02 na aba Salas, e o lixo de memória, também para o dono da sala, caiu para menos da metade. O que não mudou: o dono da sala ainda tem um engasgo curto (quadro de 13 a 24 ms) a cada 5 segundos, mais ou menos, com o menu aberto ou fechado. Provavelmente vem de uma consulta à Steam na parte de rede (ainda não confirmado) e fica para uma próxima versão. Com aliado de verdade ainda não foi medido
+- O medidor do log passou a mostrar o custo de cada peça da interface (barra e seta, painel de grupo, marcador, menu), o menu aberto em cada aba e a linha "Pico do mod", para quadros em que só o mod pesou sem chegar a travar
+- Balanceamento: sem efeito (nada de regra de jogo muda; o personagem de preparação não conta como jogador, não é alvo e não vai para a rede). Protocolo não muda (25), mas a lista de salas só mostra salas da mesma versão: atualize todos os PCs para a 0.31.3
+
 ## 0.31.2 — Menos lixo de memória a cada quadro: menos pausas do coletor 🧪
 _25/11/2026_
 

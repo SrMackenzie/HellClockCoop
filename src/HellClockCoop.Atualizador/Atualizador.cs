@@ -23,7 +23,7 @@ namespace HellClockCoop.Atualizador
     public static class Atualizador
     {
         /// <summary>Igual ao PluginVersion do plugin (o empacotar.py confere).</summary>
-        public const string Versao = "0.31.2";
+        public const string Versao = "0.31.3";
 
         private const string Repositorio = "SrMackenzie/HellClockCoop";
         private const string ArquivoDeConfig = "br.srmackenzie.hellclockcoop.cfg";

@@ -102,6 +102,8 @@ namespace HellClockCoop.Interface
         // demorando 9 a 17 ms. Agora é remontada quando uma ação do jogador muda algo (no mesmo quadro, como antes), a
         // cada quadro durante a edição do nome (o cursor pisca) e, fora isso, a cada IntervaloDaLista, para o que muda
         // sozinho (conexão, aliados, salas achadas, a idade da busca). Navegar e clicar valem para a lista que está na tela.
+        // Medido depois: o custo por quadro e as chamadas caíram, mas a chamada demorada continua, agora na leitura da
+        // Rede (como host, com o menu aberto ou fechado): ver ARQUITETURA, riscos, item 7, etapa 8.
         private const float IntervaloDaLista = 0.25f;
         private static bool _refazerLista;
         private static float _proximaLista;
@@ -497,7 +499,7 @@ namespace HellClockCoop.Interface
                     Tipo = Tipo.Item, Acao = Acao.NomeSala, Habilitada = true,
                     Texto = "Nome da sala:  " + _textoNome + (cursor ? "_" : " "),
                     Valor = _textoNome.Length + "/" + Salas.NomeMaximo,
-                    Detalhe = "Enter salva  ·  Esc cancela  ·  vazio volta a \"" + Salas.NomePadrao(Steamworks.SteamFriends.GetPersonaName()) + "\"",
+                    Detalhe = "Enter salva  ·  Esc cancela  ·  vazio volta a \"" + Salas.NomePadrao(s.MeuNome) + "\"",
                 });
                 return;
             }
