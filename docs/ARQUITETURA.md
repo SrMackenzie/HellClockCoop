@@ -411,8 +411,8 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
    Outras sobras: o passo do painel no aquecimento cai num quadro só de 31 ms (candidato a dividir). Só com o eco: com aliado de verdade falta conferir a 1ª aparição, o aquecimento de quem entra na sala
    como convidado e o que acontece quando o aliado chega durante o aquecimento. Achado durante o teste, fora da
    etapa: no painel de grupo os nomes dos jogadores não aparecem (a coroa, a barra, as skills e o símbolo de TP
-   aparecem); a 0.31.2 publicada mostra o mesmo em 2560×1600, então não veio desta etapa (item no roadmap, sem causa
-   apurada).
+   aparecem); a 0.31.2 publicada mostra o mesmo em 2560×1600, então não veio desta etapa. Corrigido na 0.31.4
+   (§12.15).
 
    **Etapa 4 (0.30.3): travadas pontuais.** Medido antes (0.30.2, 24/11/2026, PC do autor, ~200 fps), linhas `[Desempenho] Travada`:
 
@@ -435,6 +435,45 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
    | Efeitos com o eco na run (1,1 min com combate) | sem número | carregar prefab de efeito 8× (0,7 ms no total) · copiar efeito 53× (37,3 ms no total, 0,70 ms por cópia, pior quadro 4,2 ms); 0 travadas no trecho; mod 0,20 ms por quadro |
 
    Os detalhes `buscar ouvintes do Esc`, `buscar peças da HUD` e `buscar botões do jogo` não aparecem em nenhum resumo. Sobra a travada de 60 ms da primeira aparição do aliado: não é mais busca, é a montagem da barra de vida, da seta e do painel de grupo (Interface 26,3 ms) somada à criação do avatar, tudo no mesmo quadro; fica para uma etapa seguinte (interface com aliados), que pode montar essas peças antes ou em quadros separados. No hub saiu uma `Travada` de 115 ms com o mod em 0,2 ms na primeira abertura da pausa (é do jogo; na run, abrir a pausa 2 vezes não gerou linha). `CheckForSpawn` continuou fora de `detalhes` mesmo andando e lutando no andar 1 do Sertão (`CaatingaA1LevelDefinition`): o jogo não chamou o método nesse andar; falta ver em outros andares, na sessão em dupla. O resumo de fechamento do jogo de novo não saiu ao fechar pela janela. O carregamento sem espera e a cópia pendente só rodam com um aliado de verdade usando um efeito que este PC não carregou: o eco usa os efeitos do próprio jogador, que já estão na memória.
+
+   **Sobras da primeira fase de desempenho (etapas 2 a 8, 0.30.1 a 0.31.3), para etapas posteriores.** Tudo abaixo foi
+   visto no medidor e ficou de fora de propósito; a ordem é a sugerida. Nenhuma tem número em dupla: a fase inteira foi
+   medida sozinho, com o eco ou com simulação.
+   1. **Engasgo periódico do dono da sala** (etapa 8). Como host, a parte Rede tem um pico de 8 a 15 ms a cada ~5 s
+      (quadro de 13 a 24 ms, sem chegar a `Travada`), com o menu aberto ou fechado. Hipótese não confirmada: uma
+      chamada à Steam que demora de tempos em tempos e pesa em quem chama a Steam primeiro no quadro. O primeiro passo
+      é medir qual chamada demora (releitura do dono do lobby ou leitura das mensagens). Mexe na leitura do dono do
+      lobby (§12.11), então pede auditoria.
+   2. **Cópia de efeito pesada no começo do andar** (etapas 6 e 7). Uma cópia de efeito de 40 a 49 ms por run, logo
+      depois de chegar ao andar, que nenhum teto por quadro divide (as outras custam ~0,5 a 0,7 ms). Hipótese não confirmada:
+      a primeira cópia ligada de um modelo que fica estacionado desligado; o candidato é aquecer o modelo ao montá-lo.
+   3. **`buscar peças da HUD` fora do carregamento** (etapa 7). Ao chegar ao andar, duas buscas de ~37 ms (quadro
+      de 58 a 60 ms); a etapa 4 não viu essa busca em nenhum resumo, então falta apurar quando ela volta. A tela do
+      jogador caído faz a mesma busca duas vezes por queda (ainda sem número).
+   4. **`FxNos`** (etapa 6). É o tratador mais caro por volume na recepção: 18,9 mil mensagens, 3,2 MB e 117 ms em 3 min
+      de luta com a recepção simulada de 3 aliados. Ideia ainda não avaliada: mandar só o que mudou, como no estado dos
+      inimigos.
+   5. **Passo do painel no aquecimento** (etapa 8). Cai num quadro só de 31 ms (22 ms do mod): candidato a dividir em
+      dois quadros (montar e desenhar).
+   6. **Run com luta sem comparação de memória** (etapa 7). A subida da memória entre coletas só tem antes e depois no
+      hub; falta repetir o roteiro com uma run que termine a luta nas duas versões.
+   7. **Rede dos inimigos.** Três observações anotadas durante a medição da etapa 5, que não entraram no registro
+      da etapa e não têm número: conferir antes de tratar como fato. Depois que alguém entra no meio da run, os
+      estados completos saem agrupados (um pacote maior por segundo); réplica criada tarde fica 1 a 2 s sem animação;
+      em sala sem convidado o host não numera os inimigos, então quem entra no meio do andar não os recebe (já era
+      assim antes da etapa).
+   8. **Medição em dupla e com 4 jogadores.** Falta ver com aliado de verdade: a primeira aparição do aliado, o
+      aquecimento de quem entra como convidado e o que acontece quando o aliado chega durante o aquecimento (etapa
+      8), o carregamento sem espera dos efeitos do aliado (etapa 4), os sons das skills com os prefixos tipados
+      (etapa 7), a carga real de rede e os tetos de recepção (etapas 5 e 6), e se `CheckForSpawn` aparece em outros
+      andares (não apareceu no andar 1 do Sertão, etapas 3 e 4). É o que decide se os itens "travadas esporádicas" e
+      "4 jogadores" do roadmap saem de `fazendo`.
+
+   Sem ganho medido ou fora do alcance do mod, para não repetir: `useGUILayout = false` não mudou o OnGUI (0,032 →
+   0,033 ms); as barras e a seta quase não mudaram (12,6 → 11,5 µs por quadro, com o eco); a primeira abertura da pausa
+   no hub (~115 ms) é do jogo, com o mod em 0,2 ms. A observar: o resumo de fechamento do medidor não sai quando o jogo
+   é fechado pela janela; e a primeira aparição do eco fora de uma sala ainda trava (62 ms num teste da 0.31.4),
+   porque o aquecimento só roda ao entrar numa sala (só afeta o modo eco de teste).
 
 ---
 
@@ -1880,6 +1919,17 @@ quem te reanima (`Reanimacao.MeuProgresso`). Ela só aparece com algum aliado ou
   skills nem status; sem avatar no seu andar → 40% com "hub", "outro andar" ou "sem sinal" (mesmo andar sem pacote há 5 s).
 - **Modo eco (F8):** o fantasma entra como "Eco" com as suas próprias skills e status.
 - `MostrarPainelDeGrupo` no `.cfg` (seção Interface) desliga. Erro: o painel desliga até reabrir o jogo, com aviso no log.
+- **Altura das caixas de texto (0.31.4).** O nome e o número de acúmulos nunca apareciam. Os textos do painel usam o
+  modo `Ellipsis` do TextMeshPro (nome comprido termina em reticências), e nesse modo o texto que não cabe na altura
+  da caixa é cortado inteiro. A linha da fonte do jogo (`AvrileSerif-Medium SDF`) tem 1,36× o tamanho: 27,2 px com
+  fonte 20 numa caixa de 22 (nome) e 16,3 px com fonte 12 numa caixa de 12 (acúmulos). Medido no jogo antes, no
+  nome das duas linhas ("SrMackenzie" e "Eco"): `characterCount` 0 e `isTextTruncated` verdadeiro; trocando só o
+  modo para `Overflow`, 11 caracteres. O estado e o texto do TP (fonte 16, linha de 21,8 px em caixa de 22) cabiam
+  e, com a folga, crescem ~2 px. `PainelGrupo.Texto` agora
+  chama `DarAlturaDaLinha`: a caixa cresce até a altura da linha da fonte mais 2 px, para cima e para baixo por igual
+  (ou só para cima no texto alinhado embaixo), sem mudar onde o texto fica. Depois, nos mesmos dois nomes: 11 e 3
+  caracteres, nada cortado. Os acúmulos recebem a mesma correção, mas ainda não foram vistos no jogo. As medidas da
+  caixa e o modo de corte são os mesmos desde a 0.27.0.
 
 **Protocolo 22.** codectest: ida e volta do `PainelAliado`, `IgualA`, cortes em 8 skills e 4 status, cabeçalhos acima do
 teto e mensagem cortada recusados.

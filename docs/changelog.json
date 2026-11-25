@@ -2,6 +2,23 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.31.4",
+      "data": "25/11/2026",
+      "testado": false,
+      "titulo": "Os nomes voltaram a aparecer no painel de grupo",
+      "itens": [
+        "No painel de grupo (à esquerda), o nome de cada jogador não aparecia: só a coroa do dono da sala, a barra de vida e as skills. A caixa do nome era mais baixa que a linha da fonte do jogo, e nesse caso o texto inteiro era cortado. Agora o nome aparece, na cor de cada jogador",
+        "Pelo mesmo motivo, o número de acúmulos em cima dos buffs e debuffs do painel também não aparecia, e recebeu a mesma correção. O nome foi conferido no jogo; os acúmulos ainda não",
+        "Documentação: o que sobrou da primeira fase de otimizações ficou listado para as próximas etapas (o engasgo do dono da sala a cada 5 segundos, uma cópia de efeito pesada no começo de cada andar e a medição em dupla, entre outros)",
+        "Balanceamento: sem efeito (nada de regra de jogo muda). Protocolo não muda (25), mas a lista de salas só mostra salas da mesma versão: atualize todos os PCs para a 0.31.4"
+      ],
+      "testar": [
+        "Com um aliado (ou o modo eco, F8), o painel de grupo mostra o seu nome no topo e o do aliado embaixo; a coroa fica ao lado do nome do dono da sala",
+        "Um nome comprido termina em reticências, sem passar por cima do símbolo de TP",
+        "Um buff com acúmulos mostra o número no canto do ícone, no painel"
+      ]
+    },
+    {
       "v": "0.31.3",
       "data": "25/11/2026",
       "testado": false,

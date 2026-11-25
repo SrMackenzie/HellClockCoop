@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
   "atualizado": "25/11/2026",
-  "versao": "0.31.3",
+  "versao": "0.31.4",
   "fases": [
     {
       "id": "B",
@@ -299,8 +299,8 @@
           "Teleporte até um aliado: símbolo de TP na linha dele no painel de grupo, tecla T (D-pad ←) ou clique; mesmo andar, fora de combate, canaliza 2 s e recarga de 60 s (0.29.0)"
         ],
         [
-          "planejado",
-          "Correção: no painel de grupo o nome dos jogadores não aparece (a coroa, a barra, as skills e o símbolo de TP aparecem); visto na 0.31.2 e na 0.31.3, em 2560×1600"
+          "testar",
+          "Correção: o nome dos jogadores e os acúmulos dos buffs voltam a aparecer no painel de grupo (0.31.4)"
         ],
         [
           "testar",
@@ -377,6 +377,10 @@
         [
           "fazendo",
           "Desempenho com 4 jogadores e muitos inimigos"
+        ],
+        [
+          "planejado",
+          "Desempenho, segunda fase (sobras medidas na primeira): engasgo do dono da sala a cada 5 s na rede, cópia de efeito pesada no começo do andar, busca das peças da HUD ao chegar ao andar, mensagens de efeito (FxNos) e medição em dupla"
         ],
         [
           "planejado",

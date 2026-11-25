@@ -800,7 +800,27 @@ namespace HellClockCoop.Interface
             t.overflowMode = TextOverflowModes.Ellipsis;
             t.raycastTarget = false;
             t.richText = false; // nome da Steam com <tags> sai como texto
+            DarAlturaDaLinha(t, rt, tamanho);
             return t;
+        }
+
+        /// <summary>
+        /// 0.31.4: a caixa do texto ganha a altura de uma linha da fonte. A linha da fonte do jogo (AvrileSerif) tem 1,36× o
+        /// tamanho (27 px com 20), e as caixas foram desenhadas pelo tamanho (22 px para o nome, 12 para os acúmulos). No modo
+        /// Ellipsis o TMP corta o texto que não cabe na altura, e sobravam 0 caracteres: o nome e os acúmulos nunca apareciam.
+        /// A caixa cresce sem tirar o texto do lugar: para cima e para baixo por igual, ou só para cima quando o texto é
+        /// alinhado embaixo.
+        /// </summary>
+        private static void DarAlturaDaLinha(TextMeshProUGUI t, RectTransform rt, float tamanho)
+        {
+            TMP_FontAsset fonte = t.font;
+            if (fonte == null || fonte.faceInfo.pointSize <= 0f) return;
+            float linha = tamanho * fonte.faceInfo.lineHeight / fonte.faceInfo.pointSize + 2f; // 2 px de folga
+            float falta = linha - rt.sizeDelta.y;
+            if (falta <= 0f) return;
+            bool embaixo = t.verticalAlignment == VerticalAlignmentOptions.Bottom;
+            rt.sizeDelta = new Vector2(rt.sizeDelta.x, linha);
+            rt.anchoredPosition += new Vector2(0f, embaixo ? falta : falta / 2f); // o pivô é o canto de cima: sobe o que cresceu
         }
 
         private static void Esconder()

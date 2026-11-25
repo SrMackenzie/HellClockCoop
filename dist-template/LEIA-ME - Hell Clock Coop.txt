@@ -285,6 +285,8 @@ ESTADO ATUAL (versão de teste, Fase 3)
   entrar numa sala o mod prepara, aos poucos e sem mostrar nada, o que antes montava de uma
   vez nessa hora. O menu do coop aberto também pesa menos, principalmente para o dono da sala.
   Nada muda no jogo. Use a 0.31.3 em todos os PCs.
+- (0.31.4): correção. No painel de grupo (à esquerda) o nome de cada jogador e o número de
+  acúmulos dos buffs não apareciam; agora aparecem. Use a 0.31.4 em todos os PCs.
 - A Deluxe Edition (cosmética) não importa.
 
 

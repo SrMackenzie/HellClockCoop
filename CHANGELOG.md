@@ -4,6 +4,14 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.31.4 — Os nomes voltaram a aparecer no painel de grupo 🧪
+_25/11/2026_
+
+- No painel de grupo (à esquerda), o nome de cada jogador não aparecia: só a coroa do dono da sala, a barra de vida e as skills. A caixa do nome era mais baixa que a linha da fonte do jogo, e nesse caso o texto inteiro era cortado. Agora o nome aparece, na cor de cada jogador
+- Pelo mesmo motivo, o número de acúmulos em cima dos buffs e debuffs do painel também não aparecia, e recebeu a mesma correção. O nome foi conferido no jogo; os acúmulos ainda não
+- Documentação: o que sobrou da primeira fase de otimizações ficou listado para as próximas etapas (o engasgo do dono da sala a cada 5 segundos, uma cópia de efeito pesada no começo de cada andar e a medição em dupla, entre outros)
+- Balanceamento: sem efeito (nada de regra de jogo muda). Protocolo não muda (25), mas a lista de salas só mostra salas da mesma versão: atualize todos os PCs para a 0.31.4
+
 ## 0.31.3 — A chegada do primeiro aliado e o menu do coop aberto ficaram mais leves 🧪
 _25/11/2026_
 

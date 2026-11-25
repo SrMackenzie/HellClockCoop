@@ -402,6 +402,21 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.31.4 — Nomes no painel de grupo
+
+Não muda mensagem (protocolo 25), regra de jogo nem save. No painel de grupo o nome dos jogadores e o número de
+acúmulos dos buffs não apareciam: a caixa do texto era mais baixa que a linha da fonte do jogo e o texto era cortado
+inteiro (ARQUITETURA §12.15). Sem teste automatizado (é tela): a conferência é no jogo.
+
+- [x] **Nomes (sozinho, 25/11/2026, 2560×1600):** com o eco (F8), sozinho e como dono de sala, o painel mostra
+  "SrMackenzie" no topo e "Eco" embaixo, cada um na sua cor; como dono, a coroa fica à esquerda do nome. Antes da
+  correção, no mesmo roteiro, nenhum nome aparecia.
+- [ ] **Acúmulos:** um buff ou debuff com acúmulos mostra o número no canto de baixo à direita do ícone, no painel.
+- [ ] **Nome comprido:** um nome que não cabe termina em reticências, sem passar por cima do símbolo de TP nem do
+  estado ("caído", "hub", "outro andar").
+- [ ] **Outras resoluções:** em 1920×1080 os nomes aparecem alinhados com a coroa e acima da barra de vida.
+- Se falhar, mandar: uma captura da tela com o painel e o `LogOutput.log` (linhas `[Painel]`).
+
 ## 0.31.3 — Interface com aliados e menu do coop aberto mais leves
 
 Não muda mensagem (protocolo 25), regra de jogo nem save. Ao entrar numa sala o mod prepara, um passo por quadro e sem
@@ -430,7 +445,7 @@ tabela antes/depois). Medido sozinho em 25/11/2026, no hub, com o eco:
   aparece antes (`[Aquecimento] Interrompido (um aliado chegou antes)`) e a interface funciona igual.
 - [ ] **Aliado de verdade (dupla):** a 1ª aparição do aliado sem `Travada` no log dos dois PCs.
 - Conhecido, fora desta versão: no painel de grupo os nomes dos jogadores não aparecem (visto na 0.31.2 publicada e na
-  0.31.3, em 2560×1600); está no roadmap.
+  0.31.3, em 2560×1600); corrigido na 0.31.4.
 - Se falhar, mandar: o `LogOutput.log` (linhas `[Aquecimento]`, `[Painel]`, `[Desempenho] Travada` e `Pico do mod`) e
   uma captura da tela.
 

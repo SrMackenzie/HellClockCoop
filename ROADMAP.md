@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 25/11/2026 · versão 0.31.3. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 25/11/2026 · versão 0.31.4. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -100,7 +100,7 @@ _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio s
 | 🧪 | Revisar drops de invocações, ondas de sobrevivência e temporadas (convidado com o XP e o tesouro próprio do host; equipamento sem redução, decisão do autor) |
 | ✅ | Auditoria: o mod nunca escreve no save de outro jogador |
 
-## Fase 5 — Polimento · 56%
+## Fase 5 — Polimento · 57%
 
 _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 
@@ -118,7 +118,7 @@ _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 | ✅ | Painel de grupo à esquerda: você no topo e os aliados embaixo, nome com a coroa do host, barra de vida, skills equipadas embaixo e até 4 buffs/debuffs em cima, sem recarga nem duração (0.27.0) |
 | 🧪 | Barra de convicção (barreira) por cima da vida no painel de grupo e na barra sobre a cabeça dos aliados, igual à barra do jogo (0.28.0) |
 | 🧪 | Teleporte até um aliado: símbolo de TP na linha dele no painel de grupo, tecla T (D-pad ←) ou clique; mesmo andar, fora de combate, canaliza 2 s e recarga de 60 s (0.29.0) |
-| ⬜ | Correção: no painel de grupo o nome dos jogadores não aparece (a coroa, a barra, as skills e o símbolo de TP aparecem); visto na 0.31.2 e na 0.31.3, em 2560×1600 |
+| 🧪 | Correção: o nome dos jogadores e os acúmulos dos buffs voltam a aparecer no painel de grupo (0.31.4) |
 | 🧪 | Visual do teleporte: raio com anel de recarga no painel, contorno na cor do aliado durante a canalização e o efeito de sumir e reaparecer do jogo (0.30.0) |
 | ⬜ | Reconexão e troca de host sem perder a run |
 | 🧪 | Sons das skills e dos golpes dos aliados |
@@ -138,4 +138,5 @@ _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 | ⬜ | Resumo da run em grupo: dano, abates e tempo ganho de cada jogador no fim da run |
 | 🔨 | Correção das travadas esporádicas, com os números do medidor de travadas |
 | 🔨 | Desempenho com 4 jogadores e muitos inimigos |
+| ⬜ | Desempenho, segunda fase (sobras medidas na primeira): engasgo do dono da sala a cada 5 s na rede, cópia de efeito pesada no começo do andar, busca das peças da HUD ao chegar ao andar, mensagens de efeito (FxNos) e medição em dupla |
 | ⬜ | Tradução para inglês e instalador |
