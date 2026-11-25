@@ -330,6 +330,7 @@ namespace HellClockCoop.Interface
 
         private static void Montar(Marca m, RectTransform camada, Sprite seta, Vector2 tamanho)
         {
+            double inicio = Desempenho.Agora();
             Destruir(m);
             m.Sombra = Peca("HellClockCoop.MarcadorSombra", camada, SpriteSombra(), out m.SombraImg);
             m.Contorno = Peca("HellClockCoop.MarcadorContorno", camada, seta, out m.ContornoImg);
@@ -349,6 +350,7 @@ namespace HellClockCoop.Interface
             texto.raycastTarget = false;
             texto.richText = false; // nome da Steam com <tags> sai como texto
             m.Texto = texto;
+            Desempenho.SomarDetalhe(Desempenho.Detalhe.MontarMarcador, inicio);
         }
 
         private static RectTransform Peca(string nome, RectTransform camada, Sprite sprite, out Image img)

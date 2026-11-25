@@ -479,6 +479,7 @@ namespace HellClockCoop.Interface
                 if (_camada == null || _desativado) return false;
                 if (_modeloBarra != null) return true;
 
+                double inicio = Desempenho.Agora();
                 UIObjectPoolController pool = UIObjectPoolController.Instance; // nulo sem registro: não cria (ObjectPoolController.GetInstance)
                 if (pool == null) pool = Achar<UIObjectPoolController>(qualquer: true);
                 GameObject prefab = pool != null && BarraCompanheiroRef != null ? BarraCompanheiroRef(pool) : null;
@@ -492,6 +493,7 @@ namespace HellClockCoop.Interface
                     return false;
                 }
                 MontarModelo(prefab);
+                Desempenho.SomarDetalhe(Desempenho.Detalhe.MontarPecasAliados, inicio);
                 Plugin.Log.LogInfo($"[Aliados] Barra de vida e seta montadas com a interface do jogo (seta: {_spriteSeta.name}, {_tamanhoSeta.x:0}x{_tamanhoSeta.y:0}; buscas na cena: {_buscasNaCena - buscasAntes}).");
                 return true;
             }
@@ -652,6 +654,7 @@ namespace HellClockCoop.Interface
         {
             if (Visuais.TryGetValue(chave, out Visual v) && v.Barra != null && v.Seta != null) return v;
             if (v != null) Destruir(v);
+            double inicio = Desempenho.Agora();
             v = new Visual();
 
             GameObject b = Object.Instantiate(_modeloBarra, _camada, false);
@@ -730,6 +733,7 @@ namespace HellClockCoop.Interface
             g.SetActive(false);
 
             Visuais[chave] = v;
+            Desempenho.SomarDetalhe(Desempenho.Detalhe.CriarBarraAliado, inicio);
             return v;
         }
 

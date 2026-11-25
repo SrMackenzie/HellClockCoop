@@ -83,6 +83,11 @@ namespace HellClockCoop.Interface
         private static readonly List<Visual> Visuais = new List<Visual>();
         private static int _mostradas;
         private static float _rolagem;
+        // 0.31.3: o que o último Mostrar desenhou. Com tudo igual, o quadro não mexe nas peças (antes, 14 a 30 µs por quadro
+        // reaplicando texto, cor, posição e tamanho de cada linha).
+        private static int _versaoMostrada = -1, _focoMostrado, _abaMostrada;
+        private static float _escalaMostrada, _larguraMostrada, _rolagemMostrada;
+        private static string _rodapeMostrado;
         private static CanvasGroup _grupoEscurecer;
         private static float _xDe, _xPara, _inicioDeslize;
         private static bool _deslizando, _fechando;
@@ -139,6 +144,7 @@ namespace HellClockCoop.Interface
             _raiz = _botaoRaiz = null;
             _botao = null;
             _deslizando = _fechando = false;
+            _versaoMostrada = -1;
             Abas.Clear();
             Visuais.Clear();
         }
@@ -545,7 +551,11 @@ namespace HellClockCoop.Interface
 
         internal static void Rolar(float delta) => _rolagem += delta;
 
-        internal static void Mostrar(List<MenuCoop.Linha> linhas, int foco, int aba, string rodape, bool escurecer, ref bool rolarParaFoco)
+        /// <summary>
+        /// Desenha a lista. <paramref name="versao"/> é a montagem da lista (MenuCoop): com a mesma montagem, foco, aba,
+        /// rodapé, rolagem e tamanho de tela do desenho anterior, não há o que mudar e as peças ficam como estão.
+        /// </summary>
+        internal static void Mostrar(List<MenuCoop.Linha> linhas, int versao, int foco, int aba, string rodape, bool escurecer, ref bool rolarParaFoco)
         {
             if (_raiz == null) throw new InvalidOperationException("painel não montado");
             if (!_raiz.activeSelf)
@@ -557,6 +567,18 @@ namespace HellClockCoop.Interface
             else if (_fechando) Deslizar(0f, false); // reaberto no meio da saída
             if (_escurecer.activeSelf != escurecer) _escurecer.SetActive(escurecer); // só no menu do jogo; em jogo, a tela fica limpa
 
+            float escala = Screen.height / 1080f; // escala do canvas (pela altura)
+            float largura = _lista.rect.width > 1f ? _lista.rect.width : LarguraPainel - 120f;
+            if (versao == _versaoMostrada && foco == _focoMostrado && aba == _abaMostrada && !rolarParaFoco
+                && escala == _escalaMostrada && largura == _larguraMostrada && _rolagem == _rolagemMostrada
+                && string.Equals(rodape, _rodapeMostrado, StringComparison.Ordinal)) return;
+            _versaoMostrada = versao;
+            _focoMostrado = foco;
+            _abaMostrada = aba;
+            _escalaMostrada = escala;
+            _larguraMostrada = largura;
+            _rodapeMostrado = rodape;
+
             for (int i = 0; i < Abas.Count; i++)
             {
                 bool ativa = i == aba;
@@ -565,9 +587,7 @@ namespace HellClockCoop.Interface
             }
             _rodape.text = rodape;
 
-            float escala = Screen.height / 1080f; // escala do canvas (pela altura)
             float alturaItem = Mathf.Max(AlturaMinimaItem, escala > 0f ? 44f / escala : AlturaMinimaItem); // alvo de 44 px reais
-            float largura = _lista.rect.width > 1f ? _lista.rect.width : LarguraPainel - 120f;
 
             float y = 0f, topoFoco = -1f, alturaFoco = 0f;
             for (int i = 0; i < linhas.Count; i++)
@@ -635,6 +655,7 @@ namespace HellClockCoop.Interface
                 rolarParaFoco = false;
             }
             _rolagem = Mathf.Clamp(_rolagem, 0f, Mathf.Max(0f, y - janela));
+            _rolagemMostrada = _rolagem;
             _lista.sizeDelta = new Vector2(_lista.sizeDelta.x, y);
             _lista.anchoredPosition = new Vector2(0f, _rolagem);
         }

@@ -18,13 +18,25 @@ namespace HellClockCoop
         internal enum Parte { Menus, Rede, Run, Inimigos, Objetos, Santuarios, Portas, Alvos, Fx, Danos, Sons, Balanceamento, Personagem, Interface, Ganchos, Gui, Avatares, Medidor, Quantidade }
 
         /// <summary>Trechos suspeitos medidos por dentro das partes (não entram na soma). Os chamados o tempo todo (ganchos e o estado dos inimigos) ficam por último.</summary>
-        internal enum Detalhe { CriarAvatar, CarregarPrefabFx, CopiarFx, MedirTextoMenu, CriarLinhaMenu, BuscarBotoesJogo, BuscarPecasHud, ChecarSpawn, TimerUpdate, ContextoSom, MontarEstado, Quantidade }
+        internal enum Detalhe
+        {
+            CriarAvatar, CarregarPrefabFx, CopiarFx, MedirTextoMenu, CriarLinhaMenu, BuscarBotoesJogo, BuscarPecasHud,
+            // 0.31.3: a primeira aparição do aliado por dentro (cópia e limpeza do personagem, montagem das peças da interface)
+            CopiarPersonagem, LimparClone, MontarPecasAliados, CriarBarraAliado, MontarPainel, CriarLinhaPainel, MontarMarcador,
+            ChecarSpawn, TimerUpdate, ContextoSom, MontarEstado,
+            // 0.31.3: a interface com aliados e o menu do coop por quadro (dentro das partes Interface e Menus)
+            BarrasESeta, PainelDeGrupo, Marcador, TelaDoCaido, MontarMenu, MostrarMenu,
+            Quantidade
+        }
 
         private static readonly string[] NomesParte =
             { "Menus", "Rede", "Run", "Inimigos", "Objetos", "Santuários", "Portas", "Alvos", "Efeitos", "Danos", "Sons", "Balanceamento", "Personagem", "Interface", "Ganchos", "OnGUI", "Avatares", "Medidor" };
         private static readonly string[] NomesDetalhe =
             { "criar avatar", "carregar prefab de efeito", "copiar efeito", "medir texto do menu", "criar linha do menu", "buscar botões do jogo",
-              "buscar peças da HUD", "CheckForSpawn", "TimerManager.Update", "contexto de som", "montar estado dos inimigos" };
+              "buscar peças da HUD", "copiar o personagem", "limpar o clone", "montar peças dos aliados", "criar barra e seta do aliado",
+              "montar painel de grupo", "criar linha do painel", "montar marcador",
+              "CheckForSpawn", "TimerManager.Update", "contexto de som", "montar estado dos inimigos",
+              "barras e seta dos aliados", "painel de grupo", "marcador", "tela do caído", "montar lista do menu", "mostrar menu" };
 
         /// <summary>
         /// O que chega dos aliados e vira trabalho por item (0.31.1): contado e cronometrado na aplicação, com o que o teto
@@ -37,6 +49,7 @@ namespace HellClockCoop
         private const int PrimeiroDetalheDeGancho = (int)Detalhe.ChecarSpawn; // chamados a cada quadro: na linha da travada só com tempo relevante
         private const double LimiteMinimoMs = 50.0;   // abaixo disso não é travada perceptível
         private const double FatorTravada = 2.5;      // e precisa ser bem maior que o quadro normal
+        private const double LimitePicoModMs = 8.0;   // 0.31.3: quadro sem travada em que só o mod gastou isto ou mais
         private const float IntervaloResumo = 300f;
         private const float MinimoParaResumo = 30f;   // janela curta demais (troca de contexto logo no início) não vira resumo
         private const int LinhasPorJanela = 40;       // travadas escritas por janela de resumo; o resto só conta
@@ -66,7 +79,7 @@ namespace HellClockCoop
         // Janela do resumo (só quadros em jogo, salvo a rede e o piso de memória, que contam também no carregamento de andar)
         private static float _inicioJanela = -1f, _proximoContexto;
         private static string _contexto;
-        private static int _quadros, _travadas, _travadasGc, _travadasMod, _linhasEscritas, _suprimidas, _carregamentos, _coletas;
+        private static int _quadros, _travadas, _travadasGc, _travadasMod, _linhasEscritas, _suprimidas, _carregamentos, _coletas, _picosMod;
         private static double _somaQuadro, _piorQuadro, _somaMod, _piorMod, _piorModCarregando;
         private static string _piorModParte, _piorModCarregandoParte;
         private static readonly double[] _somaParte = new double[(int)Parte.Quantidade];
@@ -136,6 +149,15 @@ namespace HellClockCoop
         {
             _detMs[(int)d] += (Agora() - inicio) * 1000.0;
             _detN[(int)d]++;
+        }
+
+        /// <summary>Como o SomarDetalhe, devolvendo o instante atual (para encadear trechos seguidos sem ler o relógio duas vezes).</summary>
+        internal static double SomarDetalheEncadeado(Detalhe d, double inicio)
+        {
+            double agora = Agora();
+            _detMs[(int)d] += (agora - inicio) * 1000.0;
+            _detN[(int)d]++;
+            return agora;
         }
 
         internal static void MensagemRecebida(byte tipo, int bytes)
@@ -371,6 +393,20 @@ namespace HellClockCoop
             if (!travada)
             {
                 _normalMs = _normalMs * 0.98 + quadroMs * 0.02;
+                // 0.31.3: o quadro não chegou a ser travada (menos de 50 ms), mas o mod sozinho pesou: a 200 fps, 8 ms do mod
+                // já são um quadro de 13 ms no lugar de 5. É onde aparecem a criação de um aliado depois da primeira vez e os
+                // picos do menu e da rede. Divide com as travadas o limite de linhas por janela.
+                if (mod >= LimitePicoModMs)
+                {
+                    _picosMod++;
+                    if (_linhasEscritas >= LinhasPorJanela) _suprimidas++;
+                    else
+                    {
+                        _linhasEscritas++;
+                        Plugin.Log.LogInfo($"[Desempenho] Pico do mod de {mod:0.0} ms num quadro de {quadroMs:0} ms (sem travada){DescreverPartes()}" +
+                                           $" · coleta de lixo: {(coletas > 0 ? "sim (" + coletas + ")" : "não")} · {_contexto} · cena {cena}");
+                    }
+                }
                 return;
             }
             // Devagar também na travada: com FPS baixo o tempo todo, o normal sobe em ~2 s e para de contar cada quadro;
@@ -388,14 +424,14 @@ namespace HellClockCoop
                                $" · log: {_linhasLog} linha(s) · {_contexto} · cena {cena}");
         }
 
-        /// <summary>": Rede 12,3 (criar avatar 11,9 ×1); Efeitos 0,6" — as 3 maiores partes acima de 0,5 ms e os detalhes do quadro.</summary>
+        /// <summary>": Rede 12,3 (criar avatar 11,9 ×1); Efeitos 0,6" — as 6 maiores partes acima de 0,5 ms e os detalhes do quadro.</summary>
         private static string DescreverPartes()
         {
             var ordem = new List<int>();
             for (int i = 0; i < _ms.Length; i++) if (_ms[i] >= 0.5) ordem.Add(i);
             ordem.Sort((a, b) => _ms[b].CompareTo(_ms[a]));
             var pedacos = new List<string>();
-            for (int k = 0; k < ordem.Count && k < 3; k++) pedacos.Add($"{NomesParte[ordem[k]]} {_ms[ordem[k]]:0.0}");
+            for (int k = 0; k < ordem.Count && k < 6; k++) pedacos.Add($"{NomesParte[ordem[k]]} {_ms[ordem[k]]:0.0}");
             var detalhes = new List<string>();
             for (int i = 0; i < _detMs.Length; i++)
             {
@@ -447,12 +483,14 @@ namespace HellClockCoop
             CoopRuntime r = CoopRuntime.Instancia;
             if (r == null) return "solo";
             Net.SessaoCoop s = r.Sessao;
+            // 0.31.3: o menu do coop aberto (e a aba) muda a carga: janela própria, como o eco.
+            string menu = Interface.MenuCoop.Aberto ? ", menu aberto na aba " + Interface.MenuCoop.NomeDaAbaAtual : "";
             if (s.EmSessao)
             {
                 int n = s.Pares.Count;
-                return $"{(s.SouHost ? "host" : "convidado")} com {n} aliado(s){(r.EcoAtivo ? " e eco" : "")}"; // o eco muda a carga: janela própria
+                return $"{(s.SouHost ? "host" : "convidado")} com {n} aliado(s){(r.EcoAtivo ? " e eco" : "")}{menu}"; // o eco muda a carga: janela própria
             }
-            return r.EcoAtivo ? "solo com eco" : "solo";
+            return (r.EcoAtivo ? "solo com eco" : "solo") + menu;
         }
 
         /// <summary>Nome da mensagem pelo 1º byte do pacote, lido das constantes Tipo* do Protocolo (uma vez).</summary>
@@ -546,18 +584,24 @@ namespace HellClockCoop
                 var partes = new List<string>();
                 for (int i = 0; i < _somaParte.Length; i++)
                 {
-                    if (_piorParte[i] >= 0.5) partes.Add($"{NomesParte[i]} {_somaParte[i] / _quadros:0.00}/{_piorParte[i]:0.0}");
+                    // 0.31.3: também as partes pequenas e constantes (média de 0,005 ms ou mais), com 3 casas: a interface com
+                    // aliados e o menu aberto custam centésimos de milissegundo por quadro e antes sumiam do resumo.
+                    double mediaParte = _somaParte[i] / _quadros;
+                    if (_piorParte[i] >= 0.5 || mediaParte >= 0.005) partes.Add($"{NomesParte[i]} {mediaParte:0.000}/{_piorParte[i]:0.0}");
                 }
                 var detalhes = new List<string>();
                 for (int i = 0; i < _totalDet.Length; i++)
                 {
-                    if (_totalDet[i] > 0) detalhes.Add($"{NomesDetalhe[i]} {_totalDet[i]}× (total {_somaDet[i]:0.0} ms, pior quadro {_piorDet[i]:0.0} ms)");
+                    if (_totalDet[i] == 0) continue;
+                    // Os chamados o tempo todo ganham o custo de cada chamada (os da interface rodam uma vez por quadro).
+                    string cada = i >= PrimeiroDetalheDeGancho ? $", {_somaDet[i] * 1000.0 / _totalDet[i]:0.0} µs cada" : "";
+                    detalhes.Add($"{NomesDetalhe[i]} {_totalDet[i]}× (total {_somaDet[i]:0.0} ms{cada}, pior quadro {_piorDet[i]:0.0} ms)");
                 }
                 Plugin.Log.LogInfo(
                     $"[Desempenho] Resumo de {duracao / 60f:0.0} min em jogo ({_contexto}{(motivo != null ? "; " + motivo : "")}): " +
                     $"{_quadros} quadros, média {media:0.0} ms ({1000.0 / media:0} fps), pior {_piorQuadro:0} ms; " +
                     $"travadas: {_travadas} (com coleta de lixo {_travadasGc}, mod com metade ou mais do quadro {_travadasMod}" +
-                    $"{(_suprimidas > 0 ? ", " + _suprimidas + " fora do log" : "")}); " +
+                    $"{(_suprimidas > 0 ? ", " + _suprimidas + " fora do log" : "")}); picos do mod (8 ms ou mais, sem travada): {_picosMod}; " +
                     $"mod: média {_somaMod / _quadros:0.00} ms/quadro, pior {_piorMod:0.0} ms{(_piorModParte != null ? " (" + _piorModParte + ")" : "")}; " +
                     $"partes (média/pior ms): {(partes.Count > 0 ? string.Join(" · ", partes.ToArray()) : "todas abaixo de 0,5 ms")}; " +
                     $"detalhes: {(detalhes.Count > 0 ? string.Join(" · ", detalhes.ToArray()) : "nenhum")}; " +
@@ -570,7 +614,7 @@ namespace HellClockCoop
                 ResumirRecepcao();
             }
             _inicioJanela = agora;
-            _quadros = _travadas = _travadasGc = _travadasMod = _linhasEscritas = _suprimidas = _carregamentos = _coletas = 0;
+            _quadros = _travadas = _travadasGc = _travadasMod = _linhasEscritas = _suprimidas = _carregamentos = _coletas = _picosMod = 0;
             _somaQuadro = _piorQuadro = _somaMod = _piorMod = _piorModCarregando = 0;
             _piorModParte = _piorModCarregandoParte = null;
             _quadrosSteam = _piorSteam = _pisos = _recebidasJanela = _quadrosBufferCheio = _enviosEstado = _pacotesEstado = 0;

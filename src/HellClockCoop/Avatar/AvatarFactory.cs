@@ -28,13 +28,16 @@ namespace HellClockCoop.Avatar
             var raiz = new GameObject($"HellClockCoop_Avatar_{nome}");
             raiz.SetActive(false);
 
+            double inicio = Desempenho.Agora(); // 0.31.3: os dois trechos pesados da criação, por dentro do "criar avatar"
             GameObject clone = UnityEngine.Object.Instantiate(modelo.gameObject, raiz.transform);
             clone.name = "Modelo";
             clone.transform.localPosition = Vector3.zero;
             clone.transform.localRotation = Quaternion.identity;
+            inicio = Desempenho.SomarDetalheEncadeado(Desempenho.Detalhe.CopiarPersonagem, inicio);
 
             int efeitos = RemoverEfeitosDoModelo(modelo.transform, clone.transform);
             int removidos = RemoverLogica(clone);
+            Desempenho.SomarDetalhe(Desempenho.Detalhe.LimparClone, inicio);
 
             // Localiza no clone os três Animators equivalentes aos do jogador (corpo, chicote, lança).
             Animator[] originais = { modelo.Animator, modelo.LashAnimator, modelo.SpearAnimator };

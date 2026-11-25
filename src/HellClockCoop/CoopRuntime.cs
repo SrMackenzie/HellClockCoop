@@ -193,10 +193,16 @@ namespace HellClockCoop
             {
                 t = Desempenho.Somar(Desempenho.Parte.Personagem, t);
             }
+            // 0.31.3: cada peça da interface com aliados tem o seu detalhe no medidor (a soma segue na parte Interface).
+            double d = t;
             Interface.AliadosNaTela.Atualizar(_sessao, _avatarEco); // depois dos avatares: barra de vida e seta (0.14.0)
+            d = Desempenho.SomarDetalheEncadeado(Desempenho.Detalhe.BarrasESeta, d);
             Interface.PainelGrupo.Atualizar(_sessao, _avatarEco); // painel de grupo à esquerda (0.27.0), com as peças do AliadosNaTela
+            d = Desempenho.SomarDetalheEncadeado(Desempenho.Detalhe.PainelDeGrupo, d);
             Interface.Marcadores.Atualizar(_sessao, _avatarEco); // marcador no chão (0.17.0), com as peças do AliadosNaTela
+            d = Desempenho.SomarDetalheEncadeado(Desempenho.Detalhe.Marcador, d);
             Interface.CaidoNaTela.Atualizar(); // faixa do jogador caído e aviso de queda (0.15.0)
+            Desempenho.SomarDetalheEncadeado(Desempenho.Detalhe.TelaDoCaido, d);
             Desempenho.Somar(Desempenho.Parte.Interface, t);
         }
 

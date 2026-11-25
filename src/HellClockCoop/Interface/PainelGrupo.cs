@@ -468,6 +468,7 @@ namespace HellClockCoop.Interface
 
         private static void Montar(RectTransform camada)
         {
+            double inicio = Desempenho.Agora();
             Destruir();
             LerCores();
             var go = new GameObject("HellClockCoop.PainelGrupo", typeof(RectTransform));
@@ -480,6 +481,7 @@ namespace HellClockCoop.Interface
             if (_tp == null) _tp = CriarIcone(IconesStreamline.TpPng, "HellClockCoop.Tp");
             if (_disco == null) _disco = CriarCirculo("HellClockCoop.TpDisco", 0f);
             if (_anel == null) _anel = CriarCirculo("HellClockCoop.TpAnel", 1f - EspessuraAnel / (LadoTp / 2f));
+            Desempenho.SomarDetalhe(Desempenho.Detalhe.MontarPainel, inicio);
         }
 
         /// <summary>
@@ -558,6 +560,7 @@ namespace HellClockCoop.Interface
         private static Linha ObterLinha(ulong chave)
         {
             if (Linhas.TryGetValue(chave, out Linha l) && l.Raiz != null) return l;
+            double inicio = Desempenho.Agora();
             l = new Linha();
             l.Raiz = Retangulo("Linha", _raiz, 0f, 0f, Largura, AlturaLinha);
             l.Grupo = l.Raiz.gameObject.AddComponent<CanvasGroup>();
@@ -629,6 +632,7 @@ namespace HellClockCoop.Interface
             }
 
             Linhas[chave] = l;
+            Desempenho.SomarDetalhe(Desempenho.Detalhe.CriarLinhaPainel, inicio);
             return l;
         }
 

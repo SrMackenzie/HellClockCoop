@@ -96,7 +96,22 @@ namespace HellClockCoop.Interface
         private static float _confirmarDesbloquearAte = -1f;
         private static GUIStyle _titulo, _secao, _info, _item, _valor, _detalhe, _rodape, _botao, _invisivel;
 
+        // 0.31.3: a lista do painel nativo fica guardada. Até a 0.31.2 ela era remontada duas vezes por quadro (antes e
+        // depois da entrada), com os textos e, em coop, as consultas à Steam (nome da sala, do host, jogadores): como host,
+        // 0,2 a 0,3 ms por quadro, 2 a 6 chamadas à Steam por quadro e, a cada poucos segundos, uma dessas chamadas
+        // demorando 9 a 17 ms. Agora é remontada quando uma ação do jogador muda algo (no mesmo quadro, como antes), a
+        // cada quadro durante a edição do nome (o cursor pisca) e, fora isso, a cada IntervaloDaLista, para o que muda
+        // sozinho (conexão, aliados, salas achadas, a idade da busca). Navegar e clicar valem para a lista que está na tela.
+        private const float IntervaloDaLista = 0.25f;
+        private static bool _refazerLista;
+        private static float _proximaLista;
+        private static int _versaoDaLista; // sobe a cada montagem: o PainelNativo só redesenha quando ela (ou o foco, a aba...) muda
+        private static string _rodapeTexto, _rodapeTecla, _rodapeTeclaNovidades;
+        private static int _rodapeChave = -1;
+
         internal static bool Aberto => _aberto;
+        /// <summary>Nome da aba à vista (o medidor separa o resumo por aba).</summary>
+        internal static string NomeDaAbaAtual => NomesDasAbas[(int)_aba];
 
         internal static void Configurar(ConfigFile config)
         {
@@ -188,7 +203,8 @@ namespace HellClockCoop.Interface
             }
 
             if (editando) EditarNome(rt);
-            Montar(rt);
+            // Painel nativo: a lista guardada, se ainda vale. Reserva (OnGUI): como sempre, a cada quadro.
+            if (!_nativo || _refazerLista || _editandoNome || Time.unscaledTime >= _proximaLista) Montar(rt);
             if (!editando) // sem navegação nem ações enquanto edita
             {
                 if (Teclas.Pressionou("UpArrow")) Mover(-1, false);
@@ -228,8 +244,10 @@ namespace HellClockCoop.Interface
             {
                 MouseNativo(rt);
                 if (!_aberto) return;
-                Montar(rt); // o que a entrada mudou aparece no mesmo quadro
-                PainelNativo.Mostrar(Linhas, IndiceDoFoco(), (int)_aba, Rodape(), _semPersonagem, ref _rolarParaFoco);
+                if (_refazerLista || _editandoNome) Montar(rt); // o que a entrada mudou aparece no mesmo quadro
+                double inicio = Desempenho.Agora();
+                PainelNativo.Mostrar(Linhas, _versaoDaLista, IndiceDoFoco(), (int)_aba, Rodape(), _semPersonagem, ref _rolarParaFoco);
+                Desempenho.SomarDetalhe(Desempenho.Detalhe.MostrarMenu, inicio);
             }
             catch (Exception e)
             {
@@ -243,6 +261,7 @@ namespace HellClockCoop.Interface
         private static void Abrir(string motivo, bool peloControle, Aba aba = Aba.Sessao) // 0.26.0: volta a abrir na Sessão (de 0.21.0 a 0.25.0, Salas)
         {
             _aberto = true;
+            _refazerLista = true;
             _controle = peloControle;
             _aba = aba;
             _foco = Acao.Nenhuma; // o Montar escolhe o primeiro item disponível
@@ -349,6 +368,7 @@ namespace HellClockCoop.Interface
         /// <summary>Esquerda/direita: ajusta o deslizante focado; fora dele, troca de aba (só no painel com abas).</summary>
         private static void Lado(int delta, bool peloControle)
         {
+            _refazerLista = true; // o valor do deslizante ou a aba mudam
             _controle = peloControle;
             int i = IndiceDoFoco();
             if (i >= 0 && Linhas[i].Tipo == Tipo.Deslizante) Ajustar(_foco, delta);
@@ -405,6 +425,7 @@ namespace HellClockCoop.Interface
         {
             if (!_editandoNome) return;
             _editandoNome = false;
+            _refazerLista = true; // a linha do nome volta ao normal neste quadro
             _textoNome = "";
             Plugin.Log.LogInfo($"[Menu] Edição do nome encerrada: {_letrasInputSystem} letra(s) pelo Input System, {_letrasGui} pelo OnGUI.");
             try { if (_tecladoOuvido != null) _tecladoOuvido.onTextInput -= OnTexto; }
@@ -494,6 +515,7 @@ namespace HellClockCoop.Interface
         {
             if (aba == _aba) return;
             PararEdicaoDoNome();
+            _refazerLista = true;
             _aba = aba;
             if (aba == Aba.Salas) _buscarSalasAoEntrar = true;
             _foco = Acao.Nenhuma; // o Montar escolhe o primeiro item da aba
@@ -520,6 +542,7 @@ namespace HellClockCoop.Interface
 
         private static void Executar(CoopRuntime rt, Acao acao, string tecla = null) // tecla: só para o texto do 2º aperto
         {
+            _refazerLista = true; // a ação muda o estado (sessão, ajuste, confirmação armada): a lista é remontada neste quadro
             bool habilitada = false;
             foreach (Linha l in Linhas)
             {
@@ -643,6 +666,7 @@ namespace HellClockCoop.Interface
         /// </summary>
         private static void Secundaria(CoopRuntime rt, Acao acao, string tecla)
         {
+            _refazerLista = true;
             if (!AlvoDoBloqueio(acao, out ulong id, out string nome)) return;
             _confirmarSairAte = _confirmarExpulsarAte = _confirmarEntrarAte = -1f;
             if (id == 0)
@@ -721,6 +745,7 @@ namespace HellClockCoop.Interface
 
         private static void AjustarPelaFracao(Acao acao, float fracao)
         {
+            _refazerLista = true;
             ConfigEntry<float> e = Numero(acao, out float min, out float max, out float passo);
             if (e != null) Gravar(e, NumeroPelaFracao(fracao, passo, min, max));
         }
@@ -856,6 +881,19 @@ namespace HellClockCoop.Interface
         // ---------- Conteúdo ----------
 
         private static void Montar(CoopRuntime rt)
+        {
+            double inicio = Desempenho.Agora();
+            try { MontarLista(rt); }
+            finally
+            {
+                _refazerLista = false;
+                _proximaLista = Time.unscaledTime + IntervaloDaLista;
+                _versaoDaLista++;
+                Desempenho.SomarDetalhe(Desempenho.Detalhe.MontarMenu, inicio);
+            }
+        }
+
+        private static void MontarLista(CoopRuntime rt)
         {
             Linhas.Clear();
             // A reserva (OnGUI) mostra Sessão, Salas e Ajustes numa lista só (a Novidades fica na janela antiga); o painel nativo, só a aba escolhida.
@@ -1091,7 +1129,26 @@ namespace HellClockCoop.Interface
             return "Convidado de " + (host != null ? host.Nome : "host") + "  -  " + jogadores + (s.ModoConvidado ? "  -  acompanhando a run do host" : "");
         }
 
+        /// <summary>
+        /// Rodapé do painel nativo. 0.31.3: o texto (montado com as teclas do .cfg) só é refeito quando muda o que ele mostra;
+        /// antes era um texto novo a cada quadro.
+        /// </summary>
         private static string Rodape()
+        {
+            bool bloqueia = IndiceNaFaixa(_foco, Acao.Sala0, SalasNoMenu) >= 0 || IndiceNaFaixa(_foco, Acao.Expulsar0, AliadosNoMenu) >= 0;
+            int chave = (int)_aba | (_editandoNome ? 16 : 0) | (_controle ? 32 : 0) | (bloqueia ? 64 : 0);
+            string tecla = Tecla.Value, teclaNovidades = Novidades.Tecla.Value;
+            if (chave != _rodapeChave || !ReferenceEquals(tecla, _rodapeTecla) || !ReferenceEquals(teclaNovidades, _rodapeTeclaNovidades))
+            {
+                _rodapeChave = chave;
+                _rodapeTecla = tecla;
+                _rodapeTeclaNovidades = teclaNovidades;
+                _rodapeTexto = TextoDoRodape(bloqueia);
+            }
+            return _rodapeTexto;
+        }
+
+        private static string TextoDoRodape(bool bloqueia)
         {
             if (_editandoNome) return "Digite o nome   Enter: salvar   Backspace: apagar   Esc: cancelar";
             if (_aba == Aba.Novidades)
@@ -1099,7 +1156,6 @@ namespace HellClockCoop.Interface
                     ? "LB/RB: aba   Direcional: rolar   B ou View: fechar"
                     : $"Setas ou roda: rolar   Setas laterais: aba   Esc, {Tecla.Value} ou {Novidades.Tecla.Value}: fechar";
             // 0.23.0: na linha do aliado ou da sala, o rodapé ensina a ação secundária (bloquear).
-            bool bloqueia = IndiceNaFaixa(_foco, Acao.Sala0, SalasNoMenu) >= 0 || IndiceNaFaixa(_foco, Acao.Expulsar0, AliadosNoMenu) >= 0;
             if (bloqueia)
                 return _controle
                     ? "LB/RB: aba   A: confirmar   X: bloquear   B ou View: fechar"
