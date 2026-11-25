@@ -286,6 +286,54 @@ namespace HellClockCoop.Net
         /// <summary>Conferência depois de conectar (0.20.0): com quem não é amigo, só vale a conexão pelo relay (flag Relayed).</summary>
         public static bool CaminhoAceito(bool amigo, bool relay) => amigo || relay;
 
+        /// <summary>
+        /// Mensagens só de imagem e som de um jogador para os aliados do mesmo andar (números de dano, golpes vistos, sons e
+        /// efeitos das skills). São as únicas que a recepção simulada do medidor devolve a este PC (0.31.1): nenhuma muda
+        /// vida, loot, run ou save.
+        /// </summary>
+        public static bool CosmeticoDeAliado(byte tipo) =>
+            tipo == Protocolo.TipoDanosVistos || tipo == Protocolo.TipoGolpesVistos || tipo == Protocolo.TipoSonsAliado || tipo == Protocolo.TipoSonsFim
+            || tipo == Protocolo.TipoFxNovo || tipo == Protocolo.TipoFxMovimento || tipo == Protocolo.TipoFxNos || tipo == Protocolo.TipoFxFim;
+
+        // Recepção com teto por quadro (0.31.1): o que chega dos aliados e é só imagem e som é aplicado aos poucos. O que
+        // não coube num quadro fica para os seguintes, na ordem; o instantâneo (número de dano, golpe visto, som de uma vez
+        // só, efeito solto no mundo) que esperou mais que AtrasoCosmeticoMaximo é descartado, porque fora de hora confunde
+        // mais do que ajuda. O que dura (som com fim, efeito preso no jogador ou no inimigo) só espera. Dano, morte, skill
+        // e status de inimigo não passam por aqui: seguem aplicados na hora, na ordem em que chegam.
+        public const float AtrasoCosmeticoMaximo = 0.3f;
+        public const int NumerosDanoPorQuadroMaximo = 24;
+        public const int GolpesVistosPorQuadroMaximo = 12;
+        public const int SonsPorQuadroMaximo = 8;
+        public const int CopiasFxPorQuadroMaximo = 3;
+        /// <summary>
+        /// Tempo de cópias de efeito num quadro a partir do qual nenhuma outra nasce nele: segura o acúmulo de cópias
+        /// médias (a média é 0,5 ms por cópia). Não divide uma cópia sozinha: medido em 24/11/2026, sobra uma de ~40 ms
+        /// por run, no começo do andar, igual com e sem este orçamento (ARQUITETURA, riscos, item 7, etapa 6).
+        /// </summary>
+        public const double CopiasFxPorQuadroMs = 4.0;
+
+        /// <summary>
+        /// Vagas já usadas no quadro para o <see cref="DecidirNaFila"/>: o que foi aplicado ou, se o tempo gasto já passou
+        /// do orçamento, o teto inteiro (nada mais entra neste quadro). A primeira cópia do quadro tem vaga, salvo se montar um modelo novo já gastou o orçamento.
+        /// </summary>
+        public static int VagasUsadas(int aplicadosNoQuadro, double msNoQuadro, int tetoPorQuadro, double orcamentoMs) =>
+            msNoQuadro >= orcamentoMs ? (aplicadosNoQuadro > tetoPorQuadro ? aplicadosNoQuadro : tetoPorQuadro) : aplicadosNoQuadro;
+        /// <summary>Itens à espera numa fila de recepção; acima disso o que custa é descartado ao chegar.</summary>
+        public const int FilaCosmeticaMaxima = 1024;
+
+        public const int FilaAplicar = 0, FilaEsperar = 1, FilaDescartar = 2;
+
+        /// <summary>
+        /// O que fazer com o item da frente da fila, que já venceu em <paramref name="vence"/>: descartar o instantâneo
+        /// atrasado demais (mesmo com vaga: depois de uma travada, o acumulado não dispara todo junto), aplicar se o
+        /// quadro ainda tem vaga, ou esperar o quadro seguinte.
+        /// </summary>
+        public static int DecidirNaFila(float vence, float agora, int aplicadosNoQuadro, int tetoPorQuadro, bool instantaneo)
+        {
+            if (instantaneo && agora - vence > AtrasoCosmeticoMaximo) return FilaDescartar;
+            return aplicadosNoQuadro < tetoPorQuadro ? FilaAplicar : FilaEsperar;
+        }
+
         /// <summary>Teto de andares de um pedido de avanço (portais comuns avançam 1; o jogo ainda limita pelo dele).</summary>
         public const uint AvancoMaximo = 3;
 

@@ -26,6 +26,14 @@ namespace HellClockCoop
             { "criar avatar", "carregar prefab de efeito", "copiar efeito", "medir texto do menu", "criar linha do menu", "buscar botões do jogo",
               "buscar peças da HUD", "CheckForSpawn", "TimerManager.Update", "contexto de som", "montar estado dos inimigos" };
 
+        /// <summary>
+        /// O que chega dos aliados e vira trabalho por item (0.31.1): contado e cronometrado na aplicação, com o que o teto
+        /// por quadro segurou e o que foi descartado (por atraso ou fila cheia). O que o eco repete direto (sem passar pela recepção) não conta.
+        /// </summary>
+        internal enum Cosmetico { Numero, Golpe, Som, CopiaFx, Quantidade }
+
+        private static readonly string[] NomesCosmetico = { "números de dano", "golpes vistos", "sons", "cópias de efeito" };
+
         private const int PrimeiroDetalheDeGancho = (int)Detalhe.ChecarSpawn; // chamados a cada quadro: na linha da travada só com tempo relevante
         private const double LimiteMinimoMs = 50.0;   // abaixo disso não é travada perceptível
         private const double FatorTravada = 2.5;      // e precisa ser bem maior que o quadro normal
@@ -43,6 +51,9 @@ namespace HellClockCoop
         private static readonly int[] _detN = new int[(int)Detalhe.Quantidade];
         private static int _mensagens, _bytes, _enviadas, _bytesEnviados, _linhasLog;
         private static bool _bufferCheio;
+        private static readonly int[] _cosN = new int[(int)Cosmetico.Quantidade];
+        private static readonly double[] _cosMs = new double[(int)Cosmetico.Quantidade];
+        private static readonly bool[] _cosNoTeto = new bool[(int)Cosmetico.Quantidade];
 
         private static double _inicioQuadro = -1;
         private static double _normalMs = 16.7;       // média móvel dos quadros em jogo sem travada
@@ -75,6 +86,18 @@ namespace HellClockCoop
         private static long _relevantesEstado, _itensEstado, _completosEstado, _comAnimacaoEstado, _bytesEstado;
         private static bool _estadoSimulado;
         private static string[] _nomesTipo;
+        // Recepção (0.31.1): por tipo de mensagem (1º byte) e por item aplicado
+        private static readonly int[] _recebidasTipo = new int[256];
+        private static readonly long[] _bytesRecebidosTipo = new long[256];
+        private static readonly double[] _msTipo = new double[256];
+        private static readonly double[] _piorMsTipo = new double[256];
+        private static readonly int[] _cosTotal = new int[(int)Cosmetico.Quantidade];
+        private static readonly int[] _cosPiorN = new int[(int)Cosmetico.Quantidade];
+        private static readonly int[] _cosDescartados = new int[(int)Cosmetico.Quantidade];
+        private static readonly int[] _cosQuadrosNoTeto = new int[(int)Cosmetico.Quantidade];
+        private static readonly double[] _cosSomaMs = new double[(int)Cosmetico.Quantidade];
+        private static readonly double[] _cosPiorMs = new double[(int)Cosmetico.Quantidade];
+        private static int _aliadosSimulados;
 
         internal static double Agora() => Time.realtimeSinceStartupAsDouble;
 
@@ -114,14 +137,44 @@ namespace HellClockCoop
             _detN[(int)d]++;
         }
 
-        internal static void MensagemRecebida(int bytes)
+        internal static void MensagemRecebida(byte tipo, int bytes)
         {
             _mensagens++;
             _bytes += bytes;
             if (_inicioJanela < 0f) return;
             _recebidasJanela++;
             _bytesRecebidosJanela += bytes;
+            _recebidasTipo[tipo]++;
+            _bytesRecebidosTipo[tipo] += bytes;
         }
+
+        /// <summary>Tempo do tratador de uma mensagem recebida (o que ele faz na hora; o que vai para uma fila conta em <see cref="Aplicou"/>).</summary>
+        internal static void MensagemTratada(byte tipo, double inicio)
+        {
+            if (_inicioJanela < 0f) return;
+            double ms = (Agora() - inicio) * 1000.0;
+            _msTipo[tipo] += ms;
+            if (ms > _piorMsTipo[tipo]) _piorMsTipo[tipo] = ms;
+        }
+
+        /// <summary>Um item de aliado aplicado no jogo: um número de dano, um golpe visto, um som, uma cópia de efeito.</summary>
+        internal static void Aplicou(Cosmetico c, double inicio)
+        {
+            _cosN[(int)c]++;
+            _cosMs[(int)c] += (Agora() - inicio) * 1000.0;
+        }
+
+        /// <summary>Itens que esperaram mais que o atraso máximo (ou não couberam na fila) e não foram aplicados.</summary>
+        internal static void Descartou(Cosmetico c, int quantos)
+        {
+            if (_inicioJanela >= 0f) _cosDescartados[(int)c] += quantos;
+        }
+
+        /// <summary>O teto por quadro segurou itens deste tipo para o quadro seguinte.</summary>
+        internal static void NoTeto(Cosmetico c) => _cosNoTeto[(int)c] = true;
+
+        /// <summary>A recepção simulada entregou pacotes nesta janela (sala vazia, com o eco valendo por <paramref name="aliados"/> aliados).</summary>
+        internal static void RecepcaoSimulada(int aliados) => _aliadosSimulados = aliados;
 
         /// <summary>Uma mensagem entregue à Steam para um par (cada destinatário conta uma vez).</summary>
         internal static void MensagemEnviada(byte tipo, int bytes)
@@ -195,6 +248,14 @@ namespace HellClockCoop
             {
                 if (coletas > 0) AnotarPiso();
                 if (_bufferCheio) _quadrosBufferCheio++;
+                for (int i = 0; i < _cosN.Length; i++)
+                {
+                    _cosTotal[i] += _cosN[i];
+                    _cosSomaMs[i] += _cosMs[i];
+                    if (_cosN[i] > _cosPiorN[i]) _cosPiorN[i] = _cosN[i];
+                    if (_cosMs[i] > _cosPiorMs[i]) _cosPiorMs[i] = _cosMs[i];
+                    if (_cosNoTeto[i]) _cosQuadrosNoTeto[i]++;
+                }
                 // Os detalhes contam também no carregamento de andar: a busca das peças da HUD roda logo depois da troca de cena.
                 for (int i = 0; i < _detMs.Length; i++)
                 {
@@ -269,6 +330,9 @@ namespace HellClockCoop
             Array.Clear(_detN, 0, _detN.Length);
             _mensagens = _bytes = _enviadas = _bytesEnviados = _linhasLog = 0;
             _bufferCheio = false;
+            Array.Clear(_cosN, 0, _cosN.Length);
+            Array.Clear(_cosMs, 0, _cosMs.Length);
+            Array.Clear(_cosNoTeto, 0, _cosNoTeto.Length);
         }
 
         private static void Contabilizar(double quadroMs, int coletas, int cena, int steam)
@@ -313,7 +377,7 @@ namespace HellClockCoop
             Plugin.Log.LogInfo($"[Desempenho] Travada de {quadroMs:0} ms (normal {_normalMs:0.0} ms) · mod {mod:0.0} ms{DescreverPartes()}" +
                                $" · coleta de lixo: {(coletas > 0 ? "sim (" + coletas + ")" : "não")}" +
                                $" · rede: recebeu {_mensagens} msg, {_bytes / 1024f:0.0} KB; enviou {_enviadas} msg, {_bytesEnviados / 1024f:0.0} KB{(_bufferCheio ? "; buffer de recepção cheio" : "")}" +
-                               $"{(steam >= 0 ? " · Steam: " + steam + " chamada(s)" : "")}" +
+                               $"{DescreverAliados()}{(steam >= 0 ? " · Steam: " + steam + " chamada(s)" : "")}" +
                                $" · log: {_linhasLog} linha(s) · {_contexto} · cena {cena}");
         }
 
@@ -333,6 +397,17 @@ namespace HellClockCoop
             string texto = pedacos.Count > 0 ? ": " + string.Join("; ", pedacos.ToArray()) : "";
             if (detalhes.Count > 0) texto += " (" + string.Join(", ", detalhes.ToArray()) + ")";
             return texto;
+        }
+
+        /// <summary>" · dos aliados: 40 números de dano (1,2 ms), 3 cópias de efeito (2,1 ms)" — o que foi aplicado no quadro da travada.</summary>
+        private static string DescreverAliados()
+        {
+            List<string> pedacos = null;
+            for (int i = 0; i < _cosN.Length; i++)
+            {
+                if (_cosN[i] > 0) (pedacos ?? (pedacos = new List<string>())).Add($"{_cosN[i]} {NomesCosmetico[i]} ({_cosMs[i]:0.0} ms)");
+            }
+            return pedacos == null ? "" : " · dos aliados: " + string.Join(", ", pedacos.ToArray());
         }
 
         /// <summary>Abre a janela no primeiro quadro em jogo; fecha a cada 5 min ou quando o contexto (solo, eco, coop) muda.</summary>
@@ -426,6 +501,33 @@ namespace HellClockCoop
                     : "") + ".");
         }
 
+        /// <summary>
+        /// "Recepção no período" (0.31.1): o que chegou por tipo de mensagem, com o tempo do tratador, e o que foi aplicado
+        /// dos aliados por item (números de dano, golpes vistos, sons, cópias de efeito), com o pior quadro, o que o teto
+        /// por quadro segurou e o que foi descartado (por atraso ou fila cheia). Sozinho só sai na recepção simulada (sala vazia com o eco).
+        /// </summary>
+        private static void ResumirRecepcao()
+        {
+            var tipos = new List<int>();
+            for (int i = 0; i < _recebidasTipo.Length; i++) if (_recebidasTipo[i] > 0) tipos.Add(i);
+            tipos.Sort((a, b) => _msTipo[b].CompareTo(_msTipo[a]));
+            var porTipo = new List<string>();
+            foreach (int t in tipos)
+                porTipo.Add($"{NomeDoTipo(t)} {_recebidasTipo[t]} msg/{_bytesRecebidosTipo[t] / 1024.0:0.0} KB/{_msTipo[t]:0.0} ms (pior {_piorMsTipo[t]:0.00})");
+            var itens = new List<string>();
+            for (int i = 0; i < _cosTotal.Length; i++)
+            {
+                if (_cosTotal[i] == 0 && _cosDescartados[i] == 0) continue;
+                itens.Add($"{NomesCosmetico[i]} {_cosTotal[i]} ({_cosSomaMs[i]:0.0} ms no total, {(_cosTotal[i] > 0 ? _cosSomaMs[i] * 1000.0 / _cosTotal[i] : 0.0):0} µs cada; " +
+                          $"pior quadro {_cosPiorN[i]} e {_cosPiorMs[i]:0.0} ms; no teto em {_cosQuadrosNoTeto[i]} quadro(s); {_cosDescartados[i]} descartado(s) por atraso ou fila cheia)");
+            }
+            if (porTipo.Count == 0 && itens.Count == 0) return;
+            Plugin.Log.LogInfo(
+                $"[Desempenho] Recepção no período ({_contexto}{(_aliadosSimulados > 0 ? $"; simulada: os pacotes deste PC voltam como se viessem de {_aliadosSimulados} aliado(s)" : "")}): " +
+                $"por tipo (mensagens/KB/tempo do tratador): {(porTipo.Count > 0 ? string.Join(" · ", porTipo.ToArray()) : "nada recebido")}; " +
+                $"aplicado dos aliados: {(itens.Count > 0 ? string.Join(" · ", itens.ToArray()) : "nada")}.");
+        }
+
         /// <summary>Escreve o resumo da janela (se tiver tempo suficiente) e abre outra.</summary>
         internal static void Resumir(string motivo)
         {
@@ -457,6 +559,7 @@ namespace HellClockCoop
                     $"piso depois de coleta: {(_pisos > 0 ? $"mínimo {_pisoMinimo / Mega:0.0}, máximo {_pisoMaximo / Mega:0.0}, último {_pisoUltimo / Mega:0.0} MB em {_pisos} leitura(s)" : "sem coleta no período")}; " +
                     $"quadros longos em carregamento (fora da conta): {_carregamentos}{(_carregamentos > 0 ? $" (mod no pior: {_piorModCarregando:0.0} ms, {_piorModCarregandoParte})" : "")}.");
                 ResumirRede(duracao);
+                ResumirRecepcao();
             }
             _inicioJanela = agora;
             _quadros = _travadas = _travadasGc = _travadasMod = _linhasEscritas = _suprimidas = _carregamentos = _coletas = 0;
@@ -473,6 +576,17 @@ namespace HellClockCoop
             Array.Clear(_totalDet, 0, _totalDet.Length);
             Array.Clear(_enviadasTipo, 0, _enviadasTipo.Length);
             Array.Clear(_bytesTipo, 0, _bytesTipo.Length);
+            Array.Clear(_recebidasTipo, 0, _recebidasTipo.Length);
+            Array.Clear(_bytesRecebidosTipo, 0, _bytesRecebidosTipo.Length);
+            Array.Clear(_msTipo, 0, _msTipo.Length);
+            Array.Clear(_piorMsTipo, 0, _piorMsTipo.Length);
+            Array.Clear(_cosTotal, 0, _cosTotal.Length);
+            Array.Clear(_cosPiorN, 0, _cosPiorN.Length);
+            Array.Clear(_cosDescartados, 0, _cosDescartados.Length);
+            Array.Clear(_cosQuadrosNoTeto, 0, _cosQuadrosNoTeto.Length);
+            Array.Clear(_cosSomaMs, 0, _cosSomaMs.Length);
+            Array.Clear(_cosPiorMs, 0, _cosPiorMs.Length);
+            _aliadosSimulados = 0;
         }
     }
 }

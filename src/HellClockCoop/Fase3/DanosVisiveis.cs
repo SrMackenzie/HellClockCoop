@@ -86,6 +86,9 @@ namespace HellClockCoop.Fase3
         /// <summary>Cor (a normal dos números de dano) do aliado; o eco usa a chave 0. Usada pelo Marcador (0.17.0).</summary>
         internal static Color CorDoAliado(ulong chave) => Paleta[CorDe(chave), 0];
 
+        /// <summary>Fim da recepção simulada: o aliado de mentira não ocupa mais uma cor da paleta.</summary>
+        internal static void EsquecerCor(ulong chave) => Cores.Remove(chave);
+
         internal static void NumeroCriado(Collider colisor, Transform alvo, DamageInstance dano)
         {
             if (_reproduzindo || dano == null || dano.HideFromUI || dano.Ignored || alvo == null) return;
@@ -142,6 +145,7 @@ namespace HellClockCoop.Fase3
         private static void Mostrar(Collider colisor, Transform alvo, float valor, byte criticos, ulong chave)
         {
             if (_mostrar != null && !_mostrar.Value) return;
+            double inicio = Desempenho.Agora();
             DamageViewManager dv = DamageViewManager.Instance;
             int cor = CorDe(chave);
             float tam = _tamanho != null ? Mathf.Clamp(_tamanho.Value, 0.3f, 2f) : 0.8f;
@@ -176,6 +180,7 @@ namespace HellClockCoop.Fase3
                 EscalaFinalRef(dv) = escFim;
                 _reproduzindo = false;
                 d.Dispose();
+                if (chave != 0) Desempenho.Aplicou(Desempenho.Cosmetico.Numero, inicio); // o eco (chave 0) fica fora da conta da recepção
             }
         }
 
@@ -188,6 +193,7 @@ namespace HellClockCoop.Fase3
                 try { FilaEco.Dequeue().Value(); }
                 catch (Exception e) { Plugin.Log.LogWarning($"[Dano] {(e.InnerException ?? e).Message}"); }
             }
+            FilaRede.Processar(agora, MostrarRecebido); // no mesmo quadro em que chegou (a leitura da rede roda antes), até o teto
             if (Pendentes.Count == 0 || agora < _proximoEnvio) return;
             _proximoEnvio = agora + Intervalo;
             var m = new DanosVistos();
@@ -196,22 +202,58 @@ namespace HellClockCoop.Fase3
             Sessao?.EnviarParaMesmoAndar(m.Serializar(), confiavel: false);
         }
 
+        // ---- Números que chegam dos aliados: teto por quadro (0.31.1) ----
+
+        private struct NumeroRecebido
+        {
+            public Par De;
+            public DanosVistos.Item Item;
+        }
+
+        private static readonly FilaComTeto<NumeroRecebido> FilaRede =
+            new FilaComTeto<NumeroRecebido>(Desempenho.Cosmetico.Numero, Validacao.NumerosDanoPorQuadroMaximo);
+        private static readonly Action<NumeroRecebido> MostrarRecebido = MostrarDoAliado;
+
+        /// <summary>
+        /// Até a 0.31.0 cada número era criado dentro da leitura da rede, sem limite (até 255 por mensagem, 20 mensagens por
+        /// segundo por aliado). Agora entra na fila e sai até o teto do quadro; o que atrasar demais é descartado.
+        /// </summary>
         public static void Receber(SessaoCoop sessao, Par de, byte[] dados)
         {
             if (!de.MesmoAndar) return; // 0.21.1: números de dano só de quem está no mesmo andar (os ids de inimigo são do andar)
+            if (_mostrar != null && !_mostrar.Value) return; // números dos aliados desligados no menu: nem lê a mensagem
             try
             {
+                float agora = Time.unscaledTime;
                 foreach (DanosVistos.Item i in DanosVistos.Desserializar(dados).Itens)
-                {
-                    EnemyController c = AlvoDe(i.Id);
-                    if (c == null || !c.gameObject.activeInHierarchy) continue;
-                    Mostrar(c.CharacterCollider, c.Transform, i.Valor, i.Criticos, de.Id.m_SteamID);
-                }
+                    FilaRede.Por(agora, new NumeroRecebido { De = de, Item = i }, instantaneo: true);
             }
             catch (Exception e)
             {
                 Plugin.Log.LogWarning($"[Dano] Mensagem de {de.Nome} ignorada: {(e.InnerException ?? e).Message}");
             }
         }
+
+        private static void MostrarDoAliado(NumeroRecebido n)
+        {
+            if (!n.De.MesmoAndar) return; // saiu do andar enquanto o número esperava
+            try
+            {
+                EnemyController c = AlvoDe(n.Item.Id);
+                if (c == null || !c.gameObject.activeInHierarchy) return;
+                Mostrar(c.CharacterCollider, c.Transform, n.Item.Valor, n.Item.Criticos, n.De.Id.m_SteamID);
+            }
+            catch (Exception e) // um erro aqui não pode derrubar o resto do laço do mod
+            {
+                if (Time.unscaledTime < _proximoAvisoErro) return;
+                _proximoAvisoErro = Time.unscaledTime + 5f;
+                Plugin.Log.LogWarning($"[Dano] Número de {n.De.Nome} ignorado: {(e.InnerException ?? e).Message}");
+            }
+        }
+
+        private static float _proximoAvisoErro;
+
+        /// <summary>Saiu da sessão: o que esperava na fila não aparece mais.</summary>
+        public static void Encerrar() => FilaRede.Limpar();
     }
 }

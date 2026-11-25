@@ -4,6 +4,15 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.31.1 — Golpes, números, sons e efeitos dos aliados chegam aos poucos, sem acumular num quadro só 🧪
+_24/11/2026_
+
+- Tudo o que chegava dos aliados era mostrado no mesmo quadro: com 3 aliados lutando, um quadro podia ter mais de 30 números de dano, 30 golpes e 30 efeitos de skill de uma vez. Agora cada tipo tem um teto por quadro (24 números, 12 golpes, 8 sons, 3 efeitos e no máximo 4 ms de efeitos); o resto aparece nos quadros seguintes, na ordem
+- O que é só de um instante (número de dano, golpe, som curto, efeito solto no chão) e passaria de 0,3 s de atraso é deixado de lado, porque fora de hora confunde. Sons que duram e efeitos presos no aliado ou no inimigo só esperam a vez. Dano de verdade, morte, skills e status dos inimigos não passam por esse teto
+- O medidor do log ganhou a linha [Desempenho] Recepção no período e dá para medir sozinho: o dono de uma sala vazia com o eco ligado recebe de volta os próprios golpes, sons e efeitos como se viessem de 3 aliados
+- Medido no PC do autor, sozinho, com 3 aliados simulados: o pior quadro caiu de 33 para 15 números, de 33 para 10 golpes e de 33 para 3 efeitos, sem nada descartado (números e golpes medidos antes do limite de 4 ms). Sobra uma travada de cerca de 0,05 s no começo do andar, de um único efeito pesado: fica para a próxima etapa
+- Balanceamento: sem efeito na dificuldade (só imagem e som; dano, vida e morte seguem como antes). Protocolo não muda (25), mas a lista de salas só mostra salas da mesma versão: atualize todos os PCs para a 0.31.1
+
 ## 0.31.0 — Rede dos inimigos mais leve: o host manda só o que mudou em cada inimigo 🧪
 _24/11/2026_
 

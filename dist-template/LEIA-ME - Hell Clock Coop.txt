@@ -274,6 +274,10 @@ ESTADO ATUAL (versão de teste, Fase 3)
   em cada inimigo (antes mandava tudo, dez vezes por segundo, mesmo dos parados). Medido
   sozinho: de 2,4 a 5 vezes menos tráfego por convidado. Nada muda no jogo. Exige a 0.31.0
   em todos os PCs (protocolo 25).
+- (0.31.1): números de dano, golpes, sons e efeitos dos aliados aparecem aos poucos, com um
+  limite por quadro, em vez de se acumularem todos de uma vez numa luta grande. Nada muda no
+  jogo (dano, vida e morte seguem iguais). Use a 0.31.1 em todos os PCs: a lista de salas só
+  mostra salas da mesma versão.
 - A Deluxe Edition (cosmética) não importa.
 
 

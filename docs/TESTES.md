@@ -402,6 +402,27 @@ sobrevivência, ou o vazio das ondas do santuário de Miracles, passado por `Mir
 - [ ] **Versão:** com 0.10.0 de um lado e 0.10.1 do outro, o coop recusa a conexão (protocolo 12 × 13).
 - Se falhar, mandar: o `LogOutput.log` do convidado (linhas `[Inimigos]`, sobretudo `Tesouro … não existe aqui`).
 
+## 0.31.1 — Recepção com teto por quadro (golpes, números, sons e efeitos dos aliados)
+
+Não muda mensagem (protocolo 25), regra de jogo nem save. O que chega dos aliados e é só imagem e som passa por uma
+fila com teto por quadro; o instantâneo atrasado mais de 0,3 s é descartado; dano, morte, skill e status de inimigo
+seguem na hora (ARQUITETURA, riscos, item 7, etapa 6, com a tabela antes/depois). Medido sozinho em 24/11/2026 com a
+recepção simulada:
+
+- [x] **Recepção simulada (sozinho, 24/11/2026):** crie o coop com "Sala pública" desmarcada, ligue o eco (F8), entre
+  no portal e lute 2 min ou mais (roteiro por script: 28 voltas de clique, Q e E perto do primeiro grupo); desligue e
+  ligue o eco para fechar a janela do medidor. No log sai `[Desempenho] Recepção no período (host com 0 aliado(s) e
+  eco; simulada: ... 3 aliado(s))` com os tipos `FxNos`, `FxMovimento`, `FxNovo`, `SonsAliado`, `FxFim`, `SonsFim` (e
+  `DanosVistos`/`GolpesVistos` quando os golpes acertam) e, por item, o pior quadro no teto (sons 8, cópias 3),
+  quadros no teto e 0 descartados. Medido: cópias 571 µs cada, pior quadro 3; 1 `Travada` de 54 ms (uma cópia
+  pesada, no começo do andar), igual à de antes do teto: fica para a etapa de efeitos.
+- [ ] **Números e golpes (sozinho ou em dupla):** numa luta que acerta os inimigos, a linha traz números de dano e golpes
+  vistos com pior quadro de até 24 e 12 (nesta passada a luta não achou o grupo).
+- [ ] **Aliado de verdade (dupla):** em luta com muitos inimigos, os números, golpes, sons e efeitos do aliado aparecem
+  como na 0.31.0, sem sumir nem chegar atrasados; auras e efeitos presos no aliado ou no inimigo aparecem e somem com a
+  skill. Mandar o `LogOutput.log` dos dois PCs (a linha `Recepção no período` sem "simulada").
+- Se falhar, mandar: o `LogOutput.log` dos dois PCs e o que faltou na tela (qual skill, número ou som).
+
 ## 0.31.0 — Rede dos inimigos: o host manda só o que mudou (protocolo 25)
 
 Muda a mensagem `InimigosEstado` (host → convidados): cada inimigo leva só os campos que mudaram, cada mudança vai em

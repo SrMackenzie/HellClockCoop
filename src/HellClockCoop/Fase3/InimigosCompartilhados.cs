@@ -58,16 +58,7 @@ namespace HellClockCoop.Fase3
         /// envio deste arquivo exige <c>Sessao.ComAliados</c>, e os pacotes de estado são só contados (<c>_simulando</c>).
         /// Serve para medir o tráfego por convidado sem um segundo jogador; o eco precisa estar ligado antes do andar nascer.
         /// </summary>
-        private static bool Simulado
-        {
-            get
-            {
-                SessaoCoop s = Sessao;
-                if (s == null || !s.SouHost || s.Pares.Count > 0) return false;
-                CoopRuntime r = CoopRuntime.Instancia;
-                return !ReferenceEquals(r, null) && r.EcoAtivo;
-            }
-        }
+        private static bool Simulado => Sessao != null && Sessao.Simulada; // a mesma condição da recepção simulada (0.31.1)
 
         /// <summary>
         /// Run em andamento no host. O primeiro andar nasce antes de RunStarted virar true (StartRun só

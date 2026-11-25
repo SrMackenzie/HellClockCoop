@@ -1222,5 +1222,73 @@ IdaVolta("ObjetoUsado", new (string, object)[] { ("Id", (ushort)12), ("Estado", 
     Checar(cortada, "PainelAliado: mensagem cortada no meio recusada (fim do fluxo, como os outros codecs; o transporte descarta)");
 }
 
+// Recepção com teto por quadro (0.31.1): só a recepção muda, nenhuma mensagem mudou de formato (protocolo 25).
+{
+    var tv = T("HellClockCoop.Net.Validacao");
+    object C(string campo) => tv.GetField(campo).GetValue(null);
+    int D(float vence, float agora, int aplicados, int teto, bool instantaneo) => (int)tv.GetMethod("DecidirNaFila").Invoke(null, new object[] { vence, agora, aplicados, teto, instantaneo });
+    int aplicar = (int)C("FilaAplicar"), esperar = (int)C("FilaEsperar"), descartar = (int)C("FilaDescartar");
+    float atraso = (float)C("AtrasoCosmeticoMaximo");
+    int capacidade = (int)C("FilaCosmeticaMaxima");
+
+    var cosmeticos = new List<int>();
+    for (int k = 0; k < 256; k++) if ((bool)tv.GetMethod("CosmeticoDeAliado").Invoke(null, new object[] { (byte)k })) cosmeticos.Add(k);
+    Checar(cosmeticos.SequenceEqual(new[] { 50, 51, 52, 53, 54, 55, 56, 57 }),
+        $"Recepção simulada: só as 8 mensagens de imagem e som voltam a este PC ({string.Join(",", cosmeticos)}); golpes (34), mortes (31), plano (20), bônus de tempo (23) e marcador (28) ficam de fora");
+
+    Checar(D(10f, 10f, 0, 3, true) == aplicar && D(10f, 10f, 2, 3, false) == aplicar, "Teto por quadro: com vaga no quadro o item vencido é aplicado");
+    Checar(D(10f, 10f, 3, 3, true) == esperar && D(10f, 10.2f, 3, 3, false) == esperar && D(10f, 10f, 7, 3, true) == esperar, "Teto por quadro: sem vaga o item espera o quadro seguinte");
+    Checar(D(10f, 10f + atraso + 0.01f, 0, 3, true) == descartar && D(10f, 10f + atraso + 0.01f, 3, 3, true) == descartar,
+        $"Teto por quadro: o instantâneo com mais de {atraso} s de atraso é descartado, com ou sem vaga");
+    Checar(D(10f, 10f + atraso - 0.01f, 0, 3, true) == aplicar, "Teto por quadro: o instantâneo um pouco abaixo do atraso máximo ainda é aplicado");
+    Checar(D(10f, 500f, 0, 3, false) == aplicar && D(10f, 500f, 3, 3, false) == esperar, "Teto por quadro: o que dura nunca é descartado por atraso, só espera");
+    Checar((int)C("NumerosDanoPorQuadroMaximo") > 0 && (int)C("GolpesVistosPorQuadroMaximo") > 0 && (int)C("SonsPorQuadroMaximo") > 0 && (int)C("CopiasFxPorQuadroMaximo") > 0,
+        $"Teto por quadro: números {C("NumerosDanoPorQuadroMaximo")}, golpes vistos {C("GolpesVistosPorQuadroMaximo")}, sons {C("SonsPorQuadroMaximo")}, cópias de efeito {C("CopiasFxPorQuadroMaximo")}");
+
+    int U(int aplicados, double ms, int teto, double orcamento) => (int)tv.GetMethod("VagasUsadas").Invoke(null, new object[] { aplicados, ms, teto, orcamento });
+    Checar(U(0, 0.0, 3, 4.0) == 0 && U(2, 3.9, 3, 4.0) == 2, "Orçamento de tempo das cópias: abaixo do orçamento valem as cópias feitas (a primeira do quadro sempre tem vaga)");
+    Checar(U(1, 14.0, 3, 4.0) == 3 && D(10f, 10f, U(1, 14.0, 3, 4.0), 3, false) == esperar && U(5, 4.0, 3, 4.0) == 5,
+        "Orçamento de tempo das cópias: uma cópia pesada (14 ms) fecha o quadro, e as seguintes esperam");
+    Checar((double)C("CopiasFxPorQuadroMs") > 0.0, $"Orçamento de tempo das cópias: {C("CopiasFxPorQuadroMs")} ms por quadro");
+
+    // A fila de verdade (FilaComTeto<int>), com teto de 3 por quadro.
+    var tFila = T("HellClockCoop.Net.FilaComTeto`1").MakeGenericType(typeof(int));
+    object tipoNumero = Enum.ToObject(T("HellClockCoop.Desempenho+Cosmetico"), 0);
+    object Nova(int teto) => Activator.CreateInstance(tFila, tipoNumero, teto);
+    void Por(object f, float vence, int item, bool instantaneo) => tFila.GetMethod("Por").Invoke(f, new object[] { vence, item, instantaneo });
+    void PorSemCusto(object f, float vence, int item) => tFila.GetMethod("PorSemCusto").Invoke(f, new object[] { vence, item });
+    int Quantos(object f) => (int)tFila.GetProperty("Quantidade").GetValue(f);
+    List<int> Processar(object f, float agora) { var saiu = new List<int>(); tFila.GetMethod("Processar").Invoke(f, new object[] { agora, (Action<int>)saiu.Add }); return saiu; }
+
+    var fila = Nova(3);
+    for (int k = 0; k < 10; k++) Por(fila, 1f, k, true);
+    Checar(Processar(fila, 0.9f).Count == 0 && Quantos(fila) == 10, "Fila com teto: nada sai antes de vencer");
+    Checar(Processar(fila, 1f).SequenceEqual(new[] { 0, 1, 2 }) && Quantos(fila) == 7, "Fila com teto: 10 itens vencidos, 3 saem no quadro, na ordem de chegada");
+    Checar(Processar(fila, 1.1f).SequenceEqual(new[] { 3, 4, 5 }) && Processar(fila, 1.2f).SequenceEqual(new[] { 6, 7, 8 }), "Fila com teto: os seguintes saem nos quadros seguintes");
+    Checar(Processar(fila, 1f + atraso + 0.05f).Count == 0 && Quantos(fila) == 0, "Fila com teto: o instantâneo que sobrou além do atraso máximo é descartado, não aplicado");
+
+    var travada = Nova(3);
+    for (int k = 0; k < 6; k++) Por(travada, 1f + k * 0.1f, k, true); // vencem em 1,0 ... 1,5; o quadro seguinte só vem em 1,65 (travada)
+    Checar(Processar(travada, 1.65f).SequenceEqual(new[] { 4, 5 }) && Quantos(travada) == 0, "Fila com teto: depois de uma travada, o acumulado velho é descartado e só o recente sai");
+
+    var ordem = Nova(1);
+    Por(ordem, 1f, 100, false); Por(ordem, 1f, 200, false); PorSemCusto(ordem, 1f, -200); PorSemCusto(ordem, 1f, -100); Por(ordem, 1f, 300, false);
+    Checar(Processar(ordem, 1f).SequenceEqual(new[] { 100 }), "Fila com teto: o fim (sem custo) não passa na frente do som que ainda espera a vez");
+    Checar(Processar(ordem, 1.05f).SequenceEqual(new[] { 200, -200, -100 }), "Fila com teto: os fins saem junto com o item que os antecede, sem contar no teto");
+    Checar(Processar(ordem, 50f).SequenceEqual(new[] { 300 }) && Quantos(ordem) == 0, "Fila com teto: o que dura sai mesmo muito atrasado");
+
+    var fins = Nova(1);
+    PorSemCusto(fins, 1f, 1); PorSemCusto(fins, 1f, 2); PorSemCusto(fins, 1f, 3);
+    Checar(Processar(fins, 90f).SequenceEqual(new[] { 1, 2, 3 }), "Fila com teto: itens sem custo saem todos, sem teto e sem descarte por atraso");
+
+    var cheia = Nova(3);
+    for (int k = 0; k < capacidade + 50; k++) Por(cheia, 1f, k, true);
+    Checar(Quantos(cheia) == capacidade, $"Fila com teto: acima de {capacidade} à espera, o que custa é descartado ao chegar");
+    PorSemCusto(cheia, 1f, -1);
+    Checar(Quantos(cheia) == capacidade + 1, "Fila com teto: o fim entra mesmo com a fila no limite");
+    tFila.GetMethod("Limpar").Invoke(cheia, null);
+    Checar(Quantos(cheia) == 0, "Fila com teto: Limpar esvazia (fim da sessão)");
+}
+
 Console.WriteLine(falhas == 0 ? "\nTODOS OS TESTES PASSARAM" : $"\n{falhas} FALHA(S)");
 return falhas;

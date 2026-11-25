@@ -246,6 +246,56 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
    de 59 ms saiu na run de "depois" em `copiar efeito` (3 cópias, 51 ms), que esta etapa não toca: fica anotada
    para a etapa de efeitos/interface.
 
+   **Etapa 6 (0.31.1): recepção com teto por quadro** (protocolo 25, sem mudança de mensagem). Até a 0.31.0 tudo o que
+   chegava dos aliados era aplicado no quadro em que vencia o atraso do avatar: a mensagem de golpes ou de sons inteira
+   (até 120 golpes ou 40 sons por segundo de cada aliado), e cada efeito novo virava uma cópia na hora. Com 3 aliados em combate isso se junta num quadro
+   só. Agora o que é **só imagem e som** passa por uma fila com teto por quadro (`Net/FilaComTeto.cs`, decisão em
+   `Validacao.DecidirNaFila`): números de dano 24, golpes vistos 12, sons 8, cópias de efeito 3 **e** 4 ms de cópias
+   por quadro (`Validacao.CopiasFxPorQuadroMs`; a primeira cópia do quadro nasce, salvo se montar um modelo novo já gastou os 4 ms). O que não coube fica para os
+   quadros seguintes, na ordem de chegada. O instantâneo (número, golpe visto, som de uma vez só, efeito solto no mundo)
+   que atrasou mais de 0,3 s (`AtrasoCosmeticoMaximo`) é descartado, porque fora de hora confunde mais do que ajuda; o
+   que dura (som com fim, efeito preso no jogador ou num inimigo) só espera, e os fins (som, efeito) não contam no
+   teto nem passam na frente do que encerram. A exceção é o limite de segurança contra enxurrada: com a fila cheia
+   (`FilaCosmeticaMaxima`, 1.024 itens que custam; 4 vezes isso para os fins) ou a espera de cópias cheia, o que chega
+   é descartado, inclusive o que dura (o som e a cópia presos expiram sozinhos). Dano de verdade (`Golpes` no host), morte, skill e status de
+   inimigo não passam pela fila: seguem aplicados na hora, só medidos.
+
+   O medidor ganhou:
+   - **Recepção simulada:** dono de sala vazia com o eco ligado (`SessaoCoop.Simulada`, a mesma condição da contagem
+     simulada da etapa 5). Os pacotes cosméticos que este PC manda (tipos `CosmeticoDeAliado`: danos e golpes vistos,
+     sons, efeitos) voltam por `SessaoCoop.ReceberSimulado` como se viessem de 3 aliados de mentira
+     (`AliadosSimulados`), fora de `Pares`, pelo mesmo tratador da rede (`SteamTransporte.ReceberSimulada`). Nada sai
+     pela Steam. Mede o lado de quem recebe com 3 aliados fazendo o que o jogador local faz.
+   - **Linha** `[Desempenho] Recepção no período`: por tipo de mensagem, mensagens, KB e tempo do tratador (com o
+     pior); por item aplicado (números, golpes, sons, cópias), total, µs por item, pior quadro (itens e ms), em quantos
+     quadros o teto segurou algo e quantos foram descartados (por atraso ou fila cheia). Com aliado de verdade sai também, sem
+     "simulada".
+
+   Medido em 24/11/2026 no PC do autor, sozinho, recepção simulada, andar 1 do Sertão, roteiro por script com 28 voltas
+   de luta (`docs/TESTES.md`, 0.31.1). "Antes" é o código novo com os tetos desligados:
+
+   | Item | Antes (sem teto) | Só teto por contagem | Contagem e 4 ms de cópias (publicado) |
+   |---|---|---|---|
+   | Trecho | 2,7 min, ~146 fps | 2,7 min | 3,0 min, 149 fps |
+   | Números de dano: pior quadro | 33 (51 µs cada) | 15 | sem números (a luta não achou o grupo) |
+   | Golpes vistos: pior quadro | 33 (11 µs cada) | 10 | sem golpes (idem) |
+   | Sons: pior quadro | 12 (4 µs cada) | 8 | 8 (6 µs cada; teto em 168 quadros) |
+   | Cópias de efeito: pior quadro | 33 (470 µs cada; 2.133 = 1.003 ms) | 3 | 3 e 43,2 ms (571 µs cada; 2.109 = 1.205 ms; teto em 449 quadros) |
+   | Descartados (atraso ou fila cheia) | — | 0 | 0 |
+   | `Travada` por cópias | 57 ms (9 cópias, 46,8 ms) | 51 ms (3 cópias, 43,6 ms) | 54 ms (3 cópias, 43,1 ms), logo depois de chegar ao andar |
+
+   O teto acabou com os picos de dezenas de itens por quadro sem descartar nada (o atraso nunca passou de 0,3 s nesse
+   ritmo). A travada das cópias **não saiu**, e o número quase igual nas três passadas (46,8, 43,6 e 43,1 ms) mostra por
+   quê: é **uma cópia só** de ~40 ms (com o orçamento, 3 cópias num quadro só acontecem se as duas primeiras somaram
+   menos de 4 ms), uma vez por run, no começo do andar. Nem a contagem nem o orçamento dividem uma cópia; baixar
+   `CopiasFxPorQuadroMs` não muda isso. Hipótese para a etapa de efeitos: é a primeira vez que aquele efeito aparece na
+   cena (o modelo limpo fica estacionado e desligado, então a primeira cópia ligada paga a preparação); aquecer o
+   modelo ao montá-lo é o candidato. O orçamento fica: segura o acúmulo de cópias médias num quadro. Também anotado: o
+   tratador de maior volume é o de `FxNos` (18,9 mil mensagens, 3,2 MB e 117 ms em 3 min com 3 aliados simulados).
+   Falta em dupla: números e golpes de aliado de verdade (nesta passada não houve) e a linha sem "simulada".
+   Limitação conhecida (auditoria): as filas são uma por tipo, comuns a todos os aliados; um cliente alterado que
+   inunda números de dano pode deixar os dos outros sem vez. O efeito é só visual e a fila tem teto de memória.
+
    **Etapa 4 (0.30.3): travadas pontuais.** Medido antes (0.30.2, 24/11/2026, PC do autor, ~200 fps), linhas `[Desempenho] Travada`:
 
    | Momento | Antes (0.30.2) | Causa | O que mudou |

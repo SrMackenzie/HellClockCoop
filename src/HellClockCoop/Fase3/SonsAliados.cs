@@ -598,8 +598,8 @@ namespace HellClockCoop.Fase3
 
         private static RemotePlayerAvatar AvatarDe(ulong steam)
         {
-            if (Sessao == null || !Sessao.Pares.TryGetValue(steam, out Par p)) return null;
-            return p.Avatar != null && p.Avatar.gameObject.activeInHierarchy && p.MesmoAndar ? p.Avatar : null;
+            Par p = Sessao?.ParDe(steam); // um jogador do lobby ou, na recepção simulada, um aliado de mentira
+            return p != null && p.Avatar != null && p.Avatar.gameObject.activeInHierarchy && p.MesmoAndar ? p.Avatar : null;
         }
 
         private static void Tocar(ulong chave, RemotePlayerAvatar avatar, Vector3 deslocamento, SonsAliado.Item i)
@@ -614,6 +614,7 @@ namespace HellClockCoop.Fase3
             Vector3 pos = i.Posicao + deslocamento;
             EventInstance inst = default;
             AttachedSfx preso = null;
+            double inicio = Desempenho.Agora();
             _reproduzindo = true;
             try
             {
@@ -639,6 +640,7 @@ namespace HellClockCoop.Fase3
             finally
             {
                 _reproduzindo = false;
+                if (chave != 0) Desempenho.Aplicou(Desempenho.Cosmetico.Som, inicio); // o eco (chave 0) fica fora da conta da recepção
             }
             var a = new Ativo { Instancia = inst, Preso = preso, UltimaInstancia = inst.handle, Parametros = i.Parametros };
             if (i.Id == 0)
@@ -778,11 +780,38 @@ namespace HellClockCoop.Fase3
 
         private const float AtrasoRede = 0.1f;
         private static readonly Queue<KeyValuePair<float, Action>> FilaEco = new Queue<KeyValuePair<float, Action>>();
-        private static readonly Queue<KeyValuePair<float, Action>> FilaRede = new Queue<KeyValuePair<float, Action>>();
+        // 0.31.1: fila com teto por quadro, um som por item. Até a 0.31.0 cada mensagem (até 40 sons) tocava inteira num
+        // quadro só. O fim de um som que dura vai na mesma fila, sem custo, para não passar na frente do som que encerra.
+        private static readonly FilaComTeto<SomRecebido> FilaRede =
+            new FilaComTeto<SomRecebido>(Desempenho.Cosmetico.Som, Validacao.SonsPorQuadroMaximo);
+        private static readonly Action<SomRecebido> AplicarRecebido = AplicarDoAliado;
+
+        private struct SomRecebido
+        {
+            public ulong Chave;
+            public SonsAliado.Item Item; // um som para tocar, ou
+            public List<ushort> Fins;    // os sons que acabaram
+        }
+
+        private static void AplicarDoAliado(SomRecebido s)
+        {
+            try
+            {
+                if (s.Fins != null)
+                {
+                    foreach (ushort id in s.Fins) Parar(s.Chave, id);
+                    return;
+                }
+                RemotePlayerAvatar av = AvatarDe(s.Chave);
+                if (av != null) Tocar(s.Chave, av, Vector3.zero, s.Item);
+            }
+            catch (Exception e)
+            {
+                AvisarErroNaFila(e);
+            }
+        }
 
         private static void NaFilaDoEco(Action a) => FilaEco.Enqueue(new KeyValuePair<float, Action>(Time.unscaledTime + CoopRuntime.AtrasoEco + AtrasoRede, a));
-
-        private static void NaFilaDaRede(Action a) => FilaRede.Enqueue(new KeyValuePair<float, Action>(Time.unscaledTime + AtrasoRede, a));
 
         private static void ProcessarFilas()
         {
@@ -793,18 +822,20 @@ namespace HellClockCoop.Fase3
                 PararDe(0);
             }
             while (FilaEco.Count > 0 && FilaEco.Peek().Key <= agora) Executar(FilaEco.Dequeue().Value);
-            while (FilaRede.Count > 0 && FilaRede.Peek().Key <= agora) Executar(FilaRede.Dequeue().Value);
+            FilaRede.Processar(agora, AplicarRecebido);
         }
 
         private static void Executar(Action a)
         {
             try { a(); }
-            catch (Exception e)
-            {
-                if (Time.unscaledTime < _proximoAvisoExecutar) return; // um aviso a cada 5 s, para o log não encher
-                _proximoAvisoExecutar = Time.unscaledTime + IntervaloAvisos;
-                Plugin.Log.LogWarning($"[Sons] {(e.InnerException ?? e).Message}");
-            }
+            catch (Exception e) { AvisarErroNaFila(e); }
+        }
+
+        private static void AvisarErroNaFila(Exception e)
+        {
+            if (Time.unscaledTime < _proximoAvisoExecutar) return; // um aviso a cada 5 s, para o log não encher
+            _proximoAvisoExecutar = Time.unscaledTime + IntervaloAvisos;
+            Plugin.Log.LogWarning($"[Sons] {(e.InnerException ?? e).Message}");
         }
 
         // ---------------- Laço e rede ----------------
@@ -844,7 +875,7 @@ namespace HellClockCoop.Fase3
                 if (dados[0] == Protocolo.TipoSonsFim)
                 {
                     SonsFim f = SonsFim.Desserializar(dados);
-                    NaFilaDaRede(() => { foreach (ushort id in f.Ids) Parar(chave, id); });
+                    FilaRede.PorSemCusto(Time.unscaledTime + AtrasoRede, new SomRecebido { Chave = chave, Fins = f.Ids });
                     return;
                 }
                 if (dados[0] != Protocolo.TipoSonsAliado) return;
@@ -854,7 +885,6 @@ namespace HellClockCoop.Fase3
                 Remetente r = RemetenteDe(chave);
                 float agora = Time.unscaledTime;
                 Vector3 a = avatar.transform.position;
-                var aceitos = new List<SonsAliado.Item>(m.Itens.Count);
                 foreach (SonsAliado.Item i in m.Itens)
                 {
                     if (!Validacao.SomValido(i.G1, i.G2, i.G3, i.G4, i.Posicao.x, i.Posicao.y, i.Posicao.z, a.x, a.y, a.z)
@@ -864,7 +894,8 @@ namespace HellClockCoop.Fase3
                         continue;
                     }
                     i.Parametros.RemoveAll(p => !Validacao.ParametroSomValido(p.Nome, p.Valor));
-                    aceitos.Add(i);
+                    // Som que dura (Id != 0) espera a vez sem ser descartado: o fim dele vem atrás, na mesma fila.
+                    FilaRede.Por(agora + AtrasoRede, new SomRecebido { Chave = chave, Item = i }, instantaneo: i.Id == 0);
                 }
                 if (r.Recusados > 0 && agora >= r.ProximoAvisoRecusa)
                 {
@@ -872,13 +903,6 @@ namespace HellClockCoop.Fase3
                     Plugin.Log.LogWarning($"[Sons] {r.Recusados} som(ns) de {de.Nome} recusado(s) (fora do alcance do avatar, evento que não é 3D deste jogo, som que dura sem fim ou acima de {Validacao.SonsPorJanelaMaximo}/s).");
                     r.Recusados = 0;
                 }
-                if (aceitos.Count == 0) return;
-                NaFilaDaRede(() =>
-                {
-                    RemotePlayerAvatar av = AvatarDe(chave);
-                    if (av == null) return;
-                    foreach (SonsAliado.Item i in aceitos) Tocar(chave, av, Vector3.zero, i);
-                });
             }
             catch (Exception e)
             {
@@ -896,7 +920,7 @@ namespace HellClockCoop.Fase3
             foreach (ulong k in new List<ulong>(Remetentes.Keys)) if (k != 0) Remetentes.Remove(k);
             foreach (Ativo a in Curtos) PararAtivo(a);
             Curtos.Clear();
-            FilaRede.Clear();
+            FilaRede.Limpar();
             Pendentes.Clear();
             Acompanhados.Clear();
             FinsPendentes.Ids.Clear();

@@ -333,7 +333,7 @@ namespace HellClockCoop.Fase3
             if (AvatarEco != null)
             {
                 ObterModelo(m.Guid, out _); // como na rede: o modelo fica pronto durante o atraso da fila
-                NaFilaDoEco(() => Criar(Eco, m));
+                NaFilaDoEco(() => Criar(Eco, m, Time.unscaledTime));
             }
         }
 
@@ -475,7 +475,21 @@ namespace HellClockCoop.Fase3
             public Remetente De;
             public FxNovo Novo;
             public readonly List<FxNos> Nos = new List<FxNos>();
+            public bool SemVaga; // 0.31.1: o prefab já chegou; só espera vaga no teto de cópias por quadro
+            public float Desde;  // quando devia ter nascido (o efeito solto atrasado demais é descartado)
+            public int Ordem;    // ordem de chegada: os que esperam vaga nascem nela
         }
+
+        private static int _copiasNoQuadro; // cópias criadas neste quadro (teto: Validacao.CopiasFxPorQuadroMaximo)
+        private static double _msCopiasNoQuadro; // tempo gasto neste quadro em cópias e modelos (orçamento: Validacao.CopiasFxPorQuadroMs)
+
+        /// <summary>Vagas de cópia já usadas neste quadro, pela contagem e pelo tempo (uma cópia pesada fecha o quadro).</summary>
+        private static int VagasUsadas =>
+            Validacao.VagasUsadas(_copiasNoQuadro, _msCopiasNoQuadro, Validacao.CopiasFxPorQuadroMaximo, Validacao.CopiasFxPorQuadroMs);
+
+        private static void SomarTempoDeCopia(double inicio) => _msCopiasNoQuadro += (Desempenho.Agora() - inicio) * 1000.0;
+        private static int _ordemPendente;
+        private static readonly List<Pendente> SemVaga = new List<Pendente>();
 
         private sealed class Remetente
         {
@@ -554,6 +568,7 @@ namespace HellClockCoop.Fase3
                 modelo.name = prefab.name;
                 LimparParaVisual(modelo);
                 Desempenho.SomarDetalhe(Desempenho.Detalhe.CopiarFx, inicio);
+                SomarTempoDeCopia(inicio); // o modelo de um prefab novo é o mais caro: a cópia dele fica para o quadro seguinte
             }
             catch (Exception e)
             {
@@ -589,7 +604,7 @@ namespace HellClockCoop.Fase3
                     try
                     {
                         if (p.De != Eco) p.De.Avatar = AvatarDe(p.De.Chave); // o aliado pode ter saído do andar enquanto o prefab vinha
-                        Criar(p.De, p.Novo);
+                        Criar(p.De, p.Novo, Time.unscaledTime); // esperou o prefab, não o teto: nasce mesmo atrasada (como até a 0.31.0)
                         foreach (FxNos nos in p.Nos) AplicarNos(p.De, nos);
                     }
                     catch (Exception e)
@@ -617,29 +632,97 @@ namespace HellClockCoop.Fase3
             Pendentes.Remove(chave);
         }
 
-        private static void Adiar(Remetente de, FxNovo m)
+        /// <summary>
+        /// Guarda a cópia que ainda não pode nascer: o prefab está a caminho ou (<paramref name="semVaga"/>, 0.31.1) o
+        /// quadro já criou o teto de cópias. Enquanto espera, o que chega para ela (partes, posição, fim) vale como antes.
+        /// </summary>
+        private static void Adiar(Remetente de, FxNovo m, bool semVaga, float desde)
         {
             TirarPendente(de.Chave, m.Id); // o mesmo efeito anunciado de novo: vale o último anúncio
-            if (_pendentes >= MaximoPendentes) return;
-            if (!Pendentes.TryGetValue(de.Chave, out Dictionary<ushort, Pendente> dele)) Pendentes[de.Chave] = dele = new Dictionary<ushort, Pendente>();
-            if (dele.Count >= MaximoPendentesPorPar) return;
-            dele[m.Id] = new Pendente { De = de, Novo = m };
+            bool cabe = _pendentes < MaximoPendentes;
+            Dictionary<ushort, Pendente> dele = null;
+            if (cabe && !Pendentes.TryGetValue(de.Chave, out dele)) Pendentes[de.Chave] = dele = new Dictionary<ushort, Pendente>();
+            if (cabe && dele.Count >= MaximoPendentesPorPar) cabe = false;
+            if (!cabe)
+            {
+                if (semVaga) Desempenho.Descartou(Desempenho.Cosmetico.CopiaFx, 1); // sem lugar na espera: esta cópia não nasce
+                return;
+            }
+            dele[m.Id] = new Pendente { De = de, Novo = m, SemVaga = semVaga, Desde = desde, Ordem = _ordemPendente++ };
             _pendentes++;
         }
 
-        private static void Criar(Remetente de, FxNovo m)
+        /// <summary>
+        /// No laço, antes das filas: as cópias que ficaram sem vaga nascem na ordem em que chegaram, até o teto do quadro.
+        /// O efeito solto no mundo que esperou demais é descartado; o preso no jogador ou num inimigo (auras, estacas)
+        /// só espera. O fim do efeito tira a cópia da espera antes de ela nascer (Remover).
+        /// </summary>
+        private static void CriarAdiadas()
+        {
+            if (_pendentes == 0) return;
+            SemVaga.Clear();
+            foreach (Dictionary<ushort, Pendente> dele in Pendentes.Values)
+            {
+                foreach (Pendente p in dele.Values) if (p.SemVaga) SemVaga.Add(p);
+            }
+            if (SemVaga.Count == 0) return;
+            if (SemVaga.Count > 1) SemVaga.Sort((a, b) => a.Ordem.CompareTo(b.Ordem));
+            float agora = Time.unscaledTime;
+            foreach (Pendente p in SemVaga)
+            {
+                int decisao = Validacao.DecidirNaFila(p.Desde, agora, VagasUsadas, Validacao.CopiasFxPorQuadroMaximo, p.Novo.TipoPai == FxNovo.PaiMundo);
+                if (decisao == Validacao.FilaEsperar)
+                {
+                    Desempenho.NoTeto(Desempenho.Cosmetico.CopiaFx);
+                    break;
+                }
+                TirarPendente(p.De.Chave, p.Novo.Id);
+                try
+                {
+                    if (p.De != Eco) p.De.Avatar = AvatarDe(p.De.Chave); // o aliado pode ter saído do andar enquanto a cópia esperava
+                    Criar(p.De, p.Novo, p.Desde); // (a mesma decisão: cria, ou descarta e conta o efeito solto atrasado)
+                    foreach (FxNos nos in p.Nos) AplicarNos(p.De, nos);
+                }
+                catch (Exception e)
+                {
+                    Plugin.Log.LogWarning($"[Fx] {(e.InnerException ?? e).Message}");
+                }
+            }
+            SemVaga.Clear();
+        }
+
+        /// <summary>
+        /// Cria a cópia do efeito. <paramref name="vence"/>: quando ela devia nascer (0.31.1). Com o teto de cópias do
+        /// quadro já usado, fica na espera (Adiar) e nasce num quadro seguinte; efeito solto atrasado demais não nasce.
+        /// </summary>
+        private static void Criar(Remetente de, FxNovo m, float vence)
         {
             if (de.Avatar == null || !de.Avatar.gameObject.activeInHierarchy) return;
             GameObject prefab = ObterModelo(m.Guid, out bool carregando);
             if (prefab == null)
             {
-                if (carregando) Adiar(de, m);
+                if (carregando) Adiar(de, m, semVaga: false, Time.unscaledTime);
                 return;
             }
+            // Quem lança nunca tem mais que MaximoAtivos efeitos vivos; até a 0.31.0 quem recebia não conferia.
+            if (Copias.TryGetValue(de.Chave, out var vivas) && vivas.Count >= MaximoAtivos && !vivas.ContainsKey(m.Id)) return;
+            int decisao = Validacao.DecidirNaFila(vence, Time.unscaledTime, VagasUsadas, Validacao.CopiasFxPorQuadroMaximo, m.TipoPai == FxNovo.PaiMundo);
+            if (decisao == Validacao.FilaDescartar)
+            {
+                Desempenho.Descartou(Desempenho.Cosmetico.CopiaFx, 1);
+                return;
+            }
+            if (decisao == Validacao.FilaEsperar)
+            {
+                Desempenho.NoTeto(Desempenho.Cosmetico.CopiaFx);
+                Adiar(de, m, semVaga: true, vence);
+                return;
+            }
+            _copiasNoQuadro++;
             GameObject go;
+            double inicio = Desempenho.Agora();
             try
             {
-                double inicio = Desempenho.Agora();
                 go = UnityEngine.Object.Instantiate(prefab, Estacionamento());
                 Animator[] animators = go.GetComponentsInChildren<Animator>(true);
                 foreach (Animator a in animators) a.fireEvents = false; // os receptores dos eventos saíram na limpeza do modelo
@@ -664,7 +747,13 @@ namespace HellClockCoop.Fase3
                     EnemyController e = InimigosCompartilhados.PorId(m.InimigoId);
                     if (e != null) paiInimigo = string.IsNullOrEmpty(m.Caminho) ? e.transform : (e.transform.Find(m.Caminho) ?? e.transform);
                 }
-                if (paiInimigo == null) { UnityEngine.Object.Destroy(go); return; } // o inimigo já sumiu
+                if (paiInimigo == null) // o inimigo já sumiu
+                {
+                    UnityEngine.Object.Destroy(go);
+                    SomarTempoDeCopia(inicio);
+                    if (de != Eco) Desempenho.Aplicou(Desempenho.Cosmetico.CopiaFx, inicio);
+                    return;
+                }
             }
             if (paiInimigo != null)
             {
@@ -722,6 +811,8 @@ namespace HellClockCoop.Fase3
             if (!Copias.TryGetValue(de.Chave, out var dele)) Copias[de.Chave] = dele = new Dictionary<ushort, Copia>();
             if (dele.TryGetValue(m.Id, out Copia velha) && velha.Go != null) UnityEngine.Object.Destroy(velha.Go);
             dele[m.Id] = c;
+            SomarTempoDeCopia(inicio); // as do eco também gastam o orçamento do quadro
+            if (de != Eco) Desempenho.Aplicou(Desempenho.Cosmetico.CopiaFx, inicio); // a cópia inteira: instanciar, prender e ligar as partículas (o eco fica fora da conta da recepção)
         }
 
         private static void AplicarMovimento(Remetente de, FxMovimento m)
@@ -810,8 +901,8 @@ namespace HellClockCoop.Fase3
 
         private static RemotePlayerAvatar AvatarDe(ulong steam)
         {
-            if (Sessao == null || !Sessao.Pares.TryGetValue(steam, out Par p)) return null;
-            return p.Avatar != null && p.Avatar.gameObject.activeInHierarchy && p.MesmoAndar ? p.Avatar : null;
+            Par p = Sessao?.ParDe(steam); // um jogador do lobby ou, na recepção simulada, um aliado de mentira
+            return p != null && p.Avatar != null && p.Avatar.gameObject.activeInHierarchy && p.MesmoAndar ? p.Avatar : null;
         }
 
         private static void DestruirDe(ulong chave)
@@ -907,8 +998,11 @@ namespace HellClockCoop.Fase3
             {
                 if (AvatarEco != null) Eco.Avatar = AvatarEco;
                 Eco.Deslocamento = AvatarEco != null ? AvatarEco.DeslocamentoMundo : Vector3.zero;
+                _copiasNoQuadro = 0;
+                _msCopiasNoQuadro = 0;
                 AtualizarLocais();
                 ConcluirCargas(); // antes das filas: a cópia que vence agora já acha o modelo que chegou
+                CriarAdiadas();   // antes das filas: as que esperavam vaga nascem antes das que vencem agora
                 ProcessarFilas();
                 AtualizarCopias();
             }
@@ -930,7 +1024,8 @@ namespace HellClockCoop.Fase3
                     case Protocolo.TipoFxNovo:
                         FxNovo n = FxNovo.Desserializar(dados);
                         if (AvatarDe(r.Chave) != null) ObterModelo(n.Guid, out _); // já pede o prefab (ele vem durante o atraso da fila), só de quem tem avatar no andar
-                        NaFilaDaRede(() => { r.Avatar = AvatarDe(r.Chave); if (r.Avatar != null) Criar(r, n); });
+                        float vence = Time.unscaledTime + AtrasoMovimento;
+                        NaFilaDaRede(() => { r.Avatar = AvatarDe(r.Chave); if (r.Avatar != null) Criar(r, n, vence); });
                         break;
                     case Protocolo.TipoFxMovimento:
                         FxMovimento mv = FxMovimento.Desserializar(dados);

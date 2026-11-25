@@ -63,7 +63,6 @@ namespace HellClockCoop.Net
                     SteamNetworkingMessage_t msg = SteamNetworkingMessage_t.FromIntPtr(Buffer[i]);
                     dados = new byte[msg.m_cbSize];
                     Marshal.Copy(msg.m_pData, dados, 0, msg.m_cbSize);
-                    Desempenho.MensagemRecebida(msg.m_cbSize);
                     de = msg.m_identityPeer.GetSteamID();
                 }
                 finally
@@ -72,15 +71,37 @@ namespace HellClockCoop.Net
                     Buffer[i] = IntPtr.Zero;
                 }
                 BytesRecebidos += dados.Length;
-                try
-                {
-                    tratar(de, dados);
-                }
-                catch (Exception e)
-                {
-                    Plugin.Log.LogWarning($"[Rede] Mensagem inválida de {de} ({dados.Length} bytes): {e.Message}");
-                }
+                Entregar(de, dados, tratar);
             }
+        }
+
+        /// <summary>
+        /// Recepção simulada (0.31.1, só para o medidor): um pacote que este PC mandaria entra como se tivesse chegado de
+        /// <paramref name="de"/>, com a própria cópia dos bytes (como na leitura de verdade) e pelo mesmo tratador. Não
+        /// passa pela Steam nem conta em <see cref="BytesRecebidos"/>.
+        /// </summary>
+        public static void ReceberSimulada(CSteamID de, byte[] pacote, Action<CSteamID, byte[]> tratar)
+        {
+            var dados = new byte[pacote.Length];
+            Array.Copy(pacote, dados, pacote.Length);
+            Entregar(de, dados, tratar);
+        }
+
+        /// <summary>Conta a mensagem no medidor (por tipo, com o tempo do tratador) e a entrega; erro do tratador não derruba a leitura.</summary>
+        private static void Entregar(CSteamID de, byte[] dados, Action<CSteamID, byte[]> tratar)
+        {
+            byte tipo = dados.Length > 0 ? dados[0] : (byte)0;
+            Desempenho.MensagemRecebida(tipo, dados.Length);
+            double inicio = Desempenho.Agora();
+            try
+            {
+                tratar(de, dados);
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Rede] Mensagem inválida de {de} ({dados.Length} bytes): {e.Message}");
+            }
+            Desempenho.MensagemTratada(tipo, inicio);
         }
 
         public static void Fechar(CSteamID com)

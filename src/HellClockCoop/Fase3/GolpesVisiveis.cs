@@ -30,7 +30,16 @@ namespace HellClockCoop.Fase3
 
         private static readonly List<GolpesVistos.Item> Pendentes = new List<GolpesVistos.Item>();
         private static readonly Queue<KeyValuePair<float, Action>> FilaEco = new Queue<KeyValuePair<float, Action>>();
-        private static readonly Queue<KeyValuePair<float, Action>> FilaRede = new Queue<KeyValuePair<float, Action>>();
+        // 0.31.1: fila com teto por quadro. Até a 0.31.0 cada mensagem (até 120 golpes) era reproduzida inteira num quadro só.
+        private static readonly FilaComTeto<GolpeRecebido> FilaRede =
+            new FilaComTeto<GolpeRecebido>(Desempenho.Cosmetico.Golpe, Validacao.GolpesVistosPorQuadroMaximo);
+        private static readonly Action<GolpeRecebido> ReproduzirRecebido = ReproduzirDoAliado;
+
+        private struct GolpeRecebido
+        {
+            public Par De;
+            public GolpesVistos.Item Item;
+        }
         private static readonly Dictionary<ulong, JanelaBonus> Janelas = new Dictionary<ulong, JanelaBonus>();
         private static float _proximoEnvio;
         private static bool _reproduzindo;
@@ -142,7 +151,7 @@ namespace HellClockCoop.Fase3
             float agora = Time.unscaledTime;
             if (FxCompartilhados.AvatarEco == null) FilaEco.Clear();
             while (FilaEco.Count > 0 && FilaEco.Peek().Key <= agora) Executar(FilaEco.Dequeue().Value);
-            while (FilaRede.Count > 0 && FilaRede.Peek().Key <= agora) Executar(FilaRede.Dequeue().Value);
+            FilaRede.Processar(agora, ReproduzirRecebido);
             if (Pendentes.Count == 0 || agora < _proximoEnvio) return;
             _proximoEnvio = agora + Intervalo;
             var m = new GolpesVistos();
@@ -166,7 +175,6 @@ namespace HellClockCoop.Fase3
                 if (!Janelas.TryGetValue(chave, out JanelaBonus j)) Janelas[chave] = j = new JanelaBonus();
                 float agora = Time.unscaledTime;
                 int recusados = 0;
-                var aceitos = new List<GolpesVistos.Item>();
                 foreach (GolpesVistos.Item i in GolpesVistos.Desserializar(dados).Itens)
                 {
                     if (!Validacao.GolpeVistoValido(i.Opcoes, i.Tipos, i.Principal, i.Direcao.x, i.Direcao.y, i.Direcao.z, i.Deslocamento.x, i.Deslocamento.y, i.Deslocamento.z)
@@ -175,27 +183,32 @@ namespace HellClockCoop.Fase3
                         recusados++;
                         continue;
                     }
-                    aceitos.Add(i);
+                    FilaRede.Por(agora + AtrasoRede, new GolpeRecebido { De = de, Item = i }, instantaneo: true);
                 }
                 if (recusados > 0) Avisar(chave, $"[Golpes] {recusados} golpe(s) vistos de {de.Nome} recusado(s) (formato inválido ou acima de {Validacao.GolpesVistosPorJanelaMaximo}/s).");
-                if (aceitos.Count == 0) return;
-                FilaRede.Enqueue(new KeyValuePair<float, Action>(agora + AtrasoRede, () =>
-                {
-                    RemotePlayerAvatar av = de.Avatar;
-                    if (av == null || !de.MesmoAndar) return;
-                    Vector3 pa = av.transform.position;
-                    foreach (GolpesVistos.Item i in aceitos)
-                    {
-                        EnemyController c = DanosVisiveis.AlvoDe(i.Id);
-                        // Só inimigo perto do aliado (o mesmo alcance dos sons): golpe visto é cosmético, mas não em qualquer lugar do andar.
-                        if (c == null || (c.Transform.position - pa).sqrMagnitude > Validacao.DistanciaSomMaxima * Validacao.DistanciaSomMaxima) continue;
-                        Reproduzir(c, i);
-                    }
-                }));
             }
             catch (Exception e)
             {
                 Avisar(de.Id.m_SteamID, $"[Golpes] Mensagem de {de.Nome} ignorada: {(e.InnerException ?? e).Message}");
+            }
+        }
+
+        private static void ReproduzirDoAliado(GolpeRecebido g)
+        {
+            try
+            {
+                RemotePlayerAvatar av = g.De.Avatar;
+                if (av == null || !g.De.MesmoAndar) return;
+                EnemyController c = DanosVisiveis.AlvoDe(g.Item.Id);
+                // Só inimigo perto do aliado (o mesmo alcance dos sons): golpe visto é cosmético, mas não em qualquer lugar do andar.
+                if (c == null || (c.Transform.position - av.transform.position).sqrMagnitude > Validacao.DistanciaSomMaxima * Validacao.DistanciaSomMaxima) return;
+                double inicio = Desempenho.Agora();
+                try { Reproduzir(c, g.Item); }
+                finally { Desempenho.Aplicou(Desempenho.Cosmetico.Golpe, inicio); }
+            }
+            catch (Exception e)
+            {
+                Avisar(0, $"[Golpes] {(e.InnerException ?? e).Message}");
             }
         }
 
@@ -212,7 +225,7 @@ namespace HellClockCoop.Fase3
 
         public static void Encerrar()
         {
-            FilaRede.Clear();
+            FilaRede.Limpar();
             Pendentes.Clear();
             Janelas.Clear();
             ProximoAviso.Clear();

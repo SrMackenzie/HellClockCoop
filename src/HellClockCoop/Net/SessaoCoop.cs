@@ -391,6 +391,7 @@ namespace HellClockCoop.Net
             }
             SteamTransporte.Esquecer(); // 0.20.0: recusados fora do relay voltam a ser conferidos no próximo coop
             Pares.Clear();
+            EncerrarSimulacao();
             Fase3.InimigosCompartilhados.Encerrar();
             Fase3.ObjetosCompartilhados.Encerrar();
             Fase3.SantuariosCompartilhados.Encerrar();
@@ -398,6 +399,7 @@ namespace HellClockCoop.Net
             Fase3.FxCompartilhados.Encerrar();
             Fase3.SonsAliados.Encerrar();
             Fase3.GolpesVisiveis.Encerrar();
+            Fase3.DanosVisiveis.Encerrar();
             Fase3.AlvosAliados.Encerrar();
             Lobby = CSteamID.Nil;
             _donoDoLobby = 0;
@@ -778,6 +780,7 @@ namespace HellClockCoop.Net
             // quadro. Tratar mensagem em outro ponto (Update, callback) exige reler o dono antes.
             SteamTransporte.Receber(Protocolo.CanalConfiavel, (de, dados) => TratarConfiavel(de, dados, jogadorLocal));
             SteamTransporte.Receber(Protocolo.CanalSnapshots, (de, dados) => TratarSnapshot(de, dados, jogadorLocal, cenaLocal));
+            ReceberSimulado(); // 0.31.1: só o dono de sala vazia com o eco (medidor); com um par no lobby não faz nada
 
             foreach (Par p in Pares.Values)
             {
@@ -1040,15 +1043,122 @@ namespace HellClockCoop.Net
             {
                 if (p.Compativel && p.MesmoAndar) SteamTransporte.Enviar(p.Id, pacote, confiavel, confiavel ? Protocolo.CanalConfiavel : Protocolo.CanalSnapshots);
             }
+            if (Pares.Count == 0 && Simulada) Reinjetar(pacote);
         }
 
+        /// <summary>Há um aliado no mesmo andar (ou, na recepção simulada, o eco valendo por aliados).</summary>
         public bool AlguemNoMesmoAndar
         {
             get
             {
                 foreach (Par p in Pares.Values) if (p.Compativel && p.MesmoAndar) return true;
-                return false;
+                return Simulada;
             }
+        }
+
+        // ---------------- Recepção simulada (0.31.1, só para o medidor) ----------------
+
+        /// <summary>Quantos aliados o eco representa na recepção simulada: o grupo cheio (3 além deste PC).</summary>
+        public const int AliadosSimulados = 3;
+        private const int ReinjetadosMaximo = 2048;
+        private readonly Dictionary<ulong, Par> _paresSimulados = new Dictionary<ulong, Par>();
+        private readonly Queue<byte[]> _reinjetados = new Queue<byte[]>();
+
+        /// <summary>
+        /// Dono de sala sem ninguém, com o eco (F8) ligado: o medidor simula o coop sem um segundo jogador. O estado dos
+        /// inimigos é montado e só contado (0.31.0, <c>InimigosCompartilhados</c>) e, desde a 0.31.1, os pacotes cosméticos
+        /// que iriam aos aliados do mesmo andar (números de dano, golpes vistos, sons, efeitos) voltam pela recepção
+        /// deste PC como se viessem de <see cref="AliadosSimulados"/> aliados. Nada sai pela rede, e com um par no lobby
+        /// a simulação não existe.
+        /// </summary>
+        public bool Simulada
+        {
+            get
+            {
+                if (!SouHost || Pares.Count > 0) return false;
+                CoopRuntime r = CoopRuntime.Instancia;
+                return !ReferenceEquals(r, null) && r.EcoAtivo;
+            }
+        }
+
+        /// <summary>O par com este SteamID: um jogador do lobby ou, na recepção simulada, um dos aliados de mentira.</summary>
+        public Par ParDe(ulong id) => Pares.TryGetValue(id, out Par p) || _paresSimulados.TryGetValue(id, out p) ? p : null;
+
+        private void Reinjetar(byte[] pacote)
+        {
+            if (pacote.Length == 0 || !Validacao.CosmeticoDeAliado(pacote[0]) || _reinjetados.Count >= ReinjetadosMaximo) return;
+            _reinjetados.Enqueue(pacote);
+        }
+
+        /// <summary>
+        /// Entrega os pacotes reinjetados no quadro seguinte ao do envio, uma vez por aliado simulado, pelo transporte
+        /// (cópia dos bytes e medidor) e pelos mesmos tratadores da rede. Os aliados de mentira não entram em
+        /// <see cref="Pares"/> (escala, painel e autoridade não os veem) e usam o fantasma do eco como avatar.
+        /// </summary>
+        private void ReceberSimulado()
+        {
+            CoopRuntime r = CoopRuntime.Instancia;
+            bool simulada = Simulada;
+            RemotePlayerAvatar eco = simulada && !ReferenceEquals(r, null) ? r.AvatarDoEco : null;
+            if (!simulada)
+            {
+                if (_paresSimulados.Count > 0 || _reinjetados.Count > 0) EncerrarSimulacao();
+                return;
+            }
+            if (_paresSimulados.Count == 0)
+            {
+                for (ulong k = 1; k <= AliadosSimulados; k++) // SteamIDs que não existem (o eco direto usa a chave 0)
+                    _paresSimulados[k] = new Par { Id = new CSteamID(k), Nome = "Eco " + k, HelloRecebido = true, MeOuviu = true, Compativel = true };
+            }
+            foreach (Par p in _paresSimulados.Values)
+            {
+                p.Avatar = eco; // null durante a troca de cena: os tratadores descartam, como com um aliado fora do andar
+                p.MesmoAndar = eco != null;
+            }
+            if (_reinjetados.Count == 0) return;
+            Desempenho.RecepcaoSimulada(AliadosSimulados);
+            Action<CSteamID, byte[]> tratar = TratarSimulado;
+            while (_reinjetados.Count > 0)
+            {
+                byte[] pacote = _reinjetados.Dequeue();
+                foreach (Par p in _paresSimulados.Values) SteamTransporte.ReceberSimulada(p.Id, pacote, tratar);
+            }
+        }
+
+        private void TratarSimulado(CSteamID de, byte[] dados)
+        {
+            if (!_paresSimulados.TryGetValue(de.m_SteamID, out Par p)) return;
+            switch (dados[0])
+            {
+                case Protocolo.TipoDanosVistos:
+                    Fase3.DanosVisiveis.Receber(this, p, dados);
+                    break;
+                case Protocolo.TipoGolpesVistos:
+                    Fase3.GolpesVisiveis.Receber(this, p, dados);
+                    break;
+                case Protocolo.TipoFxNovo:
+                case Protocolo.TipoFxMovimento:
+                case Protocolo.TipoFxNos:
+                case Protocolo.TipoFxFim:
+                    Fase3.FxCompartilhados.Receber(this, p, dados);
+                    break;
+                case Protocolo.TipoSonsAliado:
+                case Protocolo.TipoSonsFim:
+                    Fase3.SonsAliados.Receber(this, p, dados);
+                    break;
+            }
+        }
+
+        private void EncerrarSimulacao()
+        {
+            _reinjetados.Clear();
+            foreach (Par p in _paresSimulados.Values)
+            {
+                p.Avatar = null; // o fantasma é do eco: quem o destrói é o CoopRuntime
+                p.MesmoAndar = false;
+                Fase3.DanosVisiveis.EsquecerCor(p.Id.m_SteamID); // a cor dos aliados de verdade não muda por causa do teste
+            }
+            _paresSimulados.Clear();
         }
 
         public void EnviarPara(Par p, byte[] pacote)
