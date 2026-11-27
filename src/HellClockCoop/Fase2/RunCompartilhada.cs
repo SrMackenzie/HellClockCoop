@@ -602,6 +602,19 @@ namespace HellClockCoop.Fase2
             Sessao.EnviarParaConvidados(new FimRun { Motivo = (int)motivo }.Serializar(), confiavel: true);
         }
 
+        /// <summary>
+        /// Prefixo de DungeonProgressManager.GoToMenu (0.31.6): o host saiu para o menu com a run aberta. O jogo abandona a run
+        /// sem FinishDungeon; os convidados recebem o fim manual, como no "Terminar run" do host. Se o fim já rodou
+        /// (FinishDungeonRoutine também passa pelo GoToMenu), o FimRun já foi.
+        /// </summary>
+        internal static void HostSaiuParaOMenu()
+        {
+            DungeonProgressManager dpm = Dpm;
+            if (!Host || dpm == null || !dpm.RunStarted.Value || dpm.EndingExecuted.Value) return;
+            Plugin.Log.LogInfo("[Run] Você saiu para o menu com a run aberta: a run dos convidados também acaba.");
+            HostTerminou(EGameOverSource.ManualFinish);
+        }
+
         // ---------------- Convidado: substituições ----------------
 
         /// <summary>Bloco do andar: usa o do host (na Ascensão, a ordem dos blocos vem do save de cada um).</summary>

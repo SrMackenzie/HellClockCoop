@@ -32,6 +32,10 @@ namespace HellClockCoop
             new Alvo("0", "TimerManager", "StartTimer", "Início da run / valor do Hell Clock"),
             new Alvo("0", "EnemyManager", "AddToAvailableTargets", "Lista de alvos dos inimigos"),
             new Alvo("0", "HellClock.Level.LevelChanger", "ChangeLevel", "Troca de andar e LevelDefinition escolhida"),
+            // Diagnóstico do travamento ao subir de nível (0.31.6). Fase "D", fora das ativas: se sumir, só avisa.
+            new Alvo("D", "HellClock.Player.PlayerController", "PlayLevelUpCoroutine", "Estado do jogador ao subir de nível (diagnóstico)"),
+            new Alvo("D", "HellClock.Blessings.BlessingSelectionScreen", "Show", "Estado do jogador ao abrir a tela de bênção (diagnóstico)"),
+            new Alvo("D", "HellClock.Blessings.BlessingSelectionScreen", "Hide", "Estado do jogador ao fechar a tela de bênção (diagnóstico)"),
 
             // Fase 1 — fantasma
             new Alvo("1", "HellClock.Steam.SteamManager", "Awake", "Steam inicializado pelo jogo (não inicializar de novo)"),
@@ -93,7 +97,8 @@ namespace HellClockCoop
             new Alvo("3", "HellClock.Pool.LevelObjectPoolController", "SpawnBlessingTotem", "Convidado cria o próprio totem no lugar do totem do host"),
             new Alvo("3", "HellClock.AI.Enemy.EnemyAIController", "get_IsAggressive", "Réplica agressiva como no host (chefe: dano, barra, câmera)"),
             new Alvo("3", "HellClock.Manager.DungeonProgressManager", "FinishDungeon", "Fim da run (timer, todos caídos) decidido pelo host"),
-            new Alvo("3c", "EnemyManager", "TryToGetTargetForEnemy", "Já escolhe o alvo mais próximo entre _availableTargets"),
+            new Alvo("3", "HellClock.Manager.DungeonProgressManager", "GoToMenu", "Host que sai para o menu com a run aberta encerra a dos convidados (0.31.6)"),
+            new Alvo("3", "EnemyManager", "TryToGetTargetForEnemy", "Com alguém caído, o inimigo escolhe o alvo vivo mais perto em vez do caído (0.31.6)"),
             new Alvo("3c", "HellClock.AI.Enemy.EnemyAIController", "SetCurrentTarget", "Observar/replicar o alvo escolhido"),
             new Alvo("3c", "HellClock.Damage.DamageDealer", "PerformDamage", "Origem do dano (crit, modificadores)"),
 

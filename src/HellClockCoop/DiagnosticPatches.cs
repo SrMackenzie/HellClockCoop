@@ -69,6 +69,72 @@ namespace HellClockCoop
     }
 
     /// <summary>
+    /// Alvo: PlayerController.PlayLevelUpCoroutine — subida de nível (FeedbackLevelUp). Diagnóstico do convidado que travou
+    /// ao subir de nível (0.31.6, sem causa achada): no coop, registra o estado do jogador. Não muda nada.
+    /// </summary>
+    [HarmonyPatch(typeof(PlayerController), nameof(PlayerController.PlayLevelUpCoroutine))]
+    internal static class Diag_PlayerController_PlayLevelUpCoroutine
+    {
+        private static void Postfix(PlayerController __instance)
+        {
+            if (!DiagNivel.NoCoop || __instance != CoopRuntime.JogadorLocal()) return;
+            DiagNivel.Logar("subiu de nível");
+        }
+    }
+
+    /// <summary>Alvo: BlessingSelectionScreen.Show — tela de bênção que abre depois da subida de nível (diagnóstico, 0.31.6).</summary>
+    [HarmonyPatch(typeof(HellClock.Blessings.BlessingSelectionScreen), nameof(HellClock.Blessings.BlessingSelectionScreen.Show))]
+    internal static class Diag_BlessingSelectionScreen_Show
+    {
+        private static void Postfix()
+        {
+            if (DiagNivel.NoCoop) DiagNivel.Logar("tela de bênção aberta");
+        }
+    }
+
+    /// <summary>Alvo: BlessingSelectionScreen.Hide — tela de bênção fechada (diagnóstico, 0.31.6).</summary>
+    [HarmonyPatch(typeof(HellClock.Blessings.BlessingSelectionScreen), nameof(HellClock.Blessings.BlessingSelectionScreen.Hide))]
+    internal static class Diag_BlessingSelectionScreen_Hide
+    {
+        private static void Postfix()
+        {
+            if (DiagNivel.NoCoop) DiagNivel.Logar("tela de bênção fechada");
+        }
+    }
+
+    /// <summary>
+    /// Estado do jogador local para achar a causa de um travamento (0.31.6): nível, caído, run, troca de andar, janelas e pausa
+    /// do jogo, e quem segura os semáforos de movimento, ação e skill (Semaphore.ToString do jogo lista as chaves). Sai nos
+    /// pontos acima e no F9, que serve para registrar o estado no momento em que travou.
+    /// </summary>
+    internal static class DiagNivel
+    {
+        internal static bool NoCoop => Fase2.RunCompartilhada.Sessao != null && Fase2.RunCompartilhada.Sessao.EmSessao;
+
+        internal static void Logar(string quando)
+        {
+            try
+            {
+                PlayerController j = CoopRuntime.JogadorLocal();
+                if (j == null) return;
+                HellClock.Manager.DungeonProgressManager dpm = HellClock.Manager.DungeonProgressManager.Instance;
+                HellClock.UI.WindowController janelas = HellClock.UI.WindowController.Instance;
+                string papel = Fase2.RunCompartilhada.Convidado ? "convidado" : Fase2.RunCompartilhada.Host ? "host" : "sem grupo";
+                Plugin.Log.LogInfo(
+                    $"[Diag] Estado ({quando}, {papel}): nível {j.PlayerSheet?.Experience?.Level?.Value}, caído {Fase2.JogadorCaido.Caido}, " +
+                    $"morto {j.LifeController?.IsDead}, run {dpm?.RunStarted.Value}, fim {dpm?.EndingExecuted.Value}, " +
+                    $"trocando de andar {dpm?.IsTransitioning}, janelas abertas {(janelas != null ? janelas.HasOpenScreens.ToString() : "?")}, " +
+                    $"pausa {PauseHUD.IsShowingPauseScreen}; mover: {j.MovementController?.CanMove}; " +
+                    $"agir: {j.CharacterSemaphores?.CanPerformAction}; skill: {j.CharacterSemaphores?.CanUseSkill}.");
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[Diag] Estado do jogador ({quando}) não lido: {e.Message}");
+            }
+        }
+    }
+
+    /// <summary>
     /// Lê o estado do SteamManager do jogo por reflexão, sem tocar em SteamManager.Instance:
     /// aquele getter cria um SteamManager novo se não houver um, e o jogo lança exceção
     /// se a SteamAPI for inicializada duas vezes.

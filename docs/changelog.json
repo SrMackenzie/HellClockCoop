@@ -2,6 +2,23 @@
   "_leia": "Fonte única das novidades (site, CHANGELOG.md e a janela Novidades do jogo). testado: true = confirmado rodando no jogo. testar (opcional): 3 a 5 itens curtos do roteiro de teste, mostrados na janela enquanto testado for false. Depois de editar: python3 scripts/gerar-progresso.py (o build regenera o texto da janela com scripts/gerar-novidades.py)",
   "versoes": [
     {
+      "v": "0.31.6",
+      "data": "26/11/2026",
+      "testado": false,
+      "titulo": "Correções da run em dupla: chefe parado e convidado preso na run",
+      "itens": [
+        "Quando um aliado caía perto de um chefe (ou de qualquer inimigo), o inimigo parava de atacar quem estava de pé, mesmo levando tiro. O jogo escolhe como alvo quem está mais perto e não olha se essa pessoa está caída: pegava o caído, largava na hora (alvo morto) e pegava de novo. Agora, com alguém caído, o inimigo escolhe a pessoa de pé mais perto, como no solo. Vale também para o host caído",
+        "Quando o host saía para o menu no meio da run (pausa > Sair, ou Sair do jogo), o jogo abandonava a run dele sem avisar os convidados: eles ficavam numa run que ninguém comandava, com o relógio parado e o Terminar run bloqueado (no coop, só o host encerra a run). Agora sair para o menu com a run aberta encerra a run dos convidados também, como o Terminar run do host",
+        "O convidado que travou ao subir de nível ainda não tem causa achada: não havia log da sessão. O log agora registra, no coop, o estado do jogador ao subir de nível e ao abrir e fechar a tela de bênção. Se travar de novo, aperte F9 no PC travado: o log guarda o estado naquele momento (o que está segurando o movimento e as ações)",
+        "Balanceamento: o inimigo não fica mais parado perto de um aliado caído, então cair deixa de facilitar a luta (o grupo fica de novo um pouco mais difícil que o solo, como pede a regra). Protocolo não muda (25), mas a lista de salas só mostra salas da mesma versão: atualize todos os PCs para a 0.31.6"
+      ],
+      "testar": [
+        "Em dupla, deixe o aliado cair perto do chefe: o chefe tem que continuar atacando quem está de pé",
+        "Host: pausa > Sair no meio da run. O convidado tem que voltar ao hub com o fim da run",
+        "Convidado: suba de nível na run e escolha a bênção. Se travar, aperte F9 e guarde o LogOutput.log antes de abrir o jogo de novo"
+      ]
+    },
+    {
       "v": "0.31.5",
       "data": "26/11/2026",
       "testado": true,

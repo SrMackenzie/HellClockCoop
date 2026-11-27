@@ -4,6 +4,14 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.31.6 — Correções da run em dupla: chefe parado e convidado preso na run 🧪
+_26/11/2026_
+
+- Quando um aliado caía perto de um chefe (ou de qualquer inimigo), o inimigo parava de atacar quem estava de pé, mesmo levando tiro. O jogo escolhe como alvo quem está mais perto e não olha se essa pessoa está caída: pegava o caído, largava na hora (alvo morto) e pegava de novo. Agora, com alguém caído, o inimigo escolhe a pessoa de pé mais perto, como no solo. Vale também para o host caído
+- Quando o host saía para o menu no meio da run (pausa > Sair, ou Sair do jogo), o jogo abandonava a run dele sem avisar os convidados: eles ficavam numa run que ninguém comandava, com o relógio parado e o Terminar run bloqueado (no coop, só o host encerra a run). Agora sair para o menu com a run aberta encerra a run dos convidados também, como o Terminar run do host
+- O convidado que travou ao subir de nível ainda não tem causa achada: não havia log da sessão. O log agora registra, no coop, o estado do jogador ao subir de nível e ao abrir e fechar a tela de bênção. Se travar de novo, aperte F9 no PC travado: o log guarda o estado naquele momento (o que está segurando o movimento e as ações)
+- Balanceamento: o inimigo não fica mais parado perto de um aliado caído, então cair deixa de facilitar a luta (o grupo fica de novo um pouco mais difícil que o solo, como pede a regra). Protocolo não muda (25), mas a lista de salas só mostra salas da mesma versão: atualize todos os PCs para a 0.31.6
+
 ## 0.31.5 — Medidor de desempenho mais detalhado na rede do dono da sala ✅
 _26/11/2026_
 

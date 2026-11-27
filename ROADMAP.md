@@ -1,6 +1,6 @@
 # Roadmap — Hell Clock Coop
 
-> Atualizado em 25/11/2026 · versão 0.31.4. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
+> Atualizado em 26/11/2026 · versão 0.31.6. Gerado a partir de [`docs/roadmap.json`](docs/roadmap.json) por `scripts/gerar-progresso.py`: edite o JSON, não este arquivo.
 
 <p align="center"><img src="assets/progresso.svg" alt="Progresso por fase" width="880"></p>
 
@@ -100,7 +100,7 @@ _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio s
 | 🧪 | Revisar drops de invocações, ondas de sobrevivência e temporadas (convidado com o XP e o tesouro próprio do host; equipamento sem redução, decisão do autor) |
 | ✅ | Auditoria: o mod nunca escreve no save de outro jogador |
 
-## Fase 5 — Polimento · 58%
+## Fase 5 — Polimento · 57%
 
 _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 
@@ -119,6 +119,8 @@ _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 | 🧪 | Barra de convicção (barreira) por cima da vida no painel de grupo e na barra sobre a cabeça dos aliados, igual à barra do jogo (0.28.0) |
 | 🧪 | Teleporte até um aliado: símbolo de TP na linha dele no painel de grupo, tecla T (D-pad ←) ou clique; mesmo andar, fora de combate, canaliza 2 s e recarga de 60 s (0.29.0) |
 | 🧪 | Correção: o nome dos jogadores e os acúmulos dos buffs voltam a aparecer no painel de grupo (0.31.4) |
+| 🧪 | Correções da dupla, etapa 1 (0.31.6): o chefe volta a atacar quem está de pé quando um aliado cai perto dele; o host que sai para o menu no meio da run encerra a run dos convidados; o convidado que travou ao subir de nível ganhou registro no log (causa ainda não achada) |
+| ⬜ | Correções da dupla, etapa 2: dano do convidado que às vezes aparece 0 nos inimigos e ouro/XP que parecem não ser divididos |
 | 🧪 | Visual do teleporte: raio com anel de recarga no painel, contorno na cor do aliado durante a canalização e o efeito de sumir e reaparecer do jogo (0.30.0) |
 | ⬜ | Reconexão e troca de host sem perder a run |
 | 🧪 | Sons das skills e dos golpes dos aliados |

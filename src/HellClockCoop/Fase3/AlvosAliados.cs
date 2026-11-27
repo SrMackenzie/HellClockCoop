@@ -57,6 +57,27 @@ namespace HellClockCoop.Fase3
         }
     }
 
+    /// <summary>
+    /// Alvo: EnemyManager.TryToGetTargetForEnemy(EnemyController) (privado) — com alguém caído, o inimigo escolhe o alvo vivo
+    /// mais perto em vez do caído (AlvosAliados.EscolherAlvoVivo, 0.31.6).
+    /// </summary>
+    [HarmonyPatch(typeof(EnemyManager), "TryToGetTargetForEnemy")]
+    internal static class Alvos_TryToGetTargetForEnemy
+    {
+        private static bool _avisou;
+
+        private static bool Prefix(EnemyManager __instance, EnemyController enemy)
+        {
+            try { return !AlvosAliados.EscolherAlvoVivo(__instance, enemy); }
+            catch (Exception e)
+            {
+                if (!_avisou) Plugin.Log.LogWarning($"[Alvos] Escolha de alvo vivo falhou; fica a do jogo: {(e.InnerException ?? e).Message}");
+                _avisou = true; // roda por inimigo a cada intervalo: o aviso sai uma vez
+                return true;
+            }
+        }
+    }
+
     internal static class AlvosAliados
     {
         internal static readonly AccessTools.FieldRef<StatBasedValueController, DoubleState> VidaAtualRef =
@@ -166,6 +187,44 @@ namespace HellClockCoop.Fase3
                 Registrados.Remove(id);
                 Alvos.Remove(id);
             }
+        }
+
+        private static readonly AccessTools.FieldRef<EnemyManager, List<ITarget>> DisponiveisRef =
+            AccessTools.FieldRefAccess<EnemyManager, List<ITarget>>("_availableTargets");
+
+        /// <summary>
+        /// Prefixo de EnemyManager.TryToGetTargetForEnemy (0.31.6). O jogo escolhe o alvo mais perto da lista sem olhar se está
+        /// morto: no solo o jogador morto acaba a run e o companheiro morto sai da lista. No coop o aliado caído (avatar com vida
+        /// 0) e o host caído ficam nela, e o inimigo perto deles pega o caído, o UpdateAI larga (alvo morto) e no intervalo
+        /// seguinte pega de novo: não ataca mais ninguém (chefe sem agro no host depois da queda do aliado). Mesma escolha do
+        /// jogo, pulando quem está morto. True = escolheu aqui; false = roda a do jogo (fora do coop, no convidado e sem caído).
+        /// </summary>
+        internal static bool EscolherAlvoVivo(EnemyManager em, EnemyController inimigo)
+        {
+            if (Sessao == null || !Sessao.EmSessao || RunCompartilhada.Convidado || inimigo == null) return false;
+            List<ITarget> alvos = DisponiveisRef(em);
+            if (alvos == null) return false;
+            bool algumMorto = false;
+            foreach (ITarget t in alvos)
+            {
+                if (t?.LifeController != null && t.LifeController.IsDead) { algumMorto = true; break; }
+            }
+            if (!algumMorto) return false;
+            HellClock.AI.Enemy.EnemyAIController ia = inimigo.EnemyAIController;
+            if (ia == null) return false;
+            Vector3 pos = inimigo.Position;
+            float menor = 3.4e38f;
+            ITarget melhor = null;
+            foreach (ITarget t in alvos)
+            {
+                if (t == null || t.LifeController == null || t.LifeController.IsDead) continue;
+                if (!ia.ForceAggressive && !ia.IsTargetInVisionRadius(t)) continue;
+                float d = global::HellClock.Extensions.VectorExtensions.Distance2D(t.GetPosition(), pos);
+                if (d < menor) { menor = d; melhor = t; }
+            }
+            if (melhor != null) ia.SetCurrentTarget(melhor);
+            else ia.ResetCanReceiveNewTargetTimer();
+            return true;
         }
 
         public static void Encerrar()

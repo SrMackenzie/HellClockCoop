@@ -126,7 +126,11 @@ namespace HellClockCoop
             if (Interface.MenuCoop.Aberto) return;
 
             if (Teclas.Pressionou(TeclaEco.Value)) AlternarEco();
-            if (Teclas.Pressionou(TeclaHierarquia.Value)) RegistrarHierarquia(forcar: true);
+            if (Teclas.Pressionou(TeclaHierarquia.Value))
+            {
+                RegistrarHierarquia(forcar: true);
+                DiagNivel.Logar("F9"); // 0.31.6: estado no momento de um travamento
+            }
             Interface.Marcadores.LerTecla(semPersonagem ? null : JogadorLocal(), _ecoAtivo); // 0.17.0: ping no chão
             Fase2.TpAliado.LerEntrada(semPersonagem ? null : JogadorLocal(), _ecoAtivo ? _avatarEco : null); // 0.29.0: TP até o aliado
         }

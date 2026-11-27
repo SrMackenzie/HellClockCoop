@@ -290,6 +290,11 @@ ESTADO ATUAL (versão de teste, Fase 3)
 - (0.31.5): o medidor de desempenho (no log) separa as chamadas à Steam na parte de rede, para
   achar o engasgo curto do dono da sala se ele voltar. Nada muda no jogo. Use a 0.31.5 em
   todos os PCs.
+- (0.31.6): correções da run em dupla. Com um aliado caído perto, o inimigo (inclusive o
+  chefe) continua atacando quem está de pé. O host que sai para o menu no meio da run encerra
+  a run dos convidados (antes eles ficavam presos, sem poder usar o Terminar run). Se o
+  personagem travar, aperte F9: o log guarda o estado naquele momento. Use a 0.31.6 em todos
+  os PCs.
 - A Deluxe Edition (cosmética) não importa.
 
 

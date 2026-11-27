@@ -177,6 +177,21 @@ namespace HellClockCoop.Fase2
     }
 
     /// <summary>
+    /// Alvo: DungeonProgressManager.GoToMenu — sair para o menu (pausa → Sair, ou Sair do jogo) com a run aberta abandona a
+    /// run sem passar pelo FinishDungeon. Sem isto o host não mandava FimRun e o convidado ficava numa run que ninguém comanda,
+    /// com o "Terminar run" bloqueado (só o host encerra). 0.31.6.
+    /// </summary>
+    [HarmonyPatch(typeof(DungeonProgressManager), nameof(DungeonProgressManager.GoToMenu))]
+    internal static class Run_GoToMenu
+    {
+        private static void Prefix()
+        {
+            try { RunCompartilhada.HostSaiuParaOMenu(); }
+            catch (System.Exception e) { Plugin.Log.LogWarning($"[Run] Aviso de fim da run ao sair para o menu falhou: {(e.InnerException ?? e).Message}"); } // a saída segue
+        }
+    }
+
+    /// <summary>
     /// Alvo: TimerManager.Update — no convidado o Hell Clock não corre; mostra o do host. No host caído (0.15.0) o
     /// relógio continua: o Update do jogo para quando o jogador local está morto (IsDead), e o caído fica com vida 0.
     /// Mesmas condições do jogo (PauseTimer livre, run em andamento, sem o truque de tempo infinito, sem fim já

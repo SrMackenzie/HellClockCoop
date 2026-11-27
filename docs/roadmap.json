@@ -1,7 +1,7 @@
 {
   "_leia": "Fonte única do progresso. Status: feito | testar | fazendo | planejado. Depois de editar: python3 scripts/gerar-progresso.py (atualiza assets/progresso.svg e ROADMAP.md).",
-  "atualizado": "25/11/2026",
-  "versao": "0.31.4",
+  "atualizado": "26/11/2026",
+  "versao": "0.31.6",
   "fases": [
     {
       "id": "B",
@@ -301,6 +301,14 @@
         [
           "testar",
           "Correção: o nome dos jogadores e os acúmulos dos buffs voltam a aparecer no painel de grupo (0.31.4)"
+        ],
+        [
+          "testar",
+          "Correções da dupla, etapa 1 (0.31.6): o chefe volta a atacar quem está de pé quando um aliado cai perto dele; o host que sai para o menu no meio da run encerra a run dos convidados; o convidado que travou ao subir de nível ganhou registro no log (causa ainda não achada)"
+        ],
+        [
+          "planejado",
+          "Correções da dupla, etapa 2: dano do convidado que às vezes aparece 0 nos inimigos e ouro/XP que parecem não ser divididos"
         ],
         [
           "testar",

@@ -109,6 +109,7 @@ Legenda: **Pre** = prefix, **Post** = postfix, **(H)** = só no host, **(C)** = 
 | `TimerManager.StartTimer(float)` | Post | Confirmar início da run e valor do timer |
 | `EnemyManager.AddToAvailableTargets(ITarget)` | Post | Ver a lista de alvos crescer (jogador e companions) |
 | `HellClock.Level.LevelChanger.ChangeLevel(LevelInfo, …)` | Pre | Logar `LevelDefinition` sorteada, `HashID`, bloco e boss |
+| `PlayerController.PlayLevelUpCoroutine`, `BlessingSelectionScreen.Show`/`Hide` | Post | No coop, estado do jogador (semáforos de movimento, ação e skill, janelas, pausa, caído) ao subir de nível e na tela de bênção (0.31.6, fase "D", fora das ativas) |
 
 ### Fase 1 — Fantasma
 | Alvo | Tipo | O que fazer |
@@ -139,13 +140,14 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
 |---|---|---|
 | `EnemyManager.SpawnEnemy` | Post (H) | Atribuir `netId`; enviar `EnemySpawn{netId, enemyDefinitionHashId, pos, tipo/afixos}` |
 | *(cliente)* | — | Criar a réplica pelo mesmo `EnemyManager.SpawnEnemy` e desligar a IA dela (patch em `EnemyAIController.UpdateAI` para réplicas) |
-| `EnemyManager.TryToGetTargetForEnemy` | — | **Sem patch**: já escolhe o alvo mais próximo. No host, registrar o avatar remoto com `AddToAvailableTargets` |
+| `EnemyManager.TryToGetTargetForEnemy` | Pre (H) | Escolhe o alvo mais próximo; no host, o avatar remoto entra com `AddToAvailableTargets`. O jogo não olha se o alvo está morto: com alguém caído, o prefixo (0.31.6) faz a mesma escolha pulando os mortos |
 | `HellClock.Character.Enemy.EnemyController.CheckForSpawn` | Pre (H) | Usar a menor distância entre todos os jogadores |
 | `HellClock.AI.Enemy.EnemyAIController.SetCurrentTarget` | Post (H) | Mandar o alvo atual junto no snapshot (para animação e mira nas réplicas) |
 | `HellClock.Character.LifeController.Hurt` | Pre (C) | Se o alvo é réplica: cancelar e enviar `HitReport{netId, valores por tipo, crit, status}` |
 | `LifeController.Hurt` | Pre (H) | Se o alvo é o avatar remoto: cancelar e enviar `YouWereHit{…}` ao dono, que aplica no próprio `PlayerController` |
 | `HellClock.Damage.DamageDealer.PerformDamage` | — | Referência; hooks extras só se `Hurt` não bastar (DoTs, `LifeLinkStatusEffect`) |
 | `HellClock.Manager.DungeonProgressManager.FinishDungeon` | Pre (C) | Só o host encerra a run (timer zerado ou todos mortos) |
+| `HellClock.Manager.DungeonProgressManager.GoToMenu` | Pre (H) | Sair para o menu com a run aberta abandona a run sem `FinishDungeon`: o host manda `FimRun` (ManualFinish) aos convidados (0.31.6) |
 
 **Hipótese a testar:** modelar o avatar remoto, no host, como um *companion* (`CompanionAIDirector` / `PlayerCompanionDefinition`). Companions já têm `LifeController`, `StatusController`, já são `ITarget` e já entram em `_availableTargets`. Trocar só o "cérebro" pela rede pode poupar muito código.
 
@@ -515,7 +517,7 @@ Observações:
 
 ## 8. Fase 1a — fantasma em modo eco (versão 0.1.0)
 
-**O que é:** F8 cria um clone visual do jogador. Os snapshots do jogador local percorrem o caminho completo que vão percorrer na rede (amostra a 20 Hz → `PlayerSnapshot.Serializar` → bytes → `Desserializar` → buffer de interpolação → `RemotePlayerAvatar`), com 1 s de atraso e 2,5 m de deslocamento. F9 salva a hierarquia do jogador em `BepInEx/HellClockCoop/hierarquia-jogador.txt`.
+**O que é:** F8 cria um clone visual do jogador. Os snapshots do jogador local percorrem o caminho completo que vão percorrer na rede (amostra a 20 Hz → `PlayerSnapshot.Serializar` → bytes → `Desserializar` → buffer de interpolação → `RemotePlayerAvatar`), com 1 s de atraso e 2,5 m de deslocamento. F9 salva a hierarquia do jogador em `BepInEx/HellClockCoop/hierarquia-jogador.txt` e, desde a 0.31.6, registra no log o estado do jogador (`[Diag] Estado (F9, …)`), para um travamento.
 
 **Como o clone é feito (`AvatarFactory`):**
 - `Instantiate` do `PlayerController` vivo dentro de um pai desativado.
@@ -899,8 +901,10 @@ recebe clona a primeira irmã. Era o caso das facas da skill Reflexos girando em
 
 **3c — inimigos atacam todos.**
 - *Alvos no host:* `AlvoAvatar` (ITarget) por aliado no mesmo andar, registrado com
-  `EnemyManager.AddToAvailableTargets` (o mesmo caminho dos companheiros). `TryToGetTargetForEnemy` já escolhe o
-  mais próximo. O LifeController do alvo usa uma cópia da ficha base de um inimigo (a do jogador liga pedras da
+  `EnemyManager.AddToAvailableTargets` (o mesmo caminho dos companheiros). `TryToGetTargetForEnemy` escolhe o
+  mais próximo, mas não olha se ele está morto (no solo o morto sai da lista ou a run acaba): o caído ficava escolhido
+  e largado a cada intervalo, e o inimigo perto dele parava de atacar. Desde a 0.31.6, com alguém caído, o prefixo
+  `Alvos_TryToGetTargetForEnemy` repete a escolha do jogo pulando os mortos (no host; no convidado roda a do jogo). O LifeController do alvo usa uma cópia da ficha base de um inimigo (a do jogador liga pedras da
   alma e níveis); morre/revive com o `Morto` do snapshot, para os inimigos largarem quem morreu.
 - *Skills:* postfix em `ActiveSkill.Execute(ITarget)` no host (as sobrescritas chamam `base.Execute`): skill de
   inimigo replicado vira 37 InimigoSkill (netId, HashID da skill, alvo: host / convidado+SteamID / nenhum, posição
@@ -1315,7 +1319,7 @@ S = executa uma ação, P = grava no `.cfg`, ∅ = só leitura. Ícones: nenhum 
 | COOP-CFG-BLOQUEADOS | Seção "Bloqueados (n)" (0.23.0, §12.12): um item por bloqueado (nome, "Desbloquear" à direita; Enter/A/clique, dois apertos: "Confirmar: desbloquear <nome>?" por 3 s), até 50 e uma linha "E mais N no arquivo"; vazia: "Nenhum bloqueado." e a dica de onde bloquear; sempre a linha do bloqueio da Steam | aba Ajustes | P (`SessaoCoop.Desbloquear`) | `bloqueados.txt` |
 | COOP-NOVIDADES | "Novidades da <versão>": fecha o menu e abre a janela antiga (§12.1) | só na reserva (gaveta); no painel nativo virou a aba Novidades (0.13.0) | R | `[Teclas] Novidades` (F10) |
 | COOP-NAV | Setas ou direcional movem o foco; esquerda/direita ajustam a barra focada; Enter ou A executam; mouse: passar por cima foca, clique executa, clique ou arrasto na barra escolhe o valor, roda rola | menu aberto | R | — |
-| COOP-ECO-TECLA / COOP-DIAG-TECLA | F8 (modo eco) e F9 (diagnóstico) | jogo, com o menu do coop e a Novidades fechados | S | `[Teclas] ModoEco`, `SalvarHierarquia` |
+| COOP-ECO-TECLA / COOP-DIAG-TECLA | F8 (modo eco) e F9 (diagnóstico: hierarquia em arquivo e, desde a 0.31.6, estado do jogador no log) | jogo, com o menu do coop e a Novidades fechados | S | `[Teclas] ModoEco`, `SalvarHierarquia` |
 | COOP-MARCADOR-TECLA | Botão do meio do mouse (marca o chão sob o cursor) ou R3 no controle (4 m à frente) (0.17.0, §12.6) | jogo, com o menu do coop e a Novidades fechados, sem pausa, com alguém no mesmo andar ou o eco ligado | S (`Marcadores.LerTecla`; recarga de 1 s) | `[Teclas] Marcador` (o R3 é fixo) |
 
 Sem efeito nos números do balanceamento nem no protocolo (10). Com o menu aberto em jogo o personagem fica parado e o
