@@ -27,6 +27,8 @@ namespace HellClockCoop
             // 0.31.3: a interface com aliados e o menu do coop por quadro (dentro das partes Interface e Menus)
             BarrasESeta, PainelDeGrupo, Marcador, TelaDoCaido, MontarMenu, MostrarMenu,
             Aquecimento, // 0.31.3: os passos do aquecimento da interface dos aliados, ao entrar numa sala
+            // 0.31.5: a parte Rede por dentro (o pico periódico do dono da sala): as chamadas à Steam separadas do resto
+            LerDonoDoLobby, DadosDaSala, LerMensagensSteam, RecepcaoSimulada,
             Quantidade
         }
 
@@ -38,7 +40,8 @@ namespace HellClockCoop
               "montar painel de grupo", "criar linha do painel", "montar marcador",
               "CheckForSpawn", "TimerManager.Update", "contexto de som", "montar estado dos inimigos",
               "barras e seta dos aliados", "painel de grupo", "marcador", "tela do caído", "montar lista do menu", "mostrar menu",
-              "aquecimento" };
+              "aquecimento",
+              "ler dono do lobby", "gravar dados da sala", "ler mensagens da Steam", "recepção simulada" };
 
         /// <summary>
         /// O que chega dos aliados e vira trabalho por item (0.31.1): contado e cronometrado na aplicação, com o que o teto
@@ -406,6 +409,7 @@ namespace HellClockCoop
                     {
                         _linhasEscritas++;
                         Plugin.Log.LogInfo($"[Desempenho] Pico do mod de {mod:0.0} ms num quadro de {quadroMs:0} ms (sem travada){DescreverPartes()}" +
+                                           $"{(steam >= 0 ? " · Steam: " + steam + " chamada(s)" : "")}" +
                                            $" · coleta de lixo: {(coletas > 0 ? "sim (" + coletas + ")" : "não")} · {_contexto} · cena {cena}");
                     }
                 }

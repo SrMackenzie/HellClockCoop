@@ -379,8 +379,8 @@
           "Desempenho com 4 jogadores e muitos inimigos"
         ],
         [
-          "planejado",
-          "Desempenho, segunda fase (sobras medidas na primeira): engasgo do dono da sala a cada 5 s na rede, cópia de efeito pesada no começo do andar, busca das peças da HUD ao chegar ao andar, mensagens de efeito (FxNos) e medição em dupla"
+          "fazendo",
+          "Desempenho, segunda fase (sobras medidas na primeira): engasgo do dono da sala a cada 5 s na rede (0.31.5: não voltou em 10 min medidos; o medidor separa as chamadas à Steam), cópia de efeito pesada no começo do andar, busca das peças da HUD ao chegar ao andar, mensagens de efeito (FxNos) e medição em dupla"
         ],
         [
           "planejado",

@@ -765,8 +765,11 @@ namespace HellClockCoop.Net
             }
             if (!EmSessao) return;
 
+            double t = Desempenho.Agora(); // 0.31.5: detalhes da parte Rede (medidor)
             LerDonoDoLobby(); // uma leitura por quadro, antes de tudo o que decide por SouHost/IdDoHost abaixo (expulsão, mensagens)
+            t = Desempenho.SomarDetalheEncadeado(Desempenho.Detalhe.LerDonoDoLobby, t);
             AtualizarDadosDaSala(jogadorLocal);
+            Desempenho.SomarDetalhe(Desempenho.Detalhe.DadosDaSala, t);
             if (_expulsos.Count > 0 && SouHost && Time.unscaledTime >= _proximoReenvioExpulso)
             {
                 _proximoReenvioExpulso = Time.unscaledTime + 2f;
@@ -791,7 +794,9 @@ namespace HellClockCoop.Net
             // quadro. Tratar mensagem em outro ponto (Update, callback) exige reler o dono antes.
             SteamTransporte.Receber(Protocolo.CanalConfiavel, (de, dados) => TratarConfiavel(de, dados, jogadorLocal));
             SteamTransporte.Receber(Protocolo.CanalSnapshots, (de, dados) => TratarSnapshot(de, dados, jogadorLocal, cenaLocal));
+            t = Desempenho.Agora();
             ReceberSimulado(); // 0.31.1: só o dono de sala vazia com o eco (medidor); com um par no lobby não faz nada
+            Desempenho.SomarDetalhe(Desempenho.Detalhe.RecepcaoSimulada, t);
 
             foreach (Par p in Pares.Values)
             {

@@ -52,7 +52,9 @@ namespace HellClockCoop.Net
         /// <summary>Entrega cada mensagem pendente do canal ao <paramref name="tratar"/>. Libera a memória nativa sempre.</summary>
         public static void Receber(int canal, Action<CSteamID, byte[]> tratar)
         {
+            double inicio = Desempenho.Agora();
             int n = SteamNetworkingMessages.ReceiveMessagesOnChannel(canal, Buffer, Buffer.Length);
+            Desempenho.SomarDetalhe(Desempenho.Detalhe.LerMensagensSteam, inicio); // 0.31.5: só a chamada à Steam, sem os tratadores
             if (n >= Buffer.Length) Desempenho.BufferCheio(); // no limite: o que não coube fica para o quadro seguinte (medidor, 0.30.1)
             for (int i = 0; i < n; i++)
             {

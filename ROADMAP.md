@@ -100,7 +100,7 @@ _Progressão individual: cada um ganha o próprio loot, ouro e XP, no próprio s
 | 🧪 | Revisar drops de invocações, ondas de sobrevivência e temporadas (convidado com o XP e o tesouro próprio do host; equipamento sem redução, decisão do autor) |
 | ✅ | Auditoria: o mod nunca escreve no save de outro jogador |
 
-## Fase 5 — Polimento · 57%
+## Fase 5 — Polimento · 58%
 
 _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 
@@ -138,5 +138,5 @@ _Deixar o coop confortável para qualquer pessoa instalar e jogar._
 | ⬜ | Resumo da run em grupo: dano, abates e tempo ganho de cada jogador no fim da run |
 | 🔨 | Correção das travadas esporádicas, com os números do medidor de travadas |
 | 🔨 | Desempenho com 4 jogadores e muitos inimigos |
-| ⬜ | Desempenho, segunda fase (sobras medidas na primeira): engasgo do dono da sala a cada 5 s na rede, cópia de efeito pesada no começo do andar, busca das peças da HUD ao chegar ao andar, mensagens de efeito (FxNos) e medição em dupla |
+| 🔨 | Desempenho, segunda fase (sobras medidas na primeira): engasgo do dono da sala a cada 5 s na rede (0.31.5: não voltou em 10 min medidos; o medidor separa as chamadas à Steam), cópia de efeito pesada no começo do andar, busca das peças da HUD ao chegar ao andar, mensagens de efeito (FxNos) e medição em dupla |
 | ⬜ | Tradução para inglês e instalador |

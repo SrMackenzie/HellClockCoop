@@ -4,6 +4,13 @@
 
 Legenda: ✅ testada no jogo · 🧪 aguardando teste no jogo.
 
+## 0.31.5 — Medidor de desempenho mais detalhado na rede do dono da sala ✅
+_26/11/2026_
+
+- Na 0.31.3 o dono da sala tinha um engasgo curto na rede a cada 5 segundos (8 a 15 ms). Antes de mexer em qualquer coisa, o medidor (o log de desempenho) passou a separar as chamadas à Steam da parte de rede: a leitura do dono da sala, a gravação dos dados da sala e a leitura das mensagens. A linha de pico do log também mostra quantas chamadas à Steam o quadro fez
+- Medido sozinho, 10 minutos como dono da sala (a 60 e a 250 quadros por segundo, com e sem o modo eco, com o menu aberto e fechado): o engasgo não voltou, nenhum pico na rede (o pior quadro foi de 2,3 ms). Ele vinha de fora do mod naquele dia, provavelmente da própria Steam. O medidor novo fica para pegar o engasgo se ele aparecer de novo, em dupla ou com outros jogadores
+- Balanceamento: sem efeito (nada de regra de jogo muda). Protocolo não muda (25), mas a lista de salas só mostra salas da mesma versão: atualize todos os PCs para a 0.31.5
+
 ## 0.31.4 — Os nomes voltaram a aparecer no painel de grupo 🧪
 _25/11/2026_
 

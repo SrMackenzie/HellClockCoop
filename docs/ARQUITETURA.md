@@ -441,9 +441,8 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
    medida sozinho, com o eco ou com simulação.
    1. **Engasgo periódico do dono da sala** (etapa 8). Como host, a parte Rede tem um pico de 8 a 15 ms a cada ~5 s
       (quadro de 13 a 24 ms, sem chegar a `Travada`), com o menu aberto ou fechado. Hipótese não confirmada: uma
-      chamada à Steam que demora de tempos em tempos e pesa em quem chama a Steam primeiro no quadro. O primeiro passo
-      é medir qual chamada demora (releitura do dono do lobby ou leitura das mensagens). Mexe na leitura do dono do
-      lobby (§12.11), então pede auditoria.
+      chamada à Steam que demora de tempos em tempos e pesa em quem chama a Steam primeiro no quadro. **Medido na
+      0.31.5 (segunda fase, etapa 1, abaixo): não voltou**; o medidor agora separa as chamadas à Steam da Rede.
    2. **Cópia de efeito pesada no começo do andar** (etapas 6 e 7). Uma cópia de efeito de 40 a 49 ms por run, logo
       depois de chegar ao andar, que nenhum teto por quadro divide (as outras custam ~0,5 a 0,7 ms). Hipótese não confirmada:
       a primeira cópia ligada de um modelo que fica estacionado desligado; o candidato é aquecer o modelo ao montá-lo.
@@ -474,6 +473,20 @@ Primeira tarefa da Fase 1: **logar a hierarquia do `PlayerPrefab`** para decidir
    no hub (~115 ms) é do jogo, com o mod em 0,2 ms. A observar: o resumo de fechamento do medidor não sai quando o jogo
    é fechado pela janela; e a primeira aparição do eco fora de uma sala ainda trava (62 ms num teste da 0.31.4),
    porque o aquecimento só roda ao entrar numa sala (só afeta o modo eco de teste).
+
+   **Segunda fase, etapa 1 (0.31.5): o engasgo do dono da sala não voltou.** O medidor ganhou quatro detalhes dentro
+   da parte Rede (`ler dono do lobby`, `gravar dados da sala`, `ler mensagens da Steam`, só a chamada
+   `ReceiveMessagesOnChannel` sem os tratadores, e `recepção simulada`), e a linha `Pico do mod` passou a dizer quantas
+   chamadas à Steam o quadro fez. Medido em 26/11/2026 no PC do autor, sozinho no hub, como dono de sala vazia, com o
+   menu aberto (Sessão e Salas) e fechado, com e sem o eco, 5 min a 60 fps (monitor externo de 60 Hz com VSync) e
+   5 min a ~245 fps (VSync desligado só para a medição): **nenhum pico na Rede** (pior quadro da parte: 1,7 ms a
+   60 fps e 2,3 ms a 245 fps; na etapa 8 eram 7 a 9 picos de 8 a 15 ms em cada janela de ~35 s, um a cada ~5 s). A Rede custa 0,09 a 0,15 ms
+   por quadro, e quase tudo é `GetLobbyOwner`: 72 a 133 µs por chamada (mais cara a 60 fps); ler as mensagens dos
+   dois canais custa ~2,5 a 3,5 µs por chamada e gravar os dados da sala ~1,2 µs (só grava o que mudou). Conclusão:
+   o pico da etapa 8 veio de fora do mod naquele dia (provavelmente a Steam ocupada) e não do custo fixo da Rede; a
+   leitura do dono do lobby (1 por quadro, §12.11) não mudou. Se o pico voltar (em dupla ou no log de um jogador), a
+   linha `Pico do mod` mostra qual chamada demorou. Reler o dono menos vezes economizaria até ~0,1 ms por quadro, mas
+   muda a regra auditada na 0.30.2 e fica sem pedido.
 
 ---
 

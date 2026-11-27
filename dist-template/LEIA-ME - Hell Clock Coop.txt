@@ -287,6 +287,9 @@ ESTADO ATUAL (versão de teste, Fase 3)
   Nada muda no jogo. Use a 0.31.3 em todos os PCs.
 - (0.31.4): correção. No painel de grupo (à esquerda) o nome de cada jogador e o número de
   acúmulos dos buffs não apareciam; agora aparecem. Use a 0.31.4 em todos os PCs.
+- (0.31.5): o medidor de desempenho (no log) separa as chamadas à Steam na parte de rede, para
+  achar o engasgo curto do dono da sala se ele voltar. Nada muda no jogo. Use a 0.31.5 em
+  todos os PCs.
 - A Deluxe Edition (cosmética) não importa.
 
 
